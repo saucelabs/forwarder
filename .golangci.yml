@@ -1,0 +1,68 @@
+# Copyright 2021 The forwarder Authors. All rights reserved.
+# Use of this source code is governed by a MIT
+# license that can be found in the LICENSE file.
+
+run:
+  timeout: 1m
+  skip-files:
+    - internal/*
+
+linters:
+  enable-all: true
+  disable:
+    - wrapcheck
+    - testpackage
+    - gochecknoglobals
+    - exhaustivestruct
+    - paralleltest
+    - godox
+    - cyclop
+    - tagliatelle
+    - goerr113
+  fast: false
+
+# Settings for specific linters
+linters-settings:
+  funlen:
+    lines: 150
+    statements: 45
+
+issues:
+  exclude-rules:
+    - path: cmd/
+      linters:
+        - gochecknoinits
+        - gomnd
+        - forbidigo
+        - lll
+
+    - path: example_test.go
+      linters:
+        - lll
+
+    - path: internal/http/
+      linters:
+        - unparam
+        - nlreturn
+
+    - path: _test\.go
+      linters:
+        - scopelint
+        - wsl
+        - nlreturn
+        - funlen
+        - dupl
+        - gocognit
+
+    - path: doc.go
+      linters:
+        - lll
+
+    - linters:
+        - lll
+      source: "json:"
+
+    - linters:
+        - gocritic
+        - godot
+      source: "//////"

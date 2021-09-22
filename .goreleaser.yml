@@ -1,0 +1,22 @@
+builds:
+  - env:
+      - BUILD_BASE_PKG_NAME=github.com/saucelabs/forwarder/internal/version
+    ldflags:
+      - -s -w -X {{ .Env.BUILD_BASE_PKG_NAME }}.buildCommit={{.Commit}} -X {{ .Env.BUILD_BASE_PKG_NAME }}.buildVersion={{.Version}} -X {{ .Env.BUILD_BASE_PKG_NAME }}.buildTime={{.Date}}
+    goos:
+      - linux
+      - darwin
+      - windows
+    ignore:
+      - goos: darwin
+        goarch: 386
+      - goos: linux
+        goarch: 386
+      - goos: windows
+        goarch: 386
+checksum:
+  name_template: "{{ .ProjectName }}_{{ .Version }}_checksums.txt"
+snapshot:
+  name_template: "{{ .Version }}-snapshot-{{.ShortCommit}}-devel"
+changelog:
+  skip: true

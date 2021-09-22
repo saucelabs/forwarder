@@ -1,0 +1,33 @@
+name: Go
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: "Check out code into the Go module directory"
+        uses: actions/checkout@v2
+
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.15
+
+      - name: Setup golangci-lint
+        uses: golangci/golangci-lint-action@v2.5.2
+        with:
+          version: v1.41.1
+
+      - name: Lint
+        run: /home/runner/golangci-lint-1.41.1-linux-amd64/golangci-lint run -v -c .golangci.yml
+
+      - name: Test
+        run: make test coverage
+
+      - name: Test Integration
+        run: make test-integration coverage

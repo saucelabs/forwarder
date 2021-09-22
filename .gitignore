@@ -1,0 +1,48 @@
+# Copyright 2021 The forwarder Authors. All rights reserved.
+# Use of this source code is governed by a MIT
+# license that can be found in the LICENSE file.
+
+# Binaries for programs and plugins
+*.exe
+*.dll
+*.so
+*.dylib
+.direnv
+
+# Test binary, build with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+coverage.*
+
+# Generated bin
+bin/
+dist/
+
+# Temporary bin
+tmp/
+
+# Dependencies (run: go mod vendor)
+vendor/
+
+# IDE project files
+*.vscode/
+
+# PyCharm files
+.idea/
+
+# OS files
+.DS_Store
+
+# Everything else
+tags
+
+# Generated env.{environment} files
+.env.*
+
+# UML
+*.plum
+
+# scratch repo to hack
+/scratch
