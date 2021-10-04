@@ -5,50 +5,169 @@
 package proxy
 
 import (
-	"context"
 	"fmt"
-	"io/ioutil"
+	"html/template"
 	"log"
 	"net/http"
-	"net/http/httptest"
 	"net/url"
+	"strings"
 	"time"
+
+	"github.com/saucelabs/forwarder/internal/logger"
+	"github.com/saucelabs/randomness"
+	"github.com/saucelabs/sypl/level"
 )
 
-// Demonstrates how to start a simple proxy. Flow:
-// Client -> Proxy -> Target.
+// Complete, and complex demo.
+//
+// client -> protected local proxy -> protected pac server - connection setup -> protected upstream proxy -> protected target.
 func ExampleNew() {
 	//////
-	// Target.
+	// Setup demo logger.
 	//////
 
-	// Mocked HTTP server.
-	testServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
-		res.WriteHeader(http.StatusOK)
+	// Only `stdout`, and `stderr`
+	loggingOptions := &LoggingOptions{
+		FileLevel: level.None.String(),
+		FilePath:  "-",
 
-		if _, err := res.Write([]byte("body")); err != nil {
-			log.Fatalln("Failed to write body.", err)
-		}
-	}))
+		// Change to `Trace` for debugging, and demonstration purposes.
+		Level: level.None.String(),
+	}
 
-	defer func() { testServer.Close() }()
+	l := logger.Setup(loggingOptions)
+
+	//////
+	// Randomness automates port allocation, ensuring no collision happens
+	// between tests, and examples.
+	//////
+
+	r, err := randomness.New(49000, 50000, 100, true)
+	if err != nil {
+		log.Fatalln("Failed to create randomness.", err)
+	}
+
+	//////
+	// Target/end server.
+	//////
+
+	targetServer := createMockedHTTPServer(http.StatusOK, "body", "dXNlcjE6cGFzczE=")
+
+	defer func() { targetServer.Close() }()
+
+	targetServerURI, err := url.ParseRequestURI(targetServer.URL)
+	if err != nil {
+		//nolint:gocritic
+		log.Fatalln("Failed to parse target server URL.", err)
+	}
+
+	targetServerURI.User = url.UserPassword("user1", "pass1")
+
+	l.Debuglnf("Target/end server started @ %s", targetServerURI.Redacted())
+
+	//////
+	// PAC content.
+	//////
+
+	// Use `int(r.MustGenerate())` for testing purposes. Specify a port if using
+	// a manual - external proxy (e.g.: NGINX). Good for debugging, and demo
+	// purposes.
+	upstreamProxyPort := int(r.MustGenerate())
+
+	templateMap := map[string]int{
+		"port": upstreamProxyPort,
+	}
+
+	var pacText strings.Builder
+	_ = template.Must(template.New("pacTemplate").Parse(pacTemplate)).Execute(&pacText, templateMap)
+
+	l.Debuglnf("PAC template parsed: \n%s", pacText.String())
+
+	//////
+	// PAC server.
+	//////
+
+	pacServer := createMockedHTTPServer(http.StatusOK, pacText.String(), "dXNlcjpwYXNz")
+
+	defer func() { pacServer.Close() }()
+
+	pacServerURI, err := url.ParseRequestURI(pacServer.URL)
+	if err != nil {
+		log.Fatalln("Failed to parse PAC server URL.", err)
+	}
+
+	pacServerURI.User = url.UserPassword("user", "pass")
+
+	l.Debuglnf("PAC server started @ %s", pacServerURI.Redacted())
+
+	//////
+	// URL for both proxies, local, and upstream.
+	//////
+
+	// Local proxy.
+	localProxyURI := URIBuilder(defaultProxyHostname, r.MustGenerate(), localProxyCredentialUsername, localProxyCredentialPassword)
+
+	// Upstream proxy.
+	upstreamProxyURI := URIBuilder(defaultProxyHostname, int64(upstreamProxyPort), upstreamProxyCredentialUsername, upstreamProxyCredentialPassword)
+
+	//////
+	// Local proxy.
+	//
+	// It's protected with Basic Auth. Upstream proxy will be automatically, and
+	// dynamically setup via PAC, including credentials for proxies specified
+	// in the PAC content.
+	//////
+
+	localProxy, err := New(
+		// Local proxy URI.
+		localProxyURI.String(),
+
+		// Upstream proxy URI.
+		"",
+
+		// PAC URI.
+		pacServerURI.String(),
+
+		// PAC proxies credentials in standard URI format.
+		[]string{upstreamProxyURI.String()},
+
+		// Logging settings.
+		loggingOptions,
+	)
+	if err != nil {
+		log.Fatalln("Failed to create proxy.", err)
+	}
+
+	go localProxy.Run()
 
 	// Give enough time to start, and be ready.
 	time.Sleep(1 * time.Second)
 
 	//////
-	// Proxy.
+	// Upstream Proxy.
 	//////
 
-	proxyHost := "localhost:8080"
+	upstreamProxy, err := New(
+		// Local proxy URI.
+		upstreamProxyURI.String(),
 
-	proxy, err := New(proxyHost, "", "", "", nil)
+		// Upstream proxy URI.
+		"",
+
+		// PAC URI.
+		"",
+
+		// PAC proxies credentials in standard URI format.
+		nil,
+
+		// Logging settings.
+		loggingOptions,
+	)
 	if err != nil {
-		//nolint:gocritic
-		log.Fatalln("Failed to create proxy.", err)
+		log.Fatalln("Failed to create upstream proxy.", err)
 	}
 
-	go proxy.Run()
+	go upstreamProxy.Run()
 
 	// Give enough time to start, and be ready.
 	time.Sleep(1 * time.Second)
@@ -57,46 +176,24 @@ func ExampleNew() {
 	// Client.
 	//////
 
-	proxyURL, err := url.Parse(fmt.Sprintf("http://%s", proxyHost))
-	if err != nil {
-		log.Fatalf("Invalid URL: %v", err)
-	}
+	l.Debuglnf("Client is using %s as proxy", localProxyURI.Redacted())
 
 	// Client's proxy settings.
 	tr := &http.Transport{
-		Proxy: http.ProxyURL(proxyURL),
+		Proxy: http.ProxyURL(localProxyURI),
 	}
 
 	client := &http.Client{
 		Transport: tr,
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
-	defer cancel()
-
-	request, err := http.NewRequestWithContext(ctx, http.MethodGet, testServer.URL, nil)
-	if err != nil {
-		log.Fatalf("Failed to create request: %v", err)
-	}
-
-	response, err := client.Do(request)
+	statusCode, body, err := executeRequest(client, targetServerURI.String())
 	if err != nil {
 		log.Fatalf("Failed to execute request: %v", err)
 	}
 
-	defer response.Body.Close()
-
-	data, err := ioutil.ReadAll(response.Body)
-	if err != nil {
-		log.Fatalf("Failed to read body: %v", err)
-	}
-
-	if response.StatusCode != http.StatusOK {
-		log.Fatalf("Failed request, non-2xx code (%d): %s", response.StatusCode, data)
-	}
-
-	fmt.Println(response.StatusCode)
-	fmt.Println(string(data))
+	fmt.Println(statusCode)
+	fmt.Println(body)
 
 	// output:
 	// 200

@@ -8,11 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Roadmap
 
 - Abstract the underlying proxy implementation - currently bound to GoProxy.
-- Extract customerror to its own package.
-- Extract Randomness to its own package.
-- PAC parser
+- Load config from Config file, and from env vars. Use viper for that.
 - Options
-- 
+
+## [0.1.1] - 2021-10-4
+
+### Added
+
+- Integrated PAC (Pacman)
+- More tests
+- Added benchmark
+
 ## [0.1.0] - 2021-09-21
 
 ### Checklist

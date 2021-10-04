@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/go-playground/validator/v10"
-	"github.com/saucelabs/forwarder/internal/customerror"
+	"github.com/saucelabs/customerror"
 )
 
 var (

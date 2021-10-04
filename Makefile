@@ -30,10 +30,10 @@ endif
 	@golangci-lint run -v -c .golangci.yml && echo "Lint OK"
 
 test:
-	@go test -timeout 30s -short -v -race -cover -coverprofile=coverage.out ./...
+	@go test -timeout 120s -short -v -race -cover -coverprofile=coverage.out ./...
 
 test-integration:
-	@PROXY_TEST_MODE=integration go test -timeout 30s -v -race -cover -coverprofile=coverage.out -run Integration && echo "Test OK"
+	@FORWARDER_TEST_MODE=integration go test -timeout 120s -v -race -cover -coverprofile=coverage.out ./... && echo "Test OK"
 
 coverage:
 	@go tool cover -func=coverage.out
