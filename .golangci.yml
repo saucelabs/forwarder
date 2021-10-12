@@ -27,6 +27,9 @@ linters-settings:
     lines: 150
     statements: 45
 
+  nestif:
+    min-complexity: 8
+
 issues:
   exclude-rules:
     - path: cmd/
@@ -57,6 +60,10 @@ issues:
     - path: doc.go
       linters:
         - lll
+
+    - linters:
+        - lll
+      source: "Err"
 
     - linters:
         - lll

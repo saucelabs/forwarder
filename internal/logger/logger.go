@@ -28,7 +28,7 @@ const (
 
 var proxyLogger *sypl.Sypl
 
-// Options definition.
+// Options for logging .
 type Options struct {
 	FileLevel string `validate:"required,gte=3"`
 	FilePath  string `validate:"required"`

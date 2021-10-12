@@ -51,11 +51,7 @@ func TestSetup(t *testing.T) {
 			}
 
 			// Should do nothing.
-			l = Setup(&Options{
-				Level:     tt.args.lvl,
-				FileLevel: tt.args.fileLevel,
-				FilePath:  tt.args.filePath,
-			})
+			l = Get()
 			if l == nil {
 				t.Errorf("Setup() expect %v to don't be nil", l)
 			}
