@@ -7,19 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Roadmap
 
-- Abstract the underlying proxy implementation - currently bound to GoProxy.
-- Load config from Config file, and from env vars. Use viper for that.
-- Options
+- Abstract the underlying proxy implementation - currently bound to GoProxy
+- Load config from Config file, and from env vars. Use viper for that
+
+## [0.1.2] - 2021-10-13
+### Changed
+- Updated dependencies.
 
 ## [0.1.1] - 2021-10-4
-
 ### Added
-
-- Integrated PAC (Pacman)
-- More tests
-- Added benchmark
+- Integrated PAC (Pacman).
+- More tests.
+- Added benchmark.
 
 ## [0.1.0] - 2021-09-21
+### Added
+- [x] Ability to proxy connections.
+- [x] Ability to protect local proxy with basic auth.
+- [x] Ability to forward connections to a parent proxy.
+- [x] Ability to forward connections to a parent proxy protected with basic auth.
 
 ### Checklist
 
@@ -66,10 +72,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - [x] Output to `stdout`
   - [x] Output to `stderr`
   - [x] Output to file
-
-### Added
-
-- [x] Ability to proxy connections
-- [x] Ability to protect local proxy with basic auth
-- [x] Ability to forward connections to a parent proxy
-- [x] Ability to forward connections to a parent proxy protected with basic auth
