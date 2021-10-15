@@ -66,8 +66,6 @@ github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSs
 github.com/dlclark/regexp2 v1.4.1-0.20201116162257-a2a8dda75c91 h1:Izz0+t1Z5nI16/II7vuEo/nHjodOg0p7+OiDpjX5t1E=
 github.com/dlclark/regexp2 v1.4.1-0.20201116162257-a2a8dda75c91/go.mod h1:2pZnwuY/m+8K6iRw6wQdMtk+rH5tNGR1i55kozfMjCc=
 github.com/dop251/goja v0.0.0-20211006122547-7efcb634c641/go.mod h1:R9ET47fwRVRPZnOGvHxxhuZcbrMCuiqOz3Rlrh4KSnk=
-github.com/dop251/goja v0.0.0-20211010160034-ce3fee827ad0 h1:MF4b1ty2XKxUcCgEOMAGoHsgQJgrpgghtmR/2vW8Meg=
-github.com/dop251/goja v0.0.0-20211010160034-ce3fee827ad0/go.mod h1:R9ET47fwRVRPZnOGvHxxhuZcbrMCuiqOz3Rlrh4KSnk=
 github.com/dop251/goja v0.0.0-20211011172007-d99e4b8cbf48 h1:iZOop7pqsg+56twTopWgwCGxdB5SI2yDO8Ti7eTRliQ=
 github.com/dop251/goja v0.0.0-20211011172007-d99e4b8cbf48/go.mod h1:R9ET47fwRVRPZnOGvHxxhuZcbrMCuiqOz3Rlrh4KSnk=
 github.com/dop251/goja_nodejs v0.0.0-20210225215109-d91c329300e7/go.mod h1:hn7BA7c8pLvoGndExHudxTDKZ84Pyvv+90pbBjbTz0Y=
@@ -256,13 +254,10 @@ github.com/saucelabs/customerror v0.0.2 h1:vaSkRQ+yulL/vODN8CFAsqHrZaOo2zjEZbyTG
 github.com/saucelabs/customerror v0.0.2/go.mod h1:2yuCW9Zn8tdbHl1EwRP2waQ0aLXSyc9Ygr5ZDozH9KE=
 github.com/saucelabs/lumberjack/v3 v3.0.2 h1:d2xl3L4gtuwhFOnBEWTcTRxZ64wQWyFfUK8cadpe5NA=
 github.com/saucelabs/lumberjack/v3 v3.0.2/go.mod h1:YWvEpPjHrjk7jKET9K4Vphyk6RFlXFD1e/rP60Fr+JA=
-github.com/saucelabs/pacman v0.0.8 h1:iYgI+bVgNgmJDHSSc8VlG15cfspPi8AROhrA44d0ToY=
-github.com/saucelabs/pacman v0.0.8/go.mod h1:Ozb8Nq69vgHbPH6j0fkgd+Ww8e7KCv8mKiNHi6rhyns=
 github.com/saucelabs/pacman v0.0.9 h1:9L9Cdb1NMztHDS7gA0WCQPZMvcI9dBg9K2ggm2+RHvc=
 github.com/saucelabs/pacman v0.0.9/go.mod h1:y1PFcZtZpyhyHDJtkXFDyv2qD58HjAyDEo4uumP+7zA=
 github.com/saucelabs/randomness v0.0.2 h1:PktaJ7+9/ZK4wFfDQh06jSUgvLeMPLINwlYFXAgsCLM=
 github.com/saucelabs/randomness v0.0.2/go.mod h1:7G1I9BSE1Tw1/Q8hx5lmLV57Rda0CCXm8BRH/FiWYEw=
-github.com/saucelabs/sypl v1.5.3 h1:6/aN5G8g8hUwUxoHNgZ3FpRW5KjopZvsGVPfLz5j1WQ=
 github.com/saucelabs/sypl v1.5.3/go.mod h1:ubSLpo9I9awtabutiS6Npjof7s/km+HJ/9aOOPClMW0=
 github.com/saucelabs/sypl v1.5.4 h1:LEIoFMuCcaScBWfZTjyoTpFk6HJIz6m/jSi37ELUHyc=
 github.com/saucelabs/sypl v1.5.4/go.mod h1:ubSLpo9I9awtabutiS6Npjof7s/km+HJ/9aOOPClMW0=
@@ -457,8 +452,6 @@ golang.org/x/sys v0.0.0-20210615035016-665e8c7367d1/go.mod h1:oPkhp1MJrh7nUepCBc
 golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/sys v0.0.0-20210806184541-e5e7981a1069/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/sys v0.0.0-20210927094055-39ccf1dd6fa6/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
-golang.org/x/sys v0.0.0-20211007075335-d3039528d8ac h1:oN6lz7iLW/YC7un8pq+9bOLyXrprv2+DKfkJY+2LJJw=
-golang.org/x/sys v0.0.0-20211007075335-d3039528d8ac/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/sys v0.0.0-20211013075003-97ac67df715c h1:taxlMj0D/1sOAuv/CbSD+MMDof2vbyPTqz5FNYKpXt8=
 golang.org/x/sys v0.0.0-20211013075003-97ac67df715c/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/term v0.0.0-20201126162022-7de9c90e9dd1/go.mod h1:bj7SfCRtBDWHUb9snDiAeCFNEtKQo2Wmx5Cou7ajbmo=

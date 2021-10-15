@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Abstract the underlying proxy implementation - currently bound to GoProxy
 - Load config from Config file, and from env vars. Use viper for that
 
+## [0.1.3] - 2021-10-15
+### Added
+- Ability to route `localhost`/`127.0.0.1` requests thru any upstream proxy - if any.
+
 ## [0.1.2] - 2021-10-13
 ### Changed
 - Updated dependencies.

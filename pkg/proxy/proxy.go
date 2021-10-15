@@ -5,10 +5,12 @@
 package proxy
 
 import (
+	"crypto/tls"
 	"encoding/base64"
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/elazarl/goproxy"
 	"github.com/elazarl/goproxy/ext/auth"
@@ -17,10 +19,17 @@ import (
 	"github.com/saucelabs/forwarder/internal/logger"
 	"github.com/saucelabs/forwarder/internal/pac"
 	"github.com/saucelabs/forwarder/internal/validation"
-	"github.com/saucelabs/sypl"
 	"github.com/saucelabs/sypl/fields"
 	"github.com/saucelabs/sypl/level"
 	"github.com/saucelabs/sypl/options"
+)
+
+type Mode string
+
+const (
+	Direct   Mode = "DIRECT"
+	Upstream Mode = "Upstream"
+	PAC      Mode = "PAC"
 )
 
 var (
@@ -36,45 +45,174 @@ var (
 // Type aliasing.
 type LoggingOptions = logger.Options
 
-// Proxy connections. Proxy can be protected with basic auth. It can also
-// forward connections to a parent proxy, and authorize connections against
-// that.
+// Options definition.
+type Options struct {
+	*LoggingOptions
+
+	// ProxyLocalhost if `true`, requests to `localhost`/`127.0.0.1` will be
+	// forwarded to any upstream - if set.
+	ProxyLocalhost bool
+}
+
+// Proxy definition. Proxy can be protected, or not. It can forward connections
+// to an upstream proxy protected, or not. The upstream proxy can be
+// automatically setup via PAC. PAC content can be retrieved from multiple
+// sources, e.g.: a HTTP server, also, protected or not.
+//
+// Protection means basic auth protection.
 //
 // TODO: Add name to `Proxy`.
 type Proxy struct {
-	// URI:
+	// LocalProxyURI is local proxy URI:
 	// - Known schemes: http, https, socks, socks5, or quic
 	// - Some hostname (x.io - min 4 chars) or IP
 	// - Port in a valid range: 80 - 65535.
 	LocalProxyURI string `json:"uri" validate:"required,proxyURI"`
 
-	parsedLocalProxyURI *url.URL
-
-	// UpstreamProxyURI:
+	// UpstreamProxyURI is the upstream proxy URI:
 	// - Known schemes: http, https, socks, socks5, or quic
 	// - Some hostname (x.io - min 4 chars) or IP
 	// - Port in a valid range: 80 - 65535.
 	UpstreamProxyURI string `json:"upstream_proxy_uri" validate:"omitempty,proxyURI"`
 
-	parsedUpstreamProxyURI *url.URL
-
-	// PACURI:
+	// PACURI is PAC URI:
 	// - Known schemes: http, https, socks, socks5, or quic
 	// - Some hostname (x.io - min 4 chars) or IP
 	// - Port in a valid range: 80 - 65535.
 	PACURI string `json:"pac_uri" validate:"omitempty,gte=6"`
 
+	// Options to setup proxy.
+	*Options
+
+	// Mode the Proxy is running.
+	Mode Mode
+
+	// Parsed local proxy URI.
+	parsedLocalProxyURI *url.URL
+
+	// Parsed upstream proxy URI.
+	parsedUpstreamProxyURI *url.URL
+
 	// PAC parser implementation.
 	pacParser *pac.Parser
+
+	// Credentials for proxies specified in PAC content.
+	pacProxiesCredentials []string
 
 	// Underlying proxy implementation.
 	proxy *goproxy.ProxyHttpServer
 }
 
+// Sets the `Proxy-Authorization` header based on `uri` user info.
+func setProxyBasicAuthHeader(uri *url.URL, req *http.Request) {
+	encodedCredential := base64.
+		StdEncoding.
+		EncodeToString([]byte(uri.User.String()))
+
+	req.Header.Set(
+		"Proxy-Authorization",
+		fmt.Sprintf("Basic %s", encodedCredential),
+	)
+
+	logger.Get().Debuglnf(
+		"Proxy-Authorization header set with %s:*** for url %s",
+		uri.User.Username(),
+		req.URL.String(),
+	)
+}
+
+// Removes any upstream proxy settings.
+//nolint:gosec
+func resetUpstreamSettings(ctx *goproxy.ProxyCtx) {
+	ctx.Proxy.ConnectDial = nil
+	ctx.Proxy.Tr = &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, Proxy: nil}
+}
+
+// Returns `true` if should NOT proxy connections to any upstream proxy.
+func (p *Proxy) shouldNotProxyLocalhost(ctx *goproxy.ProxyCtx) bool {
+	if (strings.Contains(ctx.Req.URL.Hostname(), "127.0.0.1") ||
+		strings.Contains(ctx.Req.URL.Hostname(), "localhost")) &&
+		!p.ProxyLocalhost {
+		resetUpstreamSettings(ctx)
+
+		return true
+	}
+
+	return false
+}
+
+// setupUpstreamProxyConnection forwards connections to an upstream proxy.
+func setupUpstreamProxyConnection(ctx *goproxy.ProxyCtx, uri *url.URL) {
+	ctx.Proxy.Tr.Proxy = http.ProxyURL(uri)
+
+	var connectReqHandler func(req *http.Request)
+
+	if uri.User.Username() != "" {
+		connectReqHandler = func(req *http.Request) {
+			logger.Get().Traceln("Setting basic auth header from connection handler to parent proxy.")
+
+			setProxyBasicAuthHeader(uri, req)
+		}
+	}
+
+	ctx.Proxy.ConnectDial = ctx.Proxy.NewConnectDialToProxyWithHandler(uri.String(), connectReqHandler)
+
+	logger.Get().Debuglnf("Setup up forwarding connections to %s", uri.Redacted())
+}
+
+// setupUpstreamProxyConnection dynamically forwards connections to an upstream
+// proxy setup via PAC.
+func setupPACUpstreamProxyConnection(p *Proxy, ctx *goproxy.ProxyCtx) error {
+	urlToFindProxyFor := ctx.Req.URL.String()
+
+	logger.Get().Debuglnf("Finding proxy for %s", urlToFindProxyFor)
+
+	pacProxies, err := p.pacParser.Find(urlToFindProxyFor)
+	if err != nil {
+		return err
+	}
+
+	// Should only do something if there's any proxy
+	if len(pacProxies) > 0 {
+		// TODO: Should find the best proxy from a list of possible proxies?
+		pacProxy := pacProxies[0]
+		pacProxyURI := pacProxy.GetURI()
+
+		// Should only do something if there's a proxy for the given URL, not
+		// `DIRECT`.
+		if pacProxyURI != nil {
+			setupUpstreamProxyConnection(ctx, pacProxyURI)
+		}
+	} else {
+		logger.Get().Debugln("Found no proxy for", urlToFindProxyFor)
+	}
+
+	return nil
+}
+
+// DRY on handler's code.
+// nolint:exhaustive
+func (p *Proxy) setupHandlers(ctx *goproxy.ProxyCtx) error {
+	if p.shouldNotProxyLocalhost(ctx) {
+		return nil
+	}
+
+	switch p.Mode {
+	case Upstream:
+		setupUpstreamProxyConnection(ctx, p.parsedUpstreamProxyURI)
+	case PAC:
+		if err := setupPACUpstreamProxyConnection(p, ctx); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // setupBasicAuth protects proxy with basic auth.
 func (p *Proxy) setupBasicAuth(uri *url.URL) error {
 	// Should be a valid credential.
-	// TODO: Add to Proxy.
+	// TODO: Use URI instead of credential.
 	c, err := credential.NewBasicAuthFromText(uri.User.String())
 	if err != nil {
 		return err
@@ -96,87 +234,6 @@ func (p *Proxy) setupBasicAuth(uri *url.URL) error {
 	logger.Get().Debuglnf("Basic auth setup for proxy @ %s", p.parsedLocalProxyURI.Redacted())
 
 	return nil
-}
-
-// setupUpstreamProxyConnection forwards connections to an upstream proxy.
-func (p *Proxy) setupUpstreamProxyConnection(uri *url.URL) {
-	authRequired := false
-
-	p.proxy.Tr.Proxy = func(req *http.Request) (*url.URL, error) {
-		return uri, nil
-	}
-
-	var connectReqHandler func(req *http.Request)
-
-	if uri.User.Username() != "" {
-		authRequired = true
-
-		connectReqHandler = func(req *http.Request) {
-			logger.Get().Traceln("Setting basic auth header from connection handler to parent proxy.")
-
-			p.setProxyBasicAuthHeader(uri, req)
-		}
-	}
-
-	p.proxy.ConnectDial = p.proxy.NewConnectDialToProxyWithHandler(uri.String(), connectReqHandler)
-
-	p.proxy.OnRequest().DoFunc(
-		func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
-			if authRequired {
-				logger.Get().Traceln("Setting basic auth header from OnRequest handler to parent proxy.")
-
-				p.setProxyBasicAuthHeader(uri, req)
-			}
-
-			return req, nil
-		},
-	)
-
-	logger.Get().Debuglnf("Setup up forwarding connections to %s", uri.Redacted())
-}
-
-func (p *Proxy) pacHandler(l *sypl.Sypl, req *http.Request) (*http.Request, *http.Response) {
-	urlToFindProxyFor := req.URL.String()
-
-	l.Debuglnf("Finding proxy for %s", urlToFindProxyFor)
-
-	pacProxies, err := p.pacParser.Find(urlToFindProxyFor)
-	if err != nil {
-		// TODO: Log and move on, or log and write error to req?
-		return req, nil
-	}
-
-	// Should only do something if there's any proxy
-	if len(pacProxies) > 0 {
-		// TODO: Should find the best proxy from a list of possible
-		// proxies?
-		pacProxy := pacProxies[0]
-		pacProxyURI := pacProxy.GetURI()
-
-		// Should only do something if there's a proxy for the given
-		// URL, not `DIRECT`.
-		if pacProxyURI != nil {
-			p.setupUpstreamProxyConnection(pacProxyURI)
-		}
-	} else {
-		l.Debugln("Found no proxy for", urlToFindProxyFor)
-	}
-
-	return req, nil
-}
-
-// Sets proxy basic auth header.
-func (p *Proxy) setProxyBasicAuthHeader(uri *url.URL, req *http.Request) {
-	encodedCredential := base64.
-		StdEncoding.
-		EncodeToString([]byte(uri.User.String()))
-
-	req.Header.Set(
-		"Proxy-Authorization",
-		fmt.Sprintf("Basic %s", encodedCredential),
-	)
-
-	logger.Get().Debugln("Proxy-Authorization header set")
 }
 
 // Run starts the proxy. If it fails to start, it will exit with fatal.
@@ -201,25 +258,33 @@ func New(
 	localProxyURI string,
 	upstreamProxyURI string,
 	pacURI string, pacProxiesCredentials []string,
-	loggingOptions *LoggingOptions,
+	options *Options,
 ) (*Proxy, error) {
 	// Components setup.
 	validation.Setup()
 
-	logger.Setup(loggingOptions)
+	logger.Setup(options.LoggingOptions)
 
 	//////
 	// Proxy setup.
 	//////
 
 	p := &Proxy{
-		LocalProxyURI:    localProxyURI,
-		UpstreamProxyURI: upstreamProxyURI,
-		PACURI:           pacURI,
+		LocalProxyURI:         localProxyURI,
+		UpstreamProxyURI:      upstreamProxyURI,
+		PACURI:                pacURI,
+		pacProxiesCredentials: pacProxiesCredentials,
+		Mode:                  Direct,
+		Options:               options,
 	}
 
 	if err := validation.Get().Struct(p); err != nil {
 		return nil, customerror.Wrap(ErrInvalidProxyParams, err)
+	}
+
+	// Can't have parent proxy configuration, and PAC at the same time.
+	if p.UpstreamProxyURI != "" && p.PACURI != "" {
+		return nil, ErrInvalidOrParentOrPac
 	}
 
 	//////
@@ -230,7 +295,7 @@ func New(
 	// future to allow easy swapping.
 	proxy := goproxy.NewProxyHttpServer()
 
-	if loggingOptions != nil && level.MustFromString(loggingOptions.Level) > level.Info {
+	if p.Options.LoggingOptions != nil && level.MustFromString(p.Options.LoggingOptions.Level) > level.Info {
 		// TODO: Wrap logger, and implement goproxy's `Printf` interface.
 		proxy.Verbose = true
 	}
@@ -262,24 +327,9 @@ func New(
 
 	p.parsedLocalProxyURI = parsedLocalProxyURI
 
-	// Local proxy authentication.
-	if parsedLocalProxyURI.User.Username() != "" {
-		if err := p.setupBasicAuth(parsedLocalProxyURI); err != nil {
-			return nil, err
-		}
-	}
+	if p.UpstreamProxyURI != "" {
+		p.Mode = Upstream
 
-	//////
-	// Upstream proxy setup.
-	//////
-
-	// Can't have parent proxy configuration, and PAC at the same time.
-	if upstreamProxyURI != "" && pacURI != "" {
-		return nil, ErrInvalidOrParentOrPac
-	}
-
-	// Should be able to forward connections to an upstream proxy.
-	if upstreamProxyURI != "" {
 		parsedUpstreamProxyURI, err := url.ParseRequestURI(p.UpstreamProxyURI)
 		if err != nil {
 			return nil, customerror.Wrap(ErrInvalidUpstreamProxyURI, err)
@@ -291,25 +341,53 @@ func New(
 		}
 
 		p.parsedUpstreamProxyURI = parsedUpstreamProxyURI
+	}
 
-		p.setupUpstreamProxyConnection(parsedUpstreamProxyURI)
-	} else if pacURI != "" {
+	if p.PACURI != "" {
+		p.Mode = PAC
+
 		// `uri` doesn't need to be validated, this is already done by `pac.New`.
 		// Also, there's no need to wrap `err`, pac is powered by `customerror`.
-		pacParser, err := pac.New(pacURI, pacProxiesCredentials...)
+		pacParser, err := pac.New(p.PACURI, p.pacProxiesCredentials...)
 		if err != nil {
 			return nil, err
 		}
 
 		p.pacParser = pacParser
+	}
 
-		// Register handler which will call `Find` for every request.
-		p.proxy.OnRequest().DoFunc(
-			func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
-				l := logger.Get().New("PAC request handler")
+	// HTTPS handler.
+	p.proxy.OnRequest().HandleConnectFunc(func(host string, ctx *goproxy.ProxyCtx) (*goproxy.ConnectAction, string) {
+		logger.Get().Debugln("Request handled by the HTTPS handler")
 
-				return p.pacHandler(l, req)
-			})
+		if err := p.setupHandlers(ctx); err != nil {
+			return goproxy.RejectConnect, host
+		}
+
+		return nil, host
+	})
+
+	// HTTP handler.
+	p.proxy.OnRequest().DoFunc(func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
+		logger.Get().Debugln("Request handled by the HTTP handler")
+
+		if err := p.setupHandlers(ctx); err != nil {
+			return nil, goproxy.NewResponse(
+				ctx.Req,
+				goproxy.ContentTypeText,
+				http.StatusInternalServerError,
+				err.Error(),
+			)
+		}
+
+		return ctx.Req, nil
+	})
+
+	// Local proxy authentication.
+	if parsedLocalProxyURI.User.Username() != "" {
+		if err := p.setupBasicAuth(parsedLocalProxyURI); err != nil {
+			return nil, err
+		}
 	}
 
 	return p, nil

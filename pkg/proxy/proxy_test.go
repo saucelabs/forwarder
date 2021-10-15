@@ -119,7 +119,7 @@ func executeRequest(client *http.Client, uri string) (int, string, error) {
 		return 0, "", fmt.Errorf("Failed to parse URI: %w", err)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
@@ -157,12 +157,6 @@ func executeRequest(client *http.Client, uri string) (int, string, error) {
 //////
 
 func TestNew(t *testing.T) {
-	//////
-	// Setup demo logger.
-	//////
-
-	l := logger.Setup(loggingOptions)
-
 	//////
 	// Randomness automates port allocation, ensuring no collision happens
 	// between tests, and examples.
@@ -308,7 +302,7 @@ func TestNew(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Re-set the value allowing per-test case setting.
-			l.SetMaxLevel(level.MustFromString(tt.args.loggingOptions.Level))
+			l := logger.Setup(tt.args.loggingOptions)
 
 			//////
 			// Target/end server.
@@ -370,7 +364,9 @@ func TestNew(t *testing.T) {
 				tt.args.pacProxiesCredentials,
 
 				// Logging settings.
-				loggingOptions,
+				&Options{
+					LoggingOptions: loggingOptions,
+				},
 			)
 			if err != nil {
 				if !tt.wantErr {
@@ -412,7 +408,9 @@ func TestNew(t *testing.T) {
 					nil,
 
 					// Logging settings.
-					loggingOptions,
+					&Options{
+						LoggingOptions: loggingOptions,
+					},
 				)
 				if err != nil {
 					if !tt.wantErr {

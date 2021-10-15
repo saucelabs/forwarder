@@ -132,7 +132,9 @@ func ExampleNew() {
 		[]string{upstreamProxyURI.String()},
 
 		// Logging settings.
-		loggingOptions,
+		&Options{
+			LoggingOptions: loggingOptions,
+		},
 	)
 	if err != nil {
 		log.Fatalln("Failed to create proxy.", err)
@@ -161,7 +163,9 @@ func ExampleNew() {
 		nil,
 
 		// Logging settings.
-		loggingOptions,
+		&Options{
+			LoggingOptions: loggingOptions,
+		},
 	)
 	if err != nil {
 		log.Fatalln("Failed to create upstream proxy.", err)

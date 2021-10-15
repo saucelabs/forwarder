@@ -16,6 +16,8 @@ var (
 
 	pacProxiesCredentials []string
 	pacURI                string
+
+	proxyLocalhost bool
 )
 
 // runCmd represents the run command.
@@ -75,13 +77,27 @@ Note: Can't setup upstream, and PAC at the same time.
   $ forwarder run \
     -l "http://user:pwd@localhost:8085" \
     -p "http://user2:pwd2@localhost:8090" \
-	-d "http://user3:pwd4@localhost:8091,http://user4:pwd5@localhost:8092"
+	  -d "http://user3:pwd4@localhost:8091,http://user4:pwd5@localhost:8092"
+
+  Start a protected proxy, forwarding connection to an upstream proxy, setup via
+  PAC - protected server running at http://user2:pwd2@localhost:8090, specifying
+  credential for protected proxies specified in PAC, also forwarding "localhost"
+  requests thru the upstream proxy:
+  $ forwarder run \
+    -t \
+    -l "http://user:pwd@localhost:8085" \
+    -p "http://user2:pwd2@localhost:8090" \
+	  -d "http://user3:pwd4@localhost:8091,http://user4:pwd5@localhost:8092"
 	`,
 	Run: func(cmd *cobra.Command, args []string) {
-		p, err := proxy.New(localProxyURI, upstreamProxyURI, pacURI, pacProxiesCredentials, &proxy.LoggingOptions{
-			Level:     logLevel,
-			FileLevel: fileLevel,
-			FilePath:  filePath,
+		p, err := proxy.New(localProxyURI, upstreamProxyURI, pacURI, pacProxiesCredentials, &proxy.Options{
+			LoggingOptions: &proxy.LoggingOptions{
+				Level:     logLevel,
+				FileLevel: fileLevel,
+				FilePath:  filePath,
+			},
+
+			ProxyLocalhost: proxyLocalhost,
 		})
 		if err != nil {
 			cliLogger.Fatalln(customerror.NewFailedToError("run", "", err))
@@ -98,4 +114,5 @@ func init() {
 	runCmd.Flags().StringVarP(&upstreamProxyURI, "upstream-proxy-uri", "u", "", "sets upstream proxy URI")
 	runCmd.Flags().StringVarP(&pacURI, "pac-uri", "p", "", "sets URI to PAC content, or directly, the PAC content")
 	runCmd.Flags().StringSliceVarP(&pacProxiesCredentials, "pac-proxies-credentials", "d", nil, "sets PAC proxies credentials using standard URI format")
+	runCmd.Flags().BoolVarP(&proxyLocalhost, "proxy-localhost", "t", false, "if set, will proxy localhost requests to an upstream proxy - if any")
 }
