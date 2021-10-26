@@ -17,7 +17,8 @@ var (
 	pacProxiesCredentials []string
 	pacURI                string
 
-	proxyLocalhost bool
+	automaticallyRetryPort bool
+	proxyLocalhost         bool
 )
 
 // runCmd represents the run command.
@@ -97,7 +98,8 @@ Note: Can't setup upstream, and PAC at the same time.
 				FilePath:  filePath,
 			},
 
-			ProxyLocalhost: proxyLocalhost,
+			ProxyLocalhost:         proxyLocalhost,
+			AutomaticallyRetryPort: automaticallyRetryPort,
 		})
 		if err != nil {
 			cliLogger.Fatalln(customerror.NewFailedToError("run", "", err))
@@ -115,4 +117,5 @@ func init() {
 	runCmd.Flags().StringVarP(&pacURI, "pac-uri", "p", "", "sets URI to PAC content, or directly, the PAC content")
 	runCmd.Flags().StringSliceVarP(&pacProxiesCredentials, "pac-proxies-credentials", "d", nil, "sets PAC proxies credentials using standard URI format")
 	runCmd.Flags().BoolVarP(&proxyLocalhost, "proxy-localhost", "t", false, "if set, will proxy localhost requests to an upstream proxy - if any")
+	runCmd.Flags().BoolVarP(&automaticallyRetryPort, "find-port", "r", false, "if set, and the specified local proxy port is in-use, it will find, and use an available one")
 }

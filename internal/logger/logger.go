@@ -35,7 +35,7 @@ type Options struct {
 	Level     string `validate:"required,gte=3"`
 }
 
-// Default options values for empty fields.
+// Default sets `Options` default values.
 func (o *Options) Default() {
 	if o.FileLevel == "" {
 		o.FileLevel = infoLevel

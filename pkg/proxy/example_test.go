@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 
@@ -18,7 +19,7 @@ import (
 	"github.com/saucelabs/sypl/level"
 )
 
-// Complete, and complex demo.
+// Complete, and complex example.
 //
 // client -> protected local proxy -> protected pac server - connection setup -> protected upstream proxy -> protected target.
 func ExampleNew() {
@@ -202,4 +203,61 @@ func ExampleNew() {
 	// output:
 	// 200
 	// body
+}
+
+// Automatically retry port example.
+func ExampleNew_automaticallyRetryPort() {
+	if os.Getenv("FORWARDER_TEST_MODE") != "integration" {
+		fmt.Println("true")
+
+		return
+	}
+
+	//////
+	// Randomness automates port allocation, ensuring no collision happens.
+	//////
+
+	r, err := randomness.New(55000, 65000, 100, true)
+	if err != nil {
+		log.Fatalln("Failed to create randomness.", err)
+	}
+
+	randomPort := r.MustGenerate()
+
+	errored := false
+
+	proxy1, err := New(fmt.Sprintf("http://0.0.0.0:%d", randomPort), "", "", nil, &Options{
+		LoggingOptions: &LoggingOptions{
+			Level:     "none",
+			FileLevel: "none",
+		},
+	})
+	if err != nil {
+		errored = true
+	}
+
+	go proxy1.Run()
+
+	time.Sleep(1 * time.Second)
+
+	proxy2, err := New(fmt.Sprintf("http://0.0.0.0:%d", randomPort), "", "", nil, &Options{
+		AutomaticallyRetryPort: true,
+
+		LoggingOptions: &LoggingOptions{
+			Level:     "none",
+			FileLevel: "none",
+		},
+	})
+	if err != nil {
+		errored = true
+	}
+
+	go proxy2.Run()
+
+	time.Sleep(1 * time.Second)
+
+	fmt.Println(errored == false)
+
+	// output:
+	// true
 }

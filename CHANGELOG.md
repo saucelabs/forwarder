@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Abstract the underlying proxy implementation - currently bound to GoProxy
 - Load config from Config file, and from env vars. Use viper for that
+- Automatically alocates a random port, if the specified one is in-use
+
+## [0.1.4] - 2021-10-19
+### Added
+- Added valid proxy schemes enum.
+- Added the ability to check if the specified local proxy port is available. If not, it'll automatically allocate a set of new ones and test each until it finds an available one. If the pool is exhausted, it fails.
 
 ## [0.1.3] - 2021-10-15
 ### Added

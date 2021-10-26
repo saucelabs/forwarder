@@ -8,10 +8,14 @@ import (
 	"crypto/tls"
 	"encoding/base64"
 	"fmt"
+	"net"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
+	"time"
 
+	"github.com/eapache/go-resiliency/retrier"
 	"github.com/elazarl/goproxy"
 	"github.com/elazarl/goproxy/ext/auth"
 	"github.com/saucelabs/customerror"
@@ -19,11 +23,18 @@ import (
 	"github.com/saucelabs/forwarder/internal/logger"
 	"github.com/saucelabs/forwarder/internal/pac"
 	"github.com/saucelabs/forwarder/internal/validation"
+	"github.com/saucelabs/randomness"
 	"github.com/saucelabs/sypl/fields"
 	"github.com/saucelabs/sypl/level"
 	"github.com/saucelabs/sypl/options"
 )
 
+const (
+	MaxRetry        = 3
+	ConstantBackoff = 300
+)
+
+// Possible ways to run Forwarder.
 type Mode string
 
 const (
@@ -32,7 +43,19 @@ const (
 	PAC      Mode = "PAC"
 )
 
+// Valid proxy schemes.
+type Schemes string
+
+const (
+	HTTP   Schemes = "http"
+	HTTPS  Schemes = "https"
+	SOCKS5 Schemes = "socks5"
+	SOCKS  Schemes = "socks"
+	QUIC   Schemes = "quic"
+)
+
 var (
+	ErrFailedToAllocatePort    = customerror.New("No available port to use", "", http.StatusInternalServerError, nil)
 	ErrFailedToStartProxy      = customerror.NewFailedToError("start proxy", "", nil)
 	ErrInvalidLocalProxyURI    = customerror.NewInvalidError("local proxy URI", "", nil)
 	ErrInvalidOrParentOrPac    = customerror.NewInvalidError("params. Can't set upstream proxy, and PAC at the same time", "", nil)
@@ -42,16 +65,63 @@ var (
 	ErrInvalidUpstreamProxyURI = customerror.NewInvalidError("upstream proxy URI", "", nil)
 )
 
-// Type aliasing.
+// LoggingOptions defines logging options.
 type LoggingOptions = logger.Options
+
+// RetryPortOptions defines port's retry options.
+type RetryPortOptions struct {
+	// MaxRange defines the max port number. Default value is `65535`.
+	MaxRange int
+
+	// MaxRetry defines how many times to retry, until fail.
+	MaxRetry int
+}
+
+// Default sets `RetryPortOptions` default values.
+func (r *RetryPortOptions) Default() *RetryPortOptions {
+	if r == nil {
+		r = &RetryPortOptions{}
+	}
+
+	if r.MaxRange < 80 || r.MaxRange > 65535 {
+		r.MaxRange = 65535
+	}
+
+	if r.MaxRetry == 0 {
+		r.MaxRetry = 3
+	}
+
+	return r
+}
 
 // Options definition.
 type Options struct {
 	*LoggingOptions
 
+	*RetryPortOptions
+
+	// AutomaticallyRetryPort if `true`, and the specified port is in-use, will
+	// try to automatically allocate a free port.
+	AutomaticallyRetryPort bool
+
 	// ProxyLocalhost if `true`, requests to `localhost`/`127.0.0.1` will be
 	// forwarded to any upstream - if set.
 	ProxyLocalhost bool
+}
+
+// Default sets `Options` default values.
+func (o *Options) Default() {
+	loggingOptions := &LoggingOptions{}
+	loggingOptions.Default()
+
+	retryPortOptions := &RetryPortOptions{}
+	retryPortOptions.Default()
+
+	o.AutomaticallyRetryPort = false
+	o.ProxyLocalhost = false
+
+	o.LoggingOptions = loggingOptions
+	o.RetryPortOptions = retryPortOptions
 }
 
 // Proxy definition. Proxy can be protected, or not. It can forward connections
@@ -236,14 +306,96 @@ func (p *Proxy) setupBasicAuth(uri *url.URL) error {
 	return nil
 }
 
+// Verifies if the port in `address` is in-use.
+func (p *Proxy) isPortInUse(host string) bool {
+	ln, err := net.Listen("tcp", host)
+	if err != nil {
+		return true
+	}
+
+	if ln != nil {
+		ln.Close()
+	}
+
+	return false
+}
+
+// Finds available port.
+func (p *Proxy) findAvailablePort(uri *url.URL) error {
+	portInt, err := strconv.Atoi(uri.Port())
+	if err != nil {
+		return err
+	}
+
+	possiblePorts := []int64{int64(portInt)}
+
+	r, err := randomness.New(portInt, p.Options.RetryPortOptions.MaxRange, MaxRetry, true)
+	if err != nil {
+		return err
+	}
+
+	// N times to retry option
+	randomPorts, err := r.GenerateMany(p.Options.RetryPortOptions.MaxRetry)
+	if err != nil {
+		return err
+	}
+
+	possiblePorts = append(possiblePorts, randomPorts...)
+
+	availablePorts := []int64{}
+
+	// Find some available port.
+	for _, port := range possiblePorts {
+		isPortInUse := p.isPortInUse(net.JoinHostPort(uri.Hostname(), fmt.Sprintf("%d", port)))
+
+		logger.Get().Tracelnf("Is %d available? %v", port, !isPortInUse)
+
+		if !isPortInUse {
+			availablePorts = append(availablePorts, port)
+
+			logger.Get().Tracelnf("Added %d to available ports", port)
+		}
+	}
+
+	// Any available port?
+	if len(availablePorts) < 1 {
+		return ErrFailedToAllocatePort
+	}
+
+	// Updates data struct.
+	uri.Host = net.JoinHostPort(uri.Hostname(), fmt.Sprintf("%d", availablePorts[0]))
+
+	p.parsedLocalProxyURI = uri
+
+	logger.Get().PrintlnfWithOptions(&options.Options{
+		Fields: fields.Fields{
+			"availablePorts": availablePorts,
+		},
+	}, level.Debug, "Updated URI with new available port: %s", uri.String())
+
+	return nil
+}
+
 // Run starts the proxy. If it fails to start, it will exit with fatal.
 func (p *Proxy) Run() {
-	localProxyHost := p.parsedLocalProxyURI.Host
-
-	logger.Get().Infolnf("Proxy started at %s", localProxyHost)
-
 	// TODO: Allows to pass an error channel.
-	if err := http.ListenAndServe(localProxyHost, p.proxy); err != nil {
+	if p.Options.AutomaticallyRetryPort && p.isPortInUse(p.parsedLocalProxyURI.Host) {
+		r := retrier.New(retrier.ConstantBackoff(
+			p.Options.RetryPortOptions.MaxRetry,
+			ConstantBackoff*time.Millisecond,
+		), nil)
+
+		err := r.Run(func() error {
+			return p.findAvailablePort(p.parsedLocalProxyURI)
+		})
+		if err != nil {
+			logger.Get().Fatalln(customerror.Wrap(ErrFailedToStartProxy, err))
+		}
+	}
+
+	logger.Get().Infolnf("Proxy to start at %s", p.parsedLocalProxyURI.Host)
+
+	if err := http.ListenAndServe(p.parsedLocalProxyURI.Host, p.proxy); err != nil {
 		logger.Get().Fatalln(customerror.Wrap(ErrFailedToStartProxy, err))
 	}
 }
@@ -260,14 +412,23 @@ func New(
 	pacURI string, pacProxiesCredentials []string,
 	options *Options,
 ) (*Proxy, error) {
-	// Components setup.
+	// Instantiate validator.
 	validation.Setup()
-
-	logger.Setup(options.LoggingOptions)
 
 	//////
 	// Proxy setup.
 	//////
+
+	finalOptions := &Options{}
+	finalOptions.Default()
+
+	if options == nil {
+		options = &Options{}
+	}
+
+	if err := deepCopy(options, finalOptions); err != nil {
+		return nil, err
+	}
 
 	p := &Proxy{
 		LocalProxyURI:         localProxyURI,
@@ -275,12 +436,14 @@ func New(
 		PACURI:                pacURI,
 		pacProxiesCredentials: pacProxiesCredentials,
 		Mode:                  Direct,
-		Options:               options,
+		Options:               finalOptions,
 	}
 
 	if err := validation.Get().Struct(p); err != nil {
 		return nil, customerror.Wrap(ErrInvalidProxyParams, err)
 	}
+
+	logger.Setup(finalOptions.LoggingOptions)
 
 	// Can't have parent proxy configuration, and PAC at the same time.
 	if p.UpstreamProxyURI != "" && p.PACURI != "" {
