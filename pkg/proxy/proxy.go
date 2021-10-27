@@ -44,14 +44,12 @@ const (
 )
 
 // Valid proxy schemes.
-type Schemes string
-
 const (
-	HTTP   Schemes = "http"
-	HTTPS  Schemes = "https"
-	SOCKS5 Schemes = "socks5"
-	SOCKS  Schemes = "socks"
-	QUIC   Schemes = "quic"
+	HTTP   = "http"
+	HTTPS  = "https"
+	SOCKS5 = "socks5"
+	SOCKS  = "socks"
+	QUIC   = "quic"
 )
 
 var (
