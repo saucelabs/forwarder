@@ -258,6 +258,8 @@ github.com/saucelabs/lumberjack/v3 v3.0.2 h1:d2xl3L4gtuwhFOnBEWTcTRxZ64wQWyFfUK8
 github.com/saucelabs/lumberjack/v3 v3.0.2/go.mod h1:YWvEpPjHrjk7jKET9K4Vphyk6RFlXFD1e/rP60Fr+JA=
 github.com/saucelabs/pacman v0.0.9 h1:9L9Cdb1NMztHDS7gA0WCQPZMvcI9dBg9K2ggm2+RHvc=
 github.com/saucelabs/pacman v0.0.9/go.mod h1:y1PFcZtZpyhyHDJtkXFDyv2qD58HjAyDEo4uumP+7zA=
+github.com/saucelabs/pacman v0.0.10 h1:akXS6m9KEADa5H8gMpPX4j9jI9Tzb78UO+oujxDUgvg=
+github.com/saucelabs/pacman v0.0.10/go.mod h1:y1PFcZtZpyhyHDJtkXFDyv2qD58HjAyDEo4uumP+7zA=
 github.com/saucelabs/randomness v0.0.3 h1:RENVsw3FCITvEGOLnnwLi7/7/sg/C8u+EUc1HwbjUY4=
 github.com/saucelabs/randomness v0.0.3/go.mod h1:7G1I9BSE1Tw1/Q8hx5lmLV57Rda0CCXm8BRH/FiWYEw=
 github.com/saucelabs/randomness v0.0.4 h1:zstiPWKOttu3l1lTCzDenG6QGshB8PvqUMNCLOXezUw=

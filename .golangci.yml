@@ -24,7 +24,7 @@ linters:
 # Settings for specific linters
 linters-settings:
   funlen:
-    lines: 150
+    lines: 175
     statements: 50
 
   nestif:

@@ -16,7 +16,7 @@ require (
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
 	github.com/saucelabs/customerror v0.0.2
-	github.com/saucelabs/pacman v0.0.9
+	github.com/saucelabs/pacman v0.0.10
 	github.com/saucelabs/randomness v0.0.4
 	github.com/saucelabs/sypl v1.5.4
 	github.com/spf13/pflag v1.0.5 // indirect

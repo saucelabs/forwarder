@@ -264,6 +264,8 @@ func setupPACUpstreamProxyConnection(p *Proxy, ctx *goproxy.ProxyCtx) error {
 // nolint:exhaustive
 func (p *Proxy) setupHandlers(ctx *goproxy.ProxyCtx) error {
 	if p.shouldNotProxyLocalhost(ctx) {
+		logger.Get().Tracelnf("ProxyLocalhost option disabled. Not proxifying request to %s", ctx.Req.URL.String())
+
 		return nil
 	}
 
@@ -524,6 +526,8 @@ func New(
 		logger.Get().Debugln("Request handled by the HTTPS handler")
 
 		if err := p.setupHandlers(ctx); err != nil {
+			logger.Get().Errorlnf("Failed to setup handler (HTTPS) for request %s. %+v", ctx.Req.URL.String(), err)
+
 			return goproxy.RejectConnect, host
 		}
 
@@ -535,6 +539,8 @@ func New(
 		logger.Get().Debugln("Request handled by the HTTP handler")
 
 		if err := p.setupHandlers(ctx); err != nil {
+			logger.Get().Errorlnf("Failed to setup handler (HTTP) for request %s. %+v", ctx.Req.URL.String(), err)
+
 			return nil, goproxy.NewResponse(
 				ctx.Req,
 				goproxy.ContentTypeText,
