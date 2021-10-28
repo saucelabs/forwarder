@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Load config from Config file, and from env vars. Use viper for that
 - Automatically alocates a random port, if the specified one is in-use
 
+## [0.1.7] - 2021-10-27
+### Added
+- Added more tests covering passing credentials via env var.
+
 ## [0.1.6] - 2021-10-27
 ### Changed
 - Valid proxy schemes enum are simple strings.

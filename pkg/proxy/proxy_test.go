@@ -35,6 +35,8 @@ const (
 	localProxyCredentialUsername    = "u123"
 	upstreamProxyCredentialPassword = "p456"
 	upstreamProxyCredentialUsername = "u456"
+	wrongCredentialPassword         = "wrongPassword"
+	wrongCredentialUsername         = "wrongUsername"
 
 	pacTemplate = `function FindProxyForURL(url, host) {
   if (
@@ -175,11 +177,15 @@ func TestNew(t *testing.T) {
 		loggingOptions        *LoggingOptions
 	}
 	tests := []struct {
-		name        string
-		args        args
-		wantPAC     bool
-		wantErr     bool
-		wantErrType error
+		name             string
+		args             args
+		preFunc          func()
+		postFunc         func()
+		preUpstreamFunc  func()
+		postUpstreamFunc func()
+		wantPAC          bool
+		wantErr          bool
+		wantErrType      error
 	}{
 		{
 			name: "Should work - local proxy",
@@ -232,16 +238,44 @@ func TestNew(t *testing.T) {
 				localProxyURI: URIBuilder(
 					defaultProxyHostname,
 					r.MustGenerate(),
-					localProxyCredentialUsername,
-					localProxyCredentialPassword,
+					wrongCredentialUsername,
+					wrongCredentialPassword,
 				),
 				upstreamProxyURI: URIBuilder(
 					defaultProxyHostname,
 					r.MustGenerate(),
-					upstreamProxyCredentialUsername,
-					upstreamProxyCredentialPassword,
+					wrongCredentialUsername,
+					wrongCredentialPassword,
 				),
 				loggingOptions: loggingOptions,
+			},
+			preFunc: func() {
+				// Local proxy.
+				os.Setenv("FORWARDER_LOCALPROXY_CREDENTIAL", url.UserPassword(
+					localProxyCredentialUsername,
+					localProxyCredentialPassword,
+				).String())
+
+				// Upstream proxy.
+				os.Setenv("FORWARDER_UPSTREAMPROXY_CREDENTIAL", url.UserPassword(
+					upstreamProxyCredentialUsername,
+					upstreamProxyCredentialPassword,
+				).String())
+			},
+			postFunc: func() {
+				os.Unsetenv("FORWARDER_LOCALPROXY_CREDENTIAL")
+
+				os.Unsetenv("FORWARDER_UPSTREAMPROXY_CREDENTIAL")
+			},
+			preUpstreamFunc: func() {
+				// Local proxy.
+				os.Setenv("FORWARDER_LOCALPROXY_CREDENTIAL", url.UserPassword(
+					upstreamProxyCredentialUsername,
+					upstreamProxyCredentialPassword,
+				).String())
+			},
+			postUpstreamFunc: func() {
+				os.Unsetenv("FORWARDER_LOCALPROXY_CREDENTIAL")
 			},
 			wantErr: false,
 		},
@@ -301,6 +335,10 @@ func TestNew(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			if tt.preFunc != nil {
+				tt.preFunc()
+			}
+
 			// Re-set the value allowing per-test case setting.
 			l := logger.Setup(tt.args.loggingOptions)
 
@@ -321,7 +359,7 @@ func TestNew(t *testing.T) {
 				targetServerURL = "https://httpbin.org/status/200"
 			}
 
-			l.Debuglnf("Target/end server started @ %s", targetServerURL)
+			l.Debuglnf("Target/end server @ %s", targetServerURL)
 
 			//////
 			// Set proxy URIs - if any.
@@ -384,6 +422,31 @@ func TestNew(t *testing.T) {
 				return
 			}
 
+			// Both local `localProxy.LocalProxyURI` and `localProxy.UpstreamProxyURI`
+			// changed, if `FORWARDER_LOCALPROXY_CREDENTIAL` or `FORWARDER_UPSTREAMPROXY_CREDENTIAL`
+			// were set. This updates test vars.
+			if localProxyURI != localProxy.LocalProxyURI {
+				localProxyURI = localProxy.LocalProxyURI
+
+				lPURI, err := url.ParseRequestURI(localProxyURI)
+				if err != nil {
+					t.Fatal("Failed to ParseRequestURI(localProxyURI)")
+				}
+
+				tt.args.localProxyURI = lPURI
+			}
+
+			if upstreamProxyURI != localProxy.UpstreamProxyURI {
+				upstreamProxyURI = localProxy.UpstreamProxyURI
+
+				lUURI, err := url.ParseRequestURI(upstreamProxyURI)
+				if err != nil {
+					t.Fatal("Failed to ParseRequestURI(upstreamProxyURI)")
+				}
+
+				tt.args.upstreamProxyURI = lUURI
+			}
+
 			go localProxy.Run()
 
 			// Give enough time to start, and be ready.
@@ -392,6 +455,10 @@ func TestNew(t *testing.T) {
 			//////
 			// Upstream Proxy.
 			//////
+
+			if tt.preUpstreamFunc != nil {
+				tt.preUpstreamFunc()
+			}
 
 			if upstreamProxyURI != "" {
 				upstreamProxy, err := New(
@@ -434,6 +501,10 @@ func TestNew(t *testing.T) {
 				time.Sleep(1 * time.Second)
 			}
 
+			if tt.postUpstreamFunc != nil {
+				tt.postUpstreamFunc()
+			}
+
 			//////
 			// Client.
 			//////
@@ -456,6 +527,10 @@ func TestNew(t *testing.T) {
 
 			if statusCode != http.StatusOK {
 				t.Fatal("Expected status code to be OK")
+			}
+
+			if tt.postFunc != nil {
+				tt.postFunc()
 			}
 		})
 	}

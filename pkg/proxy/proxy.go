@@ -217,7 +217,7 @@ func setupUpstreamProxyConnection(ctx *goproxy.ProxyCtx, uri *url.URL) {
 
 	if uri.User.Username() != "" {
 		connectReqHandler = func(req *http.Request) {
-			logger.Get().Traceln("Setting basic auth header from connection handler to parent proxy.")
+			logger.Get().Traceln("Setting basic auth header from connection handler to upstream proxy.")
 
 			setProxyBasicAuthHeader(uri, req)
 		}
@@ -445,7 +445,7 @@ func New(
 
 	logger.Setup(finalOptions.LoggingOptions)
 
-	// Can't have parent proxy configuration, and PAC at the same time.
+	// Can't have upstream proxy configuration, and PAC at the same time.
 	if p.UpstreamProxyURI != "" && p.PACURI != "" {
 		return nil, ErrInvalidOrParentOrPac
 	}
@@ -489,6 +489,7 @@ func New(
 	}
 
 	p.parsedLocalProxyURI = parsedLocalProxyURI
+	p.LocalProxyURI = parsedLocalProxyURI.String()
 
 	if p.UpstreamProxyURI != "" {
 		p.Mode = Upstream
@@ -504,6 +505,7 @@ func New(
 		}
 
 		p.parsedUpstreamProxyURI = parsedUpstreamProxyURI
+		p.UpstreamProxyURI = parsedUpstreamProxyURI.String()
 	}
 
 	if p.PACURI != "" {
