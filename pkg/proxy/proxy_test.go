@@ -30,7 +30,7 @@ const (
 	defaultProxyLoggingLevel = "none"
 
 	defaultProxyHostname            = "127.0.0.1"
-	defaultProxyScheme              = "http"
+	defaultProxyScheme              = HTTP
 	localProxyCredentialPassword    = "p123"
 	localProxyCredentialUsername    = "u123"
 	upstreamProxyCredentialPassword = "p456"
