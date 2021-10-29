@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/eapache/go-resiliency/retrier"
@@ -24,6 +25,7 @@ import (
 	"github.com/saucelabs/forwarder/internal/pac"
 	"github.com/saucelabs/forwarder/internal/validation"
 	"github.com/saucelabs/randomness"
+	"github.com/saucelabs/sypl"
 	"github.com/saucelabs/sypl/fields"
 	"github.com/saucelabs/sypl/level"
 	"github.com/saucelabs/sypl/options"
@@ -50,6 +52,21 @@ const (
 	SOCKS5 = "socks5"
 	SOCKS  = "socks"
 	QUIC   = "quic"
+)
+
+// State helps the proxy to don't run the same state multiple times.
+type State string
+
+const (
+	// Initializing means that a new proxy has been instantiated, but has not
+	// yet finished setup.
+	Initializing State = "Initializing"
+
+	// Setup state means it's done setting it up, but not running yet.
+	Setup State = "Setup"
+
+	// Running means proxy is running.
+	Running State = "Running"
 )
 
 var (
@@ -112,13 +129,13 @@ func (o *Options) Default() {
 	loggingOptions := &LoggingOptions{}
 	loggingOptions.Default()
 
+	o.LoggingOptions = loggingOptions
+
 	retryPortOptions := &RetryPortOptions{}
 	retryPortOptions.Default()
 
 	o.AutomaticallyRetryPort = false
 	o.ProxyLocalhost = false
-
-	o.LoggingOptions = loggingOptions
 	o.RetryPortOptions = retryPortOptions
 }
 
@@ -149,11 +166,17 @@ type Proxy struct {
 	// - Port in a valid range: 80 - 65535.
 	PACURI string `json:"pac_uri" validate:"omitempty,gte=6"`
 
+	// Mode the Proxy is running.
+	Mode Mode
+
+	// Current state of the proxy. Multiple calls to `Run`, if running, will do
+	// nothing.
+	State State
+
 	// Options to setup proxy.
 	*Options
 
-	// Mode the Proxy is running.
-	Mode Mode
+	mutex *sync.RWMutex
 
 	// Parsed local proxy URI.
 	parsedLocalProxyURI *url.URL
@@ -376,8 +399,24 @@ func (p *Proxy) findAvailablePort(uri *url.URL) error {
 	return nil
 }
 
-// Run starts the proxy. If it fails to start, it will exit with fatal.
+// Run starts the proxy. it fails to start, it will exit with fatal. It's safe
+// to call it multiple times - nothing will happen.
 func (p *Proxy) Run() {
+	// Should not panic, but exit with proper error if method is called without
+	// Proxy is setup.
+	if p == nil {
+		logger.Get().Fatalln(ErrFailedToStartProxy, "Proxy isn't setup")
+	}
+
+	// Do nothing if already running.
+	p.mutex.RLock()
+	if p.State == Running {
+		logger.Get().Traceln("Proxy is already running")
+
+		return
+	}
+	p.mutex.RUnlock()
+
 	// TODO: Allows to pass an error channel.
 	if p.Options.AutomaticallyRetryPort && p.isPortInUse(p.parsedLocalProxyURI.Host) {
 		r := retrier.New(retrier.ConstantBackoff(
@@ -394,6 +433,11 @@ func (p *Proxy) Run() {
 	}
 
 	logger.Get().Infolnf("Proxy to start at %s", p.parsedLocalProxyURI.Host)
+
+	// Updates state.
+	p.mutex.Lock()
+	p.State = Running
+	p.mutex.Unlock()
 
 	if err := http.ListenAndServe(p.parsedLocalProxyURI.Host, p.proxy); err != nil {
 		logger.Get().Fatalln(customerror.Wrap(ErrFailedToStartProxy, err))
@@ -426,21 +470,35 @@ func New(
 		options = &Options{}
 	}
 
+	// Will not copy logger reference, so, storing a reference.
+	var externalLogger sypl.Sypl
+
+	if options.LoggingOptions.Logger != nil {
+		externalLogger = *options.LoggingOptions.Logger
+	}
+
 	if err := deepCopy(options, finalOptions); err != nil {
 		return nil, err
 	}
 
 	p := &Proxy{
 		LocalProxyURI:         localProxyURI,
-		UpstreamProxyURI:      upstreamProxyURI,
-		PACURI:                pacURI,
-		pacProxiesCredentials: pacProxiesCredentials,
 		Mode:                  Direct,
 		Options:               finalOptions,
+		pacProxiesCredentials: pacProxiesCredentials,
+		PACURI:                pacURI,
+		State:                 Initializing,
+		UpstreamProxyURI:      upstreamProxyURI,
+		mutex:                 &sync.RWMutex{},
 	}
 
 	if err := validation.Get().Struct(p); err != nil {
 		return nil, customerror.Wrap(ErrInvalidProxyParams, err)
+	}
+
+	// Should allow to set logger.
+	if options.LoggingOptions.Logger != nil {
+		finalOptions.LoggingOptions.Logger = &externalLogger
 	}
 
 	logger.Setup(finalOptions.LoggingOptions)
@@ -459,7 +517,11 @@ func New(
 	proxy := goproxy.NewProxyHttpServer()
 
 	if p.Options.LoggingOptions != nil && level.MustFromString(p.Options.LoggingOptions.Level) > level.Info {
-		// TODO: Wrap logger, and implement goproxy's `Printf` interface.
+		proxyLogger := &logger.ProxyLogger{
+			Logger: logger.Get(),
+		}
+
+		proxy.Logger = proxyLogger
 		proxy.Verbose = true
 	}
 
@@ -558,6 +620,9 @@ func New(
 			return nil, err
 		}
 	}
+
+	// Updates state.
+	p.State = Setup
 
 	return p, nil
 }

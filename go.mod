@@ -18,10 +18,10 @@ require (
 	github.com/saucelabs/customerror v0.0.2
 	github.com/saucelabs/pacman v0.0.10
 	github.com/saucelabs/randomness v0.0.4
-	github.com/saucelabs/sypl v1.5.4
+	github.com/saucelabs/sypl v1.5.5
 	github.com/spf13/pflag v1.0.5 // indirect
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519 // indirect
-	golang.org/x/sys v0.0.0-20211025201205-69cdffdb9359 // indirect
+	golang.org/x/sys v0.0.0-20211029165221-6e7872819dc8 // indirect
 	golang.org/x/text v0.3.7 // indirect
 )
 

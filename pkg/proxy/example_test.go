@@ -16,6 +16,7 @@ import (
 
 	"github.com/saucelabs/forwarder/internal/logger"
 	"github.com/saucelabs/randomness"
+	"github.com/saucelabs/sypl"
 	"github.com/saucelabs/sypl/level"
 )
 
@@ -253,6 +254,48 @@ func ExampleNew_automaticallyRetryPort() {
 	}
 
 	go proxy2.Run()
+
+	time.Sleep(1 * time.Second)
+
+	fmt.Println(errored == false)
+
+	// output:
+	// true
+}
+
+// Supplying a logger, and calling multiple times Run example.
+func ExampleNew_sypplyingLogger() {
+	//////
+	// Custom logger
+	//////
+
+	customLogger := sypl.NewDefault("customLogger", level.Trace)
+
+	//////
+	// Randomness automates port allocation, ensuring no collision happens.
+	//////
+
+	r, err := randomness.New(55000, 65000, 100, true)
+	if err != nil {
+		log.Fatalln("Failed to create randomness.", err)
+	}
+
+	randomPort := r.MustGenerate()
+
+	errored := false
+
+	proxy1, err := New(fmt.Sprintf("http://0.0.0.0:%d", randomPort), "", "", nil, &Options{
+		LoggingOptions: &LoggingOptions{
+			Logger:    customLogger,
+			Level:     level.Trace.String(),
+			FileLevel: "none",
+		},
+	})
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	go proxy1.Run()
 
 	time.Sleep(1 * time.Second)
 

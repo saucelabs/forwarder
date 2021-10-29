@@ -30,6 +30,10 @@ var proxyLogger *sypl.Sypl
 
 // Options for logging .
 type Options struct {
+	// Allows to set the internal Logger. For now, it will be straightforward
+	// Sypl logger. In the future, could be the `sypl.IBasicPrinter` interface.
+	Logger *sypl.Sypl `json:"-"`
+
 	FileLevel string `validate:"required,gte=3"`
 	FilePath  string `validate:"required"`
 	Level     string `validate:"required,gte=3"`
@@ -70,20 +74,25 @@ func Setup(o *Options) *sypl.Sypl {
 		return proxyLogger
 	}
 
-	if o == nil {
-		o = &Options{}
+	// Should allow to specify a logger.
+	if o.Logger != nil {
+		proxyLogger = o.Logger
+	} else {
+		if o == nil {
+			o = &Options{}
+		}
+
+		o.Default()
+
+		if err := validator.New().Struct(o); err != nil {
+			log.Fatalln(err)
+		}
+
+		proxyLogger = sypl.NewDefault(name, level.MustFromString(o.Level))
+		proxyLogger.AddOutputs(
+			output.File(o.FilePath, level.MustFromString(o.FileLevel)).SetFormatter(formatter.Text()),
+		)
 	}
-
-	o.Default()
-
-	if err := validator.New().Struct(o); err != nil {
-		log.Fatalln(err)
-	}
-
-	proxyLogger = sypl.NewDefault(name, level.MustFromString(o.Level))
-	proxyLogger.AddOutputs(
-		output.File(o.FilePath, level.MustFromString(o.FileLevel)).SetFormatter(formatter.Text()),
-	)
 
 	proxyLogger.PrintlnWithOptions(&options.Options{
 		Fields: fields.Fields{
@@ -94,4 +103,15 @@ func Setup(o *Options) *sypl.Sypl {
 	}, level.Debug, "Logging setup")
 
 	return proxyLogger
+}
+
+// ProxyLogger exist to satisfy `goproxy` logging interface.
+type ProxyLogger struct {
+	Logger *sypl.Sypl
+}
+
+// Printf satisfies `goproxy` logging interface. Default logging level will be
+// `Debug`.
+func (pL *ProxyLogger) Printf(format string, v ...interface{}) {
+	pL.Logger.Debuglnf(format, v)
 }

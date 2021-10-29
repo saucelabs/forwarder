@@ -11,6 +11,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Load config from Config file, and from env vars. Use viper for that
 - Automatically alocates a random port, if the specified one is in-use
 
+## [0.1.9] - 2021-10-29
+### Added
+- Added the ability to specify an external logger.
+- Added state which properly handles multiple calls to `Run`.
+- Added `ProxyLogger` which is passed to the underlying proxy implementation (`GoProxy`) to format its message accordingly to Forwarder logger format.
+- Proper handles cases where `Run` may be called without proxy being setup.
+- Covered all changes with tests.
+
+### Changed
+- Upgraded to Sypl v1.5.5
+
 ## [0.1.8] - 2021-10-27
 ### Changed
 - Removed unused/leftover file.
