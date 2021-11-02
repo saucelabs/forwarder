@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	dnsURI string
+	dnsURIs []string
 
 	localProxyURI    string
 	upstreamProxyURI string
@@ -101,7 +101,7 @@ Note: Can't setup upstream, and PAC at the same time.
 			},
 
 			AutomaticallyRetryPort: automaticallyRetryPort,
-			DNSURI:                 dnsURI,
+			DNSURIs:                dnsURIs,
 			ProxyLocalhost:         proxyLocalhost,
 		})
 		if err != nil {
@@ -117,7 +117,7 @@ func init() {
 
 	runCmd.Flags().StringVarP(&localProxyURI, "local-proxy-uri", "l", "http://localhost:8080", "Sets local proxy URI")
 	runCmd.Flags().StringVarP(&upstreamProxyURI, "upstream-proxy-uri", "u", "", "sets upstream proxy URI")
-	runCmd.Flags().StringVarP(&dnsURI, "dns-uri", "n", "", "sets dns URI")
+	runCmd.Flags().StringSliceVarP(&dnsURIs, "dns-uri", "n", nil, "sets dns URI")
 	runCmd.Flags().StringVarP(&pacURI, "pac-uri", "p", "", "sets URI to PAC content, or directly, the PAC content")
 	runCmd.Flags().StringSliceVarP(&pacProxiesCredentials, "pac-proxies-credentials", "d", nil, "sets PAC proxies credentials using standard URI format")
 	runCmd.Flags().BoolVarP(&proxyLocalhost, "proxy-localhost", "t", false, "if set, will proxy localhost requests to an upstream proxy - if any")

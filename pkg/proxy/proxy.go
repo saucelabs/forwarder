@@ -34,7 +34,7 @@ import (
 
 const (
 	ConstantBackoff = 300
-	DNSTimeout      = 1 * time.Second
+	DNSTimeout      = 1 * time.Minute
 	MaxRetry        = 3
 )
 
@@ -124,12 +124,12 @@ type Options struct {
 	// try to automatically allocate a free port.
 	AutomaticallyRetryPort bool
 
-	// DNSURI is the DNS URI:
+	// DNSURIs are DNS URIs:
 	// - Known protocol: udp, tcp
 	// - Some hostname (x.io - min 4 chars), or IP
 	// - Port in a valid range: 53 - 65535.
 	// Example: udp://10.0.0.3:53
-	DNSURI string `json:"dns_uri" validate:"omitempty,dnsURI"`
+	DNSURIs []string `json:"dns_uris" validate:"omitempty,dive,dnsURI"`
 
 	// ProxyLocalhost if `true`, requests to `localhost`/`127.0.0.1` will be
 	// forwarded to any upstream - if set.
@@ -233,10 +233,20 @@ func resetUpstreamSettings(ctx *goproxy.ProxyCtx) {
 }
 
 // Sets the default DNS.
-func setupDNS(dnsURI string) error {
-	parsedDNSURI, err := url.ParseRequestURI(dnsURI)
-	if err != nil {
-		return customerror.Wrap(ErrInvalidDNSURI, err)
+//nolint:interfacer
+func setupDNS(mutex *sync.RWMutex, dnsURIs []string) error {
+	mutex.Lock()
+	defer mutex.Unlock()
+
+	parsedDNSURIs := []*url.URL{}
+
+	for _, dnsURI := range dnsURIs {
+		parsedDNSURI, err := url.ParseRequestURI(dnsURI)
+		if err != nil {
+			return customerror.Wrap(ErrInvalidDNSURI, err)
+		}
+
+		parsedDNSURIs = append(parsedDNSURIs, parsedDNSURI)
 	}
 
 	net.DefaultResolver = &net.Resolver{
@@ -244,16 +254,44 @@ func setupDNS(dnsURI string) error {
 		Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
 			d := net.Dialer{Timeout: DNSTimeout}
 
-			c, err := d.DialContext(ctx, parsedDNSURI.Scheme, parsedDNSURI.Host)
-			if err != nil {
-				logger.Get().Traceln(ErrFailedToDialToDNS.Error(), err)
+			var finalConn net.Conn
+			var finalError error
 
-				return c, err
+			for i := 0; i < len(parsedDNSURIs); i++ {
+				parsedDNSURI := parsedDNSURIs[i]
+
+				c, err := d.DialContext(ctx, parsedDNSURI.Scheme, parsedDNSURI.Host)
+
+				finalConn = c
+				finalError = err
+
+				if err != nil {
+					logger.Get().Tracelnf("%v - %s. Error: %v. Trying another DNS - if any",
+						ErrFailedToDialToDNS,
+						parsedDNSURI,
+						err,
+					)
+				} else {
+					logger.Get().Tracelnf("Request resolved by DNS @ %s", parsedDNSURI)
+
+					break
+				}
 			}
 
-			logger.Get().Tracelnf("Used %s to resolve %s", parsedDNSURI, address)
+			if finalError != nil {
+				ErrAllDNSResolversFailed := customerror.New(
+					"All DNS resolvers failed",
+					"",
+					http.StatusInternalServerError,
+					finalError,
+				)
 
-			return c, err
+				logger.Get().Traceln(ErrAllDNSResolversFailed)
+
+				return finalConn, ErrAllDNSResolversFailed
+			}
+
+			return finalConn, nil
 		},
 	}
 
@@ -581,14 +619,10 @@ func New(
 	// DNS.
 	//////
 
-	if p.Options.DNSURI != "" {
-		p.mutex.Lock()
-
-		if err := setupDNS(p.Options.DNSURI); err != nil {
+	if p.Options.DNSURIs != nil {
+		if err := setupDNS(p.mutex, p.Options.DNSURIs); err != nil {
 			return nil, err
 		}
-
-		p.mutex.Unlock()
 	}
 
 	//////

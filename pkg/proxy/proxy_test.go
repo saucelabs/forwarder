@@ -170,7 +170,7 @@ func TestNew(t *testing.T) {
 	}
 
 	type args struct {
-		dnsURI                *url.URL
+		dnsURIs               []string
 		localProxyURI         *url.URL
 		upstreamProxyURI      *url.URL
 		pacURI                *url.URL
@@ -204,7 +204,7 @@ func TestNew(t *testing.T) {
 		{
 			name: "Should work - local proxy - with DNS",
 			args: args{
-				dnsURI: &url.URL{Scheme: "udp", Host: "8.8.8.8:53"},
+				dnsURIs: []string{"udp://8.8.8.8:53"},
 				localProxyURI: URIBuilder(
 					defaultProxyHostname,
 					r.MustGenerate(),
@@ -370,13 +370,13 @@ func TestNew(t *testing.T) {
 			// Live test. Test calls to non-localhost. It matters because non-localhost
 			// uses the proxy settings in the Transport, while localhost calls, bypass
 			// it.
-			var dnsURI string
+			var dnsURIs []string
 
 			if os.Getenv("FORWARDER_TEST_MODE") == "integration" {
 				targetServerURL = "https://httpbin.org/status/200"
 
-				if tt.args.dnsURI != nil {
-					dnsURI = tt.args.dnsURI.String()
+				if tt.args.dnsURIs != nil {
+					dnsURIs = tt.args.dnsURIs
 				}
 			}
 
@@ -424,7 +424,7 @@ func TestNew(t *testing.T) {
 
 				// Logging settings.
 				&Options{
-					DNSURI:         dnsURI,
+					DNSURIs:        dnsURIs,
 					LoggingOptions: loggingOptions,
 				},
 			)
