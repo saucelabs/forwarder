@@ -18,7 +18,7 @@ const pacText = `function FindProxyForURL(url, host) {
 
 func TestNew(t *testing.T) {
 	type args struct {
-		textOrURI   string
+		source      string
 		proxiesURIs []string
 	}
 	tests := []struct {
@@ -30,7 +30,7 @@ func TestNew(t *testing.T) {
 		{
 			name: "Should work",
 			args: args{
-				textOrURI:   pacText,
+				source:      pacText,
 				proxiesURIs: []string{"http://user:pass@127.0.0.1:8080"},
 			},
 			want:    nil,
@@ -39,7 +39,7 @@ func TestNew(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := New(tt.args.textOrURI, tt.args.proxiesURIs...)
+			got, err := New(tt.args.source, tt.args.proxiesURIs...)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("New() error = %v, wantErr %v", err, tt.wantErr)
 				return

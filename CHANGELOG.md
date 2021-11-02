@@ -11,6 +11,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Load config from Config file, and from env vars. Use viper for that
 - Automatically alocates a random port, if the specified one is in-use
 
+## [0.1.10] - 2021-11-01
+### Added
+- Added support to specify the DNS server.
+- Added `dnsURI` the DNS URI custom validator.
+
+### Changed
+- Fix bug in `ProxyLogger.Printf` where `v` wasn't passed as a slice.
+- Rename PAC `textOrURI` terminology to `source`.
+
 ## [0.1.9] - 2021-10-29
 ### Added
 - Added the ability to specify an external logger.

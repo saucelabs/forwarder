@@ -8,6 +8,167 @@ import (
 	"testing"
 )
 
+func TestSetup_basicAuthCredentialValidator(t *testing.T) {
+	tests := []struct {
+		name    string
+		text    string
+		wantErr bool
+	}{
+		{
+			name:    "Should work",
+			text:    "username:password",
+			wantErr: false,
+		},
+		{
+			name:    "Should fail - empty",
+			text:    "",
+			wantErr: true,
+		},
+		{
+			name:    "Should fail - total less than 7",
+			text:    "as",
+			wantErr: true,
+		},
+		{
+			name:    "Should fail - missing :",
+			text:    "username",
+			wantErr: true,
+		},
+		{
+			name:    "Should fail - not 2 components",
+			text:    "username:password:something",
+			wantErr: true,
+		},
+		{
+			name:    "Should fail - username less than 3",
+			text:    ":password",
+			wantErr: true,
+		},
+		{
+			name:    "Should fail - password less than 3",
+			text:    "username:",
+			wantErr: true,
+		},
+		{
+			name:    "Should fail - only :`",
+			text:    ":",
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			v := Setup()
+
+			if err := v.Var(tt.text, "basicAuth"); (err != nil) != tt.wantErr {
+				t.Errorf("Expected %v got %v", tt.wantErr, err)
+			}
+		})
+	}
+}
+
+func TestSetup_pacTextOrURIValidator(t *testing.T) {
+	tests := []struct {
+		name    string
+		text    string
+		wantErr bool
+	}{
+		{
+			name:    "Should work - http:// - URL",
+			text:    "http://localhost:80",
+			wantErr: false,
+		},
+		{
+			name:    "Should work - https:// - URL",
+			text:    "https://localhost:65535",
+			wantErr: false,
+		},
+		{
+			name:    "Should work - http:// - IP",
+			text:    "http://127.0.0.1:80",
+			wantErr: false,
+		},
+		{
+			name:    "Should work - https:// - IP",
+			text:    "https://127.0.0.1:65535",
+			wantErr: false,
+		},
+		{
+			name:    "Should work - file:// - URL",
+			text:    "file://localhost:8080",
+			wantErr: false,
+		},
+		{
+			name:    "Should work - file:/// - URL",
+			text:    "file:///localhost:8080",
+			wantErr: false,
+		},
+		{
+			name:    "Should work - file:// - IP",
+			text:    "file://127.0.0.1:8080",
+			wantErr: false,
+		},
+		{
+			name:    "Should work - file:/// - IP",
+			text:    "file:///127.0.0.1:8080",
+			wantErr: false,
+		},
+		{
+			name:    "Should work - file:// - Path without extension",
+			text:    "file://somedir/somefile:8080",
+			wantErr: false,
+		},
+		{
+			name:    "Should work - file:/// - Path without extension",
+			text:    "file:///somedir/somefile:8080",
+			wantErr: false,
+		},
+		{
+			name:    "Should work - file:// - Path with extension",
+			text:    "file://somedir/somefile.pac:8080",
+			wantErr: false,
+		},
+		{
+			name:    "Should work - file:/// - Path with extension",
+			text:    "file:///somedir/somefile.pac:8080",
+			wantErr: false,
+		},
+		{
+			name:    "Should work - Just extension (requires .pac)",
+			text:    "somefile.pac",
+			wantErr: false,
+		},
+		{
+			name:    "Should work - function FindProxyForURL",
+			text:    "function FindProxyForURL(url, host) {}",
+			wantErr: false,
+		},
+		{
+			name:    "Should fail - Min length",
+			text:    "asd",
+			wantErr: true,
+		},
+		{
+			name:    "Should fail - missing any valid keyword",
+			text:    "something",
+			wantErr: true,
+		},
+		{
+			name:    "Should fail - missing content",
+			text:    "",
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			v := Setup()
+
+			if err := v.Var(tt.text, "pacTextOrURI"); (err != nil) != tt.wantErr {
+				t.Errorf("Expected %v got %v", tt.wantErr, err)
+			}
+		})
+	}
+}
+
 func TestSetup_proxyURIValidator(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -197,90 +358,100 @@ func TestSetup_proxyURIValidator(t *testing.T) {
 	}
 }
 
-func TestSetup_pacTextOrURIValidator(t *testing.T) {
+func TestSetup_dnsURIValidator(t *testing.T) {
 	tests := []struct {
 		name    string
 		text    string
 		wantErr bool
 	}{
 		{
-			name:    "Should work - http:// - URL",
-			text:    "http://localhost:80",
+			name:    "Should work - port low",
+			text:    "udp://localhost:53",
 			wantErr: false,
 		},
 		{
-			name:    "Should work - https:// - URL",
-			text:    "https://localhost:65535",
+			name:    "Should work - port high",
+			text:    "udp://localhost:65535",
 			wantErr: false,
 		},
 		{
-			name:    "Should work - http:// - IP",
-			text:    "http://127.0.0.1:80",
+			name:    "Should work - localhost",
+			text:    "udp://localhost:8080",
 			wantErr: false,
 		},
 		{
-			name:    "Should work - https:// - IP",
-			text:    "https://127.0.0.1:65535",
+			name:    "Should work - IP",
+			text:    "udp://0.0.0.0:8080",
 			wantErr: false,
 		},
 		{
-			name:    "Should work - file:// - URL",
-			text:    "file://localhost:8080",
+			name:    "Should work - URL",
+			text:    "udp://example.com:8080",
 			wantErr: false,
 		},
 		{
-			name:    "Should work - file:/// - URL",
-			text:    "file:///localhost:8080",
+			name:    "Should work - port low",
+			text:    "tcp://localhost:80",
 			wantErr: false,
 		},
 		{
-			name:    "Should work - file:// - IP",
-			text:    "file://127.0.0.1:8080",
+			name:    "Should work - port high",
+			text:    "tcp://localhost:65535",
 			wantErr: false,
 		},
 		{
-			name:    "Should work - file:/// - IP",
-			text:    "file:///127.0.0.1:8080",
+			name:    "Should work - localhost",
+			text:    "tcp://localhost:8080",
 			wantErr: false,
 		},
 		{
-			name:    "Should work - file:// - Path without extension",
-			text:    "file://somedir/somefile:8080",
+			name:    "Should work - IP",
+			text:    "tcp://0.0.0.0:8080",
 			wantErr: false,
 		},
 		{
-			name:    "Should work - file:/// - Path without extension",
-			text:    "file:///somedir/somefile:8080",
+			name:    "Should work - URL",
+			text:    "tcp://example.com:8080",
 			wantErr: false,
 		},
 		{
-			name:    "Should work - file:// - Path with extension",
-			text:    "file://somedir/somefile.pac:8080",
-			wantErr: false,
-		},
-		{
-			name:    "Should work - file:/// - Path with extension",
-			text:    "file:///somedir/somefile.pac:8080",
-			wantErr: false,
-		},
-		{
-			name:    "Should work - Just extension (requires .pac)",
-			text:    "somefile.pac",
-			wantErr: false,
-		},
-		{
-			name:    "Should work - function FindProxyForURL",
-			text:    "function FindProxyForURL(url, host) {}",
-			wantErr: false,
-		},
-		{
-			name:    "Should fail - Min length",
-			text:    "asd",
+			name:    "Should fail - unknown scheme",
+			text:    "asd://localhost:80",
 			wantErr: true,
 		},
 		{
-			name:    "Should fail - missing any valid keyword",
-			text:    "something",
+			name:    "Should fail - out-of-range low",
+			text:    "tcp://localhost:52",
+			wantErr: true,
+		},
+		{
+			name:    "Should fail - out-of-range high",
+			text:    "tcp://localhost:65536",
+			wantErr: true,
+		},
+		{
+			name:    "Should fail - empty scheme",
+			text:    "localhost:65536",
+			wantErr: true,
+		},
+		{
+			name:    "Should fail - empty hostname",
+			text:    "udp://:65536",
+			wantErr: true,
+		},
+		{
+			name:    "Should fail - empty port",
+			text:    "udp://localhost:",
+			wantErr: true,
+		},
+		{
+			name:    "Should fail - invalid URL",
+			text:    "::",
+			wantErr: true,
+		},
+		{
+			name:    "Should fail - invalid hostname",
+			text:    "udp://as:65536",
 			wantErr: true,
 		},
 		{
@@ -291,67 +462,9 @@ func TestSetup_pacTextOrURIValidator(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			v := Setup()
+			v := Get()
 
-			if err := v.Var(tt.text, "pacTextOrURI"); (err != nil) != tt.wantErr {
-				t.Errorf("Expected %v got %v", tt.wantErr, err)
-			}
-		})
-	}
-}
-
-func TestSetup_basicAuthCredentialValidator(t *testing.T) {
-	tests := []struct {
-		name    string
-		text    string
-		wantErr bool
-	}{
-		{
-			name:    "Should work",
-			text:    "username:password",
-			wantErr: false,
-		},
-		{
-			name:    "Should fail - empty",
-			text:    "",
-			wantErr: true,
-		},
-		{
-			name:    "Should fail - total less than 7",
-			text:    "as",
-			wantErr: true,
-		},
-		{
-			name:    "Should fail - missing :",
-			text:    "username",
-			wantErr: true,
-		},
-		{
-			name:    "Should fail - not 2 components",
-			text:    "username:password:something",
-			wantErr: true,
-		},
-		{
-			name:    "Should fail - username less than 3",
-			text:    ":password",
-			wantErr: true,
-		},
-		{
-			name:    "Should fail - password less than 3",
-			text:    "username:",
-			wantErr: true,
-		},
-		{
-			name:    "Should fail - only :`",
-			text:    ":",
-			wantErr: true,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			v := Setup()
-
-			if err := v.Var(tt.text, "basicAuth"); (err != nil) != tt.wantErr {
+			if err := v.Var(tt.text, "dnsURI"); (err != nil) != tt.wantErr {
 				t.Errorf("Expected %v got %v", tt.wantErr, err)
 			}
 		})

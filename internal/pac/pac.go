@@ -50,9 +50,9 @@ func (pP *Parser) Find(url string) (PACProxies, error) {
 }
 
 // New is the Parser factory. It's able to load PAC from many sources:
-// - Direct: `textOrURI` is the PAC content
-// - Remote: `textOrURI` is an HTTP/HTTPS URI
-// - File: `textOrURI` points to a file:
+// - Direct: `source` is the PAC content
+// - Remote: `source` is an HTTP/HTTPS URI
+// - File: `source` points to a file:
 //   - As per PAC spec, PAC file should have the `.pac` extension
 //   - Absolute and relative paths are supported
 //   - `file://` scheme is supported. It should be an absolute path.
@@ -64,21 +64,21 @@ func (pP *Parser) Find(url string) (PACProxies, error) {
 // - URI is: scheme://[credential]@host[/path]` where:
 //   - `credential` is `username:password`, and is optional
 //   - `host` (also known as `authority`) is `hostname:port`, and is optional.
-func New(textOrURI string, proxiesURIs ...string) (*Parser, error) {
+func New(source string, proxiesURIs ...string) (*Parser, error) {
 	// Instantiate underlying PAC parser implementation.
 	//
 	// `uri` doesn't need to be validated, this is already done by `pacman.New`.
 	// Also, there's no need to wrap `err`, Pacman is powered by `customerror`.
 	// Pacman is powered by Sypl, so internal logging can be enabled by setting
 	// the proper env var. See Pacman documentation.
-	pacParser, err := pacman.New(textOrURI, proxiesURIs...)
+	pacParser, err := pacman.New(source, proxiesURIs...)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Parser{
 		pacProxiesCredentials: proxiesURIs,
-		uri:                   textOrURI,
+		uri:                   source,
 
 		pac: pacParser,
 	}, nil

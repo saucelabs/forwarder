@@ -113,5 +113,5 @@ type ProxyLogger struct {
 // Printf satisfies `goproxy` logging interface. Default logging level will be
 // `Debug`.
 func (pL *ProxyLogger) Printf(format string, v ...interface{}) {
-	pL.Logger.Debuglnf(format, v)
+	pL.Logger.Debuglnf(format, v...)
 }

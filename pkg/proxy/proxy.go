@@ -5,6 +5,7 @@
 package proxy
 
 import (
+	"context"
 	"crypto/tls"
 	"encoding/base64"
 	"fmt"
@@ -32,8 +33,9 @@ import (
 )
 
 const (
-	MaxRetry        = 3
 	ConstantBackoff = 300
+	DNSTimeout      = 1 * time.Second
+	MaxRetry        = 3
 )
 
 // Possible ways to run Forwarder.
@@ -71,7 +73,9 @@ const (
 
 var (
 	ErrFailedToAllocatePort    = customerror.New("No available port to use", "", http.StatusInternalServerError, nil)
+	ErrFailedToDialToDNS       = customerror.NewFailedToError("dial to DNS", "", nil)
 	ErrFailedToStartProxy      = customerror.NewFailedToError("start proxy", "", nil)
+	ErrInvalidDNSURI           = customerror.NewInvalidError("dns URI", "", nil)
 	ErrInvalidLocalProxyURI    = customerror.NewInvalidError("local proxy URI", "", nil)
 	ErrInvalidOrParentOrPac    = customerror.NewInvalidError("params. Can't set upstream proxy, and PAC at the same time", "", nil)
 	ErrInvalidPACProxyURI      = customerror.NewInvalidError("PAC proxy URI", "", nil)
@@ -110,6 +114,7 @@ func (r *RetryPortOptions) Default() *RetryPortOptions {
 }
 
 // Options definition.
+//nolint:maligned
 type Options struct {
 	*LoggingOptions
 
@@ -118,6 +123,13 @@ type Options struct {
 	// AutomaticallyRetryPort if `true`, and the specified port is in-use, will
 	// try to automatically allocate a free port.
 	AutomaticallyRetryPort bool
+
+	// DNSURI is the DNS URI:
+	// - Known protocol: udp, tcp
+	// - Some hostname (x.io - min 4 chars), or IP
+	// - Port in a valid range: 53 - 65535.
+	// Example: udp://10.0.0.3:53
+	DNSURI string `json:"dns_uri" validate:"omitempty,dnsURI"`
 
 	// ProxyLocalhost if `true`, requests to `localhost`/`127.0.0.1` will be
 	// forwarded to any upstream - if set.
@@ -145,25 +157,26 @@ func (o *Options) Default() {
 // sources, e.g.: a HTTP server, also, protected or not.
 //
 // Protection means basic auth protection.
-//
-// TODO: Add name to `Proxy`.
 type Proxy struct {
-	// LocalProxyURI is local proxy URI:
+	// LocalProxyURI is the local proxy URI:
 	// - Known schemes: http, https, socks, socks5, or quic
-	// - Some hostname (x.io - min 4 chars) or IP
+	// - Some hostname (x.io - min 4 chars), or IP
 	// - Port in a valid range: 80 - 65535.
-	LocalProxyURI string `json:"uri" validate:"required,proxyURI"`
+	// Example: http://127.0.0.1:8080
+	LocalProxyURI string `json:"local_proxy_uri" validate:"required,proxyURI"`
 
 	// UpstreamProxyURI is the upstream proxy URI:
 	// - Known schemes: http, https, socks, socks5, or quic
-	// - Some hostname (x.io - min 4 chars) or IP
+	// - Some hostname (x.io - min 4 chars), or IP
 	// - Port in a valid range: 80 - 65535.
+	// Example: http://u456:p456@127.0.0.1:8085
 	UpstreamProxyURI string `json:"upstream_proxy_uri" validate:"omitempty,proxyURI"`
 
-	// PACURI is PAC URI:
+	// PACURI is the PAC URI:
 	// - Known schemes: http, https, socks, socks5, or quic
-	// - Some hostname (x.io - min 4 chars) or IP
+	// - Some hostname (x.io - min 4 chars), or IP
 	// - Port in a valid range: 80 - 65535.
+	// Example: http://127.0.0.1:8087/data.pac
 	PACURI string `json:"pac_uri" validate:"omitempty,gte=6"`
 
 	// Mode the Proxy is running.
@@ -217,6 +230,34 @@ func setProxyBasicAuthHeader(uri *url.URL, req *http.Request) {
 func resetUpstreamSettings(ctx *goproxy.ProxyCtx) {
 	ctx.Proxy.ConnectDial = nil
 	ctx.Proxy.Tr = &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, Proxy: nil}
+}
+
+// Sets the default DNS.
+func setupDNS(dnsURI string) error {
+	parsedDNSURI, err := url.ParseRequestURI(dnsURI)
+	if err != nil {
+		return customerror.Wrap(ErrInvalidDNSURI, err)
+	}
+
+	net.DefaultResolver = &net.Resolver{
+		PreferGo: true,
+		Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
+			d := net.Dialer{Timeout: DNSTimeout}
+
+			c, err := d.DialContext(ctx, parsedDNSURI.Scheme, parsedDNSURI.Host)
+			if err != nil {
+				logger.Get().Traceln(ErrFailedToDialToDNS.Error(), err)
+
+				return c, err
+			}
+
+			logger.Get().Tracelnf("Used %s to resolve %s", parsedDNSURI, address)
+
+			return c, err
+		},
+	}
+
+	return nil
 }
 
 // Returns `true` if should NOT proxy connections to any upstream proxy.
@@ -485,10 +526,10 @@ func New(
 		LocalProxyURI:         localProxyURI,
 		Mode:                  Direct,
 		Options:               finalOptions,
-		pacProxiesCredentials: pacProxiesCredentials,
 		PACURI:                pacURI,
 		State:                 Initializing,
 		UpstreamProxyURI:      upstreamProxyURI,
+		pacProxiesCredentials: pacProxiesCredentials,
 		mutex:                 &sync.RWMutex{},
 	}
 
@@ -518,7 +559,7 @@ func New(
 
 	if p.Options.LoggingOptions != nil && level.MustFromString(p.Options.LoggingOptions.Level) > level.Info {
 		proxyLogger := &logger.ProxyLogger{
-			Logger: logger.Get(),
+			Logger: logger.Get().New("goproxy"),
 		}
 
 		proxy.Logger = proxyLogger
@@ -535,6 +576,20 @@ func New(
 	proxy.KeepHeader = true
 
 	p.proxy = proxy
+
+	//////
+	// DNS.
+	//////
+
+	if p.Options.DNSURI != "" {
+		p.mutex.Lock()
+
+		if err := setupDNS(p.Options.DNSURI); err != nil {
+			return nil, err
+		}
+
+		p.mutex.Unlock()
+	}
 
 	//////
 	// Local proxy setup.

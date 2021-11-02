@@ -23,8 +23,11 @@ linters:
 
 # Settings for specific linters
 linters-settings:
+  gocognit:
+    min-complexity: 35
+
   funlen:
-    lines: 175
+    lines: 200
     statements: 75
 
   nestif:
