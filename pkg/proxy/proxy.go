@@ -266,11 +266,9 @@ func setupDNS(mutex *sync.RWMutex, dnsURIs []string) error {
 				finalError = err
 
 				if err != nil {
-					logger.Get().Tracelnf("%v - %s. Error: %v. Trying another DNS - if any",
-						ErrFailedToDialToDNS,
-						parsedDNSURI,
-						err,
-					)
+					errMsg := fmt.Sprintf("dial to DNS @ %s", parsedDNSURI.String())
+
+					logger.Get().Tracelnf(customerror.NewFailedToError(errMsg, "", err).Error())
 				} else {
 					logger.Get().Tracelnf("Request resolved by DNS @ %s", parsedDNSURI)
 

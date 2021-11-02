@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Load config from Config file, and from env vars. Use viper for that
 - Automatically alocates a random port, if the specified one is in-use
 
+## [0.1.12] - 2021-11-02
+### Changed
+- Better error message
+
 ## [0.1.11] - 2021-11-02
 ### Added
 - Added support to specify multiple DNS server.
