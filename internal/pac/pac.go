@@ -49,21 +49,7 @@ func (pP *Parser) Find(url string) (PACProxies, error) {
 	return pP.pac.FindProxy(url)
 }
 
-// New is the Parser factory. It's able to load PAC from many sources:
-// - Direct: `source` is the PAC content
-// - Remote: `source` is an HTTP/HTTPS URI
-// - File: `source` points to a file:
-//   - As per PAC spec, PAC file should have the `.pac` extension
-//   - Absolute and relative paths are supported
-//   - `file://` scheme is supported. It should be an absolute path.
-//
-// Notes:
-// - Optionally, credentials for each/any proxy specified in the PAC content can
-//   be set (`proxiesURIs`) using standard URI format. These credentials will be
-//   automatically set when `FindProxy` is called.
-// - URI is: scheme://[credential]@host[/path]` where:
-//   - `credential` is `username:password`, and is optional
-//   - `host` (also known as `authority`) is `hostname:port`, and is optional.
+// New is the Parser factory. It's wraps PACMan.
 func New(source string, proxiesURIs ...string) (*Parser, error) {
 	// Instantiate underlying PAC parser implementation.
 	//

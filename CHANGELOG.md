@@ -11,6 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Load config from Config file, and from env vars. Use viper for that
 - Automatically alocates a random port, if the specified one is in-use
 
+## [0.1.13] - 2022-02-14
+### Changed
+- Upgraded PACMan version
+- Upgraded golang-ci version (CI pipeline)
+- Standardized Go version to 1.16
+
 ## [0.1.12] - 2021-11-02
 ### Changed
 - Better error message
@@ -73,7 +79,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.1.1] - 2021-10-4
 ### Added
-- Integrated PAC (Pacman).
+- Integrated PAC (PACMan).
 - More tests.
 - Added benchmark.
 

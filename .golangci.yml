@@ -19,6 +19,7 @@ linters:
     - cyclop
     - tagliatelle
     - goerr113
+    - varnamelen
   fast: false
 
 # Settings for specific linters
