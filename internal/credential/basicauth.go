@@ -13,8 +13,8 @@ import (
 )
 
 var (
-	ErrMissingCredential        = customerror.NewMissingError("credential", "", nil)
-	ErrUsernamePasswordRequired = customerror.NewRequiredError("username, and password are", "", nil)
+	ErrMissingCredential        = customerror.NewMissingError("credential")
+	ErrUsernamePasswordRequired = customerror.NewRequiredError("username, and password are")
 )
 
 // BasicAuth is the basic authentication credential definition.
@@ -58,7 +58,7 @@ func NewBasicAuth(username, password string) (*BasicAuth, error) {
 	}
 
 	if err := validator.New().Struct(bC); err != nil {
-		return nil, customerror.NewInvalidError("credential", "", err)
+		return nil, customerror.NewInvalidError("credential", customerror.WithError(err))
 	}
 
 	return bC, nil

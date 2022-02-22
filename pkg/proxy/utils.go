@@ -12,7 +12,7 @@ import (
 	"github.com/saucelabs/forwarder/internal/validation"
 )
 
-var ErrFailedToCopyOptions = customerror.NewFailedToError("deepCopy options", "", nil)
+var ErrFailedToCopyOptions = customerror.NewFailedToError("deepCopy options")
 
 // Loads, validate credential from env var, and set URI's user.
 func loadCredentialFromEnvVar(envVar string, uri *url.URL) error {
@@ -22,7 +22,7 @@ func loadCredentialFromEnvVar(envVar string, uri *url.URL) error {
 		if err := validation.Get().Var(credentialFromEnvVar, "basicAuth"); err != nil {
 			errMsg := fmt.Sprintf("env var (%s)", envVar)
 
-			return customerror.NewInvalidError(errMsg, "", err)
+			return customerror.NewInvalidError(errMsg, customerror.WithError(err))
 		}
 
 		cred := strings.Split(credentialFromEnvVar, ":")

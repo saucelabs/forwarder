@@ -6,11 +6,11 @@ import (
 )
 
 var (
-	ErrFailedToCreateParser  = customerror.NewFailedToError("create PAC parser", "", nil)
-	ErrFailedToFindParserNil = customerror.NewFailedToError("PAC parser isn't initialized", "", nil)
-	ErrFailedToFindURL       = customerror.NewFailedToError("find URL", "", nil)
-	ErrFailedToParseURI      = customerror.NewFailedToError("parse URI", "", nil)
-	ErrInvalidParams         = customerror.NewInvalidError("params", "", nil)
+	ErrFailedToCreateParser  = customerror.NewFailedToError("create PAC parser")
+	ErrFailedToFindParserNil = customerror.NewFailedToError("PAC parser isn't initialized")
+	ErrFailedToFindURL       = customerror.NewFailedToError("find URL")
+	ErrFailedToParseURI      = customerror.NewFailedToError("parse URI")
+	ErrInvalidParams         = customerror.NewInvalidError("params")
 )
 
 // Type aliasing.

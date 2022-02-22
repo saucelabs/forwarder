@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Load config from Config file, and from env vars. Use viper for that
 - Automatically alocates a random port, if the specified one is in-use
 
+## [0.1.14] - 2022-02-22
+## Changed
+- Updated dependencies
+
 ## [0.1.13] - 2022-02-14
 ### Changed
 - Upgraded PACMan version

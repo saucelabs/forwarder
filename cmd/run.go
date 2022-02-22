@@ -105,7 +105,7 @@ Note: Can't setup upstream, and PAC at the same time.
 			ProxyLocalhost:         proxyLocalhost,
 		})
 		if err != nil {
-			cliLogger.Fatalln(customerror.NewFailedToError("run", "", err))
+			cliLogger.Fatalln(customerror.NewFailedToError("run", customerror.WithError(err)))
 		}
 
 		p.Run()

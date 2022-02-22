@@ -72,16 +72,16 @@ const (
 )
 
 var (
-	ErrFailedToAllocatePort    = customerror.New("No available port to use", "", http.StatusInternalServerError, nil)
-	ErrFailedToDialToDNS       = customerror.NewFailedToError("dial to DNS", "", nil)
-	ErrFailedToStartProxy      = customerror.NewFailedToError("start proxy", "", nil)
-	ErrInvalidDNSURI           = customerror.NewInvalidError("dns URI", "", nil)
-	ErrInvalidLocalProxyURI    = customerror.NewInvalidError("local proxy URI", "", nil)
-	ErrInvalidOrParentOrPac    = customerror.NewInvalidError("params. Can't set upstream proxy, and PAC at the same time", "", nil)
-	ErrInvalidPACProxyURI      = customerror.NewInvalidError("PAC proxy URI", "", nil)
-	ErrInvalidPACURI           = customerror.NewInvalidError("PAC URI", "", nil)
-	ErrInvalidProxyParams      = customerror.NewInvalidError("params", "", nil)
-	ErrInvalidUpstreamProxyURI = customerror.NewInvalidError("upstream proxy URI", "", nil)
+	ErrFailedToAllocatePort    = customerror.New("No available port to use", customerror.WithStatusCode(http.StatusInternalServerError))
+	ErrFailedToDialToDNS       = customerror.NewFailedToError("dial to DNS")
+	ErrFailedToStartProxy      = customerror.NewFailedToError("start proxy")
+	ErrInvalidDNSURI           = customerror.NewInvalidError("dns URI")
+	ErrInvalidLocalProxyURI    = customerror.NewInvalidError("local proxy URI")
+	ErrInvalidOrParentOrPac    = customerror.NewInvalidError("params. Can't set upstream proxy, and PAC at the same time")
+	ErrInvalidPACProxyURI      = customerror.NewInvalidError("PAC proxy URI")
+	ErrInvalidPACURI           = customerror.NewInvalidError("PAC URI")
+	ErrInvalidProxyParams      = customerror.NewInvalidError("params")
+	ErrInvalidUpstreamProxyURI = customerror.NewInvalidError("upstream proxy URI")
 )
 
 // LoggingOptions defines logging options.
@@ -268,7 +268,7 @@ func setupDNS(mutex *sync.RWMutex, dnsURIs []string) error {
 				if err != nil {
 					errMsg := fmt.Sprintf("dial to DNS @ %s", parsedDNSURI.String())
 
-					logger.Get().Tracelnf(customerror.NewFailedToError(errMsg, "", err).Error())
+					logger.Get().Tracelnf(customerror.NewFailedToError(errMsg, customerror.WithError(err)).Error())
 				} else {
 					logger.Get().Tracelnf("Request resolved by DNS @ %s", parsedDNSURI)
 
@@ -279,9 +279,8 @@ func setupDNS(mutex *sync.RWMutex, dnsURIs []string) error {
 			if finalError != nil {
 				ErrAllDNSResolversFailed := customerror.New(
 					"All DNS resolvers failed",
-					"",
-					http.StatusInternalServerError,
-					finalError,
+					customerror.WithStatusCode(http.StatusInternalServerError),
+					customerror.WithError(finalError),
 				)
 
 				logger.Get().Traceln(ErrAllDNSResolversFailed)
