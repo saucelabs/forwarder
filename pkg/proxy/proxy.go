@@ -508,7 +508,7 @@ func (p *Proxy) Run() {
 		}
 	}
 
-	logger.Get().Infolnf("Proxy to start at %s", p.parsedLocalProxyURI.Host)
+	logger.Get().Debuglnf("Proxy to start at %s", p.parsedLocalProxyURI.Host)
 
 	// Updates state.
 	p.mutex.Lock()
