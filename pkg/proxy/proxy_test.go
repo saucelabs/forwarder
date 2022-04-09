@@ -158,6 +158,7 @@ func executeRequest(client *http.Client, uri string) (int, string, error) {
 // Tests
 //////
 
+//nolint:maintidx
 func TestNew(t *testing.T) {
 	//////
 	// Randomness automates port allocation, ensuring no collision happens

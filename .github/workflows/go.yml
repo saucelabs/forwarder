@@ -19,13 +19,13 @@ jobs:
           go-version: 1.17
 
       - name: Setup golangci-lint
-        uses: golangci/golangci-lint-action@v2.5.2
+        uses: golangci/golangci-lint-action@v3.1.0
         with:
-          version: v1.43.0
+          version: v1.45.0
           args: "--timeout 5m -v -c .golangci.yml"
 
       - name: Lint
-        run: /home/runner/golangci-lint-1.43.0-linux-amd64/golangci-lint run -v -c .golangci.yml
+        run: golangci-lint run -v -c .golangci.yml
 
       - name: Test
         run: make test coverage
