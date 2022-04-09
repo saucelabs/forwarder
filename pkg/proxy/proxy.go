@@ -347,16 +347,18 @@ func setupPACUpstreamProxyConnection(p *Proxy, ctx *goproxy.ProxyCtx) error {
 
 		if pacProxyURI == nil {
 			// Should only set up upstream if there's a proxy for the given URL, not
-			// `DIRECT`.
+			// `DIRECT`. Clear upstream proxy settings for this request.
 			logger.Get().Debugln("Found DIRECT rule for", urlToFindProxyFor)
+			resetUpstreamSettings(ctx)
 
 			return nil
 		}
 
 		setupUpstreamProxyConnection(ctx, pacProxyURI)
-	} else {
-		logger.Get().Debugln("Found no proxy for", urlToFindProxyFor)
 	}
+
+	logger.Get().Debugln("Found no proxy for", urlToFindProxyFor)
+	resetUpstreamSettings(ctx)
 
 	return nil
 }
