@@ -324,7 +324,7 @@ func setupUpstreamProxyConnection(ctx *goproxy.ProxyCtx, uri *url.URL) {
 
 	ctx.Proxy.ConnectDial = ctx.Proxy.NewConnectDialToProxyWithHandler(uri.String(), connectReqHandler)
 
-	logger.Get().Debuglnf("Set up forwarding connections to %s", uri.Redacted())
+	logger.Get().Debuglnf("Connection to the upstream proxy %s is set up", uri.Redacted())
 }
 
 // setupUpstreamProxyConnection dynamically forwards connections to an upstream
@@ -332,7 +332,7 @@ func setupUpstreamProxyConnection(ctx *goproxy.ProxyCtx, uri *url.URL) {
 func setupPACUpstreamProxyConnection(p *Proxy, ctx *goproxy.ProxyCtx) error {
 	urlToFindProxyFor := ctx.Req.URL.String()
 
-	logger.Get().Debuglnf("Finding proxy for %s", urlToFindProxyFor)
+	logger.Get().Tracelnf("Finding proxy for %s", urlToFindProxyFor)
 
 	pacProxies, err := p.pacParser.Find(urlToFindProxyFor)
 	if err != nil {
@@ -345,19 +345,16 @@ func setupPACUpstreamProxyConnection(p *Proxy, ctx *goproxy.ProxyCtx) error {
 		pacProxy := pacProxies[0]
 		pacProxyURI := pacProxy.GetURI()
 
-		if pacProxyURI == nil {
-			// Should only set up upstream if there's a proxy for the given URL, not
-			// `DIRECT`. Clear upstream proxy settings for this request.
-			logger.Get().Debugln("Found DIRECT rule for", urlToFindProxyFor)
-			resetUpstreamSettings(ctx)
+		// Should only set up upstream if there's a proxy and not `DIRECT`.
+		if pacProxyURI != nil {
+			setupUpstreamProxyConnection(ctx, pacProxyURI)
 
 			return nil
 		}
-
-		setupUpstreamProxyConnection(ctx, pacProxyURI)
 	}
 
 	logger.Get().Debugln("Found no proxy for", urlToFindProxyFor)
+	// Clear upstream proxy settings (if any) for this request.
 	resetUpstreamSettings(ctx)
 
 	return nil
