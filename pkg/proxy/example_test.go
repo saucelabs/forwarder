@@ -53,6 +53,7 @@ func ExampleNew() {
 	// Target/end server.
 	//////
 
+	// Create a protected HTTP server. user1:pass1 base64-encoded is dXNlcjE6cGFzczE=.
 	targetServer := createMockedHTTPServer(http.StatusOK, "body", "dXNlcjE6cGFzczE=")
 
 	defer func() { targetServer.Close() }()
@@ -89,6 +90,7 @@ func ExampleNew() {
 	// PAC server.
 	//////
 
+	// Start a protected server (user:pass) serving PAC file.
 	pacServer := createMockedHTTPServer(http.StatusOK, pacText.String(), "dXNlcjpwYXNz")
 
 	defer func() { pacServer.Close() }()
@@ -115,9 +117,8 @@ func ExampleNew() {
 	//////
 	// Local proxy.
 	//
-	// It's protected with Basic Auth. Upstream proxy will be automatically, and
-	// dynamically setup via PAC, including credentials for proxies specified
-	// in the PAC content.
+	// It's protected with Basic Auth. Upstream proxy URL and credentials are determined
+	// per URL via PAC.
 	//////
 
 	localProxy, err := New(

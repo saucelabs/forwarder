@@ -42,7 +42,7 @@ doc:
 ifndef HAS_GODOC
 	$(error You must install godoc, run "go get golang.org/x/tools/cmd/godoc")
 endif
-	@echo "Open localhost:6060/pkg/github.com/saucelabs/forwarder/ in your browser\n"
+	@echo "Open http://localhost:6060/pkg/github.com/saucelabs/forwarder/ in your browser\n"
 	@godoc -http :6060
 
 ci: lint test coverage
