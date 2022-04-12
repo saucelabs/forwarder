@@ -5,9 +5,6 @@
 package cmd
 
 import (
-	"io/ioutil"
-	"log"
-	
 	"github.com/saucelabs/customerror"
 	"github.com/saucelabs/forwarder/pkg/proxy"
 	"github.com/spf13/cobra"
@@ -110,9 +107,6 @@ Note: Can't setup upstream, and PAC at the same time.
 		if err != nil {
 			cliLogger.Fatalln(customerror.NewFailedToError("run", customerror.WithError(err)))
 		}
-
-		// Disable standard logger, only sypl or other custom logs will be output
-		log.SetOutput(ioutil.Discard)
 
 		p.Run()
 	},
