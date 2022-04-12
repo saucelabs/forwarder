@@ -484,7 +484,7 @@ func (p *Proxy) Run() {
 	// Should not panic, but exit with proper error if method is called without
 	// Proxy is setup.
 	if p == nil {
-		logger.Get().Fatalln(ErrFailedToStartProxy, "Proxy isn't setup")
+		logger.Get().Fatalln(ErrFailedToStartProxy, "Proxy isn't set up")
 	}
 
 	// Do nothing if already running.
@@ -511,7 +511,7 @@ func (p *Proxy) Run() {
 		}
 	}
 
-	logger.Get().Debuglnf("Proxy to start at %s", p.parsedLocalProxyURI.Host)
+	logger.Get().Debuglnf("Listening on %s", p.parsedLocalProxyURI.Host)
 
 	// Updates state.
 	p.mutex.Lock()
@@ -674,10 +674,11 @@ func New(
 
 	// HTTPS handler.
 	p.proxy.OnRequest().HandleConnectFunc(func(host string, ctx *goproxy.ProxyCtx) (*goproxy.ConnectAction, string) {
-		logger.Get().Debugln("Request handled by the HTTPS handler")
+		logger.Get().Debugf("Handling %s request to %s\n", ctx.Req.Method, ctx.Req.Host)
+		logger.Get().Tracef("%q\n", dumpHeaders(ctx.Req))
 
 		if err := p.setupHandlers(ctx); err != nil {
-			logger.Get().Errorlnf("Failed to setup handler (HTTPS) for request %s. %+v", ctx.Req.URL.String(), err)
+			logger.Get().Errorlnf("Failed to setup handler (HTTPS) for request %s. %+v", ctx.Req.URL.Redacted(), err)
 
 			return goproxy.RejectConnect, host
 		}
@@ -687,10 +688,11 @@ func New(
 
 	// HTTP handler.
 	p.proxy.OnRequest().DoFunc(func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
-		logger.Get().Debugln("Request handled by the HTTP handler")
+		logger.Get().Debugf("Handling %s request to %s\n", req.Method, req.Host)
+		logger.Get().Tracef("%q\n", dumpHeaders(ctx.Req))
 
 		if err := p.setupHandlers(ctx); err != nil {
-			logger.Get().Errorlnf("Failed to setup handler (HTTP) for request %s. %+v", ctx.Req.URL.String(), err)
+			logger.Get().Errorlnf("Failed to setup handler (HTTP) for request %s. %+v", ctx.Req.URL.Redacted(), err)
 
 			return nil, goproxy.NewResponse(
 				ctx.Req,

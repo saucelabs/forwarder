@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
+	"net/http"
+	"net/http/httputil"
 	"net/url"
 	"os"
 	"strings"
@@ -47,4 +49,13 @@ func deepCopy(source, target interface{}) error {
 	}
 
 	return nil
+}
+
+func dumpHeaders(req *http.Request) []byte {
+	requestDump, err := httputil.DumpRequest(req, false)
+	if err != nil {
+		return nil
+	} else {
+		return requestDump
+	}
 }
