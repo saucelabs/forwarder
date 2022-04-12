@@ -55,7 +55,7 @@ func dumpHeaders(req *http.Request) []byte {
 	requestDump, err := httputil.DumpRequest(req, false)
 	if err != nil {
 		return nil
-	} else {
-		return requestDump
 	}
+
+	return requestDump
 }

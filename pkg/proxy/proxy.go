@@ -324,7 +324,7 @@ func setupUpstreamProxyConnection(ctx *goproxy.ProxyCtx, uri *url.URL) {
 
 	ctx.Proxy.ConnectDial = ctx.Proxy.NewConnectDialToProxyWithHandler(uri.String(), connectReqHandler)
 
-	logger.Get().Debuglnf("Connection to the upstream proxy %s is set up", uri.Redacted())
+	logger.Get().Tracelnf("Connection to the upstream proxy %s is set up", uri.Redacted())
 }
 
 // setupUpstreamProxyConnection dynamically forwards connections to an upstream
@@ -674,8 +674,8 @@ func New(
 
 	// HTTPS handler.
 	p.proxy.OnRequest().HandleConnectFunc(func(host string, ctx *goproxy.ProxyCtx) (*goproxy.ConnectAction, string) {
-		logger.Get().Debugf("Handling %s request to %s\n", ctx.Req.Method, ctx.Req.Host)
-		logger.Get().Tracef("%q\n", dumpHeaders(ctx.Req))
+		logger.Get().Infof("%s %s -> %s\n", ctx.Req.Method, ctx.Req.RemoteAddr, ctx.Req.Host)
+		logger.Get().Debuglnf("%q", dumpHeaders(ctx.Req))
 
 		if err := p.setupHandlers(ctx); err != nil {
 			logger.Get().Errorlnf("Failed to setup handler (HTTPS) for request %s. %+v", ctx.Req.URL.Redacted(), err)
@@ -688,8 +688,8 @@ func New(
 
 	// HTTP handler.
 	p.proxy.OnRequest().DoFunc(func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
-		logger.Get().Debugf("Handling %s request to %s\n", req.Method, req.Host)
-		logger.Get().Tracef("%q\n", dumpHeaders(ctx.Req))
+		logger.Get().Infof("%s %s -> %s\n", req.Method, req.RemoteAddr, req.Host)
+		logger.Get().Debuglnf("%q", dumpHeaders(ctx.Req))
 
 		if err := p.setupHandlers(ctx); err != nil {
 			logger.Get().Errorlnf("Failed to setup handler (HTTP) for request %s. %+v", ctx.Req.URL.Redacted(), err)
