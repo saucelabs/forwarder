@@ -672,9 +672,8 @@ func New(
 		p.pacParser = pacParser
 	}
 
-	// HTTPS handler.
 	p.proxy.OnRequest().HandleConnectFunc(func(host string, ctx *goproxy.ProxyCtx) (*goproxy.ConnectAction, string) {
-		logger.Get().Infof("%s %s -> %s\n", ctx.Req.Method, ctx.Req.RemoteAddr, ctx.Req.Host)
+		logger.Get().Infolnf("%s %s -> %s", ctx.Req.Method, ctx.Req.RemoteAddr, ctx.Req.Host)
 		logger.Get().Debuglnf("%q", dumpHeaders(ctx.Req))
 
 		if err := p.setupHandlers(ctx); err != nil {
@@ -686,9 +685,8 @@ func New(
 		return nil, host
 	})
 
-	// HTTP handler.
 	p.proxy.OnRequest().DoFunc(func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
-		logger.Get().Infof("%s %s -> %s\n", req.Method, req.RemoteAddr, req.Host)
+		logger.Get().Infolnf("%s %s -> %s", req.Method, req.RemoteAddr, req.Host)
 		logger.Get().Debuglnf("%q", dumpHeaders(ctx.Req))
 
 		if err := p.setupHandlers(ctx); err != nil {
@@ -703,6 +701,13 @@ func New(
 		}
 
 		return ctx.Req, nil
+	})
+
+	p.proxy.OnResponse().DoFunc(func(resp *http.Response, ctx *goproxy.ProxyCtx) *http.Response {
+		logger.Get().Infolnf("%s <- %s %v (%v bytes)",
+			resp.Request.RemoteAddr, resp.Request.Host, resp.Status, resp.ContentLength)
+
+		return resp
 	})
 
 	// Local proxy authentication.
