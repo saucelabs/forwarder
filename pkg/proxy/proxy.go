@@ -591,7 +591,6 @@ func New(
 	// Underlying proxy implementation setup.
 	//////
 
-
 	// Instantiate underlying proxy implementation. It can be abstracted in the
 	// future to allow easy swapping.
 	proxy := goproxy.NewProxyHttpServer()
@@ -604,9 +603,8 @@ func New(
 		proxy.Logger = proxyLogger
 		proxy.Verbose = true
 
-		// Ensure any standard log messages use the proxy logger
+		// Ensure any standard log messages use a configured logger
 		logger.RedirectStandardLogs()
-	
 	} else {
 		logger.DisableStandardLogs()
 	}
