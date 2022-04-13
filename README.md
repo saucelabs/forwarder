@@ -1,6 +1,6 @@
 # forwarder
 
-`forwarder` provides a simple proxy. The proxy can be protected with basic auth. It can also forward connections to a parent proxy, and authorize connections against that.
+`forwarder` provides a simple forward proxy. The proxy can be protected with basic auth. It can also forward connections to a parent proxy, and authorize connections against that.
 Both local, and parent credentials can be set via environment variables. For local proxy credential, set `PROXY_CREDENTIAL`. For remote proxy credential, set `PROXY_PARENT_CREDENTIAL`.
 
 ## Install
@@ -31,9 +31,7 @@ Check out [CONTRIBUTION](CONTRIBUTION.md).
 
 ### Release
 
-1. Update [CHANGELOG](CHANGELOG.md) accordingly.
-2. Once changes from MR are merged.
-3. Tag and release.
+Check out [CONTRIBUTION](CONTRIBUTION.md).
 
 ## Roadmap
 

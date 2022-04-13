@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Load config from Config file, and from env vars. Use viper for that
 - Automatically alocates a random port, if the specified one is in-use
 
+## [0.1.17] - 2022-04-12
+## Changed
+- Log request and response at INFO level
+- Log request headers at DEBUG level
+
 ## [0.1.16] - 2022-04-11
 ## Changed
 - Reset upstream proxy configuration when PAC is used and a URL doesn't require proxy
