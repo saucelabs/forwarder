@@ -591,8 +591,6 @@ func New(
 	// Underlying proxy implementation setup.
 	//////
 
-	// Ensure any standard log messages use the proxy logger
-	logger.RedirectStandardLogs()
 
 	// Instantiate underlying proxy implementation. It can be abstracted in the
 	// future to allow easy swapping.
@@ -605,6 +603,12 @@ func New(
 
 		proxy.Logger = proxyLogger
 		proxy.Verbose = true
+
+		// Ensure any standard log messages use the proxy logger
+		logger.RedirectStandardLogs()
+	
+	} else {
+		logger.DisableStandardLogs()
 	}
 
 	proxy.KeepDestinationHeaders = true

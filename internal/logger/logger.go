@@ -7,6 +7,7 @@ package logger
 import (
 	"bytes"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -118,9 +119,13 @@ func (pL *ProxyLogger) Printf(format string, v ...interface{}) {
 	pL.Logger.Debuglnf(format, v...)
 }
 
+type StandardLogger struct {
+	Logger *sypl.Sypl
+}
+
 // Write satisfies the standard logging interface. Default logging level will be
 // `Debug`.
-func (pL *ProxyLogger) Write(p []byte) (int, error) {
+func (pL *StandardLogger) Write(p []byte) (int, error) {
 	p = bytes.TrimSpace(p)
 	pL.Logger.Debug(string(p))
 	return len(p), nil
@@ -131,8 +136,13 @@ func (pL *ProxyLogger) Write(p []byte) (int, error) {
 func RedirectStandardLogs() {
 	log.SetFlags(0)
 	log.SetPrefix("")
-	proxyLogger := &ProxyLogger{
-		Logger: Get().New("standard"),
+	standardLogger := &StandardLogger{
+		Logger: Get().New("go"),
 	}
-	log.SetOutput(proxyLogger)
+	log.SetOutput(standardLogger)
+}
+
+// DisableStandardLogs disables logs created with the standard library global logger
+func DisableStandardLogs() {
+	log.SetOutput(ioutil.Discard)
 }
