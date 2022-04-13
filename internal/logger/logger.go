@@ -57,19 +57,18 @@ func (o *Options) Default() {
 	}
 }
 
-// Get returns logger. If logger isn't setup, it will exit with fatal.
+// Get returns the logger. If the logger isn't configured, it will exit with fatal.
 func Get() *sypl.Sypl {
 	if proxyLogger == nil {
-		log.Fatalln("Logger needs setup")
+		log.Fatalln("Logger is not configired")
 	}
 
 	return proxyLogger
 }
 
-// Setup logger. If it fails to setup, it will exit with fatal.
+// Setup logger. If it fails to set up, it will exit with fatal.
 func Setup(o *Options) *sypl.Sypl {
-	// Do nothing, if already setup. Otherwise, can trigger race condition in
-	// goroutine cases.
+	// Do nothing, if the logger is already set up.
 	if proxyLogger != nil {
 		return proxyLogger
 	}
@@ -100,7 +99,7 @@ func Setup(o *Options) *sypl.Sypl {
 			"filePath":  o.FilePath,
 			"level":     o.Level,
 		},
-	}, level.Debug, "Logging setup")
+	}, level.Trace, "Logging is configured")
 
 	return proxyLogger
 }

@@ -324,7 +324,7 @@ func setupUpstreamProxyConnection(ctx *goproxy.ProxyCtx, uri *url.URL) {
 
 	ctx.Proxy.ConnectDial = ctx.Proxy.NewConnectDialToProxyWithHandler(uri.String(), connectReqHandler)
 
-	logger.Get().Debuglnf("Connection to the upstream proxy %s is set up", uri.Redacted())
+	logger.Get().Tracelnf("Connection to the upstream proxy %s is set up", uri.Redacted())
 }
 
 // setupUpstreamProxyConnection dynamically forwards connections to an upstream
@@ -484,7 +484,7 @@ func (p *Proxy) Run() {
 	// Should not panic, but exit with proper error if method is called without
 	// Proxy is setup.
 	if p == nil {
-		logger.Get().Fatalln(ErrFailedToStartProxy, "Proxy isn't setup")
+		logger.Get().Fatalln(ErrFailedToStartProxy, "Proxy isn't set up")
 	}
 
 	// Do nothing if already running.
@@ -511,7 +511,7 @@ func (p *Proxy) Run() {
 		}
 	}
 
-	logger.Get().Debuglnf("Proxy to start at %s", p.parsedLocalProxyURI.Host)
+	logger.Get().Debuglnf("Listening on %s", p.parsedLocalProxyURI.Host)
 
 	// Updates state.
 	p.mutex.Lock()
@@ -672,12 +672,12 @@ func New(
 		p.pacParser = pacParser
 	}
 
-	// HTTPS handler.
 	p.proxy.OnRequest().HandleConnectFunc(func(host string, ctx *goproxy.ProxyCtx) (*goproxy.ConnectAction, string) {
-		logger.Get().Debugln("Request handled by the HTTPS handler")
+		logger.Get().Infolnf("%s %s -> %s", ctx.Req.Method, ctx.Req.RemoteAddr, ctx.Req.Host)
+		logger.Get().Debuglnf("%q", dumpHeaders(ctx.Req))
 
 		if err := p.setupHandlers(ctx); err != nil {
-			logger.Get().Errorlnf("Failed to setup handler (HTTPS) for request %s. %+v", ctx.Req.URL.String(), err)
+			logger.Get().Errorlnf("Failed to setup handler (HTTPS) for request %s. %+v", ctx.Req.URL.Redacted(), err)
 
 			return goproxy.RejectConnect, host
 		}
@@ -685,12 +685,12 @@ func New(
 		return nil, host
 	})
 
-	// HTTP handler.
 	p.proxy.OnRequest().DoFunc(func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
-		logger.Get().Debugln("Request handled by the HTTP handler")
+		logger.Get().Infolnf("%s %s -> %s", req.Method, req.RemoteAddr, req.Host)
+		logger.Get().Debuglnf("%q", dumpHeaders(ctx.Req))
 
 		if err := p.setupHandlers(ctx); err != nil {
-			logger.Get().Errorlnf("Failed to setup handler (HTTP) for request %s. %+v", ctx.Req.URL.String(), err)
+			logger.Get().Errorlnf("Failed to setup handler (HTTP) for request %s. %+v", ctx.Req.URL.Redacted(), err)
 
 			return nil, goproxy.NewResponse(
 				ctx.Req,
@@ -701,6 +701,13 @@ func New(
 		}
 
 		return ctx.Req, nil
+	})
+
+	p.proxy.OnResponse().DoFunc(func(resp *http.Response, ctx *goproxy.ProxyCtx) *http.Response {
+		logger.Get().Infolnf("%s <- %s %v (%v bytes)",
+			resp.Request.RemoteAddr, resp.Request.Host, resp.Status, resp.ContentLength)
+
+		return resp
 	})
 
 	// Local proxy authentication.
