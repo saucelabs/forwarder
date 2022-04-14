@@ -602,6 +602,11 @@ func New(
 
 		proxy.Logger = proxyLogger
 		proxy.Verbose = true
+
+		// Ensure any standard log messages use a configured logger
+		logger.RedirectStandardLogs()
+	} else {
+		logger.DisableStandardLogs()
 	}
 
 	proxy.KeepDestinationHeaders = true

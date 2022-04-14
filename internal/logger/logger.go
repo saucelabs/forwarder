@@ -5,10 +5,13 @@
 package logger
 
 import (
+	"bytes"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/go-playground/validator/v10"
@@ -112,5 +115,34 @@ type ProxyLogger struct {
 // Printf satisfies `goproxy` logging interface. Default logging level will be
 // `Debug`.
 func (pL *ProxyLogger) Printf(format string, v ...interface{}) {
+	format = strings.TrimSpace(format)
 	pL.Logger.Debuglnf(format, v...)
+}
+
+type StandardLogger struct {
+	Logger *sypl.Sypl
+}
+
+// Write satisfies the standard logging interface. Default logging level will be
+// `Debug`.
+func (pL *StandardLogger) Write(p []byte) (int, error) {
+	p = bytes.TrimSpace(p)
+	pL.Logger.Debug(string(p))
+	return len(p), nil
+}
+
+// RedirectStandardLogs redirects logs created with the standard library global logger
+// to the ProxyLogger.
+func RedirectStandardLogs() {
+	log.SetFlags(0)
+	log.SetPrefix("")
+	standardLogger := &StandardLogger{
+		Logger: Get().New("go"),
+	}
+	log.SetOutput(standardLogger)
+}
+
+// DisableStandardLogs disables logs created with the standard library global logger
+func DisableStandardLogs() {
+	log.SetOutput(ioutil.Discard)
 }
