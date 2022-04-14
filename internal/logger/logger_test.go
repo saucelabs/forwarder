@@ -5,7 +5,15 @@
 package logger
 
 import (
+	"log"
+	"strings"
 	"testing"
+	
+	"github.com/saucelabs/sypl"
+	"github.com/saucelabs/sypl/level"
+	"github.com/saucelabs/sypl/output"
+	"github.com/saucelabs/sypl/processor"
+	"github.com/saucelabs/sypl/shared"
 )
 
 func TestSetup(t *testing.T) {
@@ -57,4 +65,33 @@ func TestSetup(t *testing.T) {
 			}
 		})
 	}
+}
+
+
+func TestRedirectStandardLogs(t *testing.T) {
+	// set global proxy logger
+	proxyLogger = sypl.NewDefault("test", level.Debug)
+	defer func(){proxyLogger = nil}()
+
+	// proxyLogger sends output to a buffer
+	buffer, outputBuffer := output.SafeBuffer(level.Trace, processor.PrefixBasedOnMask(shared.DefaultTimestampFormat))
+	proxyLogger.AddOutputs(outputBuffer)
+
+	// test standard logger before and after redirect
+	beforeMsg := "Before redirect"
+	afterMsg := "After redirect" 
+	log.Println(beforeMsg)
+	
+	RedirectStandardLogs()
+	log.Println(afterMsg)
+
+	bufferStr := buffer.String()
+
+	if strings.Contains(bufferStr, beforeMsg) {
+		t.Errorf("%s should not appear in proxy logger: %s", beforeMsg, bufferStr)
+	}
+	if !strings.Contains(bufferStr, afterMsg) {
+		t.Errorf("%s should appear in proxy logger: %s", afterMsg, bufferStr)
+	}
+
 }
