@@ -678,7 +678,7 @@ func New(
 	}
 
 	p.proxy.OnRequest().HandleConnectFunc(func(host string, ctx *goproxy.ProxyCtx) (*goproxy.ConnectAction, string) {
-		logger.Get().Infolnf("%s %s -> %s", ctx.Req.Method, ctx.Req.RemoteAddr, ctx.Req.Host)
+		logger.Get().Debuglnf("%s %s -> %s", ctx.Req.Method, ctx.Req.RemoteAddr, ctx.Req.Host)
 		logger.Get().Debuglnf("%q", dumpHeaders(ctx.Req))
 
 		if err := p.setupHandlers(ctx); err != nil {
@@ -691,8 +691,8 @@ func New(
 	})
 
 	p.proxy.OnRequest().DoFunc(func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
-		logger.Get().Infolnf("%s %s -> %s", req.Method, req.RemoteAddr, req.Host)
-		logger.Get().Debuglnf("%q", dumpHeaders(ctx.Req))
+		logger.Get().Debuglnf("%s %s -> %s", req.Method, req.RemoteAddr, req.Host)
+		logger.Get().Tracelnf("%q", dumpHeaders(ctx.Req))
 
 		if err := p.setupHandlers(ctx); err != nil {
 			logger.Get().Errorlnf("Failed to setup handler (HTTP) for request %s. %+v", ctx.Req.URL.Redacted(), err)
@@ -709,7 +709,7 @@ func New(
 	})
 
 	p.proxy.OnResponse().DoFunc(func(resp *http.Response, ctx *goproxy.ProxyCtx) *http.Response {
-		logger.Get().Infolnf("%s <- %s %v (%v bytes)",
+		logger.Get().Debuglnf("%s <- %s %v (%v bytes)",
 			resp.Request.RemoteAddr, resp.Request.Host, resp.Status, resp.ContentLength)
 
 		return resp
