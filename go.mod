@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/eapache/go-resiliency v1.2.0
-	github.com/elazarl/goproxy v0.0.0-20220115173737-adb46da277ac
+	github.com/elazarl/goproxy v0.0.0-20220417044921-416226498f94
 	github.com/elazarl/goproxy/ext v0.0.0-20220115173737-adb46da277ac
 	github.com/go-playground/validator/v10 v10.10.0
 	github.com/saucelabs/customerror v1.0.3

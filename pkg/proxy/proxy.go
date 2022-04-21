@@ -704,8 +704,12 @@ func New(
 	})
 
 	p.proxy.OnResponse().DoFunc(func(resp *http.Response, ctx *goproxy.ProxyCtx) *http.Response {
-		logger.Get().Debuglnf("%s <- %s %v (%v bytes)",
-			resp.Request.RemoteAddr, resp.Request.Host, resp.Status, resp.ContentLength)
+		if resp != nil {
+			logger.Get().Debuglnf("%s <- %s %v (%v bytes)",
+				resp.Request.RemoteAddr, resp.Request.Host, resp.Status, resp.ContentLength)
+		} else {
+			logger.Get().Tracelnf("%s <- %s response is empty", ctx.Req.Host, ctx.Req.RemoteAddr)
+		}
 
 		return resp
 	})
