@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Load config from Config file, and from env vars. Use viper for that
 - Automatically alocates a random port, if the specified one is in-use
 
+## [0.1.20] - 2022-04-21
+## Changed
+- Upgrade goproxy library to the latest master
+- Check that the response struct is allocated before logging its details
+
 ## [0.1.19] - 2022-04-18
 ## Changed
 - Revert the changes introduced in 0.1.18
