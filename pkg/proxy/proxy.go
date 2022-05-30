@@ -634,7 +634,7 @@ func New(
 		return nil, customerror.Wrap(ErrInvalidLocalProxyURI, err)
 	}
 
-	err = loadCredentialFromEnvVar("FORWARDER_LOCALPROXY_CREDENTIAL", parsedLocalProxyURI)
+	err = loadCredentialFromEnvVar("FORWARDER_LOCALPROXY_AUTH", parsedLocalProxyURI)
 	if err != nil {
 		return nil, err
 	}
@@ -650,7 +650,7 @@ func New(
 			return nil, customerror.Wrap(ErrInvalidUpstreamProxyURI, err)
 		}
 
-		err = loadCredentialFromEnvVar("FORWARDER_UPSTREAMPROXY_CREDENTIAL", parsedUpstreamProxyURI)
+		err = loadCredentialFromEnvVar("FORWARDER_UPSTREAMPROXY_AUTH", parsedUpstreamProxyURI)
 		if err != nil {
 			return nil, err
 		}
