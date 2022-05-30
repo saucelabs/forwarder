@@ -267,31 +267,31 @@ func TestNew(t *testing.T) {
 			},
 			preFunc: func() {
 				// Local proxy.
-				os.Setenv("FORWARDER_LOCALPROXY_CREDENTIAL", url.UserPassword(
+				os.Setenv("FORWARDER_LOCALPROXY_AUTH", url.UserPassword(
 					localProxyCredentialUsername,
 					localProxyCredentialPassword,
 				).String())
 
 				// Upstream proxy.
-				os.Setenv("FORWARDER_UPSTREAMPROXY_CREDENTIAL", url.UserPassword(
+				os.Setenv("FORWARDER_UPSTREAMPROXY_AUTH", url.UserPassword(
 					upstreamProxyCredentialUsername,
 					upstreamProxyCredentialPassword,
 				).String())
 			},
 			postFunc: func() {
-				os.Unsetenv("FORWARDER_LOCALPROXY_CREDENTIAL")
+				os.Unsetenv("FORWARDER_LOCALPROXY_AUTH")
 
-				os.Unsetenv("FORWARDER_UPSTREAMPROXY_CREDENTIAL")
+				os.Unsetenv("FORWARDER_UPSTREAMPROXY_AUTH")
 			},
 			preUpstreamFunc: func() {
 				// Local proxy.
-				os.Setenv("FORWARDER_LOCALPROXY_CREDENTIAL", url.UserPassword(
+				os.Setenv("FORWARDER_LOCALPROXY_AUTH", url.UserPassword(
 					upstreamProxyCredentialUsername,
 					upstreamProxyCredentialPassword,
 				).String())
 			},
 			postUpstreamFunc: func() {
-				os.Unsetenv("FORWARDER_LOCALPROXY_CREDENTIAL")
+				os.Unsetenv("FORWARDER_LOCALPROXY_AUTH")
 			},
 			wantErr: false,
 		},
@@ -446,7 +446,7 @@ func TestNew(t *testing.T) {
 			}
 
 			// Both local `localProxy.LocalProxyURI` and `localProxy.UpstreamProxyURI`
-			// changed, if `FORWARDER_LOCALPROXY_CREDENTIAL` or `FORWARDER_UPSTREAMPROXY_CREDENTIAL`
+			// changed, if `FORWARDER_LOCALPROXY_AUTH` or `FORWARDER_UPSTREAMPROXY_AUTH`
 			// were set. This updates test vars.
 			if localProxyURI != localProxy.LocalProxyURI {
 				localProxyURI = localProxy.LocalProxyURI

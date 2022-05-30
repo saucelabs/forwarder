@@ -6,18 +6,18 @@ require (
 	github.com/eapache/go-resiliency v1.2.0
 	github.com/elazarl/goproxy v0.0.0-20220529153421-8ea89ba92021
 	github.com/elazarl/goproxy/ext v0.0.0-20220529153421-8ea89ba92021
-	github.com/go-playground/validator/v10 v10.10.0
+	github.com/go-playground/validator/v10 v10.11.0
 	github.com/saucelabs/customerror v1.0.3
-	github.com/saucelabs/pacman v0.0.13
+	github.com/saucelabs/pacman v0.1.1
 	github.com/saucelabs/randomness v0.0.5
-	github.com/saucelabs/sypl v1.5.10
+	github.com/saucelabs/sypl v1.5.12
 	github.com/spf13/cobra v1.3.0
 )
 
 require (
 	github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d // indirect
 	github.com/dlclark/regexp2 v1.4.1-0.20201116162257-a2a8dda75c91 // indirect
-	github.com/dop251/goja v0.0.0-20211006122547-7efcb634c641 // indirect
+	github.com/dop251/goja v0.0.0-20220516123900-4418d4575a41 // indirect
 	github.com/emirpasic/gods v1.12.0 // indirect
 	github.com/fatih/color v1.13.0 // indirect
 	github.com/go-playground/locales v0.14.0 // indirect

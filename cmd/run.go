@@ -34,10 +34,10 @@ Also, credentials for proxies specified in PAC can be set.
 
 All credentials can be set via env vars:
 
-- Local proxy: FORWARDER_LOCALPROXY_CREDENTIAL
-- Upstream proxy: FORWARDER_UPSTREAMPROXY_CREDENTIAL
-- PAC URI: PACMAN_CREDENTIAL
-- PAC proxies: PACMAN_PROXIES_CREDENTIAL
+- Local proxy: FORWARDER_LOCALPROXY_AUTH
+- Upstream proxy: FORWARDER_UPSTREAMPROXY_AUTH
+- PAC URI: PACMAN_AUTH
+- PAC proxies: PACMAN_PROXIES_AUTH
 
 Note: Can't setup upstream, and PAC at the same time.
 `,

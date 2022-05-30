@@ -11,6 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Load config from Config file, and from env vars. Use viper for that
 - Automatically alocates a random port, if the specified one is in-use
 
+## [0.2.0] - 2022-05-30
+## Changed
+- Upgraded goproxy library to the latest master
+- Upgraded pacman
+- Renamed FORWARDER_*_CREDENTIAL to FORWARDER_*_AUTH env vars
+
 ## [0.1.20] - 2022-04-21
 ## Changed
 - Upgrade goproxy library to the latest master
