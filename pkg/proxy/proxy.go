@@ -36,6 +36,8 @@ const (
 	ConstantBackoff = 300
 	DNSTimeout      = 1 * time.Minute
 	MaxRetry        = 3
+	proxyAuthHeader = "Proxy-Authorization"
+	authHeader      = "Authorization"
 )
 
 // Possible ways to run Forwarder.
@@ -207,21 +209,36 @@ type Proxy struct {
 	proxy *goproxy.ProxyHttpServer
 }
 
+func basicAuth(userpwd string) string {
+	return base64.StdEncoding.EncodeToString([]byte(userpwd))
+}
+
 // Sets the `Proxy-Authorization` header based on `uri` user info.
 func setProxyBasicAuthHeader(uri *url.URL, req *http.Request) {
-	encodedCredential := base64.
-		StdEncoding.
-		EncodeToString([]byte(uri.User.String()))
-
 	req.Header.Set(
-		"Proxy-Authorization",
-		fmt.Sprintf("Basic %s", encodedCredential),
+		proxyAuthHeader,
+		fmt.Sprintf("Basic %s", basicAuth(uri.User.String())),
 	)
 
 	logger.Get().Debuglnf(
-		"Proxy-Authorization header set with %s:*** for url %s",
+		"%s header set with %s:*** for %s",
+		proxyAuthHeader,
 		uri.User.Username(),
 		req.URL.String(),
+	)
+}
+
+// Sets the `Authorization` header.
+func setBasicAuthHeader(userpwd string, req *http.Request) {
+	req.Header.Set(
+		authHeader,
+		fmt.Sprintf("Basic %s", basicAuth(userpwd)),
+	)
+
+	logger.Get().Tracelnf(
+		"%s header set for %s",
+		authHeader,
+		req.URL.Redacted(),
 	)
 }
 
@@ -672,6 +689,12 @@ func New(
 		p.pacParser = pacParser
 	}
 
+	p.proxy.OnRequest(goproxy.ReqHostIs("")).HandleConnectFunc(func(host string, ctx *goproxy.ProxyCtx) (*goproxy.ConnectAction, string) {
+		logger.Get().Debuglnf("%s %s -> %s", ctx.Req.Method, ctx.Req.RemoteAddr, ctx.Req.Host)
+		setBasicAuthHeader("usr:pwd", ctx.Req)
+		return nil, host
+	})
+
 	p.proxy.OnRequest().HandleConnectFunc(func(host string, ctx *goproxy.ProxyCtx) (*goproxy.ConnectAction, string) {
 		logger.Get().Debuglnf("%s %s -> %s", ctx.Req.Method, ctx.Req.RemoteAddr, ctx.Req.Host)
 		logger.Get().Debuglnf("%q", dumpHeaders(ctx.Req))
@@ -699,6 +722,13 @@ func New(
 				err.Error(),
 			)
 		}
+
+		return ctx.Req, nil
+	})
+
+	p.proxy.OnRequest(goproxy.ReqHostIs("")).DoFunc(func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
+		logger.Get().Debuglnf("%s %s -> %s", req.Method, req.RemoteAddr, req.Host)
+		setBasicAuthHeader("usr:pwd", req)
 
 		return ctx.Req, nil
 	})
