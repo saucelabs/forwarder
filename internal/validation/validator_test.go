@@ -470,3 +470,36 @@ func TestSetup_dnsURIValidator(t *testing.T) {
 		})
 	}
 }
+
+func TestSetup_authURIValidator(t *testing.T) {
+	tests := []struct {
+		name    string
+		text    string
+		wantErr bool
+	}{
+		{
+			name:    "Should work",
+			text:    "http://usr:pwd@localhost:80",
+			wantErr: false,
+		},
+		{
+			name:    "Should fail - empty hostname",
+			text:    "http://usr:pwd@:65536",
+			wantErr: true,
+		},
+		{
+			name:    "Should fail - invalid URL",
+			text:    "::",
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			v := Get()
+
+			if err := v.Var(tt.text, "authURI"); (err != nil) != tt.wantErr {
+				t.Errorf("Expected %v got %v", tt.wantErr, err)
+			}
+		})
+	}
+}

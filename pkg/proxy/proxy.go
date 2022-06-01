@@ -24,6 +24,7 @@ import (
 	"github.com/saucelabs/forwarder/internal/credential"
 	"github.com/saucelabs/forwarder/internal/logger"
 	"github.com/saucelabs/forwarder/internal/pac"
+	"github.com/saucelabs/forwarder/internal/util"
 	"github.com/saucelabs/forwarder/internal/validation"
 	"github.com/saucelabs/randomness"
 	"github.com/saucelabs/sypl"
@@ -136,6 +137,11 @@ type Options struct {
 	// ProxyLocalhost if `true`, requests to `localhost`/`127.0.0.1` will be
 	// forwarded to any upstream - if set.
 	ProxyLocalhost bool
+	// BasicAuthURIs contains URIs with the credentials, for example:
+	// - https://usr1:pwd1@foo.bar:4443
+	// - http://usr2:pwd2@bar.foo:8080
+	// Proxy will add basic auth headers for requests to these URIs.
+	BasicAuthURIs []string `json:"basic_auth_urls" validate:"omitempty,dive,authURI"`
 }
 
 // Default sets `Options` default values.
@@ -191,6 +197,10 @@ type Proxy struct {
 	// Options to setup proxy.
 	*Options
 
+	// BasicAuthURIs contains URIs with the credentials.
+	// Proxy will add basic auth headers for requests to these URIs.
+	BasicAuthURIs []*url.URL
+
 	mutex *sync.RWMutex
 
 	// Parsed local proxy URI.
@@ -229,10 +239,10 @@ func setProxyBasicAuthHeader(uri *url.URL, req *http.Request) {
 }
 
 // Sets the `Authorization` header.
-func setBasicAuthHeader(userpwd string, req *http.Request) {
+func setBasicAuthHeader(uri *url.URL, req *http.Request) {
 	req.Header.Set(
 		authHeader,
-		fmt.Sprintf("Basic %s", basicAuth(userpwd)),
+		fmt.Sprintf("Basic %s", basicAuth(uri.User.String())),
 	)
 
 	logger.Get().Tracelnf(
@@ -344,7 +354,7 @@ func setupUpstreamProxyConnection(ctx *goproxy.ProxyCtx, uri *url.URL) {
 	logger.Get().Tracelnf("Connection to the upstream proxy %s is set up", uri.Redacted())
 }
 
-// setupUpstreamProxyConnection dynamically forwards connections to an upstream
+// setupPACUpstreamProxyConnection dynamically forwards connections to an upstream
 // proxy setup via PAC.
 func setupPACUpstreamProxyConnection(p *Proxy, ctx *goproxy.ProxyCtx) error {
 	urlToFindProxyFor := ctx.Req.URL.String()
@@ -495,6 +505,25 @@ func (p *Proxy) findAvailablePort(uri *url.URL) error {
 	return nil
 }
 
+func parseBasicAuthURIs(authURIs []string) ([]*url.URL, error) {
+	if authURIs == nil {
+		return nil, nil
+	}
+
+	basicAuthURIs := make([]*url.URL, len(authURIs))
+
+	for i, uri := range authURIs {
+		parsedURL, err := util.NormalizeURI(uri)
+		if err != nil {
+			return nil, err
+		}
+
+		basicAuthURIs[i] = parsedURL
+	}
+
+	return basicAuthURIs, nil
+}
+
 // Run starts the proxy. it fails to start, it will exit with fatal. It's safe
 // to call it multiple times - nothing will happen.
 func (p *Proxy) Run() {
@@ -566,6 +595,22 @@ func New(
 		options = &Options{}
 	}
 
+	basicAuthURIs := options.BasicAuthURIs
+
+	if options.BasicAuthURIs == nil || len(options.BasicAuthURIs) == 0 {
+		basicAuthURIsFromEnv, err := loadBasicAuthURLsFromEnvVar("FORWARDER_URL_BASIC_AUTH")
+		if err != nil {
+			return nil, err
+		}
+
+		basicAuthURIs = basicAuthURIsFromEnv
+	}
+
+	parsedAuthURIs, err := parseBasicAuthURIs(basicAuthURIs)
+	if err != nil {
+		return nil, err
+	}
+
 	// Will not copy logger reference, so, storing a reference.
 	var externalLogger sypl.Sypl
 
@@ -584,6 +629,7 @@ func New(
 		PACURI:                pacURI,
 		State:                 Initializing,
 		UpstreamProxyURI:      upstreamProxyURI,
+		BasicAuthURIs:         parsedAuthURIs,
 		pacProxiesCredentials: pacProxiesCredentials,
 		mutex:                 &sync.RWMutex{},
 	}
@@ -689,24 +735,19 @@ func New(
 		p.pacParser = pacParser
 	}
 
-	p.proxy.OnRequest(goproxy.ReqHostIs("")).HandleConnectFunc(func(host string, ctx *goproxy.ProxyCtx) (*goproxy.ConnectAction, string) {
-		logger.Get().Debuglnf("%s %s -> %s", ctx.Req.Method, ctx.Req.RemoteAddr, ctx.Req.Host)
-		setBasicAuthHeader("usr:pwd", ctx.Req)
-		return nil, host
-	})
+	p.proxy.OnRequest().HandleConnectFunc(
+		func(host string, ctx *goproxy.ProxyCtx) (*goproxy.ConnectAction, string) {
+			logger.Get().Debuglnf("%s %s -> %s", ctx.Req.Method, ctx.Req.RemoteAddr, host)
+			logger.Get().Debuglnf("%q", dumpHeaders(ctx.Req))
 
-	p.proxy.OnRequest().HandleConnectFunc(func(host string, ctx *goproxy.ProxyCtx) (*goproxy.ConnectAction, string) {
-		logger.Get().Debuglnf("%s %s -> %s", ctx.Req.Method, ctx.Req.RemoteAddr, ctx.Req.Host)
-		logger.Get().Debuglnf("%q", dumpHeaders(ctx.Req))
+			if err := p.setupHandlers(ctx); err != nil {
+				logger.Get().Errorlnf("Failed to setup handler (HTTPS) for request %s. %+v", ctx.Req.URL.Redacted(), err)
 
-		if err := p.setupHandlers(ctx); err != nil {
-			logger.Get().Errorlnf("Failed to setup handler (HTTPS) for request %s. %+v", ctx.Req.URL.Redacted(), err)
+				return goproxy.RejectConnect, host
+			}
 
-			return goproxy.RejectConnect, host
-		}
-
-		return nil, host
-	})
+			return nil, host
+		})
 
 	p.proxy.OnRequest().DoFunc(func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
 		logger.Get().Debuglnf("%s %s -> %s", req.Method, req.RemoteAddr, req.Host)
@@ -726,12 +767,44 @@ func New(
 		return ctx.Req, nil
 	})
 
-	p.proxy.OnRequest(goproxy.ReqHostIs("")).DoFunc(func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
-		logger.Get().Debuglnf("%s %s -> %s", req.Method, req.RemoteAddr, req.Host)
-		setBasicAuthHeader("usr:pwd", req)
+	if len(p.BasicAuthURIs) > 0 {
+		hosts := make([]string, len(p.BasicAuthURIs))
+		hostsToURL := make(map[string]*url.URL)
 
-		return ctx.Req, nil
-	})
+		for i, uri := range p.BasicAuthURIs {
+			hosts[i] = uri.Host
+			hostsToURL[uri.Host] = uri
+		}
+		logger.Get().Infolnf("will match hosts %+v", hosts)
+
+		p.proxy.OnRequest(goproxy.ReqHostIs(hosts...)).HandleConnectFunc(
+			func(host string, ctx *goproxy.ProxyCtx) (*goproxy.ConnectAction, string) {
+				if uri, ok := hostsToURL[ctx.Req.Host]; ok {
+					user := strings.Split(uri.User.String(), ":")[0]
+					pw := strings.Split(uri.User.String(), ":")[1]
+					ctx.Req.SetBasicAuth(user, pw)
+					setProxyBasicAuthHeader(uri, ctx.Req)
+				}
+				logger.Get().Debuglnf("%s %s -> %s, AUTH HEADER %s",
+					ctx.Req.Method, ctx.Req.RemoteAddr, ctx.Req.Host, ctx.Req.Header.Get(authHeader))
+
+				return nil, host
+			})
+
+		p.proxy.OnRequest(goproxy.ReqHostIs(hosts...)).DoFunc(
+			func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
+				logger.Get().Debuglnf("%s %s -> %s", req.Method, req.RemoteAddr, req.Host)
+				if uri, ok := hostsToURL[req.Host]; ok {
+					user := strings.Split(uri.User.String(), ":")[0]
+					pw := strings.Split(uri.User.String(), ":")[1]
+					ctx.Req.SetBasicAuth(user, pw)
+					setProxyBasicAuthHeader(uri, req)
+				}
+
+				logger.Get().Debuglnf("%s %s -> %s, AUTH HEADER %s", req.Method, req.RemoteAddr, req.Host, req.Header.Get(authHeader))
+				return req, nil
+			})
+	}
 
 	p.proxy.OnResponse().DoFunc(func(resp *http.Response, ctx *goproxy.ProxyCtx) *http.Response {
 		if resp != nil {

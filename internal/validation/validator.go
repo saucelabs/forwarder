@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/saucelabs/forwarder/internal/util"
 )
 
 var (
@@ -129,6 +130,54 @@ func dnsURIValidator(fl validator.FieldLevel) bool {
 	return true
 }
 
+// Checks if a given URL is a valid URL containing user and pwd.
+// - Known scheme: http, https
+// - Valid hostname
+// - Port in a valid range: 53 - 65535.
+// - Username
+// - Password
+func authURIValidator(fl validator.FieldLevel) bool {
+	fieldValue := strings.ToLower(fl.Field().String())
+
+	// Can't be empty.
+	if fieldValue == "" {
+		return false
+	}
+
+	// Need to be a valid URI.
+	parsedURL, err := util.NormalizeURI(fieldValue)
+	if err != nil {
+		return false
+	}
+
+	hostname := parsedURL.Hostname()
+	portAsString := parsedURL.Port()
+
+	// URI components can't be empty.
+	if parsedURL.Scheme == "" || hostname == "" || portAsString == "" {
+		return false
+	}
+
+	_, err = strconv.Atoi(portAsString)
+	if err != nil {
+		return false
+	}
+
+	if parsedURL.User == nil {
+		return false
+	}
+
+	if _, isSet := parsedURL.User.Password(); !isSet {
+		return false
+	}
+
+	if parsedURL.User.Username() == "" {
+		return false
+	}
+
+	return true
+}
+
 // Checks if the given text, or URI is valid for the PAC loader. By valid:
 // - Remote loading: `http`, or `https`
 // - Local loading: `file`
@@ -223,6 +272,7 @@ func Setup() *validator.Validate {
 
 	v.RegisterValidation("basicAuth", basicAuthCredentialValidator)
 	v.RegisterValidation("dnsURI", dnsURIValidator)
+	v.RegisterValidation("authURI", authURIValidator)
 	v.RegisterValidation("pacTextOrURI", pacSourceValidator)
 	v.RegisterValidation("proxyURI", proxyURIValidator)
 
