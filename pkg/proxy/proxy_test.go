@@ -6,6 +6,7 @@ package proxy
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -18,6 +19,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/saucelabs/forwarder/internal/logger"
 	"github.com/saucelabs/randomness"
 	"github.com/saucelabs/sypl/fields"
@@ -158,6 +160,91 @@ func executeRequest(client *http.Client, uri string) (int, string, error) {
 // Tests
 //////
 
+func TestEncodeSiteCredentials(t *testing.T) {
+	tests := map[string]struct {
+		input    string
+		hostport string
+		creds    string
+		isErr    bool
+	}{
+		"no separators": {
+			input:    "asdf",
+			hostport: "",
+			creds:    "",
+			isErr:    true,
+		},
+		"empty field": {
+			input:    "asdf:::",
+			hostport: "",
+			creds:    "",
+			isErr:    true,
+		},
+		"valid data": {
+			input:    "asdf:1234:user:pass",
+			hostport: "asdf:1234",
+			creds:    "dXNlcjpwYXNz",
+			isErr:    false,
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			h, c, err := encodeSiteCredentials(tc.input)
+
+			if h != tc.hostport {
+				t.Fatalf("%s != %s", h, tc.hostport)
+			}
+			if c != tc.creds {
+				t.Fatalf("%s != %s", c, tc.creds)
+			}
+			if tc.isErr != (err != nil) {
+				t.Fatalf("Err should be %v, is %s", tc.isErr, err)
+			}
+		})
+	}
+}
+
+func TestParseSiteCredentials(t *testing.T) {
+	tests := map[string]struct {
+		in     []string
+		expect map[string]string
+	}{
+		"valid data": {
+			in: []string{"abc:123:user:pass"},
+			expect: map[string]string{
+				"abc:123": "dXNlcjpwYXNz",
+			},
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			out, _ := parseSiteCredentials(tc.in)
+
+			diff := cmp.Diff(tc.expect, out)
+			if diff != "" {
+				t.Fatalf(diff)
+			}
+		})
+	}
+}
+
+func getSiteCredentials(target string) []string {
+	uri, _ := url.Parse(target)
+	port := uri.Port()
+	if port == "" {
+		if uri.Scheme == "http" {
+			port = "80"
+		} else {
+			port = "443"
+		}
+	}
+
+	creds := fmt.Sprintf("%s:%s:user:pass", uri.Hostname(), port)
+
+	return []string{creds}
+}
+
 //nolint:maintidx
 func TestNew(t *testing.T) {
 	//////
@@ -176,6 +263,7 @@ func TestNew(t *testing.T) {
 		upstreamProxyURI      *url.URL
 		pacURI                *url.URL
 		pacProxiesCredentials []string
+		useAuth               bool
 		loggingOptions        *LoggingOptions
 	}
 	tests := []struct {
@@ -199,6 +287,20 @@ func TestNew(t *testing.T) {
 					"",
 				),
 				loggingOptions: loggingOptions,
+			},
+			wantErr: false,
+		},
+		{
+			name: "Should work - local proxy with site auth",
+			args: args{
+				localProxyURI: URIBuilder(
+					defaultProxyHostname,
+					r.MustGenerate(),
+					"",
+					"",
+				),
+				loggingOptions: loggingOptions,
+				useAuth:        true,
 			},
 			wantErr: false,
 		},
@@ -362,7 +464,14 @@ func TestNew(t *testing.T) {
 			// Target/end server.
 			//////
 
-			targetServer := createMockedHTTPServer(http.StatusOK, "body", "")
+			targetCreds := ""
+			if tt.args.useAuth {
+				targetCreds = "dXNlcjpwYXNz" //nolint
+				targetCreds = base64.
+					StdEncoding.
+					EncodeToString([]byte("user:pass"))
+			}
+			targetServer := createMockedHTTPServer(http.StatusOK, "body", targetCreds)
 
 			defer func() { targetServer.Close() }()
 
@@ -402,6 +511,11 @@ func TestNew(t *testing.T) {
 				pacURI = tt.args.pacURI.String()
 			}
 
+			var siteCredentials []string
+			if tt.args.useAuth {
+				siteCredentials = getSiteCredentials(targetServerURL)
+			}
+
 			//////
 			// Local proxy.
 			//
@@ -422,6 +536,9 @@ func TestNew(t *testing.T) {
 
 				// PAC proxies credentials in standard URI format.
 				tt.args.pacProxiesCredentials,
+
+				// site credentials in host:port:user:pass format
+				siteCredentials,
 
 				// Logging settings.
 				&Options{
@@ -495,6 +612,9 @@ func TestNew(t *testing.T) {
 					"",
 
 					// PAC proxies credentials in standard URI format.
+					nil,
+
+					// site credentials in host:port:user:pass format
 					nil,
 
 					// Logging settings.
@@ -580,7 +700,7 @@ func BenchmarkNew(b *testing.B) {
 
 	localProxyURI := URIBuilder(defaultProxyHostname, r.MustGenerate(), "", "")
 
-	proxy, err := New(localProxyURI.String(), "", "", nil, nil)
+	proxy, err := New(localProxyURI.String(), "", "", nil, nil, nil)
 	if err != nil {
 		log.Fatalln("Failed to create proxy.", err)
 	}

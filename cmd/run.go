@@ -16,6 +16,8 @@ var (
 	localProxyURI    string
 	upstreamProxyURI string
 
+	siteCredentials []string
+
 	pacProxiesCredentials []string
 	pacURI                string
 
@@ -46,10 +48,10 @@ Note: Can't setup upstream, and PAC at the same time.
 
   Start a proxy listening to http://0.0.0.0:8085:
   $ forwarder run -l "http://0.0.0.0:8085"
-  
+
   Start a protected proxy:
   $ forwarder run -l "http://user:pwd@localhost:8085"
-  
+
   Start a protected proxy, forwarding connection to an upstream proxy running at
   http://localhost:8089:
   $ forwarder run \
@@ -61,19 +63,19 @@ Note: Can't setup upstream, and PAC at the same time.
   $ forwarder run \
     -l "http://user:pwd@localhost:8085" \
     -u "http://user1:pwd1@localhost:8089"
-	
+
   Start a protected proxy, forwarding connection to an upstream proxy, setup via
   PAC - server running at http://localhost:8090:
   $ forwarder run \
     -l "http://user:pwd@localhost:8085" \
     -p "http://localhost:8090"
-	
+
   Start a protected proxy, forwarding connection to an upstream proxy, setup via
   PAC - protected server running at http://user2:pwd2@localhost:8090:
   $ forwarder run \
     -l "http://user:pwd@localhost:8085" \
     -p "http://user2:pwd2@localhost:8090"
-	
+
   Start a protected proxy, forwarding connection to an upstream proxy, setup via
   PAC - protected server running at http://user2:pwd2@localhost:8090, specifying
   credential for protected proxies specified in PAC:
@@ -93,7 +95,7 @@ Note: Can't setup upstream, and PAC at the same time.
 	  -d "http://user3:pwd4@localhost:8091,http://user4:pwd5@localhost:8092"
 	`,
 	Run: func(cmd *cobra.Command, args []string) {
-		p, err := proxy.New(localProxyURI, upstreamProxyURI, pacURI, pacProxiesCredentials, &proxy.Options{
+		p, err := proxy.New(localProxyURI, upstreamProxyURI, pacURI, pacProxiesCredentials, siteCredentials, &proxy.Options{
 			LoggingOptions: &proxy.LoggingOptions{
 				Level:     logLevel,
 				FileLevel: fileLevel,
@@ -120,6 +122,7 @@ func init() {
 	runCmd.Flags().StringSliceVarP(&dnsURIs, "dns-uri", "n", nil, "sets dns URI")
 	runCmd.Flags().StringVarP(&pacURI, "pac-uri", "p", "", "sets URI to PAC content, or directly, the PAC content")
 	runCmd.Flags().StringSliceVarP(&pacProxiesCredentials, "pac-proxies-credentials", "d", nil, "sets PAC proxies credentials using standard URI format")
+	runCmd.Flags().StringSliceVarP(&siteCredentials, "site-credentials", "d", nil, "sets site based credentials")
 	runCmd.Flags().BoolVarP(&proxyLocalhost, "proxy-localhost", "t", false, "if set, will proxy localhost requests to an upstream proxy - if any")
 	runCmd.Flags().BoolVarP(&automaticallyRetryPort, "find-port", "r", true, "if set, and the specified local proxy port is in-use, it will find, and use an available one")
 }

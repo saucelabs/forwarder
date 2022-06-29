@@ -203,6 +203,9 @@ type Proxy struct {
 	// Credentials for proxies specified in PAC content.
 	pacProxiesCredentials []string
 
+	// Credentials for passing basic authentication to requests
+	siteCredentials map[string]string
+
 	// Underlying proxy implementation.
 	proxy *goproxy.ProxyHttpServer
 }
@@ -358,6 +361,48 @@ func setupPACUpstreamProxyConnection(p *Proxy, ctx *goproxy.ProxyCtx) error {
 	resetUpstreamSettings(ctx)
 
 	return nil
+}
+
+// encodeSiteCredentials converts credentials (strings of "user:pass") into
+// base64 encoded strings to be used as basic authentication headers.
+func encodeSiteCredentials(creds string) (string, string, error) {
+	tokens := strings.Split(creds, ":")
+	if len(tokens) != 4 { //nolint
+		return "", "", fmt.Errorf("failed to parse %s as site auth", creds)
+	}
+
+	for _, token := range tokens {
+		if len(token) == 0 {
+			return "", "", fmt.Errorf("failed to find credentials in %s", creds)
+		}
+	}
+
+	encodedCredential, err := credential.NewBasicAuth(tokens[2], tokens[3])
+	if err != nil {
+		return "", "", fmt.Errorf("failed to parse credentials from %s", creds)
+	}
+
+	return fmt.Sprintf("%s:%s", tokens[0], tokens[1]), encodedCredential.ToBase64(), nil
+}
+
+func parseSiteCredentials(creds []string) (map[string]string, error) {
+	credMap := make(map[string]string, len(creds))
+
+	for _, credentialText := range creds {
+		hostport, creds, err := encodeSiteCredentials(credentialText)
+		if err != nil {
+			return nil, err
+		}
+
+		_, found := credMap[hostport]
+		if found {
+			return nil, fmt.Errorf("multiple credentials for %s", hostport)
+		}
+
+		credMap[hostport] = creds
+	}
+
+	return credMap, nil
 }
 
 // DRY on handler's code.
@@ -523,6 +568,75 @@ func (p *Proxy) Run() {
 	}
 }
 
+func (p *Proxy) setupProxyHandlers() {
+	p.proxy.OnRequest().HandleConnectFunc(func(host string, ctx *goproxy.ProxyCtx) (*goproxy.ConnectAction, string) {
+		logger.Get().Debuglnf("%s %s -> %s", ctx.Req.Method, ctx.Req.RemoteAddr, ctx.Req.Host)
+		logger.Get().Debuglnf("%q", dumpHeaders(ctx.Req))
+
+		if err := p.setupHandlers(ctx); err != nil {
+			logger.Get().Errorlnf("Failed to setup handler (HTTPS) for request %s. %+v", ctx.Req.URL.Redacted(), err)
+
+			return goproxy.RejectConnect, host
+		}
+
+		return nil, host
+	})
+
+	p.proxy.OnRequest().DoFunc(func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
+		logger.Get().Debuglnf("%s %s -> %s %s %s", req.Method, req.RemoteAddr, req.URL.Scheme, req.Host, req.URL.Port())
+		logger.Get().Tracelnf("%q", dumpHeaders(ctx.Req))
+
+		if err := p.setupHandlers(ctx); err != nil {
+			logger.Get().Errorlnf("Failed to setup handler (HTTP) for request %s. %+v", ctx.Req.URL.Redacted(), err)
+
+			return nil, goproxy.NewResponse(
+				ctx.Req,
+				goproxy.ContentTypeText,
+				http.StatusInternalServerError,
+				err.Error(),
+			)
+		}
+
+		p.addAuthHeader(req)
+
+		return ctx.Req, nil
+	})
+
+	p.proxy.OnResponse().DoFunc(func(resp *http.Response, ctx *goproxy.ProxyCtx) *http.Response {
+		if resp != nil {
+			logger.Get().Debuglnf("%s <- %s %v (%v bytes)",
+				resp.Request.RemoteAddr, resp.Request.Host, resp.Status, resp.ContentLength)
+		} else {
+			logger.Get().Tracelnf("%s <- %s response is empty", ctx.Req.Host, ctx.Req.RemoteAddr)
+		}
+
+		return resp
+	})
+}
+
+// addAuthHeader modifies the request and adds an authorization header if necessary.
+func (p *Proxy) addAuthHeader(req *http.Request) {
+	hostport := req.Host
+
+	if req.URL.Port() == "" {
+		var port string
+		if req.URL.Scheme == "http" {
+			port = "80"
+		}
+
+		hostport = fmt.Sprintf("%s:%s", req.Host, port)
+	}
+
+	// If req.Host is in the auth map, add the basic auth header
+	// using the credentials. These credentials are already base64
+	// encoded.
+	creds, found := p.siteCredentials[hostport]
+	if found {
+		logger.Get().Tracelnf("Found site credentials for %s", req.Host)
+		req.Header.Set("Authorization", fmt.Sprintf("Basic %s", creds))
+	}
+}
+
 //////
 // Factory
 //////
@@ -533,6 +647,7 @@ func New(
 	localProxyURI string,
 	upstreamProxyURI string,
 	pacURI string, pacProxiesCredentials []string,
+	siteCredentials []string,
 	options *Options,
 ) (*Proxy, error) {
 	// Instantiate validator.
@@ -560,6 +675,12 @@ func New(
 		return nil, err
 	}
 
+	// Parse site credential list into map of host:port -> base64 encoded credentials.
+	creds, err := parseSiteCredentials(siteCredentials)
+	if err != nil {
+		return nil, err
+	}
+
 	p := &Proxy{
 		LocalProxyURI:         localProxyURI,
 		Mode:                  Direct,
@@ -569,6 +690,7 @@ func New(
 		UpstreamProxyURI:      upstreamProxyURI,
 		pacProxiesCredentials: pacProxiesCredentials,
 		mutex:                 &sync.RWMutex{},
+		siteCredentials:       creds,
 	}
 
 	if err := validation.Get().Struct(p); err != nil {
@@ -672,47 +794,8 @@ func New(
 		p.pacParser = pacParser
 	}
 
-	p.proxy.OnRequest().HandleConnectFunc(func(host string, ctx *goproxy.ProxyCtx) (*goproxy.ConnectAction, string) {
-		logger.Get().Debuglnf("%s %s -> %s", ctx.Req.Method, ctx.Req.RemoteAddr, ctx.Req.Host)
-		logger.Get().Debuglnf("%q", dumpHeaders(ctx.Req))
-
-		if err := p.setupHandlers(ctx); err != nil {
-			logger.Get().Errorlnf("Failed to setup handler (HTTPS) for request %s. %+v", ctx.Req.URL.Redacted(), err)
-
-			return goproxy.RejectConnect, host
-		}
-
-		return nil, host
-	})
-
-	p.proxy.OnRequest().DoFunc(func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
-		logger.Get().Debuglnf("%s %s -> %s", req.Method, req.RemoteAddr, req.Host)
-		logger.Get().Tracelnf("%q", dumpHeaders(ctx.Req))
-
-		if err := p.setupHandlers(ctx); err != nil {
-			logger.Get().Errorlnf("Failed to setup handler (HTTP) for request %s. %+v", ctx.Req.URL.Redacted(), err)
-
-			return nil, goproxy.NewResponse(
-				ctx.Req,
-				goproxy.ContentTypeText,
-				http.StatusInternalServerError,
-				err.Error(),
-			)
-		}
-
-		return ctx.Req, nil
-	})
-
-	p.proxy.OnResponse().DoFunc(func(resp *http.Response, ctx *goproxy.ProxyCtx) *http.Response {
-		if resp != nil {
-			logger.Get().Debuglnf("%s <- %s %v (%v bytes)",
-				resp.Request.RemoteAddr, resp.Request.Host, resp.Status, resp.ContentLength)
-		} else {
-			logger.Get().Tracelnf("%s <- %s response is empty", ctx.Req.Host, ctx.Req.RemoteAddr)
-		}
-
-		return resp
-	})
+	// Setup the request and response handlers
+	p.setupProxyHandlers()
 
 	// Local proxy authentication.
 	if parsedLocalProxyURI.User.Username() != "" {

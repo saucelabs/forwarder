@@ -7,6 +7,7 @@ require (
 	github.com/elazarl/goproxy v0.0.0-20220529153421-8ea89ba92021
 	github.com/elazarl/goproxy/ext v0.0.0-20220529153421-8ea89ba92021
 	github.com/go-playground/validator/v10 v10.11.0
+	github.com/google/go-cmp v0.5.6
 	github.com/saucelabs/customerror v1.0.3
 	github.com/saucelabs/pacman v0.1.1
 	github.com/saucelabs/randomness v0.0.5
