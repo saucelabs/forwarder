@@ -700,7 +700,10 @@ func BenchmarkNew(b *testing.B) {
 
 	localProxyURI := URIBuilder(defaultProxyHostname, r.MustGenerate(), "", "")
 
-	proxy, err := New(localProxyURI.String(), "", "", nil, nil, nil)
+	proxy, err := New(localProxyURI.String(), "", "", nil, nil,
+		&Options{
+			LoggingOptions: loggingOptions,
+		})
 	if err != nil {
 		log.Fatalln("Failed to create proxy.", err)
 	}

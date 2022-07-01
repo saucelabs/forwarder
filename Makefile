@@ -32,6 +32,9 @@ endif
 test:
 	@go test -timeout 120s -short -v -race -cover -coverprofile=coverage.out ./...
 
+bench:
+	@go test -bench=. -run=XXX ./pkg/proxy
+
 test-integration:
 	@FORWARDER_TEST_MODE=integration go test -timeout 120s -v -race -cover -coverprofile=coverage.out ./... && echo "Test OK"
 
