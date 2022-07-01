@@ -36,6 +36,7 @@ const (
 	ConstantBackoff = 300
 	DNSTimeout      = 1 * time.Minute
 	MaxRetry        = 3
+	httpPort        = 80
 )
 
 // Possible ways to run Forwarder.
@@ -597,7 +598,7 @@ func (p *Proxy) setupProxyHandlers() {
 			)
 		}
 
-		p.addAuthHeader(req)
+		p.maybeAddAuthHeader(req)
 
 		return ctx.Req, nil
 	})
@@ -614,25 +615,25 @@ func (p *Proxy) setupProxyHandlers() {
 	})
 }
 
-// addAuthHeader modifies the request and adds an authorization header if necessary.
-func (p *Proxy) addAuthHeader(req *http.Request) {
+// maybeAddAuthHeader modifies the request and adds an authorization header if necessary.
+func (p *Proxy) maybeAddAuthHeader(req *http.Request) {
 	hostport := req.Host
 
 	if req.URL.Port() == "" {
-		var port string
+		// When the destination URL doesn't contain an explicit port, Go http-parsed
+		// URL Port() returns an empty string.
 		if req.URL.Scheme == "http" {
-			port = "80"
+			hostport = fmt.Sprintf("%s:%d", req.Host, httpPort)
+		} else {
+			logger.Get().Warnlnf("Failed to determine port for %s.", req.URL.Redacted())
 		}
-
-		hostport = fmt.Sprintf("%s:%s", req.Host, port)
 	}
 
 	// If req.Host is in the auth map, add the basic auth header
 	// using the credentials. These credentials are already base64
 	// encoded.
-	creds, found := p.siteCredentials[hostport]
-	if found {
-		logger.Get().Tracelnf("Found site credentials for %s", req.Host)
+	if creds, found := p.siteCredentials[hostport]; found {
+		logger.Get().Tracelnf("Adding an auth header for %s", hostport)
 		req.Header.Set("Authorization", fmt.Sprintf("Basic %s", creds))
 	}
 }
