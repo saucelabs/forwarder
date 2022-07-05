@@ -160,57 +160,40 @@ func executeRequest(client *http.Client, uri string) (int, string, error) {
 // Tests
 //////
 
-func TestEncodeSiteCredentials(t *testing.T) {
-	tests := map[string]struct {
-		input    string
-		hostport string
-		creds    string
-		isErr    bool
-	}{
-		"no separators": {
-			input:    "asdf",
-			hostport: "",
-			creds:    "",
-			isErr:    true,
-		},
-		"empty field": {
-			input:    "asdf:::",
-			hostport: "",
-			creds:    "",
-			isErr:    true,
-		},
-		"valid data": {
-			input:    "asdf:1234:user:pass",
-			hostport: "asdf:1234",
-			creds:    "dXNlcjpwYXNz",
-			isErr:    false,
-		},
-	}
-
-	for name, tc := range tests {
-		t.Run(name, func(t *testing.T) {
-			h, c, err := encodeSiteCredentials(tc.input)
-
-			if h != tc.hostport {
-				t.Fatalf("%s != %s", h, tc.hostport)
-			}
-			if c != tc.creds {
-				t.Fatalf("%s != %s", c, tc.creds)
-			}
-			if tc.isErr != (err != nil) {
-				t.Fatalf("Err should be %v, is %s", tc.isErr, err)
-			}
-		})
-	}
-}
-
 func TestParseSiteCredentials(t *testing.T) {
 	tests := map[string]struct {
 		in     []string
 		expect map[string]string
+		err    bool
 	}{
-		"valid data": {
-			in: []string{"abc:123:user:pass"},
+		"invalid with schema": {
+			in:  []string{"https://user:pass@abc"},
+			err: true,
+		},
+		"empty user": {
+			in:  []string{":pass@abc"},
+			err: true,
+		},
+		"empty password": {
+			in:  []string{"user:@abc"},
+			err: true,
+		},
+		"missing password": {
+			in:  []string{"user@abc"},
+			err: true,
+		},
+		"missing host": {
+			in:  []string{"user:pass"},
+			err: true,
+		},
+		"valid host": {
+			in: []string{"user:pass@abc"},
+			expect: map[string]string{
+				"abc": "dXNlcjpwYXNz",
+			},
+		},
+		"valid host+port": {
+			in: []string{"user:pass@abc:123"},
 			expect: map[string]string{
 				"abc:123": "dXNlcjpwYXNz",
 			},
@@ -219,7 +202,11 @@ func TestParseSiteCredentials(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			out, _ := parseSiteCredentials(tc.in)
+			out, err := parseSiteCredentials(tc.in)
+
+			if (err == nil) == tc.err {
+				t.Fatalf("Unexpected error condition: %s", err)
+			}
 
 			diff := cmp.Diff(tc.expect, out)
 			if diff != "" {
@@ -227,22 +214,6 @@ func TestParseSiteCredentials(t *testing.T) {
 			}
 		})
 	}
-}
-
-func getSiteCredentials(target string) []string {
-	uri, _ := url.Parse(target)
-	port := uri.Port()
-	if port == "" {
-		if uri.Scheme == "http" {
-			port = "80"
-		} else {
-			port = "443"
-		}
-	}
-
-	creds := fmt.Sprintf("%s:%s:user:pass", uri.Hostname(), port)
-
-	return []string{creds}
 }
 
 //nolint:maintidx
@@ -263,7 +234,7 @@ func TestNew(t *testing.T) {
 		upstreamProxyURI      *url.URL
 		pacURI                *url.URL
 		pacProxiesCredentials []string
-		useAuth               bool
+		siteCredentials       []string
 		loggingOptions        *LoggingOptions
 	}
 	tests := []struct {
@@ -299,8 +270,8 @@ func TestNew(t *testing.T) {
 					"",
 					"",
 				),
-				loggingOptions: loggingOptions,
-				useAuth:        true,
+				loggingOptions:  loggingOptions,
+				siteCredentials: []string{},
 			},
 			wantErr: false,
 		},
@@ -465,8 +436,7 @@ func TestNew(t *testing.T) {
 			//////
 
 			targetCreds := ""
-			if tt.args.useAuth {
-				targetCreds = "dXNlcjpwYXNz" //nolint
+			if tt.args.siteCredentials != nil {
 				targetCreds = base64.
 					StdEncoding.
 					EncodeToString([]byte("user:pass"))
@@ -512,8 +482,13 @@ func TestNew(t *testing.T) {
 			}
 
 			var siteCredentials []string
-			if tt.args.useAuth {
-				siteCredentials = getSiteCredentials(targetServerURL)
+			if tt.args.siteCredentials != nil {
+				uri, err := url.Parse(targetServerURL)
+				if err != nil {
+					panic(err)
+				}
+
+				siteCredentials = append(siteCredentials, "user:pass@"+uri.Host)
 			}
 
 			//////
@@ -537,7 +512,7 @@ func TestNew(t *testing.T) {
 				// PAC proxies credentials in standard URI format.
 				tt.args.pacProxiesCredentials,
 
-				// site credentials in host:port:user:pass format
+				// site credentials in standard URI format.
 				siteCredentials,
 
 				// Logging settings.
@@ -614,7 +589,7 @@ func TestNew(t *testing.T) {
 					// PAC proxies credentials in standard URI format.
 					nil,
 
-					// site credentials in host:port:user:pass format
+					// site credentials in standard URI format.
 					nil,
 
 					// Logging settings.

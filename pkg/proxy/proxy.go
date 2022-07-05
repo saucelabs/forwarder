@@ -364,43 +364,36 @@ func setupPACUpstreamProxyConnection(p *Proxy, ctx *goproxy.ProxyCtx) error {
 	return nil
 }
 
-// encodeSiteCredentials converts credentials (strings of "user:pass") into
-// base64 encoded strings to be used as basic authentication headers.
-func encodeSiteCredentials(creds string) (string, string, error) {
-	tokens := strings.Split(creds, ":")
-	if len(tokens) != 4 { //nolint
-		return "", "", fmt.Errorf("failed to parse %s as site auth", creds)
-	}
-
-	for _, token := range tokens {
-		if len(token) == 0 {
-			return "", "", fmt.Errorf("failed to find credentials in %s", creds)
-		}
-	}
-
-	encodedCredential, err := credential.NewBasicAuth(tokens[2], tokens[3])
-	if err != nil {
-		return "", "", fmt.Errorf("failed to parse credentials from %s", creds)
-	}
-
-	return fmt.Sprintf("%s:%s", tokens[0], tokens[1]), encodedCredential.ToBase64(), nil
-}
-
+// parseSiteCredentials takes a list of "user:pass@host:port" strings and converts them to a
+// map of "host:port": base64("user:pass").
 func parseSiteCredentials(creds []string) (map[string]string, error) {
 	credMap := make(map[string]string, len(creds))
 
 	for _, credentialText := range creds {
-		hostport, creds, err := encodeSiteCredentials(credentialText)
+		// Parse the URL, adding fake schema since the url package expects it
+		uri, err := url.Parse("schema://" + credentialText)
 		if err != nil {
 			return nil, err
 		}
 
-		_, found := credMap[hostport]
-		if found {
-			return nil, fmt.Errorf("multiple credentials for %s", hostport)
+		// Get the base64 of the credentials
+		pass, found := uri.User.Password()
+		if !found {
+			return nil, fmt.Errorf("password not found in %s", credentialText)
 		}
 
-		credMap[hostport] = creds
+		basicAuth, err := credential.NewBasicAuth(uri.User.Username(), pass)
+		if err != nil {
+			return nil, err
+		}
+
+		// Fail if the host is listed twice in the list
+		_, found = credMap[uri.Host]
+		if found {
+			return nil, fmt.Errorf("multiple credentials for %s", uri.Host)
+		}
+
+		credMap[uri.Host] = basicAuth.ToBase64()
 	}
 
 	return credMap, nil
