@@ -162,9 +162,12 @@ func executeRequest(client *http.Client, uri string) (int, string, error) {
 
 func TestParseSiteCredentials(t *testing.T) {
 	tests := map[string]struct {
-		in     []string
-		expect map[string]string
-		err    bool
+		in       []string
+		hostport map[string]string
+		port     map[string]string
+		host     map[string]string
+		global   string
+		err      bool
 	}{
 		"invalid with schema": {
 			in:  []string{"https://user:pass@abc"},
@@ -188,27 +191,67 @@ func TestParseSiteCredentials(t *testing.T) {
 		},
 		"valid host": {
 			in: []string{"user:pass@abc"},
-			expect: map[string]string{
+			hostport: map[string]string{
 				"abc": "dXNlcjpwYXNz",
 			},
+			host: map[string]string{},
+			port: map[string]string{},
 		},
 		"valid host+port": {
 			in: []string{"user:pass@abc:123"},
-			expect: map[string]string{
+			hostport: map[string]string{
 				"abc:123": "dXNlcjpwYXNz",
 			},
+			host: map[string]string{},
+			port: map[string]string{},
+		},
+		"wildcard host": {
+			in: []string{"user:pass@*:123"},
+			port: map[string]string{
+				"123": "dXNlcjpwYXNz",
+			},
+			host:     map[string]string{},
+			hostport: map[string]string{},
+		},
+		"wildcard port": {
+			in: []string{"user:pass@abc:0"},
+			host: map[string]string{
+				"abc": "dXNlcjpwYXNz",
+			},
+			hostport: map[string]string{},
+			port:     map[string]string{},
+		},
+		"global wildcard": {
+			in:       []string{"user:pass@*:0"},
+			global:   "dXNlcjpwYXNz",
+			hostport: map[string]string{},
+			host:     map[string]string{},
+			port:     map[string]string{},
 		},
 	}
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			out, err := parseSiteCredentials(tc.in)
+			hostport, host, port, global, err := parseSiteCredentials(tc.in)
 
 			if (err == nil) == tc.err {
 				t.Fatalf("Unexpected error condition: %s", err)
 			}
 
-			diff := cmp.Diff(tc.expect, out)
+			diff := cmp.Diff(tc.hostport, hostport)
+			if diff != "" {
+				t.Fatalf(diff)
+			}
+
+			diff = cmp.Diff(tc.host, host)
+			if diff != "" {
+				t.Fatalf(diff)
+			}
+			diff = cmp.Diff(tc.port, port)
+			if diff != "" {
+				t.Fatalf(diff)
+			}
+			diff = cmp.Diff(tc.global, global)
 			if diff != "" {
 				t.Fatalf(diff)
 			}

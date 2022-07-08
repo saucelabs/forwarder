@@ -204,8 +204,17 @@ type Proxy struct {
 	// Credentials for proxies specified in PAC content.
 	pacProxiesCredentials []string
 
-	// Credentials for passing basic authentication to requests
+	// host:port credentials for passing basic authentication to requests
 	siteCredentials map[string]string
+
+	// host (wildcard port) credentials for passing basic authentication to requests
+	siteCredentialsHost map[string]string
+
+	// port (wildcard host) credentials for passing basic authentication to requests
+	siteCredentialsPort map[string]string
+
+	// Global wildcard credentials for passing basic authentication to requests
+	siteCredentialsWildcard string
 
 	// Underlying proxy implementation.
 	proxy *goproxy.ProxyHttpServer
@@ -364,39 +373,85 @@ func setupPACUpstreamProxyConnection(p *Proxy, ctx *goproxy.ProxyCtx) error {
 	return nil
 }
 
-// parseSiteCredentials takes a list of "user:pass@host:port" strings and converts them to a
-// map of "host:port": base64("user:pass").
-func parseSiteCredentials(creds []string) (map[string]string, error) {
-	credMap := make(map[string]string, len(creds))
+// parseSiteCredentials takes a list of "user:pass@host:port" strings.
+//
+// A port of '0' means a wildcard port
+// A host of '*' means a wildcard host
+// A host:port of '*:0' will match everything
+//
+// They are converted to a map of:
+// - "host:port": base64("user:pass").
+// - "port": base64("user:pass")
+// - "host": base64("user:pass")
+// and a global wildcard string.
+func parseSiteCredentials(creds []string) (map[string]string, map[string]string, map[string]string, string, error) {
+	hostportMap := make(map[string]string, len(creds))
+	hostMap := make(map[string]string, len(creds))
+	portMap := make(map[string]string, len(creds))
+	global := ""
 
 	for _, credentialText := range creds {
 		// Parse the URL, adding fake schema since the url package expects it
 		uri, err := url.Parse("schema://" + credentialText)
 		if err != nil {
-			return nil, err
+			return nil, nil, nil, "", err
 		}
 
 		// Get the base64 of the credentials
 		pass, found := uri.User.Password()
 		if !found {
-			return nil, fmt.Errorf("password not found in %s", credentialText)
+			return nil, nil, nil, "", fmt.Errorf("password not found in %s", credentialText)
 		}
 
 		basicAuth, err := credential.NewBasicAuth(uri.User.Username(), pass)
 		if err != nil {
-			return nil, err
+			return nil, nil, nil, "", err
 		}
 
-		// Fail if the host is listed twice in the list
-		_, found = credMap[uri.Host]
+		encoded := basicAuth.ToBase64()
+
+		if uri.Hostname() == "*" && uri.Port() == "0" {
+			if global != "" {
+				return nil, nil, nil, "", fmt.Errorf("multiple credentials for global wildcard")
+			}
+
+			global = encoded
+
+			continue
+		}
+
+		if uri.Hostname() == "*" {
+			_, found = portMap[uri.Port()]
+			if found {
+				return nil, nil, nil, "", fmt.Errorf("multiple credentials for wildcard host with port %s", uri.Port())
+			}
+
+			portMap[uri.Port()] = encoded
+
+			continue
+		}
+
+		if uri.Port() == "0" {
+			_, found = hostMap[uri.Hostname()]
+			if found {
+				return nil, nil, nil, "", fmt.Errorf("multiple credentials for wildcard port with host %s", uri.Hostname())
+			}
+
+			hostMap[uri.Hostname()] = encoded
+
+			continue
+		}
+
+		// No wildcards, add the host:port directly
+		_, found = hostportMap[uri.Host]
 		if found {
-			return nil, fmt.Errorf("multiple credentials for %s", uri.Host)
+			return nil, nil, nil, "", fmt.Errorf("multiple credentials for %s", uri.Host)
 		}
 
-		credMap[uri.Host] = basicAuth.ToBase64()
+		hostportMap[uri.Host] = encoded
 	}
 
-	return credMap, nil
+	return hostportMap, hostMap, portMap, global, nil
 }
 
 // DRY on handler's code.
@@ -612,22 +667,53 @@ func (p *Proxy) setupProxyHandlers() {
 func (p *Proxy) maybeAddAuthHeader(req *http.Request) {
 	hostport := req.Host
 
+	var requestPort string
+
 	if req.URL.Port() == "" {
 		// When the destination URL doesn't contain an explicit port, Go http-parsed
 		// URL Port() returns an empty string.
 		if req.URL.Scheme == "http" {
+			requestPort = fmt.Sprintf("%d", httpPort)
 			hostport = fmt.Sprintf("%s:%d", req.Host, httpPort)
 		} else {
 			logger.Get().Warnlnf("Failed to determine port for %s.", req.URL.Redacted())
 		}
+	} else {
+		requestPort = req.URL.Port()
 	}
 
-	// If req.Host is in the auth map, add the basic auth header
-	// using the credentials. These credentials are already base64
-	// encoded.
+	/* Priority is exact match, then host, then port, then global wildcard */
+
+	// Check the hostport table
 	if creds, found := p.siteCredentials[hostport]; found {
 		logger.Get().Tracelnf("Adding an auth header for %s", hostport)
 		req.Header.Set("Authorization", fmt.Sprintf("Basic %s", creds))
+
+		return
+	}
+
+	// Host wildcard - check the port only
+	if creds, found := p.siteCredentialsPort[requestPort]; found {
+		logger.Get().Tracelnf("Adding an auth header for host wildcard and port match %s", requestPort)
+		req.Header.Set("Authorization", fmt.Sprintf("Basic %s", creds))
+
+		return
+	}
+
+	// Port wildcard - check the host only
+	if creds, found := p.siteCredentialsHost[req.URL.Hostname()]; found {
+		logger.Get().Tracelnf("Adding an auth header for port wildcard and host match %s", req.URL.Hostname())
+		req.Header.Set("Authorization", fmt.Sprintf("Basic %s", creds))
+
+		return
+	}
+
+	// Global wildcard was set
+	if p.siteCredentialsWildcard != "" {
+		logger.Get().Tracelnf("Adding an auth header for global wildcard")
+		req.Header.Set("Authorization", fmt.Sprintf("Basic %s", p.siteCredentialsWildcard))
+
+		return
 	}
 }
 
@@ -670,21 +756,24 @@ func New(
 	}
 
 	// Parse site credential list into map of host:port -> base64 encoded credentials.
-	creds, err := parseSiteCredentials(siteCredentials)
+	hostportMap, hostMap, portMap, global, err := parseSiteCredentials(siteCredentials)
 	if err != nil {
 		return nil, err
 	}
 
 	p := &Proxy{
-		LocalProxyURI:         localProxyURI,
-		Mode:                  Direct,
-		Options:               finalOptions,
-		PACURI:                pacURI,
-		State:                 Initializing,
-		UpstreamProxyURI:      upstreamProxyURI,
-		pacProxiesCredentials: pacProxiesCredentials,
-		mutex:                 &sync.RWMutex{},
-		siteCredentials:       creds,
+		LocalProxyURI:           localProxyURI,
+		Mode:                    Direct,
+		Options:                 finalOptions,
+		PACURI:                  pacURI,
+		State:                   Initializing,
+		UpstreamProxyURI:        upstreamProxyURI,
+		pacProxiesCredentials:   pacProxiesCredentials,
+		mutex:                   &sync.RWMutex{},
+		siteCredentials:         hostportMap,
+		siteCredentialsHost:     hostMap,
+		siteCredentialsPort:     portMap,
+		siteCredentialsWildcard: global,
 	}
 
 	if err := validation.Get().Struct(p); err != nil {
