@@ -61,7 +61,7 @@ func (o *Options) Default() {
 // Get returns the logger. If the logger isn't configured, it will exit with fatal.
 func Get() *sypl.Sypl {
 	if proxyLogger == nil {
-		log.Fatalln("Logger is not configired")
+		log.Fatalln("Logger is not configured")
 	}
 
 	return proxyLogger
