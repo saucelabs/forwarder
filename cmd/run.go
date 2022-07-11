@@ -40,6 +40,7 @@ All credentials can be set via env vars:
 - Upstream proxy: FORWARDER_UPSTREAMPROXY_AUTH
 - PAC URI: PACMAN_AUTH
 - PAC proxies: PACMAN_PROXIES_AUTH
+- Target URLs: FORWARDER_SITE_CREDENTIALS
 
 Note: Can't setup upstream, and PAC at the same time.
 `,
@@ -93,9 +94,16 @@ Note: Can't setup upstream, and PAC at the same time.
     -l "http://user:pwd@localhost:8085" \
     -p "http://user2:pwd2@localhost:8090" \
 	  -d "http://user3:pwd4@localhost:8091,http://user4:pwd5@localhost:8092"
+
+  Start a protected proxy that adds basic auth header to requests to foo.bar:8090
+  and qux.baz:80.
+  $ forwarder run \
+    -t \
+    -l "http://user:pwd@localhost:8085" \
+	--site-credentials "user1:pwd1@foo.bar:8090,user2:pwd2@qux:baz:80"
 	`,
 	Run: func(cmd *cobra.Command, args []string) {
-		p, err := proxy.New(localProxyURI, upstreamProxyURI, pacURI, pacProxiesCredentials, siteCredentials, &proxy.Options{
+		p, err := proxy.New(localProxyURI, upstreamProxyURI, pacURI, pacProxiesCredentials, &proxy.Options{
 			LoggingOptions: &proxy.LoggingOptions{
 				Level:     logLevel,
 				FileLevel: fileLevel,
@@ -105,6 +113,7 @@ Note: Can't setup upstream, and PAC at the same time.
 			AutomaticallyRetryPort: automaticallyRetryPort,
 			DNSURIs:                dnsURIs,
 			ProxyLocalhost:         proxyLocalhost,
+			SiteCredentials:        siteCredentials,
 		})
 		if err != nil {
 			cliLogger.Fatalln(customerror.NewFailedToError("run", customerror.WithError(err)))

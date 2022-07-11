@@ -15,6 +15,7 @@ linters:
     - testpackage
     - gochecknoglobals
     - exhaustivestruct
+    - exhaustruct
     - paralleltest
     - godox
     - cyclop
@@ -29,7 +30,7 @@ linters-settings:
     min-complexity: 40
 
   funlen:
-    lines: 200
+    lines: 220
     statements: 75
 
   nestif:

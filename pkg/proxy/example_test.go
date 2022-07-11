@@ -134,8 +134,6 @@ func ExampleNew() {
 		// PAC proxies credentials in standard URI format.
 		[]string{upstreamProxyURI.String()},
 
-		nil,
-
 		// Logging settings.
 		&Options{
 			LoggingOptions: loggingOptions,
@@ -165,8 +163,6 @@ func ExampleNew() {
 		"",
 
 		// PAC proxies credentials in standard URI format.
-		nil,
-
 		nil,
 
 		// Logging settings.
@@ -232,7 +228,7 @@ func ExampleNew_automaticallyRetryPort() {
 
 	errored := false
 
-	proxy1, err := New(fmt.Sprintf("http://0.0.0.0:%d", randomPort), "", "", nil, nil, &Options{
+	proxy1, err := New(fmt.Sprintf("http://0.0.0.0:%d", randomPort), "", "", nil, &Options{
 		LoggingOptions: &LoggingOptions{
 			Level:     "none",
 			FileLevel: "none",
@@ -246,7 +242,7 @@ func ExampleNew_automaticallyRetryPort() {
 
 	time.Sleep(1 * time.Second)
 
-	proxy2, err := New(fmt.Sprintf("http://0.0.0.0:%d", randomPort), "", "", nil, nil, &Options{
+	proxy2, err := New(fmt.Sprintf("http://0.0.0.0:%d", randomPort), "", "", nil, &Options{
 		AutomaticallyRetryPort: true,
 
 		LoggingOptions: &LoggingOptions{
@@ -289,7 +285,7 @@ func ExampleNew_sypplyingLogger() {
 
 	errored := false
 
-	proxy1, err := New(fmt.Sprintf("http://0.0.0.0:%d", randomPort), "", "", nil, nil, &Options{
+	proxy1, err := New(fmt.Sprintf("http://0.0.0.0:%d", randomPort), "", "", nil, &Options{
 		LoggingOptions: &LoggingOptions{
 			Logger:    customLogger,
 			Level:     level.Trace.String(),

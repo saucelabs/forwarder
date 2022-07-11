@@ -16,7 +16,7 @@ import (
 
 var ErrFailedToCopyOptions = customerror.NewFailedToError("deepCopy options")
 
-// Loads, validate credential from env var, and set URI's user.
+// Load credentials from the env var, validate and set the URL's user:pwd.
 func loadCredentialFromEnvVar(envVar string, uri *url.URL) error {
 	credentialFromEnvVar := os.Getenv(envVar)
 
@@ -33,6 +33,17 @@ func loadCredentialFromEnvVar(envVar string, uri *url.URL) error {
 	}
 
 	return nil
+}
+
+// Load URLs and their basic auth from the env var.
+func loadSiteCredentialsFromEnvVar(envVar string) []string {
+	basicAuthURLstr := os.Getenv(envVar)
+
+	if basicAuthURLstr == "" {
+		return nil
+	}
+
+	return strings.Split(basicAuthURLstr, ",")
 }
 
 // Copy from `source` to `target`.
