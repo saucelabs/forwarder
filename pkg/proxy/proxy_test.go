@@ -169,9 +169,13 @@ func TestParseSiteCredentials(t *testing.T) {
 		global   string
 		err      bool
 	}{
-		"invalid with schema": {
-			in:  []string{"https://user:pass@abc"},
-			err: true,
+		"valid with schema": {
+			in: []string{"https://user:pass@abc"},
+			hostport: map[string]string{
+				"abc": "dXNlcjpwYXNz",
+			},
+			host: map[string]string{},
+			port: map[string]string{},
 		},
 		"empty user": {
 			in:  []string{":pass@abc"},
@@ -555,13 +559,12 @@ func TestNew(t *testing.T) {
 				// PAC proxies credentials in standard URI format.
 				tt.args.pacProxiesCredentials,
 
-				// site credentials in standard URI format.
-				siteCredentials,
-
 				// Logging settings.
 				&Options{
 					DNSURIs:        dnsURIs,
 					LoggingOptions: loggingOptions,
+					// site credentials in standard URI format.
+					SiteCredentials: siteCredentials,
 				},
 			)
 			if err != nil {
@@ -630,9 +633,6 @@ func TestNew(t *testing.T) {
 					"",
 
 					// PAC proxies credentials in standard URI format.
-					nil,
-
-					// site credentials in standard URI format.
 					nil,
 
 					// Logging settings.
@@ -718,7 +718,7 @@ func BenchmarkNew(b *testing.B) {
 
 	localProxyURI := URIBuilder(defaultProxyHostname, r.MustGenerate(), "", "")
 
-	proxy, err := New(localProxyURI.String(), "", "", nil, nil,
+	proxy, err := New(localProxyURI.String(), "", "", nil,
 		&Options{
 			LoggingOptions: loggingOptions,
 		})
