@@ -38,6 +38,7 @@ const (
 	DNSTimeout      = 1 * time.Minute
 	MaxRetry        = 3
 	httpPort        = 80
+	httpsPort       = 443
 	proxyAuthHeader = "Proxy-Authorization"
 	authHeader      = "Authorization"
 )
@@ -677,9 +678,12 @@ func (p *Proxy) maybeAddAuthHeader(req *http.Request) {
 	if req.URL.Port() == "" {
 		// When the destination URL doesn't contain an explicit port, Go http-parsed
 		// URL Port() returns an empty string.
-		if req.URL.Scheme == "http" {
+		switch req.URL.Scheme {
+		case "http":
 			hostport = fmt.Sprintf("%s:%d", req.Host, httpPort)
-		} else {
+		case "https":
+			hostport = fmt.Sprintf("%s:%d", req.Host, httpsPort)
+		default:
 			logger.Get().Warnlnf("Failed to determine port for %s.", req.URL.Redacted())
 		}
 	}
