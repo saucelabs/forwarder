@@ -6,6 +6,7 @@ package proxy
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -18,6 +19,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/saucelabs/forwarder/internal/logger"
 	"github.com/saucelabs/randomness"
 	"github.com/saucelabs/sypl/fields"
@@ -158,6 +160,109 @@ func executeRequest(client *http.Client, uri string) (int, string, error) {
 // Tests
 //////
 
+func TestParseSiteCredentials(t *testing.T) {
+	tests := map[string]struct {
+		in       []string
+		hostport map[string]string
+		port     map[string]string
+		host     map[string]string
+		global   string
+		err      bool
+	}{
+		"valid with schema": {
+			in: []string{"https://user:pass@abc"},
+			hostport: map[string]string{
+				"abc": "dXNlcjpwYXNz",
+			},
+			host: map[string]string{},
+			port: map[string]string{},
+		},
+		"empty user": {
+			in:  []string{":pass@abc"},
+			err: true,
+		},
+		"empty password": {
+			in:  []string{"user:@abc"},
+			err: true,
+		},
+		"missing password": {
+			in:  []string{"user@abc"},
+			err: true,
+		},
+		"missing host": {
+			in:  []string{"user:pass"},
+			err: true,
+		},
+		"valid host": {
+			in: []string{"user:pass@abc"},
+			hostport: map[string]string{
+				"abc": "dXNlcjpwYXNz",
+			},
+			host: map[string]string{},
+			port: map[string]string{},
+		},
+		"valid host+port": {
+			in: []string{"user:pass@abc:123"},
+			hostport: map[string]string{
+				"abc:123": "dXNlcjpwYXNz",
+			},
+			host: map[string]string{},
+			port: map[string]string{},
+		},
+		"wildcard host": {
+			in: []string{"user:pass@*:123"},
+			port: map[string]string{
+				"123": "dXNlcjpwYXNz",
+			},
+			host:     map[string]string{},
+			hostport: map[string]string{},
+		},
+		"wildcard port": {
+			in: []string{"user:pass@abc:0"},
+			host: map[string]string{
+				"abc": "dXNlcjpwYXNz",
+			},
+			hostport: map[string]string{},
+			port:     map[string]string{},
+		},
+		"global wildcard": {
+			in:       []string{"user:pass@*:0"},
+			global:   "dXNlcjpwYXNz",
+			hostport: map[string]string{},
+			host:     map[string]string{},
+			port:     map[string]string{},
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			hostport, host, port, global, err := parseSiteCredentials(tc.in)
+
+			if (err == nil) == tc.err {
+				t.Fatalf("Unexpected error condition: %s", err)
+			}
+
+			diff := cmp.Diff(tc.hostport, hostport)
+			if diff != "" {
+				t.Fatalf(diff)
+			}
+
+			diff = cmp.Diff(tc.host, host)
+			if diff != "" {
+				t.Fatalf(diff)
+			}
+			diff = cmp.Diff(tc.port, port)
+			if diff != "" {
+				t.Fatalf(diff)
+			}
+			diff = cmp.Diff(tc.global, global)
+			if diff != "" {
+				t.Fatalf(diff)
+			}
+		})
+	}
+}
+
 //nolint:maintidx
 func TestNew(t *testing.T) {
 	//////
@@ -176,6 +281,7 @@ func TestNew(t *testing.T) {
 		upstreamProxyURI      *url.URL
 		pacURI                *url.URL
 		pacProxiesCredentials []string
+		siteCredentials       []string
 		loggingOptions        *LoggingOptions
 	}
 	tests := []struct {
@@ -199,6 +305,20 @@ func TestNew(t *testing.T) {
 					"",
 				),
 				loggingOptions: loggingOptions,
+			},
+			wantErr: false,
+		},
+		{
+			name: "Should work - local proxy with site auth",
+			args: args{
+				localProxyURI: URIBuilder(
+					defaultProxyHostname,
+					r.MustGenerate(),
+					"",
+					"",
+				),
+				loggingOptions:  loggingOptions,
+				siteCredentials: []string{},
 			},
 			wantErr: false,
 		},
@@ -362,7 +482,13 @@ func TestNew(t *testing.T) {
 			// Target/end server.
 			//////
 
-			targetServer := createMockedHTTPServer(http.StatusOK, "body", "")
+			targetCreds := ""
+			if tt.args.siteCredentials != nil {
+				targetCreds = base64.
+					StdEncoding.
+					EncodeToString([]byte("user:pass"))
+			}
+			targetServer := createMockedHTTPServer(http.StatusOK, "body", targetCreds)
 
 			defer func() { targetServer.Close() }()
 
@@ -402,6 +528,16 @@ func TestNew(t *testing.T) {
 				pacURI = tt.args.pacURI.String()
 			}
 
+			var siteCredentials []string
+			if tt.args.siteCredentials != nil {
+				uri, err := url.Parse(targetServerURL)
+				if err != nil {
+					panic(err)
+				}
+
+				siteCredentials = append(siteCredentials, "user:pass@"+uri.Host)
+			}
+
 			//////
 			// Local proxy.
 			//
@@ -427,6 +563,8 @@ func TestNew(t *testing.T) {
 				&Options{
 					DNSURIs:        dnsURIs,
 					LoggingOptions: loggingOptions,
+					// site credentials in standard URI format.
+					SiteCredentials: siteCredentials,
 				},
 			)
 			if err != nil {
@@ -580,7 +718,10 @@ func BenchmarkNew(b *testing.B) {
 
 	localProxyURI := URIBuilder(defaultProxyHostname, r.MustGenerate(), "", "")
 
-	proxy, err := New(localProxyURI.String(), "", "", nil, nil)
+	proxy, err := New(localProxyURI.String(), "", "", nil,
+		&Options{
+			LoggingOptions: loggingOptions,
+		})
 	if err != nil {
 		log.Fatalln("Failed to create proxy.", err)
 	}

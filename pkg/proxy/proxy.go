@@ -24,6 +24,7 @@ import (
 	"github.com/saucelabs/forwarder/internal/credential"
 	"github.com/saucelabs/forwarder/internal/logger"
 	"github.com/saucelabs/forwarder/internal/pac"
+	"github.com/saucelabs/forwarder/internal/util"
 	"github.com/saucelabs/forwarder/internal/validation"
 	"github.com/saucelabs/randomness"
 	"github.com/saucelabs/sypl"
@@ -36,6 +37,10 @@ const (
 	ConstantBackoff = 300
 	DNSTimeout      = 1 * time.Minute
 	MaxRetry        = 3
+	httpPort        = 80
+	httpsPort       = 443
+	proxyAuthHeader = "Proxy-Authorization"
+	authHeader      = "Authorization"
 )
 
 // Possible ways to run Forwarder.
@@ -82,6 +87,7 @@ var (
 	ErrInvalidPACURI           = customerror.NewInvalidError("PAC URI")
 	ErrInvalidProxyParams      = customerror.NewInvalidError("params")
 	ErrInvalidUpstreamProxyURI = customerror.NewInvalidError("upstream proxy URI")
+	ErrInvalidSiteCredentials  = customerror.NewInvalidError("invalid site credentials")
 )
 
 // LoggingOptions defines logging options.
@@ -134,6 +140,12 @@ type Options struct {
 	// ProxyLocalhost if `true`, requests to `localhost`/`127.0.0.1` will be
 	// forwarded to any upstream - if set.
 	ProxyLocalhost bool
+	// SiteCredentials contains URLs with the credentials, for example:
+	// - https://usr1:pwd1@foo.bar:4443
+	// - http://usr2:pwd2@bar.foo:8080
+	// - usr3:pwd3@bar.foo:8080
+	// Proxy will add basic auth headers for requests to these URLs.
+	SiteCredentials []string `json:"site_credentials" validate:"omitempty"`
 }
 
 // Default sets `Options` default values.
@@ -203,23 +215,27 @@ type Proxy struct {
 	// Credentials for proxies specified in PAC content.
 	pacProxiesCredentials []string
 
+	// credentials for passing basic authentication to requests
+	siteCredentialsMatcher siteCredentialsMatcher
+
 	// Underlying proxy implementation.
 	proxy *goproxy.ProxyHttpServer
 }
 
+func basicAuth(userpwd string) string {
+	return base64.StdEncoding.EncodeToString([]byte(userpwd))
+}
+
 // Sets the `Proxy-Authorization` header based on `uri` user info.
 func setProxyBasicAuthHeader(uri *url.URL, req *http.Request) {
-	encodedCredential := base64.
-		StdEncoding.
-		EncodeToString([]byte(uri.User.String()))
-
 	req.Header.Set(
-		"Proxy-Authorization",
-		fmt.Sprintf("Basic %s", encodedCredential),
+		proxyAuthHeader,
+		fmt.Sprintf("Basic %s", basicAuth(uri.User.String())),
 	)
 
 	logger.Get().Debuglnf(
-		"Proxy-Authorization header set with %s:*** for url %s",
+		"%s header set with %s:*** for %s",
+		proxyAuthHeader,
 		uri.User.Username(),
 		req.URL.String(),
 	)
@@ -327,7 +343,7 @@ func setupUpstreamProxyConnection(ctx *goproxy.ProxyCtx, uri *url.URL) {
 	logger.Get().Tracelnf("Connection to the upstream proxy %s is set up", uri.Redacted())
 }
 
-// setupUpstreamProxyConnection dynamically forwards connections to an upstream
+// setupPACUpstreamProxyConnection dynamically forwards connections to an upstream
 // proxy setup via PAC.
 func setupPACUpstreamProxyConnection(p *Proxy, ctx *goproxy.ProxyCtx) error {
 	urlToFindProxyFor := ctx.Req.URL.String()
@@ -358,6 +374,86 @@ func setupPACUpstreamProxyConnection(p *Proxy, ctx *goproxy.ProxyCtx) error {
 	resetUpstreamSettings(ctx)
 
 	return nil
+}
+
+// parseSiteCredentials takes a list of "user:pass@host:port" strings.
+//
+// A port of '0' means a wildcard port
+// A host of '*' means a wildcard host
+// A host:port of '*:0' will match everything
+//
+// They are converted to a map of:
+// - "host:port": base64("user:pass").
+// - "port": base64("user:pass")
+// - "host": base64("user:pass")
+// and a global wildcard string.
+func parseSiteCredentials(creds []string) (map[string]string, map[string]string, map[string]string, string, error) {
+	hostportMap := make(map[string]string, len(creds))
+	hostMap := make(map[string]string, len(creds))
+	portMap := make(map[string]string, len(creds))
+	global := ""
+
+	for _, credentialText := range creds {
+		uri, err := util.NormalizeURI(credentialText)
+		if err != nil {
+			return nil, nil, nil, "", fmt.Errorf("%w: %s", ErrInvalidSiteCredentials, err)
+		}
+
+		// Get the base64 of the credentials
+		pass, found := uri.User.Password()
+		if !found {
+			return nil, nil, nil, "", fmt.Errorf("%w: password not found in %s", ErrInvalidSiteCredentials, credentialText)
+		}
+
+		basicAuth, err := credential.NewBasicAuth(uri.User.Username(), pass)
+		if err != nil {
+			return nil, nil, nil, "", err
+		}
+
+		encoded := basicAuth.ToBase64()
+
+		if uri.Hostname() == "*" && uri.Port() == "0" {
+			if global != "" {
+				return nil, nil, nil, "", fmt.Errorf("%w: multiple credentials for global wildcard", ErrInvalidSiteCredentials)
+			}
+
+			global = encoded
+
+			continue
+		}
+
+		if uri.Hostname() == "*" {
+			_, found = portMap[uri.Port()]
+			if found {
+				return nil, nil, nil, "", fmt.Errorf("%w: multiple credentials for wildcard host with port %s", ErrInvalidSiteCredentials, uri.Port())
+			}
+
+			portMap[uri.Port()] = encoded
+
+			continue
+		}
+
+		if uri.Port() == "0" {
+			_, found = hostMap[uri.Hostname()]
+			if found {
+				return nil, nil, nil, "", fmt.Errorf("%w: multiple credentials for wildcard port with host %s", ErrInvalidSiteCredentials, uri.Hostname())
+			}
+
+			hostMap[uri.Hostname()] = encoded
+
+			continue
+		}
+
+		// No wildcards, add the host:port directly
+		_, found = hostportMap[uri.Host]
+		if found {
+			return nil, nil, nil, "", fmt.Errorf("%w: multiple credentials for %s", ErrInvalidSiteCredentials, uri.Host)
+		}
+
+		hostportMap[uri.Host] = encoded
+	}
+
+	return hostportMap, hostMap, portMap, global, nil
 }
 
 // DRY on handler's code.
@@ -523,6 +619,82 @@ func (p *Proxy) Run() {
 	}
 }
 
+func (p *Proxy) setupProxyHandlers() {
+	p.proxy.OnRequest().HandleConnectFunc(func(host string, ctx *goproxy.ProxyCtx) (*goproxy.ConnectAction, string) {
+		logger.Get().Debuglnf("%s %s -> %s", ctx.Req.Method, ctx.Req.RemoteAddr, ctx.Req.Host)
+		logger.Get().Debuglnf("%q", dumpHeaders(ctx.Req))
+
+		if err := p.setupHandlers(ctx); err != nil {
+			logger.Get().Errorlnf("Failed to setup handler (HTTPS) for request %s. %+v", ctx.Req.URL.Redacted(), err)
+
+			return goproxy.RejectConnect, host
+		}
+
+		return nil, host
+	})
+
+	p.proxy.OnRequest().DoFunc(func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
+		logger.Get().Debuglnf("%s %s -> %s %s %s", req.Method, req.RemoteAddr, req.URL.Scheme, req.Host, req.URL.Port())
+		logger.Get().Tracelnf("%q", dumpHeaders(ctx.Req))
+
+		if err := p.setupHandlers(ctx); err != nil {
+			logger.Get().Errorlnf("Failed to setup handler (HTTP) for request %s. %+v", ctx.Req.URL.Redacted(), err)
+
+			return nil, goproxy.NewResponse(
+				ctx.Req,
+				goproxy.ContentTypeText,
+				http.StatusInternalServerError,
+				err.Error(),
+			)
+		}
+
+		return ctx.Req, nil
+	})
+
+	if p.siteCredentialsMatcher.isSet() {
+		p.proxy.OnRequest().DoFunc(func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
+			p.maybeAddAuthHeader(req)
+
+			return ctx.Req, nil
+		})
+	}
+
+	p.proxy.OnResponse().DoFunc(func(resp *http.Response, ctx *goproxy.ProxyCtx) *http.Response {
+		if resp != nil {
+			logger.Get().Debuglnf("%s <- %s %v (%v bytes)",
+				resp.Request.RemoteAddr, resp.Request.Host, resp.Status, resp.ContentLength)
+		} else {
+			logger.Get().Tracelnf("%s <- %s response is empty", ctx.Req.Host, ctx.Req.RemoteAddr)
+		}
+
+		return resp
+	})
+}
+
+// maybeAddAuthHeader modifies the request and adds an authorization header if necessary.
+func (p *Proxy) maybeAddAuthHeader(req *http.Request) {
+	hostport := req.Host
+
+	if req.URL.Port() == "" {
+		// When the destination URL doesn't contain an explicit port, Go http-parsed
+		// URL Port() returns an empty string.
+		switch req.URL.Scheme {
+		case "http":
+			hostport = fmt.Sprintf("%s:%d", req.Host, httpPort)
+		case "https":
+			hostport = fmt.Sprintf("%s:%d", req.Host, httpsPort)
+		default:
+			logger.Get().Warnlnf("Failed to determine port for %s.", req.URL.Redacted())
+		}
+	}
+
+	creds := p.siteCredentialsMatcher.match(hostport)
+
+	if creds != "" {
+		req.Header.Set(authHeader, fmt.Sprintf("Basic %s", creds))
+	}
+}
+
 //////
 // Factory
 //////
@@ -560,15 +732,36 @@ func New(
 		return nil, err
 	}
 
+	siteCredentials := options.SiteCredentials
+	siteCredentialsFromEnv := loadSiteCredentialsFromEnvVar("FORWARDER_SITE_CREDENTIALS")
+
+	if len(siteCredentials) == 0 && siteCredentialsFromEnv != nil {
+		siteCredentials = siteCredentialsFromEnv
+	}
+
+	// Parse site credential list into map of host:port -> base64 encoded credentials.
+	hostportMap, hostMap, portMap, global, err := parseSiteCredentials(siteCredentials)
+	if err != nil {
+		return nil, err
+	}
+
+	credsMatcher := siteCredentialsMatcher{
+		siteCredentials:         hostportMap,
+		siteCredentialsHost:     hostMap,
+		siteCredentialsPort:     portMap,
+		siteCredentialsWildcard: global,
+	}
+
 	p := &Proxy{
-		LocalProxyURI:         localProxyURI,
-		Mode:                  Direct,
-		Options:               finalOptions,
-		PACURI:                pacURI,
-		State:                 Initializing,
-		UpstreamProxyURI:      upstreamProxyURI,
-		pacProxiesCredentials: pacProxiesCredentials,
-		mutex:                 &sync.RWMutex{},
+		LocalProxyURI:          localProxyURI,
+		Mode:                   Direct,
+		Options:                finalOptions,
+		PACURI:                 pacURI,
+		State:                  Initializing,
+		UpstreamProxyURI:       upstreamProxyURI,
+		pacProxiesCredentials:  pacProxiesCredentials,
+		mutex:                  &sync.RWMutex{},
+		siteCredentialsMatcher: credsMatcher,
 	}
 
 	if err := validation.Get().Struct(p); err != nil {
@@ -672,47 +865,8 @@ func New(
 		p.pacParser = pacParser
 	}
 
-	p.proxy.OnRequest().HandleConnectFunc(func(host string, ctx *goproxy.ProxyCtx) (*goproxy.ConnectAction, string) {
-		logger.Get().Debuglnf("%s %s -> %s", ctx.Req.Method, ctx.Req.RemoteAddr, ctx.Req.Host)
-		logger.Get().Debuglnf("%q", dumpHeaders(ctx.Req))
-
-		if err := p.setupHandlers(ctx); err != nil {
-			logger.Get().Errorlnf("Failed to setup handler (HTTPS) for request %s. %+v", ctx.Req.URL.Redacted(), err)
-
-			return goproxy.RejectConnect, host
-		}
-
-		return nil, host
-	})
-
-	p.proxy.OnRequest().DoFunc(func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
-		logger.Get().Debuglnf("%s %s -> %s", req.Method, req.RemoteAddr, req.Host)
-		logger.Get().Tracelnf("%q", dumpHeaders(ctx.Req))
-
-		if err := p.setupHandlers(ctx); err != nil {
-			logger.Get().Errorlnf("Failed to setup handler (HTTP) for request %s. %+v", ctx.Req.URL.Redacted(), err)
-
-			return nil, goproxy.NewResponse(
-				ctx.Req,
-				goproxy.ContentTypeText,
-				http.StatusInternalServerError,
-				err.Error(),
-			)
-		}
-
-		return ctx.Req, nil
-	})
-
-	p.proxy.OnResponse().DoFunc(func(resp *http.Response, ctx *goproxy.ProxyCtx) *http.Response {
-		if resp != nil {
-			logger.Get().Debuglnf("%s <- %s %v (%v bytes)",
-				resp.Request.RemoteAddr, resp.Request.Host, resp.Status, resp.ContentLength)
-		} else {
-			logger.Get().Tracelnf("%s <- %s response is empty", ctx.Req.Host, ctx.Req.RemoteAddr)
-		}
-
-		return resp
-	})
+	// Setup the request and response handlers
+	p.setupProxyHandlers()
 
 	// Local proxy authentication.
 	if parsedLocalProxyURI.User.Username() != "" {

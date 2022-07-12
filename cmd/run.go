@@ -16,6 +16,8 @@ var (
 	localProxyURI    string
 	upstreamProxyURI string
 
+	siteCredentials []string
+
 	pacProxiesCredentials []string
 	pacURI                string
 
@@ -38,6 +40,7 @@ All credentials can be set via env vars:
 - Upstream proxy: FORWARDER_UPSTREAMPROXY_AUTH
 - PAC URI: PACMAN_AUTH
 - PAC proxies: PACMAN_PROXIES_AUTH
+- Target URLs: FORWARDER_SITE_CREDENTIALS
 
 Note: Can't setup upstream, and PAC at the same time.
 `,
@@ -46,10 +49,10 @@ Note: Can't setup upstream, and PAC at the same time.
 
   Start a proxy listening to http://0.0.0.0:8085:
   $ forwarder run -l "http://0.0.0.0:8085"
-  
+
   Start a protected proxy:
   $ forwarder run -l "http://user:pwd@localhost:8085"
-  
+
   Start a protected proxy, forwarding connection to an upstream proxy running at
   http://localhost:8089:
   $ forwarder run \
@@ -61,19 +64,19 @@ Note: Can't setup upstream, and PAC at the same time.
   $ forwarder run \
     -l "http://user:pwd@localhost:8085" \
     -u "http://user1:pwd1@localhost:8089"
-	
+
   Start a protected proxy, forwarding connection to an upstream proxy, setup via
   PAC - server running at http://localhost:8090:
   $ forwarder run \
     -l "http://user:pwd@localhost:8085" \
     -p "http://localhost:8090"
-	
+
   Start a protected proxy, forwarding connection to an upstream proxy, setup via
   PAC - protected server running at http://user2:pwd2@localhost:8090:
   $ forwarder run \
     -l "http://user:pwd@localhost:8085" \
     -p "http://user2:pwd2@localhost:8090"
-	
+
   Start a protected proxy, forwarding connection to an upstream proxy, setup via
   PAC - protected server running at http://user2:pwd2@localhost:8090, specifying
   credential for protected proxies specified in PAC:
@@ -91,6 +94,13 @@ Note: Can't setup upstream, and PAC at the same time.
     -l "http://user:pwd@localhost:8085" \
     -p "http://user2:pwd2@localhost:8090" \
 	  -d "http://user3:pwd4@localhost:8091,http://user4:pwd5@localhost:8092"
+
+  Start a protected proxy that adds basic auth header to requests to foo.bar:8090
+  and qux.baz:80.
+  $ forwarder run \
+    -t \
+    -l "http://user:pwd@localhost:8085" \
+	--site-credentials "user1:pwd1@foo.bar:8090,user2:pwd2@qux:baz:80"
 	`,
 	Run: func(cmd *cobra.Command, args []string) {
 		p, err := proxy.New(localProxyURI, upstreamProxyURI, pacURI, pacProxiesCredentials, &proxy.Options{
@@ -103,6 +113,7 @@ Note: Can't setup upstream, and PAC at the same time.
 			AutomaticallyRetryPort: automaticallyRetryPort,
 			DNSURIs:                dnsURIs,
 			ProxyLocalhost:         proxyLocalhost,
+			SiteCredentials:        siteCredentials,
 		})
 		if err != nil {
 			cliLogger.Fatalln(customerror.NewFailedToError("run", customerror.WithError(err)))
@@ -115,11 +126,12 @@ Note: Can't setup upstream, and PAC at the same time.
 func init() {
 	rootCmd.AddCommand(runCmd)
 
-	runCmd.Flags().StringVarP(&localProxyURI, "local-proxy-uri", "l", "http://localhost:8080", "Sets local proxy URI")
+	runCmd.Flags().StringVarP(&localProxyURI, "local-proxy-uri", "l", "http://localhost:8080", "sets local proxy URI")
 	runCmd.Flags().StringVarP(&upstreamProxyURI, "upstream-proxy-uri", "u", "", "sets upstream proxy URI")
 	runCmd.Flags().StringSliceVarP(&dnsURIs, "dns-uri", "n", nil, "sets dns URI")
 	runCmd.Flags().StringVarP(&pacURI, "pac-uri", "p", "", "sets URI to PAC content, or directly, the PAC content")
 	runCmd.Flags().StringSliceVarP(&pacProxiesCredentials, "pac-proxies-credentials", "d", nil, "sets PAC proxies credentials using standard URI format")
+	runCmd.Flags().StringSliceVar(&siteCredentials, "site-credentials", nil, "sets site based credentials")
 	runCmd.Flags().BoolVarP(&proxyLocalhost, "proxy-localhost", "t", false, "if set, will proxy localhost requests to an upstream proxy - if any")
 	runCmd.Flags().BoolVarP(&automaticallyRetryPort, "find-port", "r", true, "if set, and the specified local proxy port is in-use, it will find, and use an available one")
 }
