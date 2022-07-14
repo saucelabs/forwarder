@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Load config from Config file, and from env vars. Use viper for that
 - Automatically alocates a random port, if the specified one is in-use
 
+## [0.3.1] - 2022-07-14
+## Changed
+- Improved logging for PAC-proxied requests
+
 ## [0.3.0] - 2022-07-12
 ## Changed
 - Added support for setting basic auth header via API, `--site-credentials` flag, or an env var
