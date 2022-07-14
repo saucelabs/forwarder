@@ -347,8 +347,9 @@ func setupUpstreamProxyConnection(ctx *goproxy.ProxyCtx, uri *url.URL) {
 // proxy setup via PAC.
 func setupPACUpstreamProxyConnection(p *Proxy, ctx *goproxy.ProxyCtx) error {
 	urlToFindProxyFor := ctx.Req.URL.String()
+	hostToFindProxyFor := ctx.Req.URL.Hostname()
 
-	logger.Get().Tracelnf("Finding proxy for %s", urlToFindProxyFor)
+	logger.Get().Tracelnf("Finding proxy for %s", hostToFindProxyFor)
 
 	pacProxies, err := p.pacParser.Find(urlToFindProxyFor)
 	if err != nil {
@@ -363,13 +364,14 @@ func setupPACUpstreamProxyConnection(p *Proxy, ctx *goproxy.ProxyCtx) error {
 
 		// Should only set up upstream if there's a proxy and not `DIRECT`.
 		if pacProxyURI != nil {
+			logger.Get().Debuglnf("Using proxy %s for %s", pacProxyURI.Redacted(), hostToFindProxyFor)
 			setupUpstreamProxyConnection(ctx, pacProxyURI)
 
 			return nil
 		}
 	}
 
-	logger.Get().Debugln("Found no proxy for", urlToFindProxyFor)
+	logger.Get().Debugln("Using no proxy for", hostToFindProxyFor)
 	// Clear upstream proxy settings (if any) for this request.
 	resetUpstreamSettings(ctx)
 
