@@ -208,6 +208,8 @@ func ExampleNew() {
 }
 
 // Automatically retry port example.
+//
+//nolint:nosnakecase
 func ExampleNew_automaticallyRetryPort() {
 	if os.Getenv("FORWARDER_TEST_MODE") != "integration" {
 		fmt.Println("true")
@@ -265,6 +267,8 @@ func ExampleNew_automaticallyRetryPort() {
 }
 
 // Supplying a logger, and calling multiple times Run example.
+//
+//nolint:nosnakecase
 func ExampleNew_sypplyingLogger() {
 	//////
 	// Custom logger
