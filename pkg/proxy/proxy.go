@@ -13,7 +13,6 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -120,6 +119,7 @@ func (r *RetryPortOptions) Default() *RetryPortOptions {
 }
 
 // Options definition.
+//
 //nolint:maligned
 type Options struct {
 	*LoggingOptions
@@ -242,6 +242,7 @@ func setProxyBasicAuthHeader(uri *url.URL, req *http.Request) {
 }
 
 // Removes any upstream proxy settings.
+//
 //nolint:gosec
 func resetUpstreamSettings(ctx *goproxy.ProxyCtx) {
 	ctx.Proxy.ConnectDial = nil
@@ -249,6 +250,7 @@ func resetUpstreamSettings(ctx *goproxy.ProxyCtx) {
 }
 
 // Sets the default DNS.
+//
 //nolint:interfacer
 func setupDNS(mutex *sync.RWMutex, dnsURIs []string) error {
 	mutex.Lock()
@@ -313,9 +315,7 @@ func setupDNS(mutex *sync.RWMutex, dnsURIs []string) error {
 
 // Returns `true` if should NOT proxy connections to any upstream proxy.
 func (p *Proxy) shouldNotProxyLocalhost(ctx *goproxy.ProxyCtx) bool {
-	if (strings.Contains(ctx.Req.URL.Hostname(), "127.0.0.1") ||
-		strings.Contains(ctx.Req.URL.Hostname(), "localhost")) &&
-		!p.ProxyLocalhost {
+	if goproxy.IsLocalHost(ctx.Req, ctx) && !p.ProxyLocalhost {
 		resetUpstreamSettings(ctx)
 
 		return true
@@ -459,7 +459,8 @@ func parseSiteCredentials(creds []string) (map[string]string, map[string]string,
 }
 
 // DRY on handler's code.
-// nolint:exhaustive
+//
+//nolint:exhaustive
 func (p *Proxy) setupHandlers(ctx *goproxy.ProxyCtx) error {
 	if p.shouldNotProxyLocalhost(ctx) {
 		logger.Get().Tracelnf("ProxyLocalhost option disabled. Not proxifying request to %s", ctx.Req.URL.String())

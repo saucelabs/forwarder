@@ -63,6 +63,10 @@ issues:
         - dupl
         - gocognit
 
+    - path: pkg/proxy/
+      linters:
+        - nolintlint
+
     - path: doc.go
       linters:
         - lll

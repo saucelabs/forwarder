@@ -1,6 +1,6 @@
 module github.com/saucelabs/forwarder
 
-go 1.17
+go 1.19
 
 require (
 	github.com/eapache/go-resiliency v1.2.0

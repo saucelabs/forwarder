@@ -9,7 +9,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -83,6 +83,7 @@ func URLUserStripper(u *url.URL) *url.URL {
 }
 
 // Creates a mocked HTTP server. Don't forget to defer close it!
+//
 //nolint:unparam
 func createMockedHTTPServer(statusCode int, body, encodedCredential string) *httptest.Server {
 	testServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
@@ -144,7 +145,7 @@ func executeRequest(client *http.Client, uri string) (int, string, error) {
 
 	defer response.Body.Close()
 
-	data, err := ioutil.ReadAll(response.Body)
+	data, err := io.ReadAll(response.Body)
 	if err != nil {
 		return 0, "", fmt.Errorf("Failed to read body: %w", err)
 	}
