@@ -13,7 +13,6 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -313,9 +312,7 @@ func setupDNS(mutex *sync.RWMutex, dnsURIs []string) error {
 
 // Returns `true` if should NOT proxy connections to any upstream proxy.
 func (p *Proxy) shouldNotProxyLocalhost(ctx *goproxy.ProxyCtx) bool {
-	if (strings.Contains(ctx.Req.URL.Hostname(), "127.0.0.1") ||
-		strings.Contains(ctx.Req.URL.Hostname(), "localhost")) &&
-		!p.ProxyLocalhost {
+	if goproxy.IsLocalHost(ctx.Req, ctx) && !p.ProxyLocalhost {
 		resetUpstreamSettings(ctx)
 
 		return true

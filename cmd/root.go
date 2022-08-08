@@ -19,7 +19,7 @@ var (
 // rootCmd represents the base command when called without any subcommands.
 var rootCmd = &cobra.Command{
 	Use:   "proxy",
-	Short: "A simple flexible, and proxy",
+	Short: "A simple flexible forward proxy",
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.

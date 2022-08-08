@@ -131,7 +131,7 @@ func init() {
 	runCmd.Flags().StringSliceVarP(&dnsURIs, "dns-uri", "n", nil, "sets dns URI")
 	runCmd.Flags().StringVarP(&pacURI, "pac-uri", "p", "", "sets URI to PAC content, or directly, the PAC content")
 	runCmd.Flags().StringSliceVarP(&pacProxiesCredentials, "pac-proxies-credentials", "d", nil, "sets PAC proxies credentials using standard URI format")
-	runCmd.Flags().StringSliceVar(&siteCredentials, "site-credentials", nil, "sets site based credentials")
+	runCmd.Flags().StringSliceVar(&siteCredentials, "site-credentials", nil, "sets target site credentials")
 	runCmd.Flags().BoolVarP(&proxyLocalhost, "proxy-localhost", "t", false, "if set, will proxy localhost requests to an upstream proxy - if any")
 	runCmd.Flags().BoolVarP(&automaticallyRetryPort, "find-port", "r", true, "if set, and the specified local proxy port is in-use, it will find, and use an available one")
 }
