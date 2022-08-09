@@ -6,7 +6,9 @@ package util
 
 import (
 	"fmt"
+	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 )
 
@@ -41,4 +43,16 @@ func NormalizeURI(uriToParse string) (*url.URL, error) {
 		localURL.Scheme = "http"
 	}
 	return localURL, nil
+}
+
+// IsLocalHost checks whether the destination host is explicitly local host.
+// Note: there can be IPv6 addresses it doesn't catch.
+func IsLocalHost(req *http.Request) bool {
+	localHostIpv4 := regexp.MustCompile(`127\.0\.0\.\d+`)
+	hostName := req.URL.Hostname()
+
+	return hostName == "localhost" ||
+		localHostIpv4.MatchString(hostName) ||
+		hostName == "0:0:0:0:0:0:0:1" ||
+		hostName == "::1"
 }
