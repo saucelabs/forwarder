@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Load config from Config file, and from env vars. Use viper for that
 - Automatically alocates a random port, if the specified one is in-use
 
+## [0.3.4] - 2022-08-09
+## Changed
+- Added support for IPv6 localhost address detection
+
 ## [0.3.3] - 2022-08-09
 ## Changed
 - Updated dependencies

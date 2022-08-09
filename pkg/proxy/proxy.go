@@ -315,7 +315,7 @@ func setupDNS(mutex *sync.RWMutex, dnsURIs []string) error {
 
 // Returns `true` if should NOT proxy connections to any upstream proxy.
 func (p *Proxy) shouldNotProxyLocalhost(ctx *goproxy.ProxyCtx) bool {
-	if goproxy.IsLocalHost(ctx.Req, ctx) && !p.ProxyLocalhost {
+	if !p.ProxyLocalhost && util.IsLocalHost(ctx.Req) {
 		resetUpstreamSettings(ctx)
 
 		return true
@@ -463,7 +463,7 @@ func parseSiteCredentials(creds []string) (map[string]string, map[string]string,
 //nolint:exhaustive
 func (p *Proxy) setupHandlers(ctx *goproxy.ProxyCtx) error {
 	if p.shouldNotProxyLocalhost(ctx) {
-		logger.Get().Tracelnf("ProxyLocalhost option disabled. Not proxifying request to %s", ctx.Req.URL.String())
+		logger.Get().Tracelnf("Not proxifying request to localhost URL: %s", ctx.Req.URL.String())
 
 		return nil
 	}
