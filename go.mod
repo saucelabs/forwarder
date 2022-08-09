@@ -8,10 +8,10 @@ require (
 	github.com/elazarl/goproxy/ext v0.0.0-20220529153421-8ea89ba92021
 	github.com/go-playground/validator/v10 v10.11.0
 	github.com/google/go-cmp v0.5.6
-	github.com/saucelabs/customerror v1.0.3
-	github.com/saucelabs/pacman v0.1.1
-	github.com/saucelabs/randomness v0.0.5
-	github.com/saucelabs/sypl v1.5.12
+	github.com/saucelabs/customerror v1.0.4
+	github.com/saucelabs/pacman v0.1.2
+	github.com/saucelabs/randomness v0.0.6
+	github.com/saucelabs/sypl v1.5.13
 	github.com/spf13/cobra v1.3.0
 	github.com/stretchr/testify v1.8.0
 )
@@ -19,9 +19,9 @@ require (
 require (
 	github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/dlclark/regexp2 v1.4.1-0.20201116162257-a2a8dda75c91 // indirect
-	github.com/dop251/goja v0.0.0-20220516123900-4418d4575a41 // indirect
-	github.com/emirpasic/gods v1.12.0 // indirect
+	github.com/dlclark/regexp2 v1.7.0 // indirect
+	github.com/dop251/goja v0.0.0-20220806120448-1444e6b94559 // indirect
+	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/fatih/color v1.13.0 // indirect
 	github.com/go-playground/locales v0.14.0 // indirect
 	github.com/go-playground/universal-translator v0.18.0 // indirect
@@ -34,9 +34,9 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/saucelabs/lumberjack/v3 v3.0.2 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	golang.org/x/crypto v0.0.0-20220214200702-86341886e292 // indirect
-	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
-	golang.org/x/sys v0.0.0-20220209214540-3681064d5158 // indirect
+	golang.org/x/crypto v0.0.0-20220722155217-630584e8d5aa // indirect
+	golang.org/x/sync v0.0.0-20220722155255-886fb9371eb4 // indirect
+	golang.org/x/sys v0.0.0-20220808155132-1c4a2a72c664 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
