@@ -2,6 +2,8 @@
 # Use of this source code is governed by a MIT
 # license that can be found in the LICENSE file.
 
+all: dev
+
 BINDIR := $(CURDIR)/bin
 HAS_AIR := $(shell command -v air;)
 HAS_GODOC := $(shell command -v godoc;)
@@ -11,8 +13,6 @@ BUILD_BASE_PKG_NAME := github.com/saucelabs/forwarder/internal/
 BUILD_GIT_COMMIT := `git rev-list -1 HEAD`
 BUILD_DATE := `date`
 BUILD_LDFLAGS := "-X '$(BUILD_BASE_PKG_NAME)version.buildCommit=$(BUILD_GIT_COMMIT)' -X '$(BUILD_BASE_PKG_NAME)version.buildVersion=$(BUILD_VERSION)' -X '$(BUILD_BASE_PKG_NAME)version.buildTime=$(BUILD_DATE)' -extldflags '-static'"
-
-default: dev
 
 build:
 	@GOBIN=$(BINDIR) go install -race -ldflags $(BUILD_LDFLAGS) ./... && echo "Build OK"
