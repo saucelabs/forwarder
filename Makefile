@@ -39,9 +39,9 @@ test:
 bench:
 	@go test -bench=. -run=XXX ./pkg/proxy # If you hit too many open files: ulimit -Sn 10000
 
-.PHONY: test-integration
-test-integration:
-	@FORWARDER_TEST_MODE=integration go test -timeout 120s -v -race -cover -coverprofile=coverage.out ./... && echo "Test OK"
+.PHONY: integration-test
+integration-test:
+	@FORWARDER_TEST_MODE=integration go test -timeout 120s -v -race -cover -coverprofile=coverage.out ./...
 
 .PHONY: coverage
 coverage:

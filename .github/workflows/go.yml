@@ -32,8 +32,8 @@ jobs:
       - name: Lint
         run: golangci-lint run -v -c .golangci.yml
 
-      - name: Test
+      - name: Unit test
         run: make test coverage
 
-      - name: Test Integration
-        run: make test-integration coverage
+      - name: Integration test
+        run: make integration-test coverage
