@@ -4,6 +4,16 @@
 
 all: dev
 
+export GOBIN := $(PWD)/bin
+export PATH  := $(GOBIN):$(PATH)
+
+.PHONY: install-dependencies
+install-dependencies:
+	@rm -Rf bin
+	go install github.com/cosmtrek/air@latest
+	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+	go install golang.org/x/tools/cmd/godoc@latest
+
 BINDIR := $(CURDIR)/bin
 HAS_AIR := $(shell command -v air;)
 HAS_GODOC := $(shell command -v godoc;)

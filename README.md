@@ -31,7 +31,10 @@ Run `$ make doc` or check out [online](https://pkg.go.dev/github.com/saucelabs/f
 
 ## Development
 
-Check out [CONTRIBUTION](CONTRIBUTION.md).
+1. Install required tools by running `make install-dependencies`
+2. Run server in development mode `make dev` 
+
+For more information see [CONTRIBUTION](CONTRIBUTION.md).
 
 ### Release
 
