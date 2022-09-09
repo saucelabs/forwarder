@@ -14,11 +14,6 @@ install-dependencies:
 	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 	go install golang.org/x/tools/cmd/godoc@latest
 
-BINDIR := $(CURDIR)/bin
-HAS_AIR := $(shell command -v air;)
-HAS_GODOC := $(shell command -v godoc;)
-HAS_GOLANGCI := $(shell command -v golangci-lint;)
-
 BUILD_BASE_PKG_NAME := github.com/saucelabs/forwarder/internal/
 BUILD_GIT_COMMIT := `git rev-list -1 HEAD`
 BUILD_DATE := `date`
@@ -28,15 +23,9 @@ build:
 	@GOBIN=$(BINDIR) go install -race -ldflags $(BUILD_LDFLAGS) ./... && echo "Build OK"
 
 dev:
-ifndef HAS_AIR
-	$(error You must install github.com/cosmtrek/air)
-endif
 	@air -c .air.toml
 
 lint:
-ifndef HAS_GOLANGCI
-	$(error You must install github.com/golangci/golangci-lint)
-endif
 	@golangci-lint run -v -c .golangci.yml && echo "Lint OK"
 
 test:
@@ -53,9 +42,6 @@ coverage:
 	@go tool cover -func=coverage.out
 
 doc:
-ifndef HAS_GODOC
-	$(error You must install godoc, run "go get golang.org/x/tools/cmd/godoc")
-endif
 	@echo "Open http://localhost:6060/pkg/github.com/saucelabs/forwarder/ in your browser\n"
 	@godoc -http :6060
 
