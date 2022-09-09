@@ -9,6 +9,10 @@
 *.dylib
 .direnv
 
+# Development binary
+*.dev
+*.race
+
 # Test binary, build with `go test -c`
 *.test
 
