@@ -51,6 +51,3 @@ coverage:
 doc:
 	@echo "Open http://localhost:6060/pkg/github.com/saucelabs/forwarder/ in your browser\n"
 	@godoc -http :6060
-
-ci: lint test coverage
-ci-integration: lint test-integration coverage
