@@ -21,6 +21,10 @@ dev: forwarder.race
 forwarder.race: $(shell go list -f '{{range .GoFiles}}{{ $$.Dir }}/{{ . }} {{end}}' ./...)
 	@go build -o ./forwarder.race -race ./cmd/forwarder
 
+.PHONY: fmt
+fmt:
+	@golangci-lint run -c .golangci-fmt.yml --fix ./...
+
 .PHONY: lint
 lint:
 	@golangci-lint run -v -c .golangci.yml && echo "Lint OK"
