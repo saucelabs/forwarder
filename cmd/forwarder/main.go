@@ -4,8 +4,6 @@
 
 package main
 
-import "github.com/saucelabs/forwarder/cmd"
-
 func main() {
-	cmd.Execute()
+	rootCmd.Execute()
 }
