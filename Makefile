@@ -19,8 +19,8 @@ dev:
 	@air -c .air.toml
 
 BUILD_BASE_PKG_NAME = github.com/saucelabs/forwarder/internal/
-BUILD_GIT_COMMIT = `git rev-list -1 HEAD`
-BUILD_DATE = `date`
+BUILD_GIT_COMMIT = $(shell git rev-list -1 HEAD)
+BUILD_DATE = $(shell date)
 BUILD_LDFLAGS = "-X '$(BUILD_BASE_PKG_NAME)version.buildCommit=$(BUILD_GIT_COMMIT)' -X '$(BUILD_BASE_PKG_NAME)version.buildVersion=$(BUILD_VERSION)' -X '$(BUILD_BASE_PKG_NAME)version.buildTime=$(BUILD_DATE)' -extldflags '-static'"
 
 .PHONY: dev-build
