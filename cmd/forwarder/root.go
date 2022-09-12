@@ -2,7 +2,7 @@
 // Use of this source code is governed by a MIT
 // license that can be found in the LICENSE file.
 
-package cmd
+package main
 
 import (
 	"github.com/saucelabs/sypl"
@@ -21,10 +21,6 @@ var rootCmd = &cobra.Command{
 	Use:   "proxy",
 	Short: "A simple flexible forward proxy",
 }
-
-// Execute adds all child commands to the root command and sets flags appropriately.
-// This is called by main.main(). It only needs to happen once to the rootCmd.
-func Execute() { _ = rootCmd.Execute() }
 
 func init() {
 	rootCmd.PersistentFlags().StringVar(&logLevel, "log-level", "info", "sets the log level (default info)")
