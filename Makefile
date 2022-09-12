@@ -10,23 +10,16 @@ export PATH  := $(GOBIN):$(PATH)
 .PHONY: install-dependencies
 install-dependencies:
 	@rm -Rf bin && mkdir -p $(GOBIN)
-	go install github.com/cosmtrek/air@latest
 	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 	go install github.com/goreleaser/goreleaser@latest
 	go install golang.org/x/tools/cmd/godoc@latest
 
 .PHONY: dev
-dev:
-	@air -c .air.toml
+dev: forwarder.race
+	@./forwarder.race run
 
-BUILD_BASE_PKG_NAME = github.com/saucelabs/forwarder/internal/
-BUILD_GIT_COMMIT = $(shell git rev-list -1 HEAD)
-BUILD_DATE = $(shell date)
-BUILD_LDFLAGS = "-X '$(BUILD_BASE_PKG_NAME)version.buildCommit=$(BUILD_GIT_COMMIT)' -X '$(BUILD_BASE_PKG_NAME)version.buildVersion=$(BUILD_VERSION)' -X '$(BUILD_BASE_PKG_NAME)version.buildTime=$(BUILD_DATE)' -extldflags '-static'"
-
-.PHONY: dev-build
-dev-build:
-	@go build -o ./forwarder.race -race -ldflags $(BUILD_LDFLAGS) ./.
+forwarder.race: $(shell go list -f '{{range .GoFiles}}{{ $$.Dir }}/{{ . }} {{end}}' ./...)
+	@go build -o ./forwarder.race -race ./cmd/forwarder
 
 .PHONY: lint
 lint:
