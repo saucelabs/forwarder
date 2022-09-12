@@ -35,11 +35,3 @@ Run `$ make doc` or check out [online](https://pkg.go.dev/github.com/saucelabs/f
 2. Run server in development mode `make dev` 
 
 For more information see [CONTRIBUTION](CONTRIBUTION.md).
-
-### Release
-
-Check out [CONTRIBUTION](CONTRIBUTION.md).
-
-## Roadmap
-
-Check out [CHANGELOG](CHANGELOG.md).

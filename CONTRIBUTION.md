@@ -54,14 +54,12 @@ The following guidelines aim to point to a direction that should drive the codeb
 - If you use VSCode IDE, the Go extension is installed, **_and properly setup_**, it should obey the configuration file ([.golangci.yml](.golangci.yml)) for the linter (`golangci`) and show problems the right way, otherwise, just run `$ make lint`. The same thing applies to test. If you open a test file (`*_test.go`), modify and save it, it should automatically run tests and shows coverage; otherwise, just run `$ make test`
 - Always run ` $ make coverage lint` before you commit your code; it will save you time!
 - If you spotted a problem or something that needs to be modified/improved, do that right way; otherwise, that with `// TODO:`
-- Update the [`CHANGELOG.md`](CHANGELOG.md) but not copying your commits messages - that's not its purpose. Use that to plan changes too.
 - Don't write tests that test someone else package/APIs, for example, for a function that purely calls some Kubernetes API - they got that already tested, and covered in their own packages. If not, try to change the package you are using for something better. Focus on testing **business logic** and its desired outcomes.
 
 ## Release
 
 1. create a branch, commit update and push
 1. once all test pass and PR is approved, merge
-1. Update [the changelog](CHANGELOG)
 1. make a new release by creating a tag that matches the new Sauce Connect version:
    ```sh
    $ git checkout master
