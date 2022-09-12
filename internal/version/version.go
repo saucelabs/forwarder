@@ -12,9 +12,9 @@ import (
 
 var (
 	// Should have real values replaces @ build time.
-	buildCommit  = "Commit wasn't set @ build time"
-	buildTime    = "Date wasn't set @ build time"
-	buildVersion = "Version wasn't set @ build time"
+	buildCommit  = "Unknown"
+	buildTime    = "Unknown"
+	buildVersion = "Devel"
 
 	// Singleton.
 	version *Version
