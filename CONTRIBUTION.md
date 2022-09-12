@@ -32,7 +32,6 @@ It is always best to discuss your plans beforehand, to ensure that your contribu
 - Open a new pull request, label it `work in progress` and outline what you will be contributing
 - When creating a pull request, its description should reference the corresponding issue id.
 - Make commits of logical units.
-- Make sure you sign-off on your commits `git commit -s -m "adding X to change Y"`
 - Write good commit messages (see below).
 - Push your changes to a topic branch in your fork of the repository.
 - As you push your changes, update the pull request with new infomation and tasks as you complete them
