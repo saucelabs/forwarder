@@ -1,0 +1,11 @@
+run:
+  deadline: 5m
+  tests: true
+  skip-files:
+    - mock_.*\\.go
+  silent: true
+
+linters:
+  disable-all: true
+  enable:
+    - gofumpt
