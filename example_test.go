@@ -82,7 +82,9 @@ func ExampleNew() {
 	}
 
 	var pacText strings.Builder
-	_ = template.Must(template.New("pacTemplate").Parse(pacTemplate)).Execute(&pacText, templateMap)
+	if err := template.Must(template.New("pacTemplate").Parse(pacTemplate)).Execute(&pacText, templateMap); err != nil {
+		l.Fatalf("Unable to execute pac template %s", err)
+	}
 
 	l.Debuglnf("PAC template parsed: \n%s", pacText.String())
 

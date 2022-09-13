@@ -752,6 +752,9 @@ func BenchmarkNew(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		_, _, _ = executeRequest(client, testServer.URL)
+		_, _, err := executeRequest(client, testServer.URL)
+		if err != nil {
+			b.Fatal(err)
+		}
 	}
 }
