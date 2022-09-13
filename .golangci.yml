@@ -12,10 +12,12 @@ run:
 linters:
   enable-all: true
   disable:
-    - exhaustruct
     - exhaustivestruct
+    - exhaustruct
     - godox
     - goerr113
+    - maligned
+    - nonamedreturns
     - tagliatelle
     - varnamelen
     - wrapcheck
@@ -55,3 +57,11 @@ issues:
     - linters:
         - lll
       source: "json:"
+
+    - linters:
+        - gocritic
+      source: "// output:"
+    - linters:
+        - nosnakecase
+      source: "func Example"
+

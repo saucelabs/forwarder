@@ -110,7 +110,7 @@ func createMockedHTTPServer(statusCode int, body, encodedCredential string) *htt
 	return testServer
 }
 
-func executeRequest(client *http.Client, uri string) (int, string, error) {
+func executeRequest(client *http.Client, uri string) (statusCode int, body string, err error) {
 	u, err := url.ParseRequestURI(uri)
 	if err != nil {
 		return 0, "", fmt.Errorf("Failed to parse URI: %w", err)
