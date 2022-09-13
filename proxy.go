@@ -29,7 +29,7 @@ import (
 	"github.com/saucelabs/sypl"
 	"github.com/saucelabs/sypl/fields"
 	"github.com/saucelabs/sypl/level"
-	"github.com/saucelabs/sypl/options"
+	syplOptions "github.com/saucelabs/sypl/options"
 )
 
 const (
@@ -388,7 +388,7 @@ func setupPACUpstreamProxyConnection(p *Proxy, ctx *goproxy.ProxyCtx) error {
 // - "port": base64("user:pass")
 // - "host": base64("user:pass")
 // and a global wildcard string.
-func parseSiteCredentials(creds []string) (map[string]string, map[string]string, map[string]string, string, error) {
+func parseSiteCredentials(creds []string) (map[string]string, map[string]string, map[string]string, string, error) { //nolint // FIXME Function 'parseSiteCredentials' is too long (66 > 60) (funlen); unnamedResult: consider giving a name to these results (gocritic)
 	hostportMap := make(map[string]string, len(creds))
 	hostMap := make(map[string]string, len(creds))
 	portMap := make(map[string]string, len(creds))
@@ -492,7 +492,7 @@ func (p *Proxy) setupBasicAuth(uri *url.URL) error {
 	auth.ProxyBasic(p.proxy, "localhost", func(user, pwd string) bool {
 		ok := user == c.Username && pwd == c.Password
 
-		logger.Get().PrintlnfWithOptions(&options.Options{
+		logger.Get().PrintlnfWithOptions(&syplOptions.Options{
 			Fields: fields.Fields{
 				"authorized": ok,
 			},
@@ -567,7 +567,7 @@ func (p *Proxy) findAvailablePort(uri *url.URL) error {
 
 	p.parsedLocalProxyURI = uri
 
-	logger.Get().PrintlnfWithOptions(&options.Options{
+	logger.Get().PrintlnfWithOptions(&syplOptions.Options{
 		Fields: fields.Fields{
 			"availablePorts": availablePorts,
 		},
@@ -703,12 +703,7 @@ func (p *Proxy) maybeAddAuthHeader(req *http.Request) {
 
 // New is the Proxy factory. Errors can be introspected, and provide contextual
 // information.
-func New(
-	localProxyURI string,
-	upstreamProxyURI string,
-	pacURI string, pacProxiesCredentials []string,
-	options *Options,
-) (*Proxy, error) {
+func New(localProxyURI, upstreamProxyURI, pacURI string, pacProxiesCredentials []string, options *Options) (*Proxy, error) { //nolint // FIXME Function 'New' has too many statements (67 > 40) (funlen); calculated cyclomatic complexity for function New is 24, max is 10 (cyclop)
 	// Instantiate validator.
 	validation.Setup()
 

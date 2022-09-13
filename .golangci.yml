@@ -12,6 +12,7 @@ run:
 linters:
   enable-all: true
   disable:
+    - contextcheck
     - exhaustivestruct
     - exhaustruct
     - godox
@@ -55,12 +56,17 @@ issues:
         - testpackage
 
     - linters:
+        - gocritic
+      source: "// output:"
+
+    - linters:
+        - lll
+      source: "//nolint:"
+
+    - linters:
         - lll
       source: "json:"
 
-    - linters:
-        - gocritic
-      source: "// output:"
     - linters:
         - nosnakecase
       source: "func Example"
