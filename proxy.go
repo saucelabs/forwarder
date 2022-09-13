@@ -242,7 +242,13 @@ func setProxyBasicAuthHeader(uri *url.URL, req *http.Request) {
 // Removes any upstream proxy settings.
 func resetUpstreamSettings(ctx *goproxy.ProxyCtx) {
 	ctx.Proxy.ConnectDial = nil
-	ctx.Proxy.Tr = &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, Proxy: nil}
+
+	ctx.Proxy.Tr = &http.Transport{
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: true, //nolint:gosec // FIXME https://github.com/saucelabs/forwarder/issues/47
+		},
+		Proxy: nil,
+	}
 }
 
 // Sets the default DNS.
@@ -610,7 +616,7 @@ func (p *Proxy) Run() {
 	p.State = Running
 	p.mutex.Unlock()
 
-	if err := http.ListenAndServe(p.parsedLocalProxyURI.Host, p.proxy); err != nil {
+	if err := http.ListenAndServe(p.parsedLocalProxyURI.Host, p.proxy); err != nil { //nolint:gosec // FIXME https://github.com/saucelabs/forwarder/issues/45
 		logger.Get().Fatalln(customerror.Wrap(ErrFailedToStartProxy, err))
 	}
 }
