@@ -13,4 +13,5 @@ run:
 linters:
   disable-all: true
   enable:
+    - gci
     - gofumpt
