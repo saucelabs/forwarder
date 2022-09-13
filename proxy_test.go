@@ -270,7 +270,7 @@ func TestParseSiteCredentials(t *testing.T) {
 	}
 }
 
-func TestNew(t *testing.T) {
+func TestNew(t *testing.T) { //nolint // FIXME cognitive complexity 88 of func `TestNew` is high (> 40) (gocognit); calculated cyclomatic complexity for function TestNew is 28, max is 10 (cyclop)
 	//////
 	// Randomness automates port allocation, ensuring no collision happens
 	// between tests, and examples.
