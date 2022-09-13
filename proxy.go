@@ -119,8 +119,6 @@ func (r *RetryPortOptions) Default() *RetryPortOptions {
 }
 
 // Options definition.
-//
-//nolint:maligned
 type Options struct {
 	*LoggingOptions
 
@@ -242,23 +240,18 @@ func setProxyBasicAuthHeader(uri *url.URL, req *http.Request) {
 }
 
 // Removes any upstream proxy settings.
-//
-//nolint:gosec
 func resetUpstreamSettings(ctx *goproxy.ProxyCtx) {
 	ctx.Proxy.ConnectDial = nil
 	ctx.Proxy.Tr = &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, Proxy: nil}
 }
 
 // Sets the default DNS.
-//
-//nolint:interfacer
-func setupDNS(mutex *sync.RWMutex, dnsURIs []string) error {
-	mutex.Lock()
-	defer mutex.Unlock()
+func (p *Proxy) setupDNS() error {
+	p.mutex.Lock()
+	defer p.mutex.Unlock()
 
-	parsedDNSURIs := []*url.URL{}
-
-	for _, dnsURI := range dnsURIs {
+	parsedDNSURIs := make([]*url.URL, 0, len(p.DNSURIs))
+	for _, dnsURI := range p.DNSURIs {
 		parsedDNSURI, err := url.ParseRequestURI(dnsURI)
 		if err != nil {
 			return customerror.Wrap(ErrInvalidDNSURI, err)
@@ -459,8 +452,6 @@ func parseSiteCredentials(creds []string) (map[string]string, map[string]string,
 }
 
 // DRY on handler's code.
-//
-//nolint:exhaustive
 func (p *Proxy) setupHandlers(ctx *goproxy.ProxyCtx) error {
 	if p.shouldNotProxyLocalhost(ctx) {
 		logger.Get().Tracelnf("Not proxifying request to localhost URL: %s", ctx.Req.URL.String())
@@ -469,6 +460,8 @@ func (p *Proxy) setupHandlers(ctx *goproxy.ProxyCtx) error {
 	}
 
 	switch p.Mode {
+	case Direct:
+		// Do nothing
 	case Upstream:
 		setupUpstreamProxyConnection(ctx, p.parsedUpstreamProxyURI)
 	case PAC:
@@ -816,7 +809,7 @@ func New(
 	//////
 
 	if p.Options.DNSURIs != nil {
-		if err := setupDNS(p.mutex, p.Options.DNSURIs); err != nil {
+		if err := p.setupDNS(); err != nil {
 			return nil, err
 		}
 	}
