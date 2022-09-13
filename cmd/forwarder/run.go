@@ -6,7 +6,7 @@ package main
 
 import (
 	"github.com/saucelabs/customerror"
-	"github.com/saucelabs/forwarder/pkg/proxy"
+	"github.com/saucelabs/forwarder"
 	"github.com/spf13/cobra"
 )
 
@@ -103,8 +103,8 @@ Note: Can't setup upstream, and PAC at the same time.
 	--site-credentials "user1:pwd1@foo.bar:8090,user2:pwd2@qux:baz:80"
 	`,
 	Run: func(cmd *cobra.Command, args []string) {
-		p, err := proxy.New(localProxyURI, upstreamProxyURI, pacURI, pacProxiesCredentials, &proxy.Options{
-			LoggingOptions: &proxy.LoggingOptions{
+		p, err := forwarder.New(localProxyURI, upstreamProxyURI, pacURI, pacProxiesCredentials, &forwarder.Options{
+			LoggingOptions: &forwarder.LoggingOptions{
 				Level:     logLevel,
 				FileLevel: fileLevel,
 				FilePath:  filePath,
