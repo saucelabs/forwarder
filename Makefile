@@ -27,7 +27,7 @@ fmt:
 
 .PHONY: lint
 lint:
-	@golangci-lint run -v -c .golangci.yml && echo "Lint OK"
+	@LOG_LEVEL=error golangci-lint run
 
 .PHONY: test
 test:

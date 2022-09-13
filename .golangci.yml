@@ -7,6 +7,7 @@ run:
   timeout: 1m
   skip-files:
     - internal/*
+  silent: true
 
 linters:
   enable-all: true
@@ -24,7 +25,6 @@ linters:
     - varnamelen
   fast: false
 
-# Settings for specific linters
 linters-settings:
   gocognit:
     min-complexity: 40
@@ -63,23 +63,6 @@ issues:
         - dupl
         - gocognit
 
-    - path: pkg/proxy/
-      linters:
-        - nolintlint
-
-    - path: doc.go
-      linters:
-        - lll
-
-    - linters:
-        - lll
-      source: "Err"
-
     - linters:
         - lll
       source: "json:"
-
-    - linters:
-        - gocritic
-        - godot
-      source: "//////"
