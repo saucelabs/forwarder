@@ -121,7 +121,7 @@ func executeRequest(client *http.Client, uri string) (statusCode int, body strin
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	request, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), http.NoBody)
 	if err != nil {
 		return 0, "", fmt.Errorf("Failed to create request: %w", err)
 	}
