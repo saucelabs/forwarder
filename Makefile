@@ -7,12 +7,14 @@ all: dev
 export GOBIN := $(PWD)/bin
 export PATH  := $(GOBIN):$(PATH)
 
+include .version
+
 .PHONY: install-dependencies
 install-dependencies:
 	@rm -Rf bin && mkdir -p $(GOBIN)
-	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
-	go install github.com/goreleaser/goreleaser@latest
-	go install golang.org/x/tools/cmd/godoc@latest
+	go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
+	go install github.com/goreleaser/goreleaser@$(GORELEASER_VERSION)
+	go install golang.org/x/tools/cmd/godoc@$(GODOC_VERSION)
 
 .PHONY: dev
 dev: forwarder.race
