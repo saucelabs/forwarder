@@ -74,14 +74,6 @@ func URIBuilder(hostname string, port int64, username, password string) *url.URL
 	return u
 }
 
-// URLUserStripper removes `User` (credential) information from the URL.
-func URLUserStripper(u *url.URL) *url.URL {
-	lU := *u
-	lU.User = nil
-
-	return &lU
-}
-
 // Creates a mocked HTTP server. Don't forget to defer close it!
 //
 //nolint:unparam
