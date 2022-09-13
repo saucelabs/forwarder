@@ -1,4 +1,4 @@
-package proxy
+package forwarder
 
 import (
 	"bytes"
