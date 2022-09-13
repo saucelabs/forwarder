@@ -12,8 +12,9 @@ import (
 )
 
 func TestSiteCredentialsMatcher(t *testing.T) {
-	tests := map[string]struct {
-		hostport    string
+	tests := []struct {
+		name        string
+		hostPort    string
 		hostPortMap map[string]string
 		portMap     map[string]string
 		hostMap     map[string]string
@@ -21,55 +22,61 @@ func TestSiteCredentialsMatcher(t *testing.T) {
 		isSet       bool
 		expected    string
 	}{
-		"matcher is not initialized": {
+		{
+			name:        "Matcher is not initialized",
 			hostPortMap: map[string]string{},
 			expected:    "",
-			hostport:    "abc:80",
+			hostPort:    "abc:80",
 			portMap:     map[string]string{},
 			hostMap:     map[string]string{},
 			isSet:       false,
 			global:      "",
 		},
-		"matches hostport": {
+		{
+			name:        "Matches hostPort",
 			hostPortMap: map[string]string{"abc:80": "user:pass"},
 			expected:    "user:pass",
-			hostport:    "abc:80",
+			hostPort:    "abc:80",
 			portMap:     map[string]string{"*:80": "foo"},
 			hostMap:     map[string]string{"abc:0": "bar"},
 			isSet:       true,
 			global:      "baz",
 		},
-		"matches host wildcard": {
+		{
+			name:        "Matches host wildcard",
 			hostPortMap: map[string]string{"qux:80": "foo"},
 			expected:    "user:pass",
-			hostport:    "abc:80",
+			hostPort:    "abc:80",
 			portMap:     map[string]string{"80": "user:pass"},
 			hostMap:     map[string]string{"abc": "bar"},
 			isSet:       true,
 			global:      "baz",
 		},
-		"matches port wildcard": {
+		{
+			name:        "Matches port wildcard",
 			hostPortMap: map[string]string{"qux:80": "foo"},
 			expected:    "user:pass",
-			hostport:    "abc:80",
+			hostPort:    "abc:80",
 			portMap:     map[string]string{"90": "bar"},
 			hostMap:     map[string]string{"abc": "user:pass"},
 			isSet:       true,
 			global:      "baz",
 		},
-		"matches global wildcard": {
+		{
+			name:        "Matches global wildcard",
 			hostPortMap: map[string]string{"qux:80": "foo"},
 			expected:    "user:pass",
-			hostport:    "abc:80",
+			hostPort:    "abc:80",
 			portMap:     map[string]string{"90": "bar"},
 			hostMap:     map[string]string{"qux": "baz"},
 			isSet:       true,
 			global:      "user:pass",
 		},
-		"no match": {
+		{
+			name:        "No match",
 			hostPortMap: map[string]string{"qux:80": "foo"},
 			expected:    "",
-			hostport:    "foobar:8080",
+			hostPort:    "foobar:8080",
 			portMap:     map[string]string{"80": "bar"},
 			hostMap:     map[string]string{"qux": "baz"},
 			isSet:       true,
@@ -82,8 +89,9 @@ func TestSiteCredentialsMatcher(t *testing.T) {
 	},
 	)
 
-	for name, tc := range tests {
-		t.Run(name, func(t *testing.T) {
+	for i := range tests {
+		tc := tests[i]
+		t.Run(tc.name, func(t *testing.T) {
 			matcher := siteCredentialsMatcher{
 				siteCredentials:         tc.hostPortMap,
 				siteCredentialsHost:     tc.hostMap,
@@ -91,7 +99,7 @@ func TestSiteCredentialsMatcher(t *testing.T) {
 				siteCredentialsWildcard: tc.global,
 			}
 			assert.Equalf(t, tc.isSet, matcher.isSet(), "Unexpected isSet: %v", matcher)
-			creds := matcher.match(tc.hostport)
+			creds := matcher.match(tc.hostPort)
 			assert.Equalf(t, tc.expected, creds, "Unexpected result: %v", creds)
 		})
 	}

@@ -76,7 +76,7 @@ func URIBuilder(hostname string, port int64, username, password string) *url.URL
 
 // Creates a mocked HTTP server. Don't forget to defer close it!
 //
-//nolint:unparam
+//nolint:unparam //`statusCode` always receives `http.StatusOK` (`200`)
 func createMockedHTTPServer(statusCode int, body, encodedCredential string) *httptest.Server {
 	testServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		if encodedCredential != "" {
@@ -154,88 +154,100 @@ func executeRequest(client *http.Client, uri string) (int, string, error) {
 //////
 
 func TestParseSiteCredentials(t *testing.T) {
-	tests := map[string]struct {
+	tests := []struct {
+		name     string
 		in       []string
-		hostport map[string]string
+		hostPort map[string]string
 		port     map[string]string
 		host     map[string]string
 		global   string
 		err      bool
 	}{
-		"valid with schema": {
-			in: []string{"https://user:pass@abc"},
-			hostport: map[string]string{
+		{
+			name: "Valid with schema",
+			in:   []string{"https://user:pass@abc"},
+			hostPort: map[string]string{
 				"abc": "dXNlcjpwYXNz",
 			},
 			host: map[string]string{},
 			port: map[string]string{},
 		},
-		"empty user": {
-			in:  []string{":pass@abc"},
-			err: true,
+		{
+			name: "Empty user",
+			in:   []string{":pass@abc"},
+			err:  true,
 		},
-		"empty password": {
-			in:  []string{"user:@abc"},
-			err: true,
+		{
+			name: "Empty password",
+			in:   []string{"user:@abc"},
+			err:  true,
 		},
-		"missing password": {
-			in:  []string{"user@abc"},
-			err: true,
+		{
+			name: "Missing password",
+			in:   []string{"user@abc"},
+			err:  true,
 		},
-		"missing host": {
-			in:  []string{"user:pass"},
-			err: true,
+		{
+			name: "Missing host",
+			in:   []string{"user:pass"},
+			err:  true,
 		},
-		"valid host": {
-			in: []string{"user:pass@abc"},
-			hostport: map[string]string{
+		{
+			name: "Valid host",
+			in:   []string{"user:pass@abc"},
+			hostPort: map[string]string{
 				"abc": "dXNlcjpwYXNz",
 			},
 			host: map[string]string{},
 			port: map[string]string{},
 		},
-		"valid host+port": {
-			in: []string{"user:pass@abc:123"},
-			hostport: map[string]string{
+		{
+			name: "Valid host+port",
+			in:   []string{"user:pass@abc:123"},
+			hostPort: map[string]string{
 				"abc:123": "dXNlcjpwYXNz",
 			},
 			host: map[string]string{},
 			port: map[string]string{},
 		},
-		"wildcard host": {
-			in: []string{"user:pass@*:123"},
+		{
+			name: "Wildcard host",
+			in:   []string{"user:pass@*:123"},
 			port: map[string]string{
 				"123": "dXNlcjpwYXNz",
 			},
 			host:     map[string]string{},
-			hostport: map[string]string{},
+			hostPort: map[string]string{},
 		},
-		"wildcard port": {
-			in: []string{"user:pass@abc:0"},
+		{
+			name: "Wildcard port",
+			in:   []string{"user:pass@abc:0"},
 			host: map[string]string{
 				"abc": "dXNlcjpwYXNz",
 			},
-			hostport: map[string]string{},
+			hostPort: map[string]string{},
 			port:     map[string]string{},
 		},
-		"global wildcard": {
+		{
+			name:     "Global wildcard",
 			in:       []string{"user:pass@*:0"},
 			global:   "dXNlcjpwYXNz",
-			hostport: map[string]string{},
+			hostPort: map[string]string{},
 			host:     map[string]string{},
 			port:     map[string]string{},
 		},
 	}
 
-	for name, tc := range tests {
-		t.Run(name, func(t *testing.T) {
-			hostport, host, port, global, err := parseSiteCredentials(tc.in)
+	for i := range tests {
+		tc := tests[i]
+		t.Run(tc.name, func(t *testing.T) {
+			hostPort, host, port, global, err := parseSiteCredentials(tc.in)
 
 			if (err == nil) == tc.err {
 				t.Fatalf("Unexpected error condition: %s", err)
 			}
 
-			diff := cmp.Diff(tc.hostport, hostport)
+			diff := cmp.Diff(tc.hostPort, hostPort)
 			if diff != "" {
 				t.Fatalf(diff)
 			}
@@ -256,7 +268,6 @@ func TestParseSiteCredentials(t *testing.T) {
 	}
 }
 
-//nolint:maintidx
 func TestNew(t *testing.T) {
 	//////
 	// Randomness automates port allocation, ensuring no collision happens
@@ -462,21 +473,22 @@ func TestNew(t *testing.T) {
 			wantErrType: ErrInvalidProxyParams,
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if tt.preFunc != nil {
-				tt.preFunc()
+	for i := range tests {
+		tc := tests[i]
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.preFunc != nil {
+				tc.preFunc()
 			}
 
 			// Re-set the value allowing per-test case setting.
-			l := logger.Setup(tt.args.loggingOptions)
+			l := logger.Setup(tc.args.loggingOptions)
 
 			//////
 			// Target/end server.
 			//////
 
 			targetCreds := ""
-			if tt.args.siteCredentials != nil {
+			if tc.args.siteCredentials != nil {
 				targetCreds = base64.
 					StdEncoding.
 					EncodeToString([]byte("user:pass"))
@@ -495,8 +507,8 @@ func TestNew(t *testing.T) {
 			if os.Getenv("FORWARDER_TEST_MODE") == "integration" {
 				targetServerURL = "https://httpbin.org/status/200"
 
-				if tt.args.dnsURIs != nil {
-					dnsURIs = tt.args.dnsURIs
+				if tc.args.dnsURIs != nil {
+					dnsURIs = tc.args.dnsURIs
 				}
 			}
 
@@ -507,22 +519,22 @@ func TestNew(t *testing.T) {
 			//////
 
 			localProxyURI := ""
-			if tt.args.localProxyURI != nil {
-				localProxyURI = tt.args.localProxyURI.String()
+			if tc.args.localProxyURI != nil {
+				localProxyURI = tc.args.localProxyURI.String()
 			}
 
 			upstreamProxyURI := ""
-			if tt.args.upstreamProxyURI != nil {
-				upstreamProxyURI = tt.args.upstreamProxyURI.String()
+			if tc.args.upstreamProxyURI != nil {
+				upstreamProxyURI = tc.args.upstreamProxyURI.String()
 			}
 
 			pacURI := ""
-			if tt.args.pacURI != nil {
-				pacURI = tt.args.pacURI.String()
+			if tc.args.pacURI != nil {
+				pacURI = tc.args.pacURI.String()
 			}
 
 			var siteCredentials []string
-			if tt.args.siteCredentials != nil {
+			if tc.args.siteCredentials != nil {
 				uri, err := url.Parse(targetServerURL)
 				if err != nil {
 					panic(err)
@@ -550,7 +562,7 @@ func TestNew(t *testing.T) {
 				pacURI,
 
 				// PAC proxies credentials in standard URI format.
-				tt.args.pacProxiesCredentials,
+				tc.args.pacProxiesCredentials,
 
 				// Logging settings.
 				&Options{
@@ -561,14 +573,14 @@ func TestNew(t *testing.T) {
 				},
 			)
 			if err != nil {
-				if !tt.wantErr {
-					t.Errorf("New() localProxy error = %v, wantErr %v", err, tt.wantErr)
+				if !tc.wantErr {
+					t.Errorf("New() localProxy error = %v, wantErr %v", err, tc.wantErr)
 
 					return
 				}
 
-				if !errors.Is(err, tt.wantErrType) {
-					t.Errorf("New() localProxy error = %v, expected %v", err, tt.wantErrType)
+				if !errors.Is(err, tc.wantErrType) {
+					t.Errorf("New() localProxy error = %v, expected %v", err, tc.wantErrType)
 
 					return
 				}
@@ -587,7 +599,7 @@ func TestNew(t *testing.T) {
 					t.Fatal("Failed to ParseRequestURI(localProxyURI)")
 				}
 
-				tt.args.localProxyURI = lPURI
+				tc.args.localProxyURI = lPURI
 			}
 
 			if upstreamProxyURI != localProxy.UpstreamProxyURI {
@@ -598,7 +610,7 @@ func TestNew(t *testing.T) {
 					t.Fatal("Failed to ParseRequestURI(upstreamProxyURI)")
 				}
 
-				tt.args.upstreamProxyURI = lUURI
+				tc.args.upstreamProxyURI = lUURI
 			}
 
 			go localProxy.Run()
@@ -610,8 +622,8 @@ func TestNew(t *testing.T) {
 			// Upstream Proxy.
 			//////
 
-			if tt.preUpstreamFunc != nil {
-				tt.preUpstreamFunc()
+			if tc.preUpstreamFunc != nil {
+				tc.preUpstreamFunc()
 			}
 
 			if upstreamProxyURI != "" {
@@ -634,14 +646,14 @@ func TestNew(t *testing.T) {
 					},
 				)
 				if err != nil {
-					if !tt.wantErr {
-						t.Errorf("New() localProxy error = %v, wantErr %v", err, tt.wantErr)
+					if !tc.wantErr {
+						t.Errorf("New() localProxy error = %v, wantErr %v", err, tc.wantErr)
 
 						return
 					}
 
-					if !errors.Is(err, tt.wantErrType) {
-						t.Errorf("New() localProxy error = %v, expected %v", err, tt.wantErrType)
+					if !errors.Is(err, tc.wantErrType) {
+						t.Errorf("New() localProxy error = %v, expected %v", err, tc.wantErrType)
 
 						return
 					}
@@ -655,19 +667,19 @@ func TestNew(t *testing.T) {
 				time.Sleep(1 * time.Second)
 			}
 
-			if tt.postUpstreamFunc != nil {
-				tt.postUpstreamFunc()
+			if tc.postUpstreamFunc != nil {
+				tc.postUpstreamFunc()
 			}
 
 			//////
 			// Client.
 			//////
 
-			l.Debuglnf("Client is using %s as proxy", tt.args.localProxyURI.Redacted())
+			l.Debuglnf("Client is using %s as proxy", tc.args.localProxyURI.Redacted())
 
 			// Client's proxy settings.
 			tr := &http.Transport{
-				Proxy: http.ProxyURL(tt.args.localProxyURI),
+				Proxy: http.ProxyURL(tc.args.localProxyURI),
 			}
 
 			client := &http.Client{
@@ -683,8 +695,8 @@ func TestNew(t *testing.T) {
 				t.Fatal("Expected status code to be OK")
 			}
 
-			if tt.postFunc != nil {
-				tt.postFunc()
+			if tc.postFunc != nil {
+				tc.postFunc()
 			}
 		})
 	}
