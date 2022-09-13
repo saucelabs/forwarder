@@ -4,7 +4,7 @@
 
 ---
 run:
-  timeout: 1m
+  timeout: 5m
   skip-files:
     - internal/*
   silent: true
@@ -12,56 +12,45 @@ run:
 linters:
   enable-all: true
   disable:
-    - wrapcheck
-    - testpackage
-    - gochecknoglobals
-    - exhaustivestruct
     - exhaustruct
-    - paralleltest
+    - exhaustivestruct
     - godox
-    - cyclop
-    - tagliatelle
     - goerr113
+    - tagliatelle
     - varnamelen
+    - wrapcheck
+    - wsl
   fast: false
 
 linters-settings:
+  errcheck:
+    check-blank: true
   gocognit:
     min-complexity: 40
-
-  funlen:
-    lines: 220
-    statements: 75
-
+  gocyclo:
+    min-complexity: 40
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - performance
+      - style
+  lll:
+    line-length: 180
   nestif:
-    min-complexity: 8
+    min-complexity: 6
 
 issues:
   exclude-rules:
     - path: cmd/
       linters:
         - gochecknoinits
-        - gomnd
-        - forbidigo
-        - lll
-
-    - path: example_test.go
-      linters:
-        - lll
-
-    - path: internal/http/
-      linters:
-        - unparam
-        - nlreturn
+        - gochecknoglobals
 
     - path: _test\.go
       linters:
-        - scopelint
-        - wsl
-        - nlreturn
         - funlen
-        - dupl
-        - gocognit
+        - paralleltest
+        - testpackage
 
     - linters:
         - lll
