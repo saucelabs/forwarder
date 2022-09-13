@@ -52,8 +52,10 @@ const (
 `
 )
 
-var loggingOptions = &LoggingOptions{
-	Level: defaultProxyLoggingLevel, // NOTE: Set it to `trace` to debug problems.
+func defaultLoggingOptions() *LoggingOptions {
+	return &LoggingOptions{
+		Level: defaultProxyLoggingLevel, // NOTE: Set it to `trace` to debug problems.
+	}
 }
 
 //////
@@ -308,7 +310,7 @@ func TestNew(t *testing.T) {
 					"",
 					"",
 				),
-				loggingOptions: loggingOptions,
+				loggingOptions: defaultLoggingOptions(),
 			},
 			wantErr: false,
 		},
@@ -321,7 +323,7 @@ func TestNew(t *testing.T) {
 					"",
 					"",
 				),
-				loggingOptions:  loggingOptions,
+				loggingOptions:  defaultLoggingOptions(),
 				siteCredentials: []string{},
 			},
 			wantErr: false,
@@ -336,7 +338,7 @@ func TestNew(t *testing.T) {
 					"",
 					"",
 				),
-				loggingOptions: loggingOptions,
+				loggingOptions: defaultLoggingOptions(),
 			},
 			wantErr: false,
 		},
@@ -349,7 +351,7 @@ func TestNew(t *testing.T) {
 					localProxyCredentialUsername,
 					localProxyCredentialPassword,
 				),
-				loggingOptions: loggingOptions,
+				loggingOptions: defaultLoggingOptions(),
 			},
 			wantErr: false,
 		},
@@ -368,7 +370,7 @@ func TestNew(t *testing.T) {
 					"",
 					"",
 				),
-				loggingOptions: loggingOptions,
+				loggingOptions: defaultLoggingOptions(),
 			},
 			wantErr: false,
 		},
@@ -387,7 +389,7 @@ func TestNew(t *testing.T) {
 					wrongCredentialUsername,
 					wrongCredentialPassword,
 				),
-				loggingOptions: loggingOptions,
+				loggingOptions: defaultLoggingOptions(),
 			},
 			preFunc: func() {
 				// Local proxy.
@@ -440,7 +442,7 @@ func TestNew(t *testing.T) {
 					"",
 					"",
 				),
-				loggingOptions: loggingOptions,
+				loggingOptions: defaultLoggingOptions(),
 			},
 			wantErr:     true,
 			wantErrType: ErrInvalidOrParentOrPac,
@@ -448,7 +450,7 @@ func TestNew(t *testing.T) {
 		{
 			name: "Should fail - missing local proxy URI",
 			args: args{
-				loggingOptions: loggingOptions,
+				loggingOptions: defaultLoggingOptions(),
 			},
 			wantErr:     true,
 			wantErrType: ErrInvalidProxyParams,
@@ -457,7 +459,7 @@ func TestNew(t *testing.T) {
 			name: "Should fail - invalid local proxy URI",
 			args: args{
 				localProxyURI:  URIBuilder("", 0, "", ""),
-				loggingOptions: loggingOptions,
+				loggingOptions: defaultLoggingOptions(),
 			},
 			wantErr:     true,
 			wantErrType: ErrInvalidProxyParams,
@@ -467,7 +469,7 @@ func TestNew(t *testing.T) {
 			args: args{
 				localProxyURI:    URIBuilder(defaultProxyHostname, r.MustGenerate(), "", ""),
 				upstreamProxyURI: URIBuilder("", 0, "", ""),
-				loggingOptions:   loggingOptions,
+				loggingOptions:   defaultLoggingOptions(),
 			},
 			wantErr:     true,
 			wantErrType: ErrInvalidProxyParams,
@@ -567,7 +569,7 @@ func TestNew(t *testing.T) {
 				// Logging settings.
 				&Options{
 					DNSURIs:        dnsURIs,
-					LoggingOptions: loggingOptions,
+					LoggingOptions: defaultLoggingOptions(),
 					// site credentials in standard URI format.
 					SiteCredentials: siteCredentials,
 				},
@@ -642,7 +644,7 @@ func TestNew(t *testing.T) {
 
 					// Logging settings.
 					&Options{
-						LoggingOptions: loggingOptions,
+						LoggingOptions: defaultLoggingOptions(),
 					},
 				)
 				if err != nil {
@@ -725,7 +727,7 @@ func BenchmarkNew(b *testing.B) {
 
 	proxy, err := New(localProxyURI.String(), "", "", nil,
 		&Options{
-			LoggingOptions: loggingOptions,
+			LoggingOptions: defaultLoggingOptions(),
 		})
 	if err != nil {
 		log.Fatalln("Failed to create proxy.", err)
