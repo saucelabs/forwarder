@@ -20,8 +20,12 @@ install-dependencies:
 dev: forwarder.race
 	@./forwarder.race run
 
-forwarder.race: $(shell go list -f '{{range .GoFiles}}{{ $$.Dir }}/{{ . }} {{end}}' ./...)
+forwarder.race: .check-go-version $(shell go list -f '{{range .GoFiles}}{{ $$.Dir }}/{{ . }} {{end}}' ./...)
 	@go build -o ./forwarder.race -race ./cmd/forwarder
+
+.PHONY: .check-go-version
+.check-go-version:
+	@[[ "`go version`" =~ $(GO_VERSION) ]] || echo "[WARNING] Required Go version $(GO_VERSION) found `go version | grep -o -E '1\.[0-9\.]+'`"
 
 .PHONY: fmt
 fmt:
