@@ -6,65 +6,61 @@ package forwarder
 
 import (
 	"net/http"
+	"net/url"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestNormalizeURI(t *testing.T) {
-	testCases := []struct {
+	tests := []struct {
 		name     string
 		url      string
 		expected string
-		err      error
 	}{
 		{
 			name:     "Adds http scheme",
 			url:      "example.com",
 			expected: "http://example.com",
-			err:      nil,
 		},
 		{
 			name:     "Adds http scheme",
 			url:      "example.com:8888",
 			expected: "http://example.com:8888",
-			err:      nil,
 		},
 		{
 			name:     "Adds http scheme",
 			url:      "://example.com:8888",
 			expected: "http://example.com:8888",
-			err:      nil,
 		},
 		{
 			name:     "Adds https scheme",
 			url:      "://example.com:443",
 			expected: "https://example.com:443",
-			err:      nil,
 		},
 		{
 			name:     "Adds https scheme",
 			url:      "example.com:443",
 			expected: "https://example.com:443",
-			err:      nil,
 		},
 		{
 			name:     "Preserves the scheme",
 			url:      "https://example.com",
 			expected: "https://example.com",
-			err:      nil,
 		},
 	}
 
-	for _, tc := range testCases {
-		result, err := NormalizeURI(tc.url)
-		if tc.err == nil {
-			assert.Equalf(t, tc.expected, result.String(), "%s: Unexpected result: %v", tc.name, result)
-			assert.NoErrorf(t, err,
-				"%s: Unexpected error: %s", tc.name, err)
-		} else {
-			assert.Errorf(t, err, "%s: Expected error: %s", tc.name, tc.err)
-		}
+	for i := range tests {
+		tc := tests[i]
+		t.Run(tc.name, func(t *testing.T) {
+			u, err := url.Parse(normalizeURLScheme(tc.url))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if u.String() != tc.expected {
+				t.Errorf("expected %s, got %s", tc.expected, u.String())
+			}
+		})
 	}
 }
 
