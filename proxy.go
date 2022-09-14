@@ -25,8 +25,8 @@ import (
 	"github.com/saucelabs/customerror"
 	"github.com/saucelabs/forwarder/internal/credential"
 	"github.com/saucelabs/forwarder/internal/logger"
-	"github.com/saucelabs/forwarder/internal/pac"
 	"github.com/saucelabs/forwarder/internal/validation"
+	"github.com/saucelabs/pacman"
 	"github.com/saucelabs/randomness"
 	"github.com/saucelabs/sypl"
 	"github.com/saucelabs/sypl/fields"
@@ -210,7 +210,7 @@ type Proxy struct {
 	parsedUpstreamProxyURI *url.URL
 
 	// PAC parser implementation.
-	pacParser *pac.Parser
+	pacParser *pacman.Parser
 
 	// Credentials for proxies specified in PAC content.
 	pacProxiesCredentials []string
@@ -352,7 +352,7 @@ func setupPACUpstreamProxyConnection(p *Proxy, ctx *goproxy.ProxyCtx) error {
 
 	logger.Get().Tracelnf("Finding proxy for %s", hostToFindProxyFor)
 
-	pacProxies, err := p.pacParser.Find(urlToFindProxyFor)
+	pacProxies, err := p.pacParser.FindProxy(urlToFindProxyFor)
 	if err != nil {
 		return err
 	}
@@ -890,15 +890,11 @@ func New(localProxyURI, upstreamProxyURI, pacURI string, pacProxiesCredentials [
 	}
 
 	if p.PACURI != "" {
-		p.Mode = PAC
-
-		// `uri` doesn't need to be validated, this is already done by `pac.New`.
-		// Also, there's no need to wrap `err`, pac is powered by `customerror`.
-		pacParser, err := pac.New(p.PACURI, p.pacProxiesCredentials...)
+		pacParser, err := pacman.New(p.PACURI, p.pacProxiesCredentials...)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("pac parser: %w", err)
 		}
-
+		p.Mode = PAC
 		p.pacParser = pacParser
 	}
 
