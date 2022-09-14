@@ -23,7 +23,6 @@ import (
 	"github.com/saucelabs/forwarder/internal/credential"
 	"github.com/saucelabs/forwarder/internal/logger"
 	"github.com/saucelabs/forwarder/internal/pac"
-	"github.com/saucelabs/forwarder/internal/util"
 	"github.com/saucelabs/forwarder/internal/validation"
 	"github.com/saucelabs/randomness"
 	"github.com/saucelabs/sypl"
@@ -314,7 +313,7 @@ func (p *Proxy) setupDNS() error {
 
 // Returns `true` if should NOT proxy connections to any upstream proxy.
 func (p *Proxy) shouldNotProxyLocalhost(ctx *goproxy.ProxyCtx) bool {
-	if !p.ProxyLocalhost && util.IsLocalHost(ctx.Req) {
+	if !p.ProxyLocalhost && IsLocalHost(ctx.Req) {
 		resetUpstreamSettings(ctx)
 
 		return true
@@ -395,7 +394,7 @@ func parseSiteCredentials(creds []string) (map[string]string, map[string]string,
 	global := ""
 
 	for _, credentialText := range creds {
-		uri, err := util.NormalizeURI(credentialText)
+		uri, err := NormalizeURI(credentialText)
 		if err != nil {
 			return nil, nil, nil, "", fmt.Errorf("%w: %s", ErrInvalidSiteCredentials, err)
 		}
