@@ -13,218 +13,98 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-var (
-	v *validator.Validate
-
-	validDNSProtocolsRegex = regexp.MustCompile(`(?mi)udp|tcp`)
-	validProxySchemesRegex = regexp.MustCompile(`(?mi)http|https|socks5|socks|quic`)
-	validTextOrURIRegex    = regexp.MustCompile(`(?mi)http|https|file|.pac|FindProxyForURL`)
-)
-
-//////
-// Helpers.
-//////
-
-// Returns true if port is in the specified range
-func isPortValid(port, min, max int) bool {
-	return port >= min && port <= max
+// RegisterAll adds registers all custom validations with the provider validator.
+func RegisterAll(v *validator.Validate) {
+	mustRegisterValidation(v, "basicAuth", IsBasicAuth)
+	mustRegisterValidation(v, "dnsURI", IsDNSURI)
+	mustRegisterValidation(v, "pacURIOrText", IsPacURIOrText)
+	mustRegisterValidation(v, "proxyURI", IsProxyURI)
 }
 
-//////
-// Validators.
-//////
-
-// Checks if the given credential is valid. By valid:
-// - Need to be in the format (username:password)
-// - Need to have a username, min. length is 3
-// - Need to have password, min. length is 3
-// - Total min. length is 7 chars.
-//
-// TODO: Better name it.
-func basicAuthCredentialValidator(fl validator.FieldLevel) bool {
-	fieldValue := strings.ToLower(fl.Field().String())
-
-	// Can't be empty.
-	if fieldValue == "" {
-		return false
+func mustRegisterValidation(v *validator.Validate, tag string, fn validator.Func) {
+	if err := v.RegisterValidation(tag, fn); err != nil {
+		panic(err)
 	}
-
-	// Min. length is 3 chars.
-	if len(fieldValue) < 7 {
-		return false
-	}
-
-	// Need to have `:`.
-	if !strings.Contains(fieldValue, ":") {
-		return false
-	}
-
-	// Need to have 2 components: username, and password.
-	credential := strings.Split(fieldValue, ":")
-
-	if len(credential) != 2 {
-		return false
-	}
-
-	// Min. username length is 3 char.
-	if len(credential[0]) < 3 {
-		return false
-	}
-
-	// Min. password length is 3 char.
-	if len(credential[1]) < 3 {
-		return false
-	}
-
-	return true
 }
 
-// Checks if a given URI is a valid dns URI. By valid:
-// - Known protocol: udp, tcp
-// - Some hostname (x.io - min 4 chars), or IP
-// - Port in a valid range: 53 - 65535.
-func dnsURIValidator(fl validator.FieldLevel) bool {
-	fieldValue := strings.ToLower(fl.Field().String())
+// IsBasicAuth checks that the given credentials are valid:
+// - Need to be in the format (username:password).
+// - Need to have a username, min. length is 3.
+// - Need to have password, min. length is 3.
+func IsBasicAuth(fl validator.FieldLevel) bool {
+	v := fl.Field().String()
 
-	// Can't be empty.
-	if fieldValue == "" {
+	user, passwd, ok := strings.Cut(v, ":")
+	if !ok {
 		return false
 	}
+	return len(user) >= 3 && len(passwd) >= 3
+}
+
+var validDNSProtocolsRegexp = regexp.MustCompile(`(?mi)udp|tcp`)
+
+// IsDNSURI checks if the given URI is a valid DNS URI:
+// - Known protocol: udp, tcp.
+// - Some hostname (x.io - min 4 chars), or IP.
+// - Port in a valid range: 1 - 65535.
+func IsDNSURI(fl validator.FieldLevel) bool {
+	v := fl.Field().String()
 
 	// Need to be a valid URI.
-	parsedURL, err := url.Parse(fieldValue)
+	u, err := url.Parse(v)
 	if err != nil {
 		return false
 	}
 
-	protocol := parsedURL.Scheme
-	hostname := parsedURL.Hostname()
-	portAsString := parsedURL.Port()
-
-	// URI components can't be empty.
-	if protocol == "" || hostname == "" || portAsString == "" {
-		return false
-	}
-
-	// Need to be a valid dns protocol.
-	if !validDNSProtocolsRegex.MatchString(protocol) {
-		return false
-	}
-
-	// Need to have a valid hostname.
-	if len(hostname) < 4 {
-		return false
-	}
-
-	port, err := strconv.Atoi(portAsString)
-	if err != nil {
-		return false
-	}
-
-	// Need to be in a valid port range.
-	if !isPortValid(port, 53, 65535) {
-		return false
-	}
-
-	return true
+	return u.Scheme != "" && u.Hostname() != "" && u.Port() != "" &&
+		validDNSProtocolsRegexp.MatchString(u.Scheme) &&
+		len(u.Hostname()) >= 4 &&
+		isPort(u.Port())
 }
 
-// Checks if the given text, or URI is valid for the PAC loader. By valid:
-// - Remote loading: `http`, or `https`
-// - Local loading: `file`
-// - Direct loading: `function` keyword
-func pacSourceValidator(fl validator.FieldLevel) bool {
-	fieldValue := strings.ToLower(fl.Field().String())
+// IsPacURIOrText checks if the given text, or URI is valid for the PAC loader:
+// - If it's a URI, it needs to be a valid URI.
+// - If it's text, it needs to be a valid PAC script.
+func IsPacURIOrText(fl validator.FieldLevel) bool {
+	v := fl.Field().String()
 
-	// Can't be empty.
-	if fieldValue == "" {
-		return false
+	// If it's a URI, it needs to be a valid URI.
+	if strings.HasPrefix(v, "http") || strings.HasPrefix(v, "file") {
+		_, err := url.Parse(v)
+		return err == nil
 	}
 
-	// Min. length is 3 chars.
-	if len(fieldValue) < 4 {
-		return false
-	}
-
-	// Validate scheme against common proxy schemes.
-	if !validTextOrURIRegex.MatchString(fieldValue) {
-		return false
-	}
-
-	return true
+	// If it's text, it needs to be a valid PAC script.
+	return strings.Contains(v, "FindProxyForURL")
 }
 
-// Checks if a given URI is a valid proxy URI. By valid:
-// - Known scheme: http, https, socks, socks5, or quic
-// - Some hostname: min 4 chars (x.io)
-// - Port in a valid range: 80 - 65535.
-func proxyURIValidator(fl validator.FieldLevel) bool {
-	fieldValue := strings.ToLower(fl.Field().String())
+var validProxySchemesRegexp = regexp.MustCompile(`(?mi)http|https|socks5|socks|quic`)
 
-	// Can't be empty.
-	if fieldValue == "" {
-		return false
-	}
+// IsProxyURI checks if a given URI is a valid proxy URI:
+// - Known protocol: http, https, socks5, socks, quic.
+// - Some hostname (x.io - min 4 chars), or IP.
+// - Port in a valid range: 1 - 65535.
+func IsProxyURI(fl validator.FieldLevel) bool {
+	v := fl.Field().String()
 
 	// Need to be a valid URI.
-	parsedURL, err := url.Parse(fieldValue)
+	u, err := url.Parse(v)
 	if err != nil {
 		return false
 	}
 
-	scheme := parsedURL.Scheme
-	hostname := parsedURL.Hostname()
-	portAsString := parsedURL.Port()
+	return u.Scheme != "" && u.Hostname() != "" && u.Port() != "" &&
+		validProxySchemesRegexp.MatchString(u.Scheme) &&
+		len(u.Hostname()) >= 4 &&
+		isPort(u.Port())
+}
 
-	// URI components can't be empty.
-	if scheme == "" || hostname == "" || portAsString == "" {
-		return false
-	}
-
-	// Need to be a valid proxy schemes.
-	if !validProxySchemesRegex.MatchString(scheme) {
-		return false
-	}
-
-	// Need to have a valid hostname.
-	if len(hostname) < 4 {
-		return false
-	}
-
-	port, err := strconv.Atoi(portAsString)
+// isPort returns true iff port string is a valid port number.
+func isPort(port string) bool {
+	p, err := strconv.Atoi(port)
 	if err != nil {
 		return false
 	}
 
-	// Need to be in a valid port range.
-	if !isPortValid(port, 80, 65535) {
-		return false
-	}
-
-	return true
-}
-
-//////
-// Exported functionalities.
-//////
-
-// Get returns validation.
-func Get() *validator.Validate {
-	if v == nil {
-		v = Setup()
-	}
-
-	return v
-}
-
-// Setup validation.
-func Setup() *validator.Validate {
-	v = validator.New()
-
-	v.RegisterValidation("basicAuth", basicAuthCredentialValidator)
-	v.RegisterValidation("dnsURI", dnsURIValidator)
-	v.RegisterValidation("pacTextOrURI", pacSourceValidator)
-	v.RegisterValidation("proxyURI", proxyURIValidator)
-
-	return v
+	return p >= 1 && p <= 65535
 }

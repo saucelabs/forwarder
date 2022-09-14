@@ -9,7 +9,6 @@ import (
 	"crypto/tls"
 	"encoding/base64"
 	"fmt"
-	"github.com/saucelabs/forwarder/validation"
 	"net"
 	"net/http"
 	"net/http/httputil"
@@ -23,9 +22,11 @@ import (
 	"github.com/eapache/go-resiliency/retrier"
 	"github.com/elazarl/goproxy"
 	"github.com/elazarl/goproxy/ext/auth"
+	"github.com/go-playground/validator/v10"
 	"github.com/saucelabs/customerror"
 	"github.com/saucelabs/forwarder/internal/credential"
 	"github.com/saucelabs/forwarder/internal/logger"
+	"github.com/saucelabs/forwarder/validation"
 	"github.com/saucelabs/pacman"
 	"github.com/saucelabs/randomness"
 	"github.com/saucelabs/sypl"
@@ -716,7 +717,10 @@ func loadCredentialFromEnvVar(envVar string, uri *url.URL) error {
 	credentialFromEnvVar := os.Getenv(envVar)
 
 	if credentialFromEnvVar != "" {
-		if err := validation.Get().Var(credentialFromEnvVar, "basicAuth"); err != nil {
+		v := validator.New()
+		validation.RegisterAll(v)
+
+		if err := v.Var(credentialFromEnvVar, "basicAuth"); err != nil {
 			errMsg := fmt.Sprintf("env var (%s)", envVar)
 
 			return customerror.NewInvalidError(errMsg, customerror.WithError(err))
@@ -744,9 +748,6 @@ func loadSiteCredentialsFromEnvVar(envVar string) []string {
 // New is the Proxy factory. Errors can be introspected, and provide contextual
 // information.
 func New(localProxyURI, upstreamProxyURI, pacURI string, pacProxiesCredentials []string, options *Options) (*Proxy, error) { //nolint // FIXME Function 'New' has too many statements (67 > 40) (funlen); calculated cyclomatic complexity for function New is 24, max is 10 (cyclop)
-	// Instantiate validation.
-	validation.Setup()
-
 	//////
 	// Proxy setup.
 	//////
@@ -801,7 +802,9 @@ func New(localProxyURI, upstreamProxyURI, pacURI string, pacProxiesCredentials [
 		siteCredentialsMatcher: credsMatcher,
 	}
 
-	if err := validation.Get().Struct(p); err != nil {
+	v := validator.New()
+	validation.RegisterAll(v)
+	if err := v.Struct(p); err != nil {
 		return nil, customerror.Wrap(ErrInvalidProxyParams, err)
 	}
 
