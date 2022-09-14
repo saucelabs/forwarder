@@ -14,21 +14,17 @@ import (
 
 // normalizeURLScheme ensures that the URL starts with the scheme.
 func normalizeURLScheme(uri string) string {
-	u := uri
+	uri = strings.TrimSpace(uri)
+	uri = strings.TrimPrefix(uri, "://")
+	if strings.Contains(uri, "://") {
+		return uri
+	}
+
 	scheme := "http"
-	if strings.HasPrefix(u, "://") {
-		u = uri[3:]
-	}
-
-	if strings.Contains(u, "://") {
-		return u
-	}
-
-	if strings.HasSuffix(u, ":443") {
+	if strings.HasSuffix(uri, ":443") {
 		scheme = "https"
 	}
-
-	return fmt.Sprintf("%s://%s", scheme, u)
+	return fmt.Sprintf("%s://%s", scheme, uri)
 }
 
 // NormalizeURI ensures that the url has a scheme.
