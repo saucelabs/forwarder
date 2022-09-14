@@ -18,6 +18,7 @@ linters:
     - godox
     - goerr113
     - maligned
+    - nlreturn
     - nonamedreturns
     - tagliatelle
     - varnamelen
