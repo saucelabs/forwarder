@@ -12,7 +12,9 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -699,6 +701,36 @@ func (p *Proxy) maybeAddAuthHeader(req *http.Request) {
 //////
 // Factory
 //////
+
+// loadCredentialFromEnvVar loads credentials from the env var, validate and set the URL's user:pwd.
+func loadCredentialFromEnvVar(envVar string, uri *url.URL) error {
+	credentialFromEnvVar := os.Getenv(envVar)
+
+	if credentialFromEnvVar != "" {
+		if err := validation.Get().Var(credentialFromEnvVar, "basicAuth"); err != nil {
+			errMsg := fmt.Sprintf("env var (%s)", envVar)
+
+			return customerror.NewInvalidError(errMsg, customerror.WithError(err))
+		}
+
+		cred := strings.Split(credentialFromEnvVar, ":")
+
+		uri.User = url.UserPassword(cred[0], cred[1])
+	}
+
+	return nil
+}
+
+// loadSiteCredentialsFromEnvVar loads URLs and their basic auth from the env var.
+func loadSiteCredentialsFromEnvVar(envVar string) []string {
+	basicAuthURLstr := os.Getenv(envVar)
+
+	if basicAuthURLstr == "" {
+		return nil
+	}
+
+	return strings.Split(basicAuthURLstr, ",")
+}
 
 // New is the Proxy factory. Errors can be introspected, and provide contextual
 // information.
