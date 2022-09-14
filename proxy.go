@@ -313,7 +313,7 @@ func (p *Proxy) setupDNS() error {
 
 // Returns `true` if should NOT proxy connections to any upstream proxy.
 func (p *Proxy) shouldNotProxyLocalhost(ctx *goproxy.ProxyCtx) bool {
-	if !p.ProxyLocalhost && IsLocalHost(ctx.Req) {
+	if !p.ProxyLocalhost && isLocalhost(ctx.Req) {
 		resetUpstreamSettings(ctx)
 
 		return true

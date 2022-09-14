@@ -100,7 +100,7 @@ func TestIsLocalHost(t *testing.T) {
 	for _, tc := range testCases {
 		req, err := http.NewRequest("GET", tc.url, nil)
 		assert.NoErrorf(t, err, "%s: Unexpected error creating request for :%s", tc.name, tc.url)
-		isLocalhost := IsLocalHost(req)
+		isLocalhost := isLocalhost(req)
 		assert.Equalf(t, tc.expected, isLocalhost, "%s: Unexpected result: %v", tc.name, isLocalhost)
 	}
 }
