@@ -24,7 +24,7 @@ type siteCredentialsMatcher struct {
 	siteCredentialsWildcard string
 }
 
-// match matches a `hostPort` to one of the configured credentials.
+// match `hostPort` to one of the configured credentials.
 // Priority is exact match, then host, then port, then global wildcard.
 func (matcher siteCredentialsMatcher) match(hostport string) string {
 	if creds, found := matcher.siteCredentials[hostport]; found {
