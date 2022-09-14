@@ -26,9 +26,9 @@ func normalizeURLScheme(uri string) string {
 	return fmt.Sprintf("%s://%s", scheme, uri)
 }
 
-// IsLocalHost checks whether the destination host is explicitly local host.
+// isLocalhost checks whether the destination host is explicitly local host.
 // Note: there can be IPv6 addresses it doesn't catch.
-func IsLocalHost(req *http.Request) bool {
+func isLocalhost(req *http.Request) bool {
 	localHostIpv4 := regexp.MustCompile(`127\.0\.0\.\d+`)
 	hostName := req.URL.Hostname()
 
