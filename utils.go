@@ -3,9 +3,8 @@ package forwarder
 import (
 	"bytes"
 	"encoding/gob"
+
 	"github.com/saucelabs/customerror"
-	"net/http"
-	"net/http/httputil"
 )
 
 var ErrFailedToCopyOptions = customerror.NewFailedToError("deepCopy options")
@@ -24,13 +23,4 @@ func deepCopy(source, target interface{}) error {
 	}
 
 	return nil
-}
-
-func dumpHeaders(req *http.Request) []byte {
-	requestDump, err := httputil.DumpRequest(req, false)
-	if err != nil {
-		return nil
-	}
-
-	return requestDump
 }

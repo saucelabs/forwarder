@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/http/httputil"
 	"net/url"
 	"os"
 	"strconv"
@@ -622,11 +623,21 @@ func (p *Proxy) Run() {
 	}
 }
 
+func logRequest(r *http.Request) {
+	logger.Get().Debuglnf("%s %s -> %s %s %s", r.Method, r.RemoteAddr, r.URL.Scheme, r.Host, r.URL.Port())
+
+	if logger.Get().GetDefaultIoWriterLevel() >= level.Trace {
+		b, err := httputil.DumpRequest(r, false)
+		if err != nil {
+			logger.Get().Fatalln(err)
+		}
+		logger.Get().Debugln(string(b))
+	}
+}
+
 func (p *Proxy) setupProxyHandlers() {
 	p.proxy.OnRequest().HandleConnectFunc(func(host string, ctx *goproxy.ProxyCtx) (*goproxy.ConnectAction, string) {
-		logger.Get().Debuglnf("%s %s -> %s", ctx.Req.Method, ctx.Req.RemoteAddr, ctx.Req.Host)
-		logger.Get().Debuglnf("%q", dumpHeaders(ctx.Req))
-
+		logRequest(ctx.Req)
 		if err := p.setupHandlers(ctx); err != nil {
 			logger.Get().Errorlnf("Failed to setup handler (HTTPS) for request %s. %+v", ctx.Req.URL.Redacted(), err)
 
@@ -637,9 +648,7 @@ func (p *Proxy) setupProxyHandlers() {
 	})
 
 	p.proxy.OnRequest().DoFunc(func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
-		logger.Get().Debuglnf("%s %s -> %s %s %s", req.Method, req.RemoteAddr, req.URL.Scheme, req.Host, req.URL.Port())
-		logger.Get().Tracelnf("%q", dumpHeaders(ctx.Req))
-
+		logRequest(ctx.Req)
 		if err := p.setupHandlers(ctx); err != nil {
 			logger.Get().Errorlnf("Failed to setup handler (HTTP) for request %s. %+v", ctx.Req.URL.Redacted(), err)
 
