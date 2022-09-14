@@ -2,7 +2,7 @@
 // Use of this source code is governed by a MIT
 // license that can be found in the LICENSE file.
 
-package validator
+package validation
 
 import (
 	"net/url"
@@ -208,7 +208,7 @@ func proxyURIValidator(fl validator.FieldLevel) bool {
 // Exported functionalities.
 //////
 
-// Get returns validator.
+// Get returns validation.
 func Get() *validator.Validate {
 	if v == nil {
 		v = Setup()
@@ -217,7 +217,7 @@ func Get() *validator.Validate {
 	return v
 }
 
-// Setup validator.
+// Setup validation.
 func Setup() *validator.Validate {
 	v = validator.New()
 

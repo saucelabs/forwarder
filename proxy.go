@@ -9,7 +9,7 @@ import (
 	"crypto/tls"
 	"encoding/base64"
 	"fmt"
-	"github.com/saucelabs/forwarder/validator"
+	"github.com/saucelabs/forwarder/validation"
 	"net"
 	"net/http"
 	"net/http/httputil"
@@ -716,7 +716,7 @@ func loadCredentialFromEnvVar(envVar string, uri *url.URL) error {
 	credentialFromEnvVar := os.Getenv(envVar)
 
 	if credentialFromEnvVar != "" {
-		if err := validator.Get().Var(credentialFromEnvVar, "basicAuth"); err != nil {
+		if err := validation.Get().Var(credentialFromEnvVar, "basicAuth"); err != nil {
 			errMsg := fmt.Sprintf("env var (%s)", envVar)
 
 			return customerror.NewInvalidError(errMsg, customerror.WithError(err))
@@ -744,8 +744,8 @@ func loadSiteCredentialsFromEnvVar(envVar string) []string {
 // New is the Proxy factory. Errors can be introspected, and provide contextual
 // information.
 func New(localProxyURI, upstreamProxyURI, pacURI string, pacProxiesCredentials []string, options *Options) (*Proxy, error) { //nolint // FIXME Function 'New' has too many statements (67 > 40) (funlen); calculated cyclomatic complexity for function New is 24, max is 10 (cyclop)
-	// Instantiate validator.
-	validator.Setup()
+	// Instantiate validation.
+	validation.Setup()
 
 	//////
 	// Proxy setup.
@@ -801,7 +801,7 @@ func New(localProxyURI, upstreamProxyURI, pacURI string, pacProxiesCredentials [
 		siteCredentialsMatcher: credsMatcher,
 	}
 
-	if err := validator.Get().Struct(p); err != nil {
+	if err := validation.Get().Struct(p); err != nil {
 		return nil, customerror.Wrap(ErrInvalidProxyParams, err)
 	}
 
