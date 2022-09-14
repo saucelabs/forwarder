@@ -8,8 +8,6 @@ import (
 	"net/http"
 	"net/url"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestNormalizeURLScheme(t *testing.T) {
@@ -64,8 +62,8 @@ func TestNormalizeURLScheme(t *testing.T) {
 	}
 }
 
-func TestIsLocalHost(t *testing.T) {
-	testCases := []struct {
+func TestIsLocalhost(t *testing.T) {
+	tests := []struct {
 		name     string
 		url      string
 		expected bool
@@ -97,10 +95,16 @@ func TestIsLocalHost(t *testing.T) {
 		},
 	}
 
-	for _, tc := range testCases {
-		req, err := http.NewRequest("GET", tc.url, nil)
-		assert.NoErrorf(t, err, "%s: Unexpected error creating request for :%s", tc.name, tc.url)
-		isLocalhost := isLocalhost(req)
-		assert.Equalf(t, tc.expected, isLocalhost, "%s: Unexpected result: %v", tc.name, isLocalhost)
+	for i := range tests {
+		tc := tests[i]
+		t.Run(tc.name, func(t *testing.T) {
+			r, err := http.NewRequest(http.MethodGet, tc.url, http.NoBody)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if isLocalhost(r.URL.Hostname()) != tc.expected {
+				t.Errorf("expected %v, got %v", tc.expected, isLocalhost(r.URL.Hostname()))
+			}
+		})
 	}
 }

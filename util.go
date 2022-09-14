@@ -6,7 +6,6 @@ package forwarder
 
 import (
 	"fmt"
-	"net/http"
 	"regexp"
 	"strings"
 )
@@ -26,14 +25,13 @@ func normalizeURLScheme(uri string) string {
 	return fmt.Sprintf("%s://%s", scheme, uri)
 }
 
+var localHostIpv4Regexp = regexp.MustCompile(`127\.0\.0\.\d+`)
+
 // isLocalhost checks whether the destination host is explicitly local host.
 // Note: there can be IPv6 addresses it doesn't catch.
-func isLocalhost(req *http.Request) bool {
-	localHostIpv4 := regexp.MustCompile(`127\.0\.0\.\d+`)
-	hostName := req.URL.Hostname()
-
+func isLocalhost(hostName string) bool {
 	return hostName == "localhost" ||
-		localHostIpv4.MatchString(hostName) ||
 		hostName == "0:0:0:0:0:0:0:1" ||
-		hostName == "::1"
+		hostName == "::1" ||
+		localHostIpv4Regexp.MatchString(hostName)
 }
