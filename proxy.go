@@ -765,8 +765,8 @@ func New(localProxyURI, upstreamProxyURI, pacURI string, pacProxiesCredentials [
 		externalLogger = *options.LoggingOptions.Logger
 	}
 
-	if err := deepCopy(options, finalOptions); err != nil {
-		return nil, err
+	if err := deepCopy(finalOptions, options); err != nil {
+		return nil, fmt.Errorf("copy options: %w", err)
 	}
 
 	siteCredentials := options.SiteCredentials
