@@ -7,7 +7,6 @@ package forwarder
 import (
 	"fmt"
 	"net/http"
-	"net/url"
 	"regexp"
 	"strings"
 )
@@ -25,20 +24,6 @@ func normalizeURLScheme(uri string) string {
 		scheme = "https"
 	}
 	return fmt.Sprintf("%s://%s", scheme, uri)
-}
-
-// NormalizeURI ensures that the url has a scheme.
-func NormalizeURI(uriToParse string) (*url.URL, error) {
-	// Using ParseRequestURI instead of Parse since our use-case is
-	// full URLs only. url.ParseRequestURI expects uriToParse to have a scheme.
-	localURL, err := url.ParseRequestURI(normalizeURLScheme(uriToParse))
-	if err != nil {
-		return nil, err
-	}
-	if localURL.Scheme == "" {
-		localURL.Scheme = "http"
-	}
-	return localURL, nil
 }
 
 // IsLocalHost checks whether the destination host is explicitly local host.
