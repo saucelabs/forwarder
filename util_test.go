@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNormalizeURI(t *testing.T) {
+func TestNormalizeURLScheme(t *testing.T) {
 	tests := []struct {
 		name     string
 		url      string
@@ -58,7 +58,7 @@ func TestNormalizeURI(t *testing.T) {
 				t.Fatal(err)
 			}
 			if u.String() != tc.expected {
-				t.Errorf("expected %s, got %s", tc.expected, u.String())
+				t.Errorf("expected %s, got %s", tc.expected, u)
 			}
 		})
 	}

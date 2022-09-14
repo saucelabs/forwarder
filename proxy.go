@@ -394,7 +394,7 @@ func parseSiteCredentials(creds []string) (map[string]string, map[string]string,
 	global := ""
 
 	for _, credentialText := range creds {
-		uri, err := NormalizeURI(credentialText)
+		uri, err := url.Parse(normalizeURLScheme(credentialText))
 		if err != nil {
 			return nil, nil, nil, "", fmt.Errorf("%w: %s", ErrInvalidSiteCredentials, err)
 		}
