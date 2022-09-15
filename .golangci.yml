@@ -44,6 +44,9 @@ linters-settings:
     min-complexity: 6
 
 issues:
+  exclude:
+    - "can be `fmt.Stringer`"
+
   exclude-rules:
     - path: cmd/
       linters:
@@ -55,6 +58,10 @@ issues:
         - funlen
         - paralleltest
         - testpackage
+
+    - linters:
+        - gochecknoglobals
+      source: "(nil)"
 
     - linters:
         - gocritic

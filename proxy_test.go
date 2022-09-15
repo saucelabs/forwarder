@@ -19,7 +19,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/go-cmp/cmp"
 	"github.com/saucelabs/forwarder/internal/logger"
 	"github.com/saucelabs/randomness"
 	"github.com/saucelabs/sypl/fields"
@@ -149,125 +148,6 @@ func executeRequest(client *http.Client, uri string) (statusCode int, body strin
 	}
 
 	return response.StatusCode, string(data), nil
-}
-
-//////
-// Tests
-//////
-
-func TestParseSiteCredentials(t *testing.T) {
-	tests := []struct {
-		name     string
-		in       []string
-		hostPort map[string]string
-		port     map[string]string
-		host     map[string]string
-		global   string
-		err      bool
-	}{
-		{
-			name: "Valid with schema",
-			in:   []string{"https://user:pass@abc"},
-			hostPort: map[string]string{
-				"abc": "dXNlcjpwYXNz",
-			},
-			host: map[string]string{},
-			port: map[string]string{},
-		},
-		{
-			name: "Empty user",
-			in:   []string{":pass@abc"},
-			err:  true,
-		},
-		{
-			name: "Empty password",
-			in:   []string{"user:@abc"},
-			err:  true,
-		},
-		{
-			name: "Missing password",
-			in:   []string{"user@abc"},
-			err:  true,
-		},
-		{
-			name: "Missing host",
-			in:   []string{"user:pass"},
-			err:  true,
-		},
-		{
-			name: "Valid host",
-			in:   []string{"user:pass@abc"},
-			hostPort: map[string]string{
-				"abc": "dXNlcjpwYXNz",
-			},
-			host: map[string]string{},
-			port: map[string]string{},
-		},
-		{
-			name: "Valid host+port",
-			in:   []string{"user:pass@abc:123"},
-			hostPort: map[string]string{
-				"abc:123": "dXNlcjpwYXNz",
-			},
-			host: map[string]string{},
-			port: map[string]string{},
-		},
-		{
-			name: "Wildcard host",
-			in:   []string{"user:pass@*:123"},
-			port: map[string]string{
-				"123": "dXNlcjpwYXNz",
-			},
-			host:     map[string]string{},
-			hostPort: map[string]string{},
-		},
-		{
-			name: "Wildcard port",
-			in:   []string{"user:pass@abc:0"},
-			host: map[string]string{
-				"abc": "dXNlcjpwYXNz",
-			},
-			hostPort: map[string]string{},
-			port:     map[string]string{},
-		},
-		{
-			name:     "Global wildcard",
-			in:       []string{"user:pass@*:0"},
-			global:   "dXNlcjpwYXNz",
-			hostPort: map[string]string{},
-			host:     map[string]string{},
-			port:     map[string]string{},
-		},
-	}
-
-	for i := range tests {
-		tc := tests[i]
-		t.Run(tc.name, func(t *testing.T) {
-			hostPort, host, port, global, err := parseSiteCredentials(tc.in)
-
-			if (err == nil) == tc.err {
-				t.Fatalf("Unexpected error condition: %s", err)
-			}
-
-			diff := cmp.Diff(tc.hostPort, hostPort)
-			if diff != "" {
-				t.Fatalf(diff)
-			}
-
-			diff = cmp.Diff(tc.host, host)
-			if diff != "" {
-				t.Fatalf(diff)
-			}
-			diff = cmp.Diff(tc.port, port)
-			if diff != "" {
-				t.Fatalf(diff)
-			}
-			diff = cmp.Diff(tc.global, global)
-			if diff != "" {
-				t.Fatalf(diff)
-			}
-		})
-	}
 }
 
 func TestNew(t *testing.T) { //nolint // FIXME cognitive complexity 88 of func `TestNew` is high (> 40) (gocognit); calculated cyclomatic complexity for function TestNew is 28, max is 10 (cyclop)
