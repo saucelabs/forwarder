@@ -10,7 +10,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -19,17 +18,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/saucelabs/forwarder/internal/logger"
 	"github.com/saucelabs/randomness"
-	"github.com/saucelabs/sypl/fields"
-	"github.com/saucelabs/sypl/level"
-	"github.com/saucelabs/sypl/options"
 )
 
 const (
-	// Change to `Trace` for debugging, and demonstration purposes.
-	defaultProxyLoggingLevel = "none"
-
 	defaultProxyHostname            = "127.0.0.1"
 	defaultProxyScheme              = HTTP
 	localProxyCredentialPassword    = "p123"
@@ -50,12 +42,6 @@ const (
 }
 `
 )
-
-func defaultLoggingOptions() *LoggingOptions {
-	return &LoggingOptions{
-		Level: defaultProxyLoggingLevel, // NOTE: Set it to `trace` to debug problems.
-	}
-}
 
 //////
 // Helpers
@@ -78,16 +64,12 @@ func URIBuilder(hostname string, port int64, username, password string) *url.URL
 // Creates a mocked HTTP server. Don't forget to defer close it!
 //
 //nolint:unparam //`statusCode` always receives `http.StatusOK` (`200`)
-func createMockedHTTPServer(statusCode int, body, encodedCredential string) *httptest.Server {
+func createMockedHTTPServer(statusCode int, body, encodedCredential string, log Logger) *httptest.Server {
 	testServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		if encodedCredential != "" {
 			ok := strings.Contains(req.Header.Get("Authorization"), encodedCredential)
 
-			logger.Get().PrintlnfWithOptions(&options.Options{
-				Fields: fields.Fields{
-					"authorized": ok,
-				},
-			}, level.Trace, "Incoming request. This server (%s) is protected", req.Host)
+			log.Debugf("Incoming request. This server (%s) is protected authorized=%v", req.Host, ok)
 
 			if !ok {
 				http.Error(res, http.StatusText(http.StatusForbidden), http.StatusForbidden)
@@ -158,7 +140,7 @@ func TestNew(t *testing.T) { //nolint // FIXME cognitive complexity 88 of func `
 
 	r, err := randomness.New(10000, 20000, 100, true)
 	if err != nil {
-		log.Fatalln("Failed to create randomness.", err)
+		t.Fatal("Failed to create randomness", err)
 	}
 
 	type args struct {
@@ -168,7 +150,6 @@ func TestNew(t *testing.T) { //nolint // FIXME cognitive complexity 88 of func `
 		pacURI                *url.URL
 		pacProxiesCredentials []string
 		siteCredentials       []string
-		loggingOptions        *LoggingOptions
 	}
 	tests := []struct {
 		name             string
@@ -190,7 +171,6 @@ func TestNew(t *testing.T) { //nolint // FIXME cognitive complexity 88 of func `
 					"",
 					"",
 				),
-				loggingOptions: defaultLoggingOptions(),
 			},
 			wantErr: false,
 		},
@@ -203,7 +183,6 @@ func TestNew(t *testing.T) { //nolint // FIXME cognitive complexity 88 of func `
 					"",
 					"",
 				),
-				loggingOptions:  defaultLoggingOptions(),
 				siteCredentials: []string{},
 			},
 			wantErr: false,
@@ -218,7 +197,6 @@ func TestNew(t *testing.T) { //nolint // FIXME cognitive complexity 88 of func `
 					"",
 					"",
 				),
-				loggingOptions: defaultLoggingOptions(),
 			},
 			wantErr: false,
 		},
@@ -231,7 +209,6 @@ func TestNew(t *testing.T) { //nolint // FIXME cognitive complexity 88 of func `
 					localProxyCredentialUsername,
 					localProxyCredentialPassword,
 				),
-				loggingOptions: defaultLoggingOptions(),
 			},
 			wantErr: false,
 		},
@@ -250,7 +227,6 @@ func TestNew(t *testing.T) { //nolint // FIXME cognitive complexity 88 of func `
 					"",
 					"",
 				),
-				loggingOptions: defaultLoggingOptions(),
 			},
 			wantErr: false,
 		},
@@ -269,7 +245,6 @@ func TestNew(t *testing.T) { //nolint // FIXME cognitive complexity 88 of func `
 					wrongCredentialUsername,
 					wrongCredentialPassword,
 				),
-				loggingOptions: defaultLoggingOptions(),
 			},
 			preFunc: func() {
 				// Local proxy.
@@ -322,24 +297,19 @@ func TestNew(t *testing.T) { //nolint // FIXME cognitive complexity 88 of func `
 					"",
 					"",
 				),
-				loggingOptions: defaultLoggingOptions(),
 			},
 			wantErr:     true,
 			wantErrType: ErrInvalidOrParentOrPac,
 		},
 		{
-			name: "Should fail - missing local proxy URI",
-			args: args{
-				loggingOptions: defaultLoggingOptions(),
-			},
+			name:        "Should fail - missing local proxy URI",
 			wantErr:     true,
 			wantErrType: ErrInvalidProxyParams,
 		},
 		{
 			name: "Should fail - invalid local proxy URI",
 			args: args{
-				localProxyURI:  URIBuilder("", 0, "", ""),
-				loggingOptions: defaultLoggingOptions(),
+				localProxyURI: URIBuilder("", 0, "", ""),
 			},
 			wantErr:     true,
 			wantErrType: ErrInvalidProxyParams,
@@ -349,7 +319,6 @@ func TestNew(t *testing.T) { //nolint // FIXME cognitive complexity 88 of func `
 			args: args{
 				localProxyURI:    URIBuilder(defaultProxyHostname, r.MustGenerate(), "", ""),
 				upstreamProxyURI: URIBuilder("", 0, "", ""),
-				loggingOptions:   defaultLoggingOptions(),
 			},
 			wantErr:     true,
 			wantErrType: ErrInvalidProxyParams,
@@ -362,9 +331,6 @@ func TestNew(t *testing.T) { //nolint // FIXME cognitive complexity 88 of func `
 				tc.preFunc()
 			}
 
-			// Re-set the value allowing per-test case setting.
-			l := logger.Setup(tc.args.loggingOptions)
-
 			//////
 			// Target/end server.
 			//////
@@ -375,7 +341,7 @@ func TestNew(t *testing.T) { //nolint // FIXME cognitive complexity 88 of func `
 					StdEncoding.
 					EncodeToString([]byte("user:pass"))
 			}
-			targetServer := createMockedHTTPServer(http.StatusOK, "body", targetCreds)
+			targetServer := createMockedHTTPServer(http.StatusOK, "body", targetCreds, namedStdLogger("target"))
 
 			defer func() { targetServer.Close() }()
 
@@ -394,7 +360,7 @@ func TestNew(t *testing.T) { //nolint // FIXME cognitive complexity 88 of func `
 				}
 			}
 
-			l.Debuglnf("Target/end server @ %s", targetServerURL)
+			t.Logf("Target/end server @ %s", targetServerURL)
 
 			//////
 			// Set proxy URIs - if any.
@@ -448,11 +414,10 @@ func TestNew(t *testing.T) { //nolint // FIXME cognitive complexity 88 of func `
 
 				// Logging settings.
 				&Options{
-					DNSURIs:        dnsURIs,
-					LoggingOptions: defaultLoggingOptions(),
-					// site credentials in standard URI format.
+					DNSURIs:         dnsURIs,
 					SiteCredentials: siteCredentials,
 				},
+				namedStdLogger("local"),
 			)
 			if err != nil {
 				if !tc.wantErr {
@@ -495,7 +460,7 @@ func TestNew(t *testing.T) { //nolint // FIXME cognitive complexity 88 of func `
 				tc.args.upstreamProxyURI = lUURI
 			}
 
-			go localProxy.Run()
+			go localProxy.MustRun()
 
 			// Give enough time to start, and be ready.
 			time.Sleep(1 * time.Second)
@@ -523,9 +488,8 @@ func TestNew(t *testing.T) { //nolint // FIXME cognitive complexity 88 of func `
 					nil,
 
 					// Logging settings.
-					&Options{
-						LoggingOptions: defaultLoggingOptions(),
-					},
+					&Options{},
+					namedStdLogger("upstream"),
 				)
 				if err != nil {
 					if !tc.wantErr {
@@ -543,7 +507,7 @@ func TestNew(t *testing.T) { //nolint // FIXME cognitive complexity 88 of func `
 					return
 				}
 
-				go upstreamProxy.Run()
+				go upstreamProxy.MustRun()
 
 				// Give enough time to start, and be ready.
 				time.Sleep(1 * time.Second)
@@ -557,7 +521,7 @@ func TestNew(t *testing.T) { //nolint // FIXME cognitive complexity 88 of func `
 			// Client.
 			//////
 
-			l.Debuglnf("Client is using %s as proxy", tc.args.localProxyURI.Redacted())
+			t.Logf("Client is using %s as proxy", tc.args.localProxyURI.Redacted())
 
 			// Client's proxy settings.
 			tr := &http.Transport{
@@ -589,7 +553,7 @@ func BenchmarkNew(b *testing.B) {
 	// Target/end server.
 	//////
 
-	testServer := createMockedHTTPServer(http.StatusOK, "body", "")
+	testServer := createMockedHTTPServer(http.StatusOK, "body", "", nopLogger{})
 
 	defer func() { testServer.Close() }()
 
@@ -599,21 +563,17 @@ func BenchmarkNew(b *testing.B) {
 
 	r, err := randomness.New(30000, 40000, 100, true)
 	if err != nil {
-		//nolint:gocritic
-		log.Fatalln("Failed to create proxy.", err)
+		b.Fatal("Failed to create proxy", err)
 	}
 
 	localProxyURI := URIBuilder(defaultProxyHostname, r.MustGenerate(), "", "")
 
-	proxy, err := New(localProxyURI.String(), "", "", nil,
-		&Options{
-			LoggingOptions: defaultLoggingOptions(),
-		})
+	proxy, err := New(localProxyURI.String(), "", "", nil, &Options{}, nopLogger{})
 	if err != nil {
-		log.Fatalln("Failed to create proxy.", err)
+		b.Fatal("Failed to create proxy.", err)
 	}
 
-	go proxy.Run()
+	go proxy.MustRun()
 
 	// Give enough time to start, and be ready.
 	time.Sleep(1 * time.Second)

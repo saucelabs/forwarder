@@ -8,8 +8,6 @@ import (
 	"net/url"
 	"strings"
 	"testing"
-
-	"github.com/saucelabs/forwarder/internal/logger"
 )
 
 func TestNewUserInfoMatcherErrors(t *testing.T) {
@@ -43,7 +41,7 @@ func TestNewUserInfoMatcherErrors(t *testing.T) {
 	for i := range tests {
 		tc := tests[i]
 		t.Run(tc.name, func(t *testing.T) {
-			_, err := newUserInfoMatcher(tc.input)
+			_, err := newUserInfoMatcher(tc.input, stdLogger{})
 			if err == nil {
 				t.Fatal("expected error")
 			}
@@ -92,15 +90,10 @@ func TestUserInfoMatcherMatch(t *testing.T) {
 		},
 	}
 
-	logger.Setup(&LoggingOptions{
-		Level: defaultProxyLoggingLevel,
-	},
-	)
-
 	for i := range tests {
 		tc := tests[i]
 		t.Run(tc.name, func(t *testing.T) {
-			m, err := newUserInfoMatcher(tc.input)
+			m, err := newUserInfoMatcher(tc.input, stdLogger{})
 			if err != nil {
 				t.Fatal(err)
 			}

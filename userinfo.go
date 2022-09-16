@@ -9,8 +9,6 @@ import (
 	"fmt"
 	"net"
 	"net/url"
-
-	"github.com/saucelabs/forwarder/internal/logger"
 )
 
 func userInfoBase64(u *url.Userinfo) string {
@@ -26,6 +24,8 @@ type userInfoMatcher struct {
 	port map[string]*url.Userinfo
 	// Global wildcard input for passing basic authentication to requests
 	global *url.Userinfo
+
+	log Logger
 }
 
 var nopUserInfoMatcher = (*userInfoMatcher)(nil)
@@ -34,11 +34,12 @@ var nopUserInfoMatcher = (*userInfoMatcher)(nil)
 // Port '0' means a wildcard port.
 // Host '*' means a wildcard host.
 // Host and port '*:0' will Match everything.
-func newUserInfoMatcher(credentials []string) (*userInfoMatcher, error) {
+func newUserInfoMatcher(credentials []string, log Logger) (*userInfoMatcher, error) {
 	m := &userInfoMatcher{
 		hostport: make(map[string]*url.Userinfo),
 		host:     make(map[string]*url.Userinfo),
 		port:     make(map[string]*url.Userinfo),
+		log:      log,
 	}
 	ok := false
 
@@ -101,32 +102,32 @@ func (m *userInfoMatcher) Match(hostport string) *url.Userinfo {
 	}
 
 	if u, ok := m.hostport[hostport]; ok {
-		logger.Get().Tracelnf("ok an auth for %s", hostport)
+		m.log.Debugf(hostport)
 		return u
 	}
 
 	host, port, err := net.SplitHostPort(hostport)
 	if err != nil {
-		logger.Get().Infof("invalid hostport %s", hostport)
+		m.log.Infof("invalid hostport %s", hostport)
 		return nil
 	}
 
 	// Host wildcard - check the port only.
 	if u, ok := m.port[port]; ok {
-		logger.Get().Tracelnf("ok an auth for host wildcard and port Match %s", port)
+		m.log.Debugf("host=* port=%s", port)
 		return u
 	}
 
 	// Port wildcard - check the host only.
 	if u, ok := m.host[host]; ok {
-		logger.Get().Tracelnf("ok an auth header for port wildcard and host Match %s", host)
+		m.log.Debugf("host=%s port=*", host)
 		return u
 	}
 
 	// Log whether the global wildcard is set.
 	// This is a very esoteric use case. It's only added to support a legacy implementation.
 	if m.global != nil {
-		logger.Get().Traceln("ok an auth for global wildcard")
+		m.log.Debugf("global wildcard")
 		return m.global
 	}
 
