@@ -5,25 +5,23 @@
 package main
 
 import (
-	"github.com/saucelabs/customerror"
 	"github.com/saucelabs/forwarder"
 	"github.com/spf13/cobra"
 )
 
-var (
-	dnsURIs []string
-
-	localProxyURI    string
-	upstreamProxyURI string
-
-	siteCredentials []string
-
-	pacProxiesCredentials []string
-	pacURI                string
-
+var runArgs = struct {
+	dnsURIs                []string
+	localProxyURI          string
+	upstreamProxyURI       string
+	siteCredentials        []string
+	pacProxiesCredentials  []string
+	pacURI                 string
 	automaticallyRetryPort bool
 	proxyLocalhost         bool
-)
+	logConfig              logConfig
+}{
+	logConfig: defaultLogConfig(),
+}
 
 // runCmd represents the run command.
 var runCmd = &cobra.Command{
@@ -102,36 +100,35 @@ Note: Can't setup upstream, and PAC at the same time.
     -l "http://user:pwd@localhost:8085" \
 	--site-credentials "user1:pwd1@foo.bar:8090,user2:pwd2@qux:baz:80"
 	`,
-	Run: func(cmd *cobra.Command, args []string) {
-		p, err := forwarder.New(localProxyURI, upstreamProxyURI, pacURI, pacProxiesCredentials, &forwarder.Options{
-			LoggingOptions: &forwarder.LoggingOptions{
-				Level:     logLevel,
-				FileLevel: fileLevel,
-				FilePath:  filePath,
-			},
-
-			AutomaticallyRetryPort: automaticallyRetryPort,
-			DNSURIs:                dnsURIs,
-			ProxyLocalhost:         proxyLocalhost,
-			SiteCredentials:        siteCredentials,
-		})
+	RunE: func(cmd *cobra.Command, args []string) error {
+		o := &forwarder.Options{
+			AutomaticallyRetryPort: runArgs.automaticallyRetryPort,
+			DNSURIs:                runArgs.dnsURIs,
+			ProxyLocalhost:         runArgs.proxyLocalhost,
+			SiteCredentials:        runArgs.siteCredentials,
+		}
+		p, err := forwarder.New(runArgs.localProxyURI, runArgs.upstreamProxyURI, runArgs.pacURI, runArgs.pacProxiesCredentials, o, newLogger(runArgs.logConfig))
 		if err != nil {
-			cliLogger.Fatalln(customerror.NewFailedToError("run", customerror.WithError(err)))
+			return err
 		}
 
-		p.Run()
+		return p.Run()
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(runCmd)
 
-	runCmd.Flags().StringVarP(&localProxyURI, "local-proxy-uri", "l", "http://localhost:8080", "sets local proxy URI")
-	runCmd.Flags().StringVarP(&upstreamProxyURI, "upstream-proxy-uri", "u", "", "sets upstream proxy URI")
-	runCmd.Flags().StringSliceVarP(&dnsURIs, "dns-uri", "n", nil, "sets dns URI")
-	runCmd.Flags().StringVarP(&pacURI, "pac-uri", "p", "", "sets URI to PAC content, or directly, the PAC content")
-	runCmd.Flags().StringSliceVarP(&pacProxiesCredentials, "pac-proxies-credentials", "d", nil, "sets PAC proxies credentials using standard URI format")
-	runCmd.Flags().StringSliceVar(&siteCredentials, "site-credentials", nil, "sets target site credentials")
-	runCmd.Flags().BoolVarP(&proxyLocalhost, "proxy-localhost", "t", false, "if set, will proxy localhost requests to an upstream proxy - if any")
-	runCmd.Flags().BoolVarP(&automaticallyRetryPort, "find-port", "r", true, "if set, and the specified local proxy port is in-use, it will find, and use an available one")
+	fs := runCmd.Flags()
+	fs.StringVarP(&runArgs.localProxyURI, "local-proxy-uri", "l", "http://localhost:8080", "sets local proxy URI")
+	fs.StringVarP(&runArgs.upstreamProxyURI, "upstream-proxy-uri", "u", "", "sets upstream proxy URI")
+	fs.StringSliceVarP(&runArgs.dnsURIs, "dns-uri", "n", nil, "sets dns URI")
+	fs.StringVarP(&runArgs.pacURI, "pac-uri", "p", "", "sets URI to PAC content, or directly, the PAC content")
+	fs.StringSliceVarP(&runArgs.pacProxiesCredentials, "pac-proxies-credentials", "d", nil, "sets PAC proxies credentials using standard URI format")
+	fs.StringSliceVar(&runArgs.siteCredentials, "site-credentials", nil, "sets target site credentials")
+	fs.BoolVarP(&runArgs.proxyLocalhost, "proxy-localhost", "t", false, "if set, will proxy localhost requests to an upstream proxy - if any")
+	fs.BoolVarP(&runArgs.automaticallyRetryPort, "find-port", "r", true, "if set, and the specified local proxy port is in-use, it will find, and use an available one")
+	fs.StringVar(&runArgs.logConfig.Level, "log-level", runArgs.logConfig.Level, "sets the log level (default info)")
+	fs.StringVar(&runArgs.logConfig.FileLevel, "log-file-level", runArgs.logConfig.FileLevel, "sets the log file level (default info)")
+	fs.StringVar(&runArgs.logConfig.FilePath, "log-file-path", runArgs.logConfig.FilePath, `sets the log file path (default "OS temp dir")`)
 }
