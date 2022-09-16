@@ -24,14 +24,9 @@ import (
 	"github.com/elazarl/goproxy/ext/auth"
 	"github.com/go-playground/validator/v10"
 	"github.com/saucelabs/customerror"
-	"github.com/saucelabs/forwarder/internal/logger"
 	"github.com/saucelabs/forwarder/validation"
 	"github.com/saucelabs/pacman"
 	"github.com/saucelabs/randomness"
-	"github.com/saucelabs/sypl"
-	"github.com/saucelabs/sypl/fields"
-	"github.com/saucelabs/sypl/level"
-	syplOptions "github.com/saucelabs/sypl/options"
 )
 
 const (
@@ -80,7 +75,6 @@ const (
 var (
 	ErrFailedToAllocatePort    = customerror.New("No available port to use", customerror.WithStatusCode(http.StatusInternalServerError))
 	ErrFailedToDialToDNS       = customerror.NewFailedToError("dial to DNS")
-	ErrFailedToStartProxy      = customerror.NewFailedToError("start proxy")
 	ErrInvalidDNSURI           = customerror.NewInvalidError("dns URI")
 	ErrInvalidLocalProxyURI    = customerror.NewInvalidError("local proxy URI")
 	ErrInvalidOrParentOrPac    = customerror.NewInvalidError("params. Can't set upstream proxy, and PAC at the same time")
@@ -89,9 +83,6 @@ var (
 	ErrInvalidProxyParams      = customerror.NewInvalidError("params")
 	ErrInvalidUpstreamProxyURI = customerror.NewInvalidError("upstream proxy URI")
 )
-
-// LoggingOptions defines logging options.
-type LoggingOptions = logger.Options
 
 // RetryPortOptions defines port's retry options.
 type RetryPortOptions struct {
@@ -121,8 +112,6 @@ func (r *RetryPortOptions) Default() *RetryPortOptions {
 
 // Options definition.
 type Options struct {
-	*LoggingOptions
-
 	*RetryPortOptions
 
 	// AutomaticallyRetryPort if `true`, and the specified port is in-use, will
@@ -149,11 +138,6 @@ type Options struct {
 
 // Default sets `Options` default values.
 func (o *Options) Default() {
-	loggingOptions := &LoggingOptions{}
-	loggingOptions.Default()
-
-	o.LoggingOptions = loggingOptions
-
 	retryPortOptions := &RetryPortOptions{}
 	retryPortOptions.Default()
 
@@ -219,16 +203,18 @@ type Proxy struct {
 
 	// Underlying proxy implementation.
 	proxy *goproxy.ProxyHttpServer
+
+	log Logger
 }
 
 // Sets the `Proxy-Authorization` header based on `uri` user info.
-func setProxyBasicAuthHeader(uri *url.URL, req *http.Request) {
+func (p *Proxy) setProxyBasicAuthHeader(uri *url.URL, req *http.Request) {
 	req.Header.Set(
 		proxyAuthHeader,
 		fmt.Sprintf("Basic %s", userInfoBase64(uri.User)),
 	)
 
-	logger.Get().Debuglnf(
+	p.log.Debugf(
 		"%s header set with %s:*** for %s",
 		proxyAuthHeader,
 		uri.User.Username(),
@@ -282,9 +268,9 @@ func (p *Proxy) setupDNS() error {
 				if err != nil {
 					errMsg := fmt.Sprintf("dial to DNS @ %s", parsedDNSURI.String())
 
-					logger.Get().Tracelnf(customerror.NewFailedToError(errMsg, customerror.WithError(err)).Error())
+					p.log.Debugf(customerror.NewFailedToError(errMsg, customerror.WithError(err)).Error())
 				} else {
-					logger.Get().Tracelnf("Request resolved by DNS @ %s", parsedDNSURI)
+					p.log.Debugf("Request resolved by DNS @ %s", parsedDNSURI)
 
 					break
 				}
@@ -297,7 +283,7 @@ func (p *Proxy) setupDNS() error {
 					customerror.WithError(finalError),
 				)
 
-				logger.Get().Traceln(ErrAllDNSResolversFailed)
+				p.log.Debugf("error %s", ErrAllDNSResolversFailed)
 
 				return finalConn, ErrAllDNSResolversFailed
 			}
@@ -321,22 +307,21 @@ func (p *Proxy) shouldNotProxyLocalhost(ctx *goproxy.ProxyCtx) bool {
 }
 
 // setupUpstreamProxyConnection forwards connections to an upstream proxy.
-func setupUpstreamProxyConnection(ctx *goproxy.ProxyCtx, uri *url.URL) {
+func (p *Proxy) setupUpstreamProxyConnection(ctx *goproxy.ProxyCtx, uri *url.URL) {
 	ctx.Proxy.Tr.Proxy = http.ProxyURL(uri)
 
 	var connectReqHandler func(req *http.Request)
 
 	if uri.User.Username() != "" {
 		connectReqHandler = func(req *http.Request) {
-			logger.Get().Traceln("Setting basic auth header from connection handler to upstream proxy.")
-
-			setProxyBasicAuthHeader(uri, req)
+			p.log.Debugf("Setting basic auth header from connection handler to upstream proxy.")
+			p.setProxyBasicAuthHeader(uri, req)
 		}
 	}
 
 	ctx.Proxy.ConnectDial = ctx.Proxy.NewConnectDialToProxyWithHandler(uri.String(), connectReqHandler)
 
-	logger.Get().Tracelnf("Connection to the upstream proxy %s is set up", uri.Redacted())
+	p.log.Debugf("Connection to the upstream proxy %s is set up", uri.Redacted())
 }
 
 // setupPACUpstreamProxyConnection dynamically forwards connections to an upstream
@@ -345,7 +330,7 @@ func setupPACUpstreamProxyConnection(p *Proxy, ctx *goproxy.ProxyCtx) error {
 	urlToFindProxyFor := ctx.Req.URL.String()
 	hostToFindProxyFor := ctx.Req.URL.Hostname()
 
-	logger.Get().Tracelnf("Finding proxy for %s", hostToFindProxyFor)
+	p.log.Debugf("Finding proxy for %s", hostToFindProxyFor)
 
 	pacProxies, err := p.pacParser.FindProxy(urlToFindProxyFor)
 	if err != nil {
@@ -360,14 +345,13 @@ func setupPACUpstreamProxyConnection(p *Proxy, ctx *goproxy.ProxyCtx) error {
 
 		// Should only set up upstream if there's a proxy and not `DIRECT`.
 		if pacProxyURI != nil {
-			logger.Get().Debuglnf("Using proxy %s for %s", pacProxyURI.Redacted(), hostToFindProxyFor)
-			setupUpstreamProxyConnection(ctx, pacProxyURI)
-
+			p.log.Debugf("Using proxy %s for %s", pacProxyURI.Redacted(), hostToFindProxyFor)
+			p.setupUpstreamProxyConnection(ctx, pacProxyURI)
 			return nil
 		}
 	}
 
-	logger.Get().Debugln("Using no proxy for", hostToFindProxyFor)
+	p.log.Debugf("Using no proxy for %s", hostToFindProxyFor)
 	// Clear upstream proxy settings (if any) for this request.
 	resetUpstreamSettings(ctx)
 
@@ -377,7 +361,7 @@ func setupPACUpstreamProxyConnection(p *Proxy, ctx *goproxy.ProxyCtx) error {
 // DRY on handler's code.
 func (p *Proxy) setupHandlers(ctx *goproxy.ProxyCtx) error {
 	if p.shouldNotProxyLocalhost(ctx) {
-		logger.Get().Tracelnf("Not proxifying request to localhost URL: %s", ctx.Req.URL.String())
+		p.log.Debugf("Not proxifying request to localhost URL: %s", ctx.Req.URL.String())
 
 		return nil
 	}
@@ -386,7 +370,7 @@ func (p *Proxy) setupHandlers(ctx *goproxy.ProxyCtx) error {
 	case Direct:
 		// Do nothing
 	case Upstream:
-		setupUpstreamProxyConnection(ctx, p.parsedUpstreamProxyURI)
+		p.setupUpstreamProxyConnection(ctx, p.parsedUpstreamProxyURI)
 	case PAC:
 		if err := setupPACUpstreamProxyConnection(p, ctx); err != nil {
 			return err
@@ -401,20 +385,16 @@ func (p *Proxy) setupBasicAuth(u *url.Userinfo) {
 	// TODO: Allows to set `realm`.
 	auth.ProxyBasic(p.proxy, "localhost", func(username, password string) (ok bool) {
 		defer func() {
-			logger.Get().PrintlnfWithOptions(&syplOptions.Options{
-				Fields: fields.Fields{
-					"authorized": ok,
-				},
-			}, level.Trace, "Incoming request. This proxy (%s) is protected", p.parsedLocalProxyURI.Redacted())
+			p.log.Debugf("Incoming request. This proxy (%s) is protected authorized=%v", p.parsedLocalProxyURI.Redacted(), ok)
 		}()
 
-		p, _ := u.Password()
+		pwd, _ := u.Password()
 		// Securely compare passwords.
 		return subtle.ConstantTimeCompare([]byte(u.Username()), []byte(username)) == 1 &&
-			subtle.ConstantTimeCompare([]byte(p), []byte(password)) == 1
+			subtle.ConstantTimeCompare([]byte(pwd), []byte(password)) == 1
 	})
 
-	logger.Get().Debuglnf("Basic auth setup for proxy @ %s", p.parsedLocalProxyURI.Redacted())
+	p.log.Debugf("Basic auth setup for proxy @ %s", p.parsedLocalProxyURI.Redacted())
 }
 
 // Verifies if the port in `address` is in-use.
@@ -459,12 +439,12 @@ func (p *Proxy) findAvailablePort(uri *url.URL) error {
 	for _, port := range possiblePorts {
 		isPortInUse := p.isPortInUse(net.JoinHostPort(uri.Hostname(), fmt.Sprintf("%d", port)))
 
-		logger.Get().Tracelnf("Is %d available? %v", port, !isPortInUse)
+		p.log.Debugf("Is %d available? %v", port, !isPortInUse)
 
 		if !isPortInUse {
 			availablePorts = append(availablePorts, port)
 
-			logger.Get().Tracelnf("Added %d to available ports", port)
+			p.log.Debugf("Added %d to available ports", port)
 		}
 	}
 
@@ -477,31 +457,19 @@ func (p *Proxy) findAvailablePort(uri *url.URL) error {
 	uri.Host = net.JoinHostPort(uri.Hostname(), fmt.Sprintf("%d", availablePorts[0]))
 
 	p.parsedLocalProxyURI = uri
-
-	logger.Get().PrintlnfWithOptions(&syplOptions.Options{
-		Fields: fields.Fields{
-			"availablePorts": availablePorts,
-		},
-	}, level.Debug, "Updated URI with new available port: %s", uri.String())
+	p.log.Debugf("Updated URI with new available port=%s availablePorts=%s", uri.String(), availablePorts)
 
 	return nil
 }
 
-// Run starts the proxy. it fails to start, it will exit with fatal. It's safe
-// to call it multiple times - nothing will happen.
-func (p *Proxy) Run() {
-	// Should not panic, but exit with proper error if method is called without
-	// Proxy is setup.
-	if p == nil {
-		logger.Get().Fatalln(ErrFailedToStartProxy, "Proxy isn't set up")
-	}
-
+// Run starts the proxy.
+// It's safe to call it multiple times - nothing will happen.
+func (p *Proxy) Run() error {
 	// Do nothing if already running.
 	p.mutex.RLock()
 	if p.State == Running {
-		logger.Get().Traceln("Proxy is already running")
-
-		return
+		p.log.Debugf("Proxy is already running")
+		return nil
 	}
 	p.mutex.RUnlock()
 
@@ -516,11 +484,11 @@ func (p *Proxy) Run() {
 			return p.findAvailablePort(p.parsedLocalProxyURI)
 		})
 		if err != nil {
-			logger.Get().Fatalln(customerror.Wrap(ErrFailedToStartProxy, err))
+			return fmt.Errorf("start proxy: %w", err)
 		}
 	}
 
-	logger.Get().Debuglnf("Listening on %s", p.parsedLocalProxyURI.Host)
+	p.log.Debugf("Listening on %s", p.parsedLocalProxyURI.Host)
 
 	// Updates state.
 	p.mutex.Lock()
@@ -528,27 +496,27 @@ func (p *Proxy) Run() {
 	p.mutex.Unlock()
 
 	if err := http.ListenAndServe(p.parsedLocalProxyURI.Host, p.proxy); err != nil { //nolint:gosec // FIXME https://github.com/saucelabs/forwarder/issues/45
-		logger.Get().Fatalln(customerror.Wrap(ErrFailedToStartProxy, err))
+		return fmt.Errorf("start proxy: %w", err)
 	}
+
+	return nil
 }
 
-func logRequest(r *http.Request) {
-	logger.Get().Debuglnf("%s %s -> %s %s %s", r.Method, r.RemoteAddr, r.URL.Scheme, r.Host, r.URL.Port())
+func (p *Proxy) logRequest(r *http.Request) {
+	p.log.Debugf("%s %s -> %s %s %s", r.Method, r.RemoteAddr, r.URL.Scheme, r.Host, r.URL.Port())
 
-	if logger.Get().GetDefaultIoWriterLevel() >= level.Trace {
-		b, err := httputil.DumpRequest(r, false)
-		if err != nil {
-			logger.Get().Fatalln(err)
-		}
-		logger.Get().Debugln(string(b))
+	b, err := httputil.DumpRequest(r, false)
+	if err != nil {
+		p.log.Errorf("failed to dump request: %w", err)
 	}
+	p.log.Debugf(string(b))
 }
 
 func (p *Proxy) setupProxyHandlers() {
 	p.proxy.OnRequest().HandleConnectFunc(func(host string, ctx *goproxy.ProxyCtx) (*goproxy.ConnectAction, string) {
-		logRequest(ctx.Req)
+		p.logRequest(ctx.Req)
 		if err := p.setupHandlers(ctx); err != nil {
-			logger.Get().Errorlnf("Failed to setup handler (HTTPS) for request %s. %+v", ctx.Req.URL.Redacted(), err)
+			p.log.Errorf("Failed to setup handler (HTTPS) for request %s. %+v", ctx.Req.URL.Redacted(), err)
 
 			return goproxy.RejectConnect, host
 		}
@@ -557,9 +525,9 @@ func (p *Proxy) setupProxyHandlers() {
 	})
 
 	p.proxy.OnRequest().DoFunc(func(req *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
-		logRequest(ctx.Req)
+		p.logRequest(ctx.Req)
 		if err := p.setupHandlers(ctx); err != nil {
-			logger.Get().Errorlnf("Failed to setup handler (HTTP) for request %s. %+v", ctx.Req.URL.Redacted(), err)
+			p.log.Errorf("Failed to setup handler (HTTP) for request %s. %+v", ctx.Req.URL.Redacted(), err)
 
 			return nil, goproxy.NewResponse(
 				ctx.Req,
@@ -579,10 +547,10 @@ func (p *Proxy) setupProxyHandlers() {
 
 	p.proxy.OnResponse().DoFunc(func(resp *http.Response, ctx *goproxy.ProxyCtx) *http.Response {
 		if resp != nil {
-			logger.Get().Debuglnf("%s <- %s %v (%v bytes)",
+			p.log.Debugf("%s <- %s %v (%v bytes)",
 				resp.Request.RemoteAddr, resp.Request.Host, resp.Status, resp.ContentLength)
 		} else {
-			logger.Get().Tracelnf("%s <- %s response is empty", ctx.Req.Host, ctx.Req.RemoteAddr)
+			p.log.Debugf("%s <- %s response is empty", ctx.Req.Host, ctx.Req.RemoteAddr)
 		}
 
 		return resp
@@ -602,7 +570,7 @@ func (p *Proxy) maybeAddAuthHeader(req *http.Request) {
 		case "https":
 			hostport = fmt.Sprintf("%s:%d", req.Host, httpsPort)
 		default:
-			logger.Get().Warnlnf("Failed to determine port for %s.", req.URL.Redacted())
+			p.log.Errorf("Failed to determine port for %s.", req.URL.Redacted())
 		}
 	}
 
@@ -650,7 +618,7 @@ func loadSiteCredentialsFromEnvVar(envVar string) []string {
 
 // New is the Proxy factory. Errors can be introspected, and provide contextual
 // information.
-func New(localProxyURI, upstreamProxyURI, pacURI string, pacProxiesCredentials []string, options *Options) (*Proxy, error) { //nolint // FIXME Function 'New' has too many statements (67 > 40) (funlen); calculated cyclomatic complexity for function New is 24, max is 10 (cyclop)
+func New(localProxyURI, upstreamProxyURI, pacURI string, pacProxiesCredentials []string, options *Options, log Logger) (*Proxy, error) { //nolint // FIXME Function 'New' has too many statements (67 > 40) (funlen); calculated cyclomatic complexity for function New is 24, max is 10 (cyclop)
 	//////
 	// Proxy setup.
 	//////
@@ -660,13 +628,6 @@ func New(localProxyURI, upstreamProxyURI, pacURI string, pacProxiesCredentials [
 
 	if options == nil {
 		options = &Options{}
-	}
-
-	// Will not copy logger reference, so, storing a reference.
-	var externalLogger sypl.Sypl
-
-	if options.LoggingOptions.Logger != nil {
-		externalLogger = *options.LoggingOptions.Logger
 	}
 
 	if err := deepCopy(finalOptions, options); err != nil {
@@ -681,7 +642,7 @@ func New(localProxyURI, upstreamProxyURI, pacURI string, pacProxiesCredentials [
 	}
 
 	// Parse site credential list into map of host:port -> base64 encoded input.
-	creds, err := newUserInfoMatcher(siteCredentials)
+	creds, err := newUserInfoMatcher(siteCredentials, log)
 	if err != nil {
 		return nil, fmt.Errorf("parse credentials: %w", err)
 	}
@@ -696,6 +657,7 @@ func New(localProxyURI, upstreamProxyURI, pacURI string, pacProxiesCredentials [
 		pacProxiesCredentials: pacProxiesCredentials,
 		mutex:                 &sync.RWMutex{},
 		creds:                 creds,
+		log:                   log,
 	}
 
 	v := validator.New()
@@ -703,13 +665,6 @@ func New(localProxyURI, upstreamProxyURI, pacURI string, pacProxiesCredentials [
 	if err := v.Struct(p); err != nil {
 		return nil, customerror.Wrap(ErrInvalidProxyParams, err)
 	}
-
-	// Should allow to set logger.
-	if options.LoggingOptions.Logger != nil {
-		finalOptions.LoggingOptions.Logger = &externalLogger
-	}
-
-	logger.Setup(finalOptions.LoggingOptions)
 
 	// Can't have upstream proxy configuration, and PAC at the same time.
 	if p.UpstreamProxyURI != "" && p.PACURI != "" {
@@ -722,27 +677,16 @@ func New(localProxyURI, upstreamProxyURI, pacURI string, pacProxiesCredentials [
 
 	// Instantiate underlying proxy implementation. It can be abstracted in the
 	// future to allow easy swapping.
-	proxy := goproxy.NewProxyHttpServer()
-
-	if p.Options.LoggingOptions != nil && level.MustFromString(p.Options.LoggingOptions.Level) > level.Info {
-		proxyLogger := &logger.ProxyLogger{
-			Logger: logger.Get().New("goproxy"),
-		}
-
-		proxy.Logger = proxyLogger
-		proxy.Verbose = true
-	}
-
-	proxy.KeepDestinationHeaders = true
-
+	p.proxy = goproxy.NewProxyHttpServer()
+	p.proxy.Logger = goproxyLogger{log}
+	p.proxy.Verbose = true
+	p.proxy.KeepDestinationHeaders = true
 	// This is required.
 	//
 	// See: https://maelvls.dev/go-ignores-proxy-localhost/
 	// See: https://github.com/golang/go/issues/28866
 	// See: https://github.com/elazarl/goproxy/issues/306
-	proxy.KeepHeader = true
-
-	p.proxy = proxy
+	p.proxy.KeepHeader = true
 
 	//////
 	// DNS.

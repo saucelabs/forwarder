@@ -7,37 +7,21 @@ package forwarder
 import (
 	"fmt"
 	"html/template"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
 	"strings"
 	"time"
 
-	"github.com/saucelabs/forwarder/internal/logger"
 	"github.com/saucelabs/randomness"
-	"github.com/saucelabs/sypl"
-	"github.com/saucelabs/sypl/level"
 )
 
 // Complete, and complex example.
 //
 // client -> protected local proxy -> protected pac server - connection setup -> protected upstream proxy -> protected target.
 func ExampleNew() {
-	//////
-	// Setup demo logger.
-	//////
-
-	// Only `stdout`, and `stderr`
-	loggingOptions := &LoggingOptions{
-		FileLevel: level.None.String(),
-		FilePath:  "-",
-
-		// Change to `Trace` for debugging, and demonstration purposes.
-		Level: level.None.String(),
-	}
-
-	l := logger.Setup(loggingOptions)
+	// Logger
+	log := nopLogger{}
 
 	//////
 	// Randomness automates port allocation, ensuring no collision happens
@@ -46,7 +30,7 @@ func ExampleNew() {
 
 	r, err := randomness.New(49000, 50000, 100, true)
 	if err != nil {
-		log.Fatalln("Failed to create randomness.", err)
+		panic(err)
 	}
 
 	//////
@@ -54,19 +38,18 @@ func ExampleNew() {
 	//////
 
 	// Create a protected HTTP server. user1:pass1 base64-encoded is dXNlcjE6cGFzczE=.
-	targetServer := createMockedHTTPServer(http.StatusOK, "body", "dXNlcjE6cGFzczE=")
+	targetServer := createMockedHTTPServer(http.StatusOK, "body", "dXNlcjE6cGFzczE=", namedStdLogger("target"))
 
 	defer func() { targetServer.Close() }()
 
 	targetServerURI, err := url.ParseRequestURI(targetServer.URL)
 	if err != nil {
-		//nolint:gocritic
-		log.Fatalln("Failed to parse target server URL.", err)
+		panic(err)
 	}
 
 	targetServerURI.User = url.UserPassword("user1", "pass1")
 
-	l.Debuglnf("Target/end server started @ %s", targetServerURI.Redacted())
+	log.Debugf("Target/end server started @ %s", targetServerURI.Redacted())
 
 	//////
 	// PAC content.
@@ -83,28 +66,28 @@ func ExampleNew() {
 
 	var pacText strings.Builder
 	if err := template.Must(template.New("pacTemplate").Parse(pacTemplate)).Execute(&pacText, templateMap); err != nil {
-		l.Fatalf("Unable to execute pac template %s", err)
+		panic(err)
 	}
 
-	l.Debuglnf("PAC template parsed: \n%s", pacText.String())
+	log.Debugf("PAC template parsed: \n%s", pacText.String())
 
 	//////
 	// PAC server.
 	//////
 
 	// Start a protected server (user:pass) serving PAC file.
-	pacServer := createMockedHTTPServer(http.StatusOK, pacText.String(), "dXNlcjpwYXNz")
+	pacServer := createMockedHTTPServer(http.StatusOK, pacText.String(), "dXNlcjpwYXNz", namedStdLogger("pac"))
 
 	defer func() { pacServer.Close() }()
 
 	pacServerURI, err := url.ParseRequestURI(pacServer.URL)
 	if err != nil {
-		log.Fatalln("Failed to parse PAC server URL.", err)
+		panic(err)
 	}
 
 	pacServerURI.User = url.UserPassword("user", "pass")
 
-	l.Debuglnf("PAC server started @ %s", pacServerURI.Redacted())
+	log.Debugf("PAC server started @ %s", pacServerURI.Redacted())
 
 	//////
 	// URL for both proxies, local, and upstream.
@@ -137,15 +120,14 @@ func ExampleNew() {
 		[]string{upstreamProxyURI.String()},
 
 		// Logging settings.
-		&Options{
-			LoggingOptions: loggingOptions,
-		},
+		&Options{},
+		log,
 	)
 	if err != nil {
-		log.Fatalln("Failed to create proxy.", err)
+		panic(err)
 	}
 
-	go localProxy.Run()
+	go localProxy.MustRun()
 
 	// Give enough time to start, and be ready.
 	time.Sleep(1 * time.Second)
@@ -168,15 +150,14 @@ func ExampleNew() {
 		nil,
 
 		// Logging settings.
-		&Options{
-			LoggingOptions: loggingOptions,
-		},
+		&Options{},
+		log,
 	)
 	if err != nil {
-		log.Fatalln("Failed to create upstream proxy.", err)
+		panic(err)
 	}
 
-	go upstreamProxy.Run()
+	go upstreamProxy.MustRun()
 
 	// Give enough time to start, and be ready.
 	time.Sleep(1 * time.Second)
@@ -185,7 +166,7 @@ func ExampleNew() {
 	// Client.
 	//////
 
-	l.Debuglnf("Client is using %s as proxy", localProxyURI.Redacted())
+	log.Debugf("Client is using %s as proxy", localProxyURI.Redacted())
 
 	// Client's proxy settings.
 	tr := &http.Transport{
@@ -198,7 +179,7 @@ func ExampleNew() {
 
 	statusCode, body, err := executeRequest(client, targetServerURI.String())
 	if err != nil {
-		log.Fatalf("Failed to execute request: %v", err)
+		panic(err)
 	}
 
 	fmt.Println(statusCode)
@@ -211,6 +192,9 @@ func ExampleNew() {
 
 // Automatically retry port example.
 func ExampleNew_automaticallyRetryPort() {
+	// Logger
+	log := nopLogger{}
+
 	if os.Getenv("FORWARDER_TEST_MODE") != "integration" {
 		fmt.Println("true")
 
@@ -223,82 +207,28 @@ func ExampleNew_automaticallyRetryPort() {
 
 	r, err := randomness.New(55000, 65000, 100, true)
 	if err != nil {
-		log.Fatalln("Failed to create randomness.", err)
+		panic(err)
 	}
 
 	randomPort := r.MustGenerate()
 
 	errored := false
 
-	proxy1, err := New(fmt.Sprintf("http://0.0.0.0:%d", randomPort), "", "", nil, &Options{
-		LoggingOptions: &LoggingOptions{
-			Level:     "none",
-			FileLevel: "none",
-		},
-	})
+	proxy1, err := New(fmt.Sprintf("http://0.0.0.0:%d", randomPort), "", "", nil, &Options{}, log)
 	if err != nil {
 		errored = true
 	}
 
-	go proxy1.Run()
+	go proxy1.MustRun()
 
 	time.Sleep(1 * time.Second)
 
-	proxy2, err := New(fmt.Sprintf("http://0.0.0.0:%d", randomPort), "", "", nil, &Options{
-		AutomaticallyRetryPort: true,
-
-		LoggingOptions: &LoggingOptions{
-			Level:     "none",
-			FileLevel: "none",
-		},
-	})
+	proxy2, err := New(fmt.Sprintf("http://0.0.0.0:%d", randomPort), "", "", nil, &Options{AutomaticallyRetryPort: true}, log)
 	if err != nil {
 		errored = true
 	}
 
-	go proxy2.Run()
-
-	time.Sleep(1 * time.Second)
-
-	fmt.Println(errored == false)
-
-	// output:
-	// true
-}
-
-// Supplying a logger, and calling multiple times Run example.
-func ExampleNew_sypplyingLogger() {
-	//////
-	// Custom logger
-	//////
-
-	customLogger := sypl.NewDefault("customLogger", level.Trace)
-
-	//////
-	// Randomness automates port allocation, ensuring no collision happens.
-	//////
-
-	r, err := randomness.New(55000, 65000, 100, true)
-	if err != nil {
-		log.Fatalln("Failed to create randomness.", err)
-	}
-
-	randomPort := r.MustGenerate()
-
-	errored := false
-
-	proxy1, err := New(fmt.Sprintf("http://0.0.0.0:%d", randomPort), "", "", nil, &Options{
-		LoggingOptions: &LoggingOptions{
-			Logger:    customLogger,
-			Level:     level.Trace.String(),
-			FileLevel: "none",
-		},
-	})
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	go proxy1.Run()
+	go proxy2.MustRun()
 
 	time.Sleep(1 * time.Second)
 
