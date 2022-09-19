@@ -14,25 +14,20 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"os"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/eapache/go-resiliency/retrier"
 	"github.com/elazarl/goproxy"
 	"github.com/elazarl/goproxy/ext/auth"
 	"github.com/go-playground/validator/v10"
 	"github.com/saucelabs/customerror"
 	"github.com/saucelabs/forwarder/validation"
 	"github.com/saucelabs/pacman"
-	"github.com/saucelabs/randomness"
 )
 
 const (
-	ConstantBackoff = 300
 	DNSTimeout      = 1 * time.Minute
-	MaxRetry        = 3
 	httpPort        = 80
 	httpsPort       = 443
 	proxyAuthHeader = "Proxy-Authorization"
@@ -84,40 +79,8 @@ var (
 	ErrInvalidUpstreamProxyURI = customerror.NewInvalidError("upstream proxy URI")
 )
 
-// RetryPortOptions defines port's retry options.
-type RetryPortOptions struct {
-	// MaxRange defines the max port number. Default value is `65535`.
-	MaxRange int
-
-	// MaxRetry defines how many times to retry, until fail.
-	MaxRetry int
-}
-
-// Default sets `RetryPortOptions` default values.
-func (r *RetryPortOptions) Default() *RetryPortOptions {
-	if r == nil {
-		r = &RetryPortOptions{}
-	}
-
-	if r.MaxRange < 80 || r.MaxRange > 65535 {
-		r.MaxRange = 65535
-	}
-
-	if r.MaxRetry == 0 {
-		r.MaxRetry = 3
-	}
-
-	return r
-}
-
 // Options definition.
 type Options struct {
-	*RetryPortOptions
-
-	// AutomaticallyRetryPort if `true`, and the specified port is in-use, will
-	// try to automatically allocate a free port.
-	AutomaticallyRetryPort bool
-
 	// DNSURIs are DNS URIs:
 	// - Known protocol: udp, tcp
 	// - Some hostname (x.io - min 4 chars), or IP
@@ -138,12 +101,7 @@ type Options struct {
 
 // Default sets `Options` default values.
 func (o *Options) Default() {
-	retryPortOptions := &RetryPortOptions{}
-	retryPortOptions.Default()
-
-	o.AutomaticallyRetryPort = false
 	o.ProxyLocalhost = false
-	o.RetryPortOptions = retryPortOptions
 }
 
 // Proxy definition. Proxy can be protected, or not. It can forward connections
@@ -397,71 +355,6 @@ func (p *Proxy) setupBasicAuth(u *url.Userinfo) {
 	p.log.Debugf("Basic auth setup for proxy @ %s", p.parsedLocalProxyURI.Redacted())
 }
 
-// Verifies if the port in `address` is in-use.
-func (p *Proxy) isPortInUse(host string) bool {
-	ln, err := net.Listen("tcp", host)
-	if err != nil {
-		return true
-	}
-
-	if ln != nil {
-		ln.Close()
-	}
-
-	return false
-}
-
-// Finds available port.
-func (p *Proxy) findAvailablePort(uri *url.URL) error {
-	portInt, err := strconv.Atoi(uri.Port())
-	if err != nil {
-		return err
-	}
-
-	possiblePorts := []int64{int64(portInt)}
-
-	r, err := randomness.New(portInt, p.Options.RetryPortOptions.MaxRange, MaxRetry, true)
-	if err != nil {
-		return err
-	}
-
-	// N times to retry option
-	randomPorts, err := r.GenerateMany(p.Options.RetryPortOptions.MaxRetry)
-	if err != nil {
-		return err
-	}
-
-	possiblePorts = append(possiblePorts, randomPorts...)
-
-	availablePorts := []int64{}
-
-	// Find some available port.
-	for _, port := range possiblePorts {
-		isPortInUse := p.isPortInUse(net.JoinHostPort(uri.Hostname(), fmt.Sprintf("%d", port)))
-
-		p.log.Debugf("Is %d available? %v", port, !isPortInUse)
-
-		if !isPortInUse {
-			availablePorts = append(availablePorts, port)
-
-			p.log.Debugf("Added %d to available ports", port)
-		}
-	}
-
-	// Any available port?
-	if len(availablePorts) < 1 {
-		return ErrFailedToAllocatePort
-	}
-
-	// Updates data struct.
-	uri.Host = net.JoinHostPort(uri.Hostname(), fmt.Sprintf("%d", availablePorts[0]))
-
-	p.parsedLocalProxyURI = uri
-	p.log.Debugf("Updated URI with new available port=%s availablePorts=%s", uri.String(), availablePorts)
-
-	return nil
-}
-
 // Run starts the proxy.
 // It's safe to call it multiple times - nothing will happen.
 func (p *Proxy) Run() error {
@@ -473,22 +366,7 @@ func (p *Proxy) Run() error {
 	}
 	p.mutex.RUnlock()
 
-	// TODO: Allows to pass an error channel.
-	if p.Options.AutomaticallyRetryPort && p.isPortInUse(p.parsedLocalProxyURI.Host) {
-		r := retrier.New(retrier.ConstantBackoff(
-			p.Options.RetryPortOptions.MaxRetry,
-			ConstantBackoff*time.Millisecond,
-		), nil)
-
-		err := r.Run(func() error {
-			return p.findAvailablePort(p.parsedLocalProxyURI)
-		})
-		if err != nil {
-			return fmt.Errorf("start proxy: %w", err)
-		}
-	}
-
-	p.log.Debugf("Listening on %s", p.parsedLocalProxyURI.Host)
+	p.log.Infof("Listening on %s", p.parsedLocalProxyURI.Host)
 
 	// Updates state.
 	p.mutex.Lock()

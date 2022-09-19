@@ -9,7 +9,6 @@ import (
 	"html/template"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 	"time"
 
@@ -188,52 +187,4 @@ func ExampleNew() {
 	// output:
 	// 200
 	// body
-}
-
-// Automatically retry port example.
-func ExampleNew_automaticallyRetryPort() {
-	// Logger
-	log := nopLogger{}
-
-	if os.Getenv("FORWARDER_TEST_MODE") != "integration" {
-		fmt.Println("true")
-
-		return
-	}
-
-	//////
-	// Randomness automates port allocation, ensuring no collision happens.
-	//////
-
-	r, err := randomness.New(55000, 65000, 100, true)
-	if err != nil {
-		panic(err)
-	}
-
-	randomPort := r.MustGenerate()
-
-	errored := false
-
-	proxy1, err := New(fmt.Sprintf("http://0.0.0.0:%d", randomPort), "", "", nil, &Options{}, log)
-	if err != nil {
-		errored = true
-	}
-
-	go proxy1.MustRun()
-
-	time.Sleep(1 * time.Second)
-
-	proxy2, err := New(fmt.Sprintf("http://0.0.0.0:%d", randomPort), "", "", nil, &Options{AutomaticallyRetryPort: true}, log)
-	if err != nil {
-		errored = true
-	}
-
-	go proxy2.MustRun()
-
-	time.Sleep(1 * time.Second)
-
-	fmt.Println(errored == false)
-
-	// output:
-	// true
 }

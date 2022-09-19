@@ -10,15 +10,14 @@ import (
 )
 
 var runArgs = struct {
-	dnsURIs                []string
-	localProxyURI          string
-	upstreamProxyURI       string
-	siteCredentials        []string
-	pacProxiesCredentials  []string
-	pacURI                 string
-	automaticallyRetryPort bool
-	proxyLocalhost         bool
-	logConfig              logConfig
+	dnsURIs               []string
+	localProxyURI         string
+	upstreamProxyURI      string
+	siteCredentials       []string
+	pacProxiesCredentials []string
+	pacURI                string
+	proxyLocalhost        bool
+	logConfig             logConfig
 }{
 	logConfig: defaultLogConfig(),
 }
@@ -102,10 +101,9 @@ Note: Can't setup upstream, and PAC at the same time.
 	`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		o := &forwarder.Options{
-			AutomaticallyRetryPort: runArgs.automaticallyRetryPort,
-			DNSURIs:                runArgs.dnsURIs,
-			ProxyLocalhost:         runArgs.proxyLocalhost,
-			SiteCredentials:        runArgs.siteCredentials,
+			DNSURIs:         runArgs.dnsURIs,
+			ProxyLocalhost:  runArgs.proxyLocalhost,
+			SiteCredentials: runArgs.siteCredentials,
 		}
 		p, err := forwarder.New(runArgs.localProxyURI, runArgs.upstreamProxyURI, runArgs.pacURI, runArgs.pacProxiesCredentials, o, newLogger(runArgs.logConfig))
 		if err != nil {
@@ -127,7 +125,6 @@ func init() {
 	fs.StringSliceVarP(&runArgs.pacProxiesCredentials, "pac-proxies-credentials", "d", nil, "sets PAC proxies credentials using standard URI format")
 	fs.StringSliceVar(&runArgs.siteCredentials, "site-credentials", nil, "sets target site credentials")
 	fs.BoolVarP(&runArgs.proxyLocalhost, "proxy-localhost", "t", false, "if set, will proxy localhost requests to an upstream proxy - if any")
-	fs.BoolVarP(&runArgs.automaticallyRetryPort, "find-port", "r", true, "if set, and the specified local proxy port is in-use, it will find, and use an available one")
 	fs.StringVar(&runArgs.logConfig.Level, "log-level", runArgs.logConfig.Level, "sets the log level (default info)")
 	fs.StringVar(&runArgs.logConfig.FileLevel, "log-file-level", runArgs.logConfig.FileLevel, "sets the log file level (default info)")
 	fs.StringVar(&runArgs.logConfig.FilePath, "log-file-path", runArgs.logConfig.FilePath, `sets the log file path (default "OS temp dir")`)
