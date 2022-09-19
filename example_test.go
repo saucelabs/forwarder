@@ -93,10 +93,10 @@ func ExampleNew() {
 	//////
 
 	// Local proxy.
-	localProxyURI := newURL(defaultProxyHostname, r.MustGenerate(), localProxyCredentialUsername, localProxyCredentialPassword)
+	localProxyURI := newProxyURL(r.MustGenerate(), localProxyCredentialUsername, localProxyCredentialPassword)
 
 	// Upstream proxy.
-	upstreamProxyURI := newURL(defaultProxyHostname, int64(upstreamProxyPort), upstreamProxyCredentialUsername, upstreamProxyCredentialPassword)
+	upstreamProxyURI := newProxyURL(int64(upstreamProxyPort), upstreamProxyCredentialUsername, upstreamProxyCredentialPassword)
 
 	//////
 	// Local proxy.

@@ -57,9 +57,9 @@ func TestProxyConfigValidate(t *testing.T) {
 		{
 			name: "Both upstream and PAC are set",
 			config: ProxyConfig{
-				LocalProxyURI:    newURL(defaultProxyHostname, 80, localProxyCredentialUsername, localProxyCredentialPassword).String(),
-				UpstreamProxyURI: newURL(defaultProxyHostname, 80, upstreamProxyCredentialUsername, upstreamProxyCredentialPassword).String(),
-				PACURI:           newURL(defaultProxyHostname, 80, "", "").String(),
+				LocalProxyURI:    newProxyURL(80, localProxyCredentialUsername, localProxyCredentialPassword).String(),
+				UpstreamProxyURI: newProxyURL(80, upstreamProxyCredentialUsername, upstreamProxyCredentialPassword).String(),
+				PACURI:           newProxyURL(80, "", "").String(),
 			},
 			err: "excluded_with",
 		},
@@ -77,7 +77,7 @@ func TestProxyConfigValidate(t *testing.T) {
 		{
 			name: "Invalid upstream proxy URI",
 			config: ProxyConfig{
-				LocalProxyURI:    newURL(defaultProxyHostname, 80, "", "").String(),
+				LocalProxyURI:    newProxyURL(80, "", "").String(),
 				UpstreamProxyURI: "foo",
 			},
 			err: "proxyURI",
@@ -134,81 +134,41 @@ func TestNewProxy(t *testing.T) { //nolint // FIXME cognitive complexity 88 of f
 		{
 			name: "Local proxy",
 			args: args{
-				localProxyURI: newURL(
-					defaultProxyHostname,
-					r.MustGenerate(),
-					"",
-					"",
-				),
+				localProxyURI: newProxyURL(r.MustGenerate(), "", ""),
 			},
 		},
 		{
 			name: "Local proxy with site auth",
 			args: args{
-				localProxyURI: newURL(
-					defaultProxyHostname,
-					r.MustGenerate(),
-					"",
-					"",
-				),
+				localProxyURI:   newProxyURL(r.MustGenerate(), "", ""),
 				siteCredentials: []string{},
 			},
 		},
 		{
 			name: "Local proxy with DNS",
 			args: args{
-				dnsURIs: []string{"udp://8.8.8.8:53"},
-				localProxyURI: newURL(
-					defaultProxyHostname,
-					r.MustGenerate(),
-					"",
-					"",
-				),
+				dnsURIs:       []string{"udp://8.8.8.8:53"},
+				localProxyURI: newProxyURL(r.MustGenerate(), "", ""),
 			},
 		},
 		{
 			name: "Protected local proxy",
 			args: args{
-				localProxyURI: newURL(
-					defaultProxyHostname,
-					r.MustGenerate(),
-					localProxyCredentialUsername,
-					localProxyCredentialPassword,
-				),
+				localProxyURI: newProxyURL(r.MustGenerate(), localProxyCredentialUsername, localProxyCredentialPassword),
 			},
 		},
 		{
 			name: "Protected local proxy, and upstream proxy",
 			args: args{
-				localProxyURI: newURL(
-					defaultProxyHostname,
-					r.MustGenerate(),
-					localProxyCredentialUsername,
-					localProxyCredentialPassword,
-				),
-				upstreamProxyURI: newURL(
-					defaultProxyHostname,
-					r.MustGenerate(),
-					"",
-					"",
-				),
+				localProxyURI:    newProxyURL(r.MustGenerate(), localProxyCredentialUsername, localProxyCredentialPassword),
+				upstreamProxyURI: newProxyURL(r.MustGenerate(), "", ""),
 			},
 		},
 		{
 			name: "Protected local proxy, and protected upstream proxy",
 			args: args{
-				localProxyURI: newURL(
-					defaultProxyHostname,
-					r.MustGenerate(),
-					wrongCredentialUsername,
-					wrongCredentialPassword,
-				),
-				upstreamProxyURI: newURL(
-					defaultProxyHostname,
-					r.MustGenerate(),
-					wrongCredentialUsername,
-					wrongCredentialPassword,
-				),
+				localProxyURI:    newProxyURL(r.MustGenerate(), wrongCredentialUsername, wrongCredentialPassword),
+				upstreamProxyURI: newProxyURL(r.MustGenerate(), wrongCredentialUsername, wrongCredentialPassword),
 			},
 			preFunc: func() {
 				// Local proxy.
@@ -431,7 +391,7 @@ func BenchmarkNew(b *testing.B) {
 		b.Fatal("Failed to create proxy", err)
 	}
 
-	localProxyURI := newURL(defaultProxyHostname, r.MustGenerate(), "", "")
+	localProxyURI := newProxyURL(r.MustGenerate(), "", "")
 
 	proxy, err := NewProxy(ProxyConfig{LocalProxyURI: localProxyURI.String()}, nopLogger{})
 	if err != nil {
@@ -466,11 +426,11 @@ func BenchmarkNew(b *testing.B) {
 	}
 }
 
-// newURL returns a URL with the given scheme, host, port and path.
-func newURL(hostname string, port int64, username, password string) *url.URL {
+// newProxyURL returns a URL with the given scheme, host, port and path.
+func newProxyURL(port int64, username, password string) *url.URL {
 	u := &url.URL{
 		Scheme: defaultProxyScheme,
-		Host:   fmt.Sprintf("%s:%d", hostname, port),
+		Host:   fmt.Sprintf("%s:%d", defaultProxyHostname, port),
 	}
 
 	if username != "" && password != "" {
