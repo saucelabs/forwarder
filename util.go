@@ -12,15 +12,14 @@ import (
 	"strings"
 )
 
-func deepCopy(dst, src interface{}) error {
+func deepCopy(dst, src interface{}) {
 	var buf bytes.Buffer
 	if err := gob.NewEncoder(&buf).Encode(src); err != nil {
-		return err
+		panic(err)
 	}
 	if err := gob.NewDecoder(&buf).Decode(dst); err != nil {
-		return err
+		panic(err)
 	}
-	return nil
 }
 
 // normalizeURLScheme ensures that the URL starts with the scheme.

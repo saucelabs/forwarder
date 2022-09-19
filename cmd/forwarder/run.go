@@ -94,7 +94,7 @@ Note: Can't setup upstream, and PAC at the same time.
 	--site-credentials "user1:pwd1@foo.bar:8090,user2:pwd2@qux:baz:80"
 	`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		p, err := forwarder.NewProxy(&runArgs.proxyConfig, newLogger(runArgs.logConfig))
+		p, err := forwarder.NewProxy(runArgs.proxyConfig, newLogger(runArgs.logConfig))
 		if err != nil {
 			return err
 		}

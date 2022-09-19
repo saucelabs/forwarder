@@ -7,7 +7,6 @@ package forwarder
 import (
 	"context"
 	"encoding/base64"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -160,7 +159,6 @@ func TestNewProxy(t *testing.T) { //nolint // FIXME cognitive complexity 88 of f
 		postUpstreamFunc func()
 		wantPAC          bool
 		wantErr          bool
-		wantErrType      error
 	}{
 		{
 			name: "Should work - local proxy",
@@ -298,21 +296,18 @@ func TestNewProxy(t *testing.T) { //nolint // FIXME cognitive complexity 88 of f
 					"",
 				),
 			},
-			wantErr:     true,
-			wantErrType: ErrInvalidOrParentOrPac,
+			wantErr: true,
 		},
 		{
-			name:        "Should fail - missing local proxy URI",
-			wantErr:     true,
-			wantErrType: ErrInvalidProxyParams,
+			name:    "Should fail - missing local proxy URI",
+			wantErr: true,
 		},
 		{
 			name: "Should fail - invalid local proxy URI",
 			args: args{
 				localProxyURI: URIBuilder("", 0, "", ""),
 			},
-			wantErr:     true,
-			wantErrType: ErrInvalidProxyParams,
+			wantErr: true,
 		},
 		{
 			name: "Should fail - invalid upstream proxy URI",
@@ -320,8 +315,7 @@ func TestNewProxy(t *testing.T) { //nolint // FIXME cognitive complexity 88 of f
 				localProxyURI:    URIBuilder(defaultProxyHostname, r.MustGenerate(), "", ""),
 				upstreamProxyURI: URIBuilder("", 0, "", ""),
 			},
-			wantErr:     true,
-			wantErrType: ErrInvalidProxyParams,
+			wantErr: true,
 		},
 	}
 	for i := range tests {
@@ -399,7 +393,7 @@ func TestNewProxy(t *testing.T) { //nolint // FIXME cognitive complexity 88 of f
 			// in the PAC content.
 			//////
 
-			c := &ProxyConfig{
+			c := ProxyConfig{
 				LocalProxyURI:         localProxyURI,
 				UpstreamProxyURI:      upstreamProxyURI,
 				PACURI:                pacURI,
@@ -411,24 +405,15 @@ func TestNewProxy(t *testing.T) { //nolint // FIXME cognitive complexity 88 of f
 			if err != nil {
 				if !tc.wantErr {
 					t.Errorf("NewProxy() localProxy error = %v, wantErr %v", err, tc.wantErr)
-
-					return
 				}
-
-				if !errors.Is(err, tc.wantErrType) {
-					t.Errorf("NewProxy() localProxy error = %v, expected %v", err, tc.wantErrType)
-
-					return
-				}
-
 				return
 			}
 
 			// Both local `localProxy.LocalProxyURI` and `localProxy.UpstreamProxyURI`
 			// changed, if `FORWARDER_LOCALPROXY_AUTH` or `FORWARDER_UPSTREAMPROXY_AUTH`
 			// were set. This updates test vars.
-			if localProxyURI != localProxy.LocalProxyURI {
-				localProxyURI = localProxy.LocalProxyURI
+			if localProxyURI != localProxy.Config().LocalProxyURI {
+				localProxyURI = localProxy.Config().LocalProxyURI
 
 				lPURI, err := url.ParseRequestURI(localProxyURI)
 				if err != nil {
@@ -438,8 +423,8 @@ func TestNewProxy(t *testing.T) { //nolint // FIXME cognitive complexity 88 of f
 				tc.args.localProxyURI = lPURI
 			}
 
-			if upstreamProxyURI != localProxy.UpstreamProxyURI {
-				upstreamProxyURI = localProxy.UpstreamProxyURI
+			if upstreamProxyURI != localProxy.Config().UpstreamProxyURI {
+				upstreamProxyURI = localProxy.Config().UpstreamProxyURI
 
 				lUURI, err := url.ParseRequestURI(upstreamProxyURI)
 				if err != nil {
@@ -463,20 +448,11 @@ func TestNewProxy(t *testing.T) { //nolint // FIXME cognitive complexity 88 of f
 			}
 
 			if upstreamProxyURI != "" {
-				upstreamProxy, err := NewProxy(&ProxyConfig{LocalProxyURI: upstreamProxyURI}, namedStdLogger("upstream"))
+				upstreamProxy, err := NewProxy(ProxyConfig{LocalProxyURI: upstreamProxyURI}, namedStdLogger("upstream"))
 				if err != nil {
 					if !tc.wantErr {
 						t.Errorf("NewProxy() localProxy error = %v, wantErr %v", err, tc.wantErr)
-
-						return
 					}
-
-					if !errors.Is(err, tc.wantErrType) {
-						t.Errorf("NewProxy() localProxy error = %v, expected %v", err, tc.wantErrType)
-
-						return
-					}
-
 					return
 				}
 
@@ -541,7 +517,7 @@ func BenchmarkNew(b *testing.B) {
 
 	localProxyURI := URIBuilder(defaultProxyHostname, r.MustGenerate(), "", "")
 
-	proxy, err := NewProxy(&ProxyConfig{LocalProxyURI: localProxyURI.String()}, nopLogger{})
+	proxy, err := NewProxy(ProxyConfig{LocalProxyURI: localProxyURI.String()}, nopLogger{})
 	if err != nil {
 		b.Fatal("Failed to create proxy.", err)
 	}
