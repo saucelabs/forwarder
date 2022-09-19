@@ -13,6 +13,13 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
+// Validator returns new validator.Validate instance with all custom validations registered.
+func Validator() *validator.Validate {
+	v := validator.New()
+	RegisterAll(v)
+	return v
+}
+
 // RegisterAll adds registers all custom validations with the provider validator.
 func RegisterAll(v *validator.Validate) {
 	mustRegisterValidation(v, "basicAuth", IsBasicAuth)

@@ -58,8 +58,7 @@ func TestIsBasicAuth(t *testing.T) {
 		},
 	}
 
-	v := validator.New()
-	RegisterAll(v)
+	v := Validator()
 
 	for i := range tests {
 		tc := tests[i]
@@ -275,8 +274,7 @@ func TestIsPacURIOrText(t *testing.T) {
 		},
 	}
 
-	v := validator.New()
-	RegisterAll(v)
+	v := Validator()
 
 	for i := range tests {
 		tc := tests[i]
@@ -467,8 +465,7 @@ func TestIsProxyURI(t *testing.T) {
 		},
 	}
 
-	v := validator.New()
-	RegisterAll(v)
+	v := Validator()
 
 	for i := range tests {
 		tc := tests[i]
