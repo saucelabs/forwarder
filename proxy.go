@@ -71,7 +71,6 @@ var (
 	ErrFailedToDialToDNS       = customerror.NewFailedToError("dial to DNS")
 	ErrInvalidDNSURI           = customerror.NewInvalidError("dns URI")
 	ErrInvalidLocalProxyURI    = customerror.NewInvalidError("local proxy URI")
-	ErrInvalidOrParentOrPac    = customerror.NewInvalidError("params. Can't set upstream proxy, and PAC at the same time")
 	ErrInvalidPACProxyURI      = customerror.NewInvalidError("PAC proxy URI")
 	ErrInvalidPACURI           = customerror.NewInvalidError("PAC URI")
 	ErrInvalidUpstreamProxyURI = customerror.NewInvalidError("upstream proxy URI")
@@ -91,14 +90,14 @@ type ProxyConfig struct {
 	// - Some hostname (x.io - min 4 chars), or IP
 	// - Port in a valid range: 80 - 65535.
 	// Example: http://u456:p456@127.0.0.1:8085
-	UpstreamProxyURI string `json:"upstream_proxy_uri" validate:"omitempty,proxyURI"`
+	UpstreamProxyURI string `json:"upstream_proxy_uri" validate:"omitempty,proxyURI,excluded_with=PACURI"`
 
 	// PACURI is the PAC URI:
 	// - Known schemes: http, https, socks, socks5, or quic
 	// - Some hostname (x.io - min 4 chars), or IP
 	// - Port in a valid range: 80 - 65535.
 	// Example: http://127.0.0.1:8087/data.pac
-	PACURI string `json:"pac_uri" validate:"omitempty,gte=6"`
+	PACURI string `json:"pac_uri" validate:"omitempty,gte=6,excluded_with=UpstreamProxyURI"`
 
 	// Credentials for proxies specified in PAC content.
 	PACProxiesCredentials []string
@@ -193,11 +192,6 @@ func NewProxy(cfg ProxyConfig, log Logger) (*Proxy, error) { //nolint // FIXME F
 		return nil, fmt.Errorf("parse credentials: %w", err)
 	}
 	p.creds = creds
-
-	// Can't have upstream proxy configuration, and PAC at the same time.
-	if p.config.UpstreamProxyURI != "" && p.config.PACURI != "" {
-		return nil, ErrInvalidOrParentOrPac
-	}
 
 	//////
 	// Underlying proxy implementation setup.
