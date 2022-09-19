@@ -165,9 +165,7 @@ type Proxy struct {
 	log Logger
 }
 
-// New is the Proxy factory. Errors can be introspected, and provide contextual
-// information.
-func New(localProxyURI, upstreamProxyURI, pacURI string, pacProxiesCredentials []string, options *ProxyConfig, log Logger) (*Proxy, error) { //nolint // FIXME Function 'New' has too many statements (67 > 40) (funlen); calculated cyclomatic complexity for function New is 24, max is 10 (cyclop)
+func NewProxy(localProxyURI, upstreamProxyURI, pacURI string, pacProxiesCredentials []string, options *ProxyConfig, log Logger) (*Proxy, error) { //nolint // FIXME Function 'NewProxy' has too many statements (67 > 40) (funlen); calculated cyclomatic complexity for function NewProxy is 24, max is 10 (cyclop)
 	//////
 	// Proxy setup.
 	//////

@@ -105,7 +105,7 @@ Note: Can't setup upstream, and PAC at the same time.
 			ProxyLocalhost:  runArgs.proxyLocalhost,
 			SiteCredentials: runArgs.siteCredentials,
 		}
-		p, err := forwarder.New(runArgs.localProxyURI, runArgs.upstreamProxyURI, runArgs.pacURI, runArgs.pacProxiesCredentials, o, newLogger(runArgs.logConfig))
+		p, err := forwarder.NewProxy(runArgs.localProxyURI, runArgs.upstreamProxyURI, runArgs.pacURI, runArgs.pacProxiesCredentials, o, newLogger(runArgs.logConfig))
 		if err != nil {
 			return err
 		}
