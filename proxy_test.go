@@ -399,26 +399,15 @@ func TestNewProxy(t *testing.T) { //nolint // FIXME cognitive complexity 88 of f
 			// in the PAC content.
 			//////
 
-			localProxy, err := NewProxy(
-				// Local proxy URI.
-				localProxyURI,
-
-				// Upstream proxy URI.
-				upstreamProxyURI,
-
-				// PAC URI.
-				pacURI,
-
-				// PAC proxies credentials in standard URI format.
-				tc.args.pacProxiesCredentials,
-
-				// Logging settings.
-				&ProxyConfig{
-					DNSURIs:         dnsURIs,
-					SiteCredentials: siteCredentials,
-				},
-				namedStdLogger("local"),
-			)
+			c := &ProxyConfig{
+				LocalProxyURI:         localProxyURI,
+				UpstreamProxyURI:      upstreamProxyURI,
+				PACURI:                pacURI,
+				PACProxiesCredentials: tc.args.pacProxiesCredentials,
+				DNSURIs:               dnsURIs,
+				SiteCredentials:       siteCredentials,
+			}
+			localProxy, err := NewProxy(c, namedStdLogger("local"))
 			if err != nil {
 				if !tc.wantErr {
 					t.Errorf("NewProxy() localProxy error = %v, wantErr %v", err, tc.wantErr)
@@ -474,23 +463,7 @@ func TestNewProxy(t *testing.T) { //nolint // FIXME cognitive complexity 88 of f
 			}
 
 			if upstreamProxyURI != "" {
-				upstreamProxy, err := NewProxy(
-					// Local proxy URI.
-					upstreamProxyURI,
-
-					// Upstream proxy URI.
-					"",
-
-					// PAC URI.
-					"",
-
-					// PAC proxies credentials in standard URI format.
-					nil,
-
-					// Logging settings.
-					&ProxyConfig{},
-					namedStdLogger("upstream"),
-				)
+				upstreamProxy, err := NewProxy(&ProxyConfig{LocalProxyURI: upstreamProxyURI}, namedStdLogger("upstream"))
 				if err != nil {
 					if !tc.wantErr {
 						t.Errorf("NewProxy() localProxy error = %v, wantErr %v", err, tc.wantErr)
@@ -568,7 +541,7 @@ func BenchmarkNew(b *testing.B) {
 
 	localProxyURI := URIBuilder(defaultProxyHostname, r.MustGenerate(), "", "")
 
-	proxy, err := NewProxy(localProxyURI.String(), "", "", nil, &ProxyConfig{}, nopLogger{})
+	proxy, err := NewProxy(&ProxyConfig{LocalProxyURI: localProxyURI.String()}, nopLogger{})
 	if err != nil {
 		b.Fatal("Failed to create proxy.", err)
 	}
