@@ -74,7 +74,7 @@ func TestNewProxy(t *testing.T) { //nolint // FIXME cognitive complexity 88 of f
 		{
 			name: "Should work - local proxy",
 			args: args{
-				localProxyURI: URIBuilder(
+				localProxyURI: newURL(
 					defaultProxyHostname,
 					r.MustGenerate(),
 					"",
@@ -86,7 +86,7 @@ func TestNewProxy(t *testing.T) { //nolint // FIXME cognitive complexity 88 of f
 		{
 			name: "Should work - local proxy with site auth",
 			args: args{
-				localProxyURI: URIBuilder(
+				localProxyURI: newURL(
 					defaultProxyHostname,
 					r.MustGenerate(),
 					"",
@@ -100,7 +100,7 @@ func TestNewProxy(t *testing.T) { //nolint // FIXME cognitive complexity 88 of f
 			name: "Should work - local proxy - with DNS",
 			args: args{
 				dnsURIs: []string{"udp://8.8.8.8:53"},
-				localProxyURI: URIBuilder(
+				localProxyURI: newURL(
 					defaultProxyHostname,
 					r.MustGenerate(),
 					"",
@@ -112,7 +112,7 @@ func TestNewProxy(t *testing.T) { //nolint // FIXME cognitive complexity 88 of f
 		{
 			name: "Should work - protected local proxy",
 			args: args{
-				localProxyURI: URIBuilder(
+				localProxyURI: newURL(
 					defaultProxyHostname,
 					r.MustGenerate(),
 					localProxyCredentialUsername,
@@ -124,13 +124,13 @@ func TestNewProxy(t *testing.T) { //nolint // FIXME cognitive complexity 88 of f
 		{
 			name: "Should work - protected local proxy, and upstream proxy",
 			args: args{
-				localProxyURI: URIBuilder(
+				localProxyURI: newURL(
 					defaultProxyHostname,
 					r.MustGenerate(),
 					localProxyCredentialUsername,
 					localProxyCredentialPassword,
 				),
-				upstreamProxyURI: URIBuilder(
+				upstreamProxyURI: newURL(
 					defaultProxyHostname,
 					r.MustGenerate(),
 					"",
@@ -142,13 +142,13 @@ func TestNewProxy(t *testing.T) { //nolint // FIXME cognitive complexity 88 of f
 		{
 			name: "Should work - protected local proxy, and protected upstream proxy",
 			args: args{
-				localProxyURI: URIBuilder(
+				localProxyURI: newURL(
 					defaultProxyHostname,
 					r.MustGenerate(),
 					wrongCredentialUsername,
 					wrongCredentialPassword,
 				),
-				upstreamProxyURI: URIBuilder(
+				upstreamProxyURI: newURL(
 					defaultProxyHostname,
 					r.MustGenerate(),
 					wrongCredentialUsername,
@@ -188,19 +188,19 @@ func TestNewProxy(t *testing.T) { //nolint // FIXME cognitive complexity 88 of f
 		{
 			name: "Should fail - both upstream and PAC are set",
 			args: args{
-				localProxyURI: URIBuilder(
+				localProxyURI: newURL(
 					defaultProxyHostname,
 					r.MustGenerate(),
 					localProxyCredentialUsername,
 					localProxyCredentialPassword,
 				),
-				upstreamProxyURI: URIBuilder(
+				upstreamProxyURI: newURL(
 					defaultProxyHostname,
 					r.MustGenerate(),
 					upstreamProxyCredentialUsername,
 					upstreamProxyCredentialPassword,
 				),
-				pacURI: URIBuilder(
+				pacURI: newURL(
 					defaultProxyHostname,
 					r.MustGenerate(),
 					"",
@@ -216,15 +216,15 @@ func TestNewProxy(t *testing.T) { //nolint // FIXME cognitive complexity 88 of f
 		{
 			name: "Should fail - invalid local proxy URI",
 			args: args{
-				localProxyURI: URIBuilder("", 0, "", ""),
+				localProxyURI: newURL("", 0, "", ""),
 			},
 			wantErr: true,
 		},
 		{
 			name: "Should fail - invalid upstream proxy URI",
 			args: args{
-				localProxyURI:    URIBuilder(defaultProxyHostname, r.MustGenerate(), "", ""),
-				upstreamProxyURI: URIBuilder("", 0, "", ""),
+				localProxyURI:    newURL(defaultProxyHostname, r.MustGenerate(), "", ""),
+				upstreamProxyURI: newURL("", 0, "", ""),
 			},
 			wantErr: true,
 		},
@@ -246,7 +246,7 @@ func TestNewProxy(t *testing.T) { //nolint // FIXME cognitive complexity 88 of f
 					StdEncoding.
 					EncodeToString([]byte("user:pass"))
 			}
-			targetServer := createMockedHTTPServer(http.StatusOK, "body", targetCreds, namedStdLogger("target"))
+			targetServer := httpServerStub("body", targetCreds, namedStdLogger("target"))
 
 			defer func() { targetServer.Close() }()
 
@@ -413,7 +413,7 @@ func BenchmarkNew(b *testing.B) {
 	// Target/end server.
 	//////
 
-	testServer := createMockedHTTPServer(http.StatusOK, "body", "", nopLogger{})
+	testServer := httpServerStub("body", "", nopLogger{})
 
 	defer func() { testServer.Close() }()
 
@@ -426,7 +426,7 @@ func BenchmarkNew(b *testing.B) {
 		b.Fatal("Failed to create proxy", err)
 	}
 
-	localProxyURI := URIBuilder(defaultProxyHostname, r.MustGenerate(), "", "")
+	localProxyURI := newURL(defaultProxyHostname, r.MustGenerate(), "", "")
 
 	proxy, err := NewProxy(ProxyConfig{LocalProxyURI: localProxyURI.String()}, nopLogger{})
 	if err != nil {
@@ -461,8 +461,8 @@ func BenchmarkNew(b *testing.B) {
 	}
 }
 
-// Builds and URI and returns as string.
-func URIBuilder(hostname string, port int64, username, password string) *url.URL {
+// newURL returns a URL with the given scheme, host, port and path.
+func newURL(hostname string, port int64, username, password string) *url.URL {
 	u := &url.URL{
 		Scheme: defaultProxyScheme,
 		Host:   fmt.Sprintf("%s:%d", hostname, port),
@@ -475,11 +475,8 @@ func URIBuilder(hostname string, port int64, username, password string) *url.URL
 	return u
 }
 
-// Creates a mocked HTTP server. Don't forget to defer close it!
-//
-//nolint:unparam //`statusCode` always receives `http.StatusOK` (`200`)
-func createMockedHTTPServer(statusCode int, body, encodedCredential string, log Logger) *httptest.Server {
-	testServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+func httpServerStub(body, encodedCredential string, log Logger) *httptest.Server {
+	s := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
 		if encodedCredential != "" {
 			ok := strings.Contains(req.Header.Get("Authorization"), encodedCredential)
 
@@ -492,7 +489,7 @@ func createMockedHTTPServer(statusCode int, body, encodedCredential string, log 
 			}
 		}
 
-		res.WriteHeader(statusCode)
+		res.WriteHeader(http.StatusOK)
 
 		if _, err := res.Write([]byte(body)); err != nil {
 			http.Error(res, err.Error(), http.StatusForbidden)
@@ -501,10 +498,10 @@ func createMockedHTTPServer(statusCode int, body, encodedCredential string, log 
 		}
 	}))
 
-	// Give enough time to start, and be ready.
+	// Wait for the server to start.
 	time.Sleep(1 * time.Second)
 
-	return testServer
+	return s
 }
 
 func executeRequest(client *http.Client, uri string) (statusCode int, body string, err error) {

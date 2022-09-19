@@ -37,7 +37,7 @@ func ExampleNew() {
 	//////
 
 	// Create a protected HTTP server. user1:pass1 base64-encoded is dXNlcjE6cGFzczE=.
-	targetServer := createMockedHTTPServer(http.StatusOK, "body", "dXNlcjE6cGFzczE=", namedStdLogger("target"))
+	targetServer := httpServerStub("body", "dXNlcjE6cGFzczE=", namedStdLogger("target"))
 
 	defer func() { targetServer.Close() }()
 
@@ -75,7 +75,7 @@ func ExampleNew() {
 	//////
 
 	// Start a protected server (user:pass) serving PAC file.
-	pacServer := createMockedHTTPServer(http.StatusOK, pacText.String(), "dXNlcjpwYXNz", namedStdLogger("pac"))
+	pacServer := httpServerStub(pacText.String(), "dXNlcjpwYXNz", namedStdLogger("pac"))
 
 	defer func() { pacServer.Close() }()
 
@@ -93,10 +93,10 @@ func ExampleNew() {
 	//////
 
 	// Local proxy.
-	localProxyURI := URIBuilder(defaultProxyHostname, r.MustGenerate(), localProxyCredentialUsername, localProxyCredentialPassword)
+	localProxyURI := newURL(defaultProxyHostname, r.MustGenerate(), localProxyCredentialUsername, localProxyCredentialPassword)
 
 	// Upstream proxy.
-	upstreamProxyURI := URIBuilder(defaultProxyHostname, int64(upstreamProxyPort), upstreamProxyCredentialUsername, upstreamProxyCredentialPassword)
+	upstreamProxyURI := newURL(defaultProxyHostname, int64(upstreamProxyPort), upstreamProxyCredentialUsername, upstreamProxyCredentialPassword)
 
 	//////
 	// Local proxy.
