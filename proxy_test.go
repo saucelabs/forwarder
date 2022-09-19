@@ -42,95 +42,6 @@ const (
 `
 )
 
-//////
-// Helpers
-//////
-
-// Builds and URI and returns as string.
-func URIBuilder(hostname string, port int64, username, password string) *url.URL {
-	u := &url.URL{
-		Scheme: defaultProxyScheme,
-		Host:   fmt.Sprintf("%s:%d", hostname, port),
-	}
-
-	if username != "" && password != "" {
-		u.User = url.UserPassword(username, password)
-	}
-
-	return u
-}
-
-// Creates a mocked HTTP server. Don't forget to defer close it!
-//
-//nolint:unparam //`statusCode` always receives `http.StatusOK` (`200`)
-func createMockedHTTPServer(statusCode int, body, encodedCredential string, log Logger) *httptest.Server {
-	testServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
-		if encodedCredential != "" {
-			ok := strings.Contains(req.Header.Get("Authorization"), encodedCredential)
-
-			log.Debugf("Incoming request. This server (%s) is protected authorized=%v", req.Host, ok)
-
-			if !ok {
-				http.Error(res, http.StatusText(http.StatusForbidden), http.StatusForbidden)
-
-				return
-			}
-		}
-
-		res.WriteHeader(statusCode)
-
-		if _, err := res.Write([]byte(body)); err != nil {
-			http.Error(res, err.Error(), http.StatusForbidden)
-
-			return
-		}
-	}))
-
-	// Give enough time to start, and be ready.
-	time.Sleep(1 * time.Second)
-
-	return testServer
-}
-
-func executeRequest(client *http.Client, uri string) (statusCode int, body string, err error) {
-	u, err := url.ParseRequestURI(uri)
-	if err != nil {
-		return 0, "", fmt.Errorf("Failed to parse URI: %w", err)
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-
-	request, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), http.NoBody)
-	if err != nil {
-		return 0, "", fmt.Errorf("Failed to create request: %w", err)
-	}
-
-	if u.User != nil {
-		password, _ := u.User.Password()
-
-		request.SetBasicAuth(u.User.Username(), password)
-	}
-
-	response, err := client.Do(request)
-	if err != nil {
-		return 0, "", fmt.Errorf("Failed to execute request: %w", err)
-	}
-
-	defer response.Body.Close()
-
-	data, err := io.ReadAll(response.Body)
-	if err != nil {
-		return 0, "", fmt.Errorf("Failed to read body: %w", err)
-	}
-
-	if response.StatusCode != http.StatusOK {
-		return 0, "", fmt.Errorf("Failed request, non-2xx code (%d): %s", response.StatusCode, data)
-	}
-
-	return response.StatusCode, string(data), nil
-}
-
 func TestNewProxy(t *testing.T) { //nolint // FIXME cognitive complexity 88 of func `TestNewProxy` is high (> 40) (gocognit); calculated cyclomatic complexity for function TestNewProxy is 28, max is 10 (cyclop)
 	//////
 	// Randomness automates port allocation, ensuring no collision happens
@@ -548,4 +459,89 @@ func BenchmarkNew(b *testing.B) {
 			b.Fatal(err)
 		}
 	}
+}
+
+// Builds and URI and returns as string.
+func URIBuilder(hostname string, port int64, username, password string) *url.URL {
+	u := &url.URL{
+		Scheme: defaultProxyScheme,
+		Host:   fmt.Sprintf("%s:%d", hostname, port),
+	}
+
+	if username != "" && password != "" {
+		u.User = url.UserPassword(username, password)
+	}
+
+	return u
+}
+
+// Creates a mocked HTTP server. Don't forget to defer close it!
+//
+//nolint:unparam //`statusCode` always receives `http.StatusOK` (`200`)
+func createMockedHTTPServer(statusCode int, body, encodedCredential string, log Logger) *httptest.Server {
+	testServer := httptest.NewServer(http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+		if encodedCredential != "" {
+			ok := strings.Contains(req.Header.Get("Authorization"), encodedCredential)
+
+			log.Debugf("Incoming request. This server (%s) is protected authorized=%v", req.Host, ok)
+
+			if !ok {
+				http.Error(res, http.StatusText(http.StatusForbidden), http.StatusForbidden)
+
+				return
+			}
+		}
+
+		res.WriteHeader(statusCode)
+
+		if _, err := res.Write([]byte(body)); err != nil {
+			http.Error(res, err.Error(), http.StatusForbidden)
+
+			return
+		}
+	}))
+
+	// Give enough time to start, and be ready.
+	time.Sleep(1 * time.Second)
+
+	return testServer
+}
+
+func executeRequest(client *http.Client, uri string) (statusCode int, body string, err error) {
+	u, err := url.ParseRequestURI(uri)
+	if err != nil {
+		return 0, "", fmt.Errorf("Failed to parse URI: %w", err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), http.NoBody)
+	if err != nil {
+		return 0, "", fmt.Errorf("Failed to create request: %w", err)
+	}
+
+	if u.User != nil {
+		password, _ := u.User.Password()
+
+		request.SetBasicAuth(u.User.Username(), password)
+	}
+
+	response, err := client.Do(request)
+	if err != nil {
+		return 0, "", fmt.Errorf("Failed to execute request: %w", err)
+	}
+
+	defer response.Body.Close()
+
+	data, err := io.ReadAll(response.Body)
+	if err != nil {
+		return 0, "", fmt.Errorf("Failed to read body: %w", err)
+	}
+
+	if response.StatusCode != http.StatusOK {
+		return 0, "", fmt.Errorf("Failed request, non-2xx code (%d): %s", response.StatusCode, data)
+	}
+
+	return response.StatusCode, string(data), nil
 }
