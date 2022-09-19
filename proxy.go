@@ -600,9 +600,7 @@ func loadCredentialFromEnvVar(envVar string, uri *url.URL) error {
 	credentialFromEnvVar := os.Getenv(envVar)
 
 	if credentialFromEnvVar != "" {
-		v := validator.New()
-		validation.RegisterAll(v)
-
+		v := validation.Validator()
 		if err := v.Var(credentialFromEnvVar, "basicAuth"); err != nil {
 			errMsg := fmt.Sprintf("env var (%s)", envVar)
 
