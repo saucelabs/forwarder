@@ -79,8 +79,8 @@ var (
 	ErrInvalidUpstreamProxyURI = customerror.NewInvalidError("upstream proxy URI")
 )
 
-// Options definition.
-type Options struct {
+// ProxyConfig definition.
+type ProxyConfig struct {
 	// DNSURIs are DNS URIs:
 	// - Known protocol: udp, tcp
 	// - Some hostname (x.io - min 4 chars), or IP
@@ -99,8 +99,8 @@ type Options struct {
 	SiteCredentials []string `json:"site_credentials" validate:"omitempty"`
 }
 
-// Default sets `Options` default values.
-func (o *Options) Default() {
+// Default sets `ProxyConfig` default values.
+func (o *ProxyConfig) Default() {
 	o.ProxyLocalhost = false
 }
 
@@ -139,8 +139,8 @@ type Proxy struct {
 	// nothing.
 	State State
 
-	// Options to setup proxy.
-	*Options
+	// ProxyConfig to setup proxy.
+	*ProxyConfig
 
 	mutex *sync.RWMutex
 
@@ -496,19 +496,19 @@ func loadSiteCredentialsFromEnvVar(envVar string) []string {
 
 // New is the Proxy factory. Errors can be introspected, and provide contextual
 // information.
-func New(localProxyURI, upstreamProxyURI, pacURI string, pacProxiesCredentials []string, options *Options, log Logger) (*Proxy, error) { //nolint // FIXME Function 'New' has too many statements (67 > 40) (funlen); calculated cyclomatic complexity for function New is 24, max is 10 (cyclop)
+func New(localProxyURI, upstreamProxyURI, pacURI string, pacProxiesCredentials []string, options *ProxyConfig, log Logger) (*Proxy, error) { //nolint // FIXME Function 'New' has too many statements (67 > 40) (funlen); calculated cyclomatic complexity for function New is 24, max is 10 (cyclop)
 	//////
 	// Proxy setup.
 	//////
 
-	finalOptions := &Options{}
-	finalOptions.Default()
+	finalConfig := &ProxyConfig{}
+	finalConfig.Default()
 
 	if options == nil {
-		options = &Options{}
+		options = &ProxyConfig{}
 	}
 
-	if err := deepCopy(finalOptions, options); err != nil {
+	if err := deepCopy(finalConfig, options); err != nil {
 		return nil, fmt.Errorf("copy options: %w", err)
 	}
 
@@ -528,7 +528,7 @@ func New(localProxyURI, upstreamProxyURI, pacURI string, pacProxiesCredentials [
 	p := &Proxy{
 		LocalProxyURI:         localProxyURI,
 		Mode:                  Direct,
-		Options:               finalOptions,
+		ProxyConfig:           finalConfig,
 		PACURI:                pacURI,
 		State:                 Initializing,
 		UpstreamProxyURI:      upstreamProxyURI,
@@ -570,7 +570,7 @@ func New(localProxyURI, upstreamProxyURI, pacURI string, pacProxiesCredentials [
 	// DNS.
 	//////
 
-	if p.Options.DNSURIs != nil {
+	if p.ProxyConfig.DNSURIs != nil {
 		if err := p.setupDNS(); err != nil {
 			return nil, err
 		}

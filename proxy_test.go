@@ -413,7 +413,7 @@ func TestNew(t *testing.T) { //nolint // FIXME cognitive complexity 88 of func `
 				tc.args.pacProxiesCredentials,
 
 				// Logging settings.
-				&Options{
+				&ProxyConfig{
 					DNSURIs:         dnsURIs,
 					SiteCredentials: siteCredentials,
 				},
@@ -488,7 +488,7 @@ func TestNew(t *testing.T) { //nolint // FIXME cognitive complexity 88 of func `
 					nil,
 
 					// Logging settings.
-					&Options{},
+					&ProxyConfig{},
 					namedStdLogger("upstream"),
 				)
 				if err != nil {
@@ -568,7 +568,7 @@ func BenchmarkNew(b *testing.B) {
 
 	localProxyURI := URIBuilder(defaultProxyHostname, r.MustGenerate(), "", "")
 
-	proxy, err := New(localProxyURI.String(), "", "", nil, &Options{}, nopLogger{})
+	proxy, err := New(localProxyURI.String(), "", "", nil, &ProxyConfig{}, nopLogger{})
 	if err != nil {
 		b.Fatal("Failed to create proxy.", err)
 	}

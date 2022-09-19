@@ -100,7 +100,7 @@ Note: Can't setup upstream, and PAC at the same time.
 	--site-credentials "user1:pwd1@foo.bar:8090,user2:pwd2@qux:baz:80"
 	`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		o := &forwarder.Options{
+		o := &forwarder.ProxyConfig{
 			DNSURIs:         runArgs.dnsURIs,
 			ProxyLocalhost:  runArgs.proxyLocalhost,
 			SiteCredentials: runArgs.siteCredentials,
