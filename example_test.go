@@ -105,23 +105,12 @@ func ExampleNew() {
 	// per URL via PAC.
 	//////
 
-	localProxy, err := NewProxy(
-		// Local proxy URI.
-		localProxyURI.String(),
-
-		// Upstream proxy URI.
-		"",
-
-		// PAC URI.
-		pacServerURI.String(),
-
-		// PAC proxies credentials in standard URI format.
-		[]string{upstreamProxyURI.String()},
-
-		// Logging settings.
-		&ProxyConfig{},
-		log,
-	)
+	c := &ProxyConfig{
+		LocalProxyURI:         localProxyURI.String(),
+		PACURI:                pacServerURI.String(),
+		PACProxiesCredentials: []string{upstreamProxyURI.String()},
+	}
+	localProxy, err := NewProxy(c, log)
 	if err != nil {
 		panic(err)
 	}
@@ -135,23 +124,7 @@ func ExampleNew() {
 	// Upstream Proxy.
 	//////
 
-	upstreamProxy, err := NewProxy(
-		// Local proxy URI.
-		upstreamProxyURI.String(),
-
-		// Upstream proxy URI.
-		"",
-
-		// PAC URI.
-		"",
-
-		// PAC proxies credentials in standard URI format.
-		nil,
-
-		// Logging settings.
-		&ProxyConfig{},
-		log,
-	)
+	upstreamProxy, err := NewProxy(&ProxyConfig{LocalProxyURI: upstreamProxyURI.String()}, log)
 	if err != nil {
 		panic(err)
 	}

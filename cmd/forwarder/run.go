@@ -10,14 +10,8 @@ import (
 )
 
 var runArgs = struct {
-	dnsURIs               []string
-	localProxyURI         string
-	upstreamProxyURI      string
-	siteCredentials       []string
-	pacProxiesCredentials []string
-	pacURI                string
-	proxyLocalhost        bool
-	logConfig             logConfig
+	proxyConfig forwarder.ProxyConfig
+	logConfig   logConfig
 }{
 	logConfig: defaultLogConfig(),
 }
@@ -100,12 +94,7 @@ Note: Can't setup upstream, and PAC at the same time.
 	--site-credentials "user1:pwd1@foo.bar:8090,user2:pwd2@qux:baz:80"
 	`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		o := &forwarder.ProxyConfig{
-			DNSURIs:         runArgs.dnsURIs,
-			ProxyLocalhost:  runArgs.proxyLocalhost,
-			SiteCredentials: runArgs.siteCredentials,
-		}
-		p, err := forwarder.NewProxy(runArgs.localProxyURI, runArgs.upstreamProxyURI, runArgs.pacURI, runArgs.pacProxiesCredentials, o, newLogger(runArgs.logConfig))
+		p, err := forwarder.NewProxy(&runArgs.proxyConfig, newLogger(runArgs.logConfig))
 		if err != nil {
 			return err
 		}
@@ -118,13 +107,13 @@ func init() {
 	rootCmd.AddCommand(runCmd)
 
 	fs := runCmd.Flags()
-	fs.StringVarP(&runArgs.localProxyURI, "local-proxy-uri", "l", "http://localhost:8080", "sets local proxy URI")
-	fs.StringVarP(&runArgs.upstreamProxyURI, "upstream-proxy-uri", "u", "", "sets upstream proxy URI")
-	fs.StringSliceVarP(&runArgs.dnsURIs, "dns-uri", "n", nil, "sets dns URI")
-	fs.StringVarP(&runArgs.pacURI, "pac-uri", "p", "", "sets URI to PAC content, or directly, the PAC content")
-	fs.StringSliceVarP(&runArgs.pacProxiesCredentials, "pac-proxies-credentials", "d", nil, "sets PAC proxies credentials using standard URI format")
-	fs.StringSliceVar(&runArgs.siteCredentials, "site-credentials", nil, "sets target site credentials")
-	fs.BoolVarP(&runArgs.proxyLocalhost, "proxy-localhost", "t", false, "if set, will proxy localhost requests to an upstream proxy - if any")
+	fs.StringVarP(&runArgs.proxyConfig.LocalProxyURI, "local-proxy-uri", "l", "http://localhost:8080", "sets local proxy URI")
+	fs.StringVarP(&runArgs.proxyConfig.UpstreamProxyURI, "upstream-proxy-uri", "u", "", "sets upstream proxy URI")
+	fs.StringSliceVarP(&runArgs.proxyConfig.DNSURIs, "dns-uri", "n", nil, "sets dns URI")
+	fs.StringVarP(&runArgs.proxyConfig.PACURI, "pac-uri", "p", "", "sets URI to PAC content, or directly, the PAC content")
+	fs.StringSliceVarP(&runArgs.proxyConfig.PACProxiesCredentials, "pac-proxies-credentials", "d", nil, "sets PAC proxies credentials using standard URI format")
+	fs.StringSliceVar(&runArgs.proxyConfig.SiteCredentials, "site-credentials", nil, "sets target site credentials")
+	fs.BoolVarP(&runArgs.proxyConfig.ProxyLocalhost, "proxy-localhost", "t", false, "if set, will proxy localhost requests to an upstream proxy - if any")
 	fs.StringVar(&runArgs.logConfig.Level, "log-level", runArgs.logConfig.Level, "sets the log level (default info)")
 	fs.StringVar(&runArgs.logConfig.FileLevel, "log-file-level", runArgs.logConfig.FileLevel, "sets the log file level (default info)")
 	fs.StringVar(&runArgs.logConfig.FilePath, "log-file-path", runArgs.logConfig.FilePath, `sets the log file path (default "OS temp dir")`)

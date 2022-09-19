@@ -81,36 +81,6 @@ var (
 
 // ProxyConfig definition.
 type ProxyConfig struct {
-	// DNSURIs are DNS URIs:
-	// - Known protocol: udp, tcp
-	// - Some hostname (x.io - min 4 chars), or IP
-	// - Port in a valid range: 53 - 65535.
-	// Example: udp://10.0.0.3:53
-	DNSURIs []string `json:"dns_uris" validate:"omitempty,dive,dnsURI"`
-
-	// ProxyLocalhost if `true`, requests to `localhost`/`127.0.0.1` will be
-	// forwarded to any upstream - if set.
-	ProxyLocalhost bool
-	// SiteCredentials contains URLs with the credentials, for example:
-	// - https://usr1:pwd1@foo.bar:4443
-	// - http://usr2:pwd2@bar.foo:8080
-	// - usr3:pwd3@bar.foo:8080
-	// Proxy will add basic auth headers for requests to these URLs.
-	SiteCredentials []string `json:"site_credentials" validate:"omitempty"`
-}
-
-// Default sets `ProxyConfig` default values.
-func (o *ProxyConfig) Default() {
-	o.ProxyLocalhost = false
-}
-
-// Proxy definition. Proxy can be protected, or not. It can forward connections
-// to an upstream proxy protected, or not. The upstream proxy can be
-// automatically setup via PAC. PAC content can be retrieved from multiple
-// sources, e.g.: a HTTP server, also, protected or not.
-//
-// Protection means basic auth protection.
-type Proxy struct {
 	// LocalProxyURI is the local proxy URI:
 	// - Known schemes: http, https, socks, socks5, or quic
 	// - Some hostname (x.io - min 4 chars), or IP
@@ -132,6 +102,40 @@ type Proxy struct {
 	// Example: http://127.0.0.1:8087/data.pac
 	PACURI string `json:"pac_uri" validate:"omitempty,gte=6"`
 
+	// Credentials for proxies specified in PAC content.
+	PACProxiesCredentials []string
+
+	// DNSURIs are DNS URIs:
+	// - Known protocol: udp, tcp
+	// - Some hostname (x.io - min 4 chars), or IP
+	// - Port in a valid range: 53 - 65535.
+	// Example: udp://10.0.0.3:53
+	DNSURIs []string `json:"dns_uris" validate:"omitempty,dive,dnsURI"`
+
+	// ProxyLocalhost if `true`, requests to `localhost`/`127.0.0.1` will be
+	// forwarded to any upstream - if set.
+	ProxyLocalhost bool
+
+	// SiteCredentials contains URLs with the credentials, for example:
+	// - https://usr1:pwd1@foo.bar:4443
+	// - http://usr2:pwd2@bar.foo:8080
+	// - usr3:pwd3@bar.foo:8080
+	// Proxy will add basic auth headers for requests to these URLs.
+	SiteCredentials []string `json:"site_credentials" validate:"omitempty"`
+}
+
+// Default sets `ProxyConfig` default values.
+func (o *ProxyConfig) Default() {
+	o.ProxyLocalhost = false
+}
+
+// Proxy definition. Proxy can be protected, or not. It can forward connections
+// to an upstream proxy protected, or not. The upstream proxy can be
+// automatically setup via PAC. PAC content can be retrieved from multiple
+// sources, e.g.: a HTTP server, also, protected or not.
+//
+// Protection means basic auth protection.
+type Proxy struct {
 	// Mode the Proxy is running.
 	Mode Mode
 
@@ -153,9 +157,6 @@ type Proxy struct {
 	// PAC parser implementation.
 	pacParser *pacman.Parser
 
-	// Credentials for proxies specified in PAC content.
-	pacProxiesCredentials []string
-
 	// credentials for passing basic authentication to requests
 	creds *userInfoMatcher
 
@@ -165,7 +166,7 @@ type Proxy struct {
 	log Logger
 }
 
-func NewProxy(localProxyURI, upstreamProxyURI, pacURI string, pacProxiesCredentials []string, options *ProxyConfig, log Logger) (*Proxy, error) { //nolint // FIXME Function 'NewProxy' has too many statements (67 > 40) (funlen); calculated cyclomatic complexity for function NewProxy is 24, max is 10 (cyclop)
+func NewProxy(options *ProxyConfig, log Logger) (*Proxy, error) { //nolint // FIXME Function 'NewProxy' has too many statements (67 > 40) (funlen); calculated cyclomatic complexity for function NewProxy is 24, max is 10 (cyclop)
 	//////
 	// Proxy setup.
 	//////
@@ -195,16 +196,12 @@ func NewProxy(localProxyURI, upstreamProxyURI, pacURI string, pacProxiesCredenti
 	}
 
 	p := &Proxy{
-		LocalProxyURI:         localProxyURI,
-		Mode:                  Direct,
-		ProxyConfig:           finalConfig,
-		PACURI:                pacURI,
-		State:                 Initializing,
-		UpstreamProxyURI:      upstreamProxyURI,
-		pacProxiesCredentials: pacProxiesCredentials,
-		mutex:                 &sync.RWMutex{},
-		creds:                 creds,
-		log:                   log,
+		Mode:        Direct,
+		ProxyConfig: finalConfig,
+		State:       Initializing,
+		mutex:       &sync.RWMutex{},
+		creds:       creds,
+		log:         log,
 	}
 
 	v := validator.New()
@@ -280,7 +277,7 @@ func NewProxy(localProxyURI, upstreamProxyURI, pacURI string, pacProxiesCredenti
 	}
 
 	if p.PACURI != "" {
-		pacParser, err := pacman.New(p.PACURI, p.pacProxiesCredentials...)
+		pacParser, err := pacman.New(p.PACURI, p.PACProxiesCredentials...)
 		if err != nil {
 			return nil, fmt.Errorf("pac parser: %w", err)
 		}
