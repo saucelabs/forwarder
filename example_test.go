@@ -119,7 +119,7 @@ func ExampleNew() {
 		[]string{upstreamProxyURI.String()},
 
 		// Logging settings.
-		&Options{},
+		&ProxyConfig{},
 		log,
 	)
 	if err != nil {
@@ -149,7 +149,7 @@ func ExampleNew() {
 		nil,
 
 		// Logging settings.
-		&Options{},
+		&ProxyConfig{},
 		log,
 	)
 	if err != nil {
