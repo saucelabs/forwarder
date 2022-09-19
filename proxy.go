@@ -165,6 +165,145 @@ type Proxy struct {
 	log Logger
 }
 
+// New is the Proxy factory. Errors can be introspected, and provide contextual
+// information.
+func New(localProxyURI, upstreamProxyURI, pacURI string, pacProxiesCredentials []string, options *ProxyConfig, log Logger) (*Proxy, error) { //nolint // FIXME Function 'New' has too many statements (67 > 40) (funlen); calculated cyclomatic complexity for function New is 24, max is 10 (cyclop)
+	//////
+	// Proxy setup.
+	//////
+
+	finalConfig := &ProxyConfig{}
+	finalConfig.Default()
+
+	if options == nil {
+		options = &ProxyConfig{}
+	}
+
+	if err := deepCopy(finalConfig, options); err != nil {
+		return nil, fmt.Errorf("copy options: %w", err)
+	}
+
+	siteCredentials := options.SiteCredentials
+	siteCredentialsFromEnv := loadSiteCredentialsFromEnvVar("FORWARDER_SITE_CREDENTIALS")
+
+	if len(siteCredentials) == 0 && siteCredentialsFromEnv != nil {
+		siteCredentials = siteCredentialsFromEnv
+	}
+
+	// Parse site credential list into map of host:port -> base64 encoded input.
+	creds, err := newUserInfoMatcher(siteCredentials, log)
+	if err != nil {
+		return nil, fmt.Errorf("parse credentials: %w", err)
+	}
+
+	p := &Proxy{
+		LocalProxyURI:         localProxyURI,
+		Mode:                  Direct,
+		ProxyConfig:           finalConfig,
+		PACURI:                pacURI,
+		State:                 Initializing,
+		UpstreamProxyURI:      upstreamProxyURI,
+		pacProxiesCredentials: pacProxiesCredentials,
+		mutex:                 &sync.RWMutex{},
+		creds:                 creds,
+		log:                   log,
+	}
+
+	v := validator.New()
+	validation.RegisterAll(v)
+	if err := v.Struct(p); err != nil {
+		return nil, customerror.Wrap(ErrInvalidProxyParams, err)
+	}
+
+	// Can't have upstream proxy configuration, and PAC at the same time.
+	if p.UpstreamProxyURI != "" && p.PACURI != "" {
+		return nil, ErrInvalidOrParentOrPac
+	}
+
+	//////
+	// Underlying proxy implementation setup.
+	//////
+
+	// Instantiate underlying proxy implementation. It can be abstracted in the
+	// future to allow easy swapping.
+	p.proxy = goproxy.NewProxyHttpServer()
+	p.proxy.Logger = goproxyLogger{log}
+	p.proxy.Verbose = true
+	p.proxy.KeepDestinationHeaders = true
+	// This is required.
+	//
+	// See: https://maelvls.dev/go-ignores-proxy-localhost/
+	// See: https://github.com/golang/go/issues/28866
+	// See: https://github.com/elazarl/goproxy/issues/306
+	p.proxy.KeepHeader = true
+
+	//////
+	// DNS.
+	//////
+
+	if p.ProxyConfig.DNSURIs != nil {
+		if err := p.setupDNS(); err != nil {
+			return nil, err
+		}
+	}
+
+	//////
+	// Local proxy setup.
+	//////
+
+	parsedLocalProxyURI, err := url.ParseRequestURI(p.LocalProxyURI)
+	if err != nil {
+		return nil, customerror.Wrap(ErrInvalidLocalProxyURI, err)
+	}
+
+	err = loadCredentialFromEnvVar("FORWARDER_LOCALPROXY_AUTH", parsedLocalProxyURI)
+	if err != nil {
+		return nil, err
+	}
+
+	p.parsedLocalProxyURI = parsedLocalProxyURI
+	p.LocalProxyURI = parsedLocalProxyURI.String()
+
+	if p.UpstreamProxyURI != "" {
+		p.Mode = Upstream
+
+		parsedUpstreamProxyURI, err := url.ParseRequestURI(p.UpstreamProxyURI)
+		if err != nil {
+			return nil, customerror.Wrap(ErrInvalidUpstreamProxyURI, err)
+		}
+
+		err = loadCredentialFromEnvVar("FORWARDER_UPSTREAMPROXY_AUTH", parsedUpstreamProxyURI)
+		if err != nil {
+			return nil, err
+		}
+
+		p.parsedUpstreamProxyURI = parsedUpstreamProxyURI
+		p.UpstreamProxyURI = parsedUpstreamProxyURI.String()
+	}
+
+	if p.PACURI != "" {
+		pacParser, err := pacman.New(p.PACURI, p.pacProxiesCredentials...)
+		if err != nil {
+			return nil, fmt.Errorf("pac parser: %w", err)
+		}
+		p.Mode = PAC
+		p.pacParser = pacParser
+	}
+
+	// Setup the request and response handlers
+	p.setupProxyHandlers()
+
+	// Local proxy authentication.
+	if u := parsedLocalProxyURI.User; u.Username() != "" {
+		p.setupBasicAuth(u)
+	}
+
+	// Updates state.
+	p.State = Setup
+
+	return p, nil
+}
+
 // Sets the `Proxy-Authorization` header based on `uri` user info.
 func (p *Proxy) setProxyBasicAuthHeader(uri *url.URL, req *http.Request) {
 	req.Header.Set(
@@ -435,6 +574,10 @@ func (p *Proxy) setupProxyHandlers() {
 	})
 }
 
+//////
+// Factory
+//////
+
 // maybeAddAuthHeader modifies the request and adds an authorization header if necessary.
 func (p *Proxy) maybeAddAuthHeader(req *http.Request) {
 	hostport := req.Host
@@ -456,10 +599,6 @@ func (p *Proxy) maybeAddAuthHeader(req *http.Request) {
 		req.Header.Set(authHeader, fmt.Sprintf("Basic %s", userInfoBase64(u)))
 	}
 }
-
-//////
-// Factory
-//////
 
 // loadCredentialFromEnvVar loads credentials from the env var, validate and set the URL's user:pwd.
 func loadCredentialFromEnvVar(envVar string, uri *url.URL) error {
@@ -492,143 +631,4 @@ func loadSiteCredentialsFromEnvVar(envVar string) []string {
 	}
 
 	return strings.Split(basicAuthURLstr, ",")
-}
-
-// New is the Proxy factory. Errors can be introspected, and provide contextual
-// information.
-func New(localProxyURI, upstreamProxyURI, pacURI string, pacProxiesCredentials []string, options *ProxyConfig, log Logger) (*Proxy, error) { //nolint // FIXME Function 'New' has too many statements (67 > 40) (funlen); calculated cyclomatic complexity for function New is 24, max is 10 (cyclop)
-	//////
-	// Proxy setup.
-	//////
-
-	finalConfig := &ProxyConfig{}
-	finalConfig.Default()
-
-	if options == nil {
-		options = &ProxyConfig{}
-	}
-
-	if err := deepCopy(finalConfig, options); err != nil {
-		return nil, fmt.Errorf("copy options: %w", err)
-	}
-
-	siteCredentials := options.SiteCredentials
-	siteCredentialsFromEnv := loadSiteCredentialsFromEnvVar("FORWARDER_SITE_CREDENTIALS")
-
-	if len(siteCredentials) == 0 && siteCredentialsFromEnv != nil {
-		siteCredentials = siteCredentialsFromEnv
-	}
-
-	// Parse site credential list into map of host:port -> base64 encoded input.
-	creds, err := newUserInfoMatcher(siteCredentials, log)
-	if err != nil {
-		return nil, fmt.Errorf("parse credentials: %w", err)
-	}
-
-	p := &Proxy{
-		LocalProxyURI:         localProxyURI,
-		Mode:                  Direct,
-		ProxyConfig:           finalConfig,
-		PACURI:                pacURI,
-		State:                 Initializing,
-		UpstreamProxyURI:      upstreamProxyURI,
-		pacProxiesCredentials: pacProxiesCredentials,
-		mutex:                 &sync.RWMutex{},
-		creds:                 creds,
-		log:                   log,
-	}
-
-	v := validator.New()
-	validation.RegisterAll(v)
-	if err := v.Struct(p); err != nil {
-		return nil, customerror.Wrap(ErrInvalidProxyParams, err)
-	}
-
-	// Can't have upstream proxy configuration, and PAC at the same time.
-	if p.UpstreamProxyURI != "" && p.PACURI != "" {
-		return nil, ErrInvalidOrParentOrPac
-	}
-
-	//////
-	// Underlying proxy implementation setup.
-	//////
-
-	// Instantiate underlying proxy implementation. It can be abstracted in the
-	// future to allow easy swapping.
-	p.proxy = goproxy.NewProxyHttpServer()
-	p.proxy.Logger = goproxyLogger{log}
-	p.proxy.Verbose = true
-	p.proxy.KeepDestinationHeaders = true
-	// This is required.
-	//
-	// See: https://maelvls.dev/go-ignores-proxy-localhost/
-	// See: https://github.com/golang/go/issues/28866
-	// See: https://github.com/elazarl/goproxy/issues/306
-	p.proxy.KeepHeader = true
-
-	//////
-	// DNS.
-	//////
-
-	if p.ProxyConfig.DNSURIs != nil {
-		if err := p.setupDNS(); err != nil {
-			return nil, err
-		}
-	}
-
-	//////
-	// Local proxy setup.
-	//////
-
-	parsedLocalProxyURI, err := url.ParseRequestURI(p.LocalProxyURI)
-	if err != nil {
-		return nil, customerror.Wrap(ErrInvalidLocalProxyURI, err)
-	}
-
-	err = loadCredentialFromEnvVar("FORWARDER_LOCALPROXY_AUTH", parsedLocalProxyURI)
-	if err != nil {
-		return nil, err
-	}
-
-	p.parsedLocalProxyURI = parsedLocalProxyURI
-	p.LocalProxyURI = parsedLocalProxyURI.String()
-
-	if p.UpstreamProxyURI != "" {
-		p.Mode = Upstream
-
-		parsedUpstreamProxyURI, err := url.ParseRequestURI(p.UpstreamProxyURI)
-		if err != nil {
-			return nil, customerror.Wrap(ErrInvalidUpstreamProxyURI, err)
-		}
-
-		err = loadCredentialFromEnvVar("FORWARDER_UPSTREAMPROXY_AUTH", parsedUpstreamProxyURI)
-		if err != nil {
-			return nil, err
-		}
-
-		p.parsedUpstreamProxyURI = parsedUpstreamProxyURI
-		p.UpstreamProxyURI = parsedUpstreamProxyURI.String()
-	}
-
-	if p.PACURI != "" {
-		pacParser, err := pacman.New(p.PACURI, p.pacProxiesCredentials...)
-		if err != nil {
-			return nil, fmt.Errorf("pac parser: %w", err)
-		}
-		p.Mode = PAC
-		p.pacParser = pacParser
-	}
-
-	// Setup the request and response handlers
-	p.setupProxyHandlers()
-
-	// Local proxy authentication.
-	if u := parsedLocalProxyURI.User; u.Username() != "" {
-		p.setupBasicAuth(u)
-	}
-
-	// Updates state.
-	p.State = Setup
-
-	return p, nil
 }
