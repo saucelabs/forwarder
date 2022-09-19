@@ -132,7 +132,7 @@ func executeRequest(client *http.Client, uri string) (statusCode int, body strin
 	return response.StatusCode, string(data), nil
 }
 
-func TestNew(t *testing.T) { //nolint // FIXME cognitive complexity 88 of func `TestNew` is high (> 40) (gocognit); calculated cyclomatic complexity for function TestNew is 28, max is 10 (cyclop)
+func TestNewProxy(t *testing.T) { //nolint // FIXME cognitive complexity 88 of func `TestNewProxy` is high (> 40) (gocognit); calculated cyclomatic complexity for function TestNewProxy is 28, max is 10 (cyclop)
 	//////
 	// Randomness automates port allocation, ensuring no collision happens
 	// between tests, and examples.
@@ -399,7 +399,7 @@ func TestNew(t *testing.T) { //nolint // FIXME cognitive complexity 88 of func `
 			// in the PAC content.
 			//////
 
-			localProxy, err := New(
+			localProxy, err := NewProxy(
 				// Local proxy URI.
 				localProxyURI,
 
@@ -421,13 +421,13 @@ func TestNew(t *testing.T) { //nolint // FIXME cognitive complexity 88 of func `
 			)
 			if err != nil {
 				if !tc.wantErr {
-					t.Errorf("New() localProxy error = %v, wantErr %v", err, tc.wantErr)
+					t.Errorf("NewProxy() localProxy error = %v, wantErr %v", err, tc.wantErr)
 
 					return
 				}
 
 				if !errors.Is(err, tc.wantErrType) {
-					t.Errorf("New() localProxy error = %v, expected %v", err, tc.wantErrType)
+					t.Errorf("NewProxy() localProxy error = %v, expected %v", err, tc.wantErrType)
 
 					return
 				}
@@ -474,7 +474,7 @@ func TestNew(t *testing.T) { //nolint // FIXME cognitive complexity 88 of func `
 			}
 
 			if upstreamProxyURI != "" {
-				upstreamProxy, err := New(
+				upstreamProxy, err := NewProxy(
 					// Local proxy URI.
 					upstreamProxyURI,
 
@@ -493,13 +493,13 @@ func TestNew(t *testing.T) { //nolint // FIXME cognitive complexity 88 of func `
 				)
 				if err != nil {
 					if !tc.wantErr {
-						t.Errorf("New() localProxy error = %v, wantErr %v", err, tc.wantErr)
+						t.Errorf("NewProxy() localProxy error = %v, wantErr %v", err, tc.wantErr)
 
 						return
 					}
 
 					if !errors.Is(err, tc.wantErrType) {
-						t.Errorf("New() localProxy error = %v, expected %v", err, tc.wantErrType)
+						t.Errorf("NewProxy() localProxy error = %v, expected %v", err, tc.wantErrType)
 
 						return
 					}
@@ -568,7 +568,7 @@ func BenchmarkNew(b *testing.B) {
 
 	localProxyURI := URIBuilder(defaultProxyHostname, r.MustGenerate(), "", "")
 
-	proxy, err := New(localProxyURI.String(), "", "", nil, &ProxyConfig{}, nopLogger{})
+	proxy, err := NewProxy(localProxyURI.String(), "", "", nil, &ProxyConfig{}, nopLogger{})
 	if err != nil {
 		b.Fatal("Failed to create proxy.", err)
 	}

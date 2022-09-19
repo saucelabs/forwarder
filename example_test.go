@@ -105,7 +105,7 @@ func ExampleNew() {
 	// per URL via PAC.
 	//////
 
-	localProxy, err := New(
+	localProxy, err := NewProxy(
 		// Local proxy URI.
 		localProxyURI.String(),
 
@@ -135,7 +135,7 @@ func ExampleNew() {
 	// Upstream Proxy.
 	//////
 
-	upstreamProxy, err := New(
+	upstreamProxy, err := NewProxy(
 		// Local proxy URI.
 		upstreamProxyURI.String(),
 
