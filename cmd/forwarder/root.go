@@ -5,6 +5,7 @@
 package main
 
 import (
+	"github.com/saucelabs/forwarder/cmd/forwarder/run"
 	"github.com/saucelabs/forwarder/cmd/forwarder/version"
 	"github.com/spf13/cobra"
 )
@@ -17,6 +18,7 @@ var rootCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(
+		run.Command(),
 		version.Command(),
 	)
 }
