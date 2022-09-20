@@ -24,7 +24,6 @@ func Validator() *validator.Validate {
 func RegisterAll(v *validator.Validate) {
 	mustRegisterValidation(v, "basicAuth", IsBasicAuth)
 	mustRegisterValidation(v, "dnsURI", IsDNSURI)
-	mustRegisterValidation(v, "pacURIOrText", IsPacURIOrText)
 	mustRegisterValidation(v, "proxyURI", IsProxyURI)
 }
 
@@ -67,22 +66,6 @@ func IsDNSURI(fl validator.FieldLevel) bool {
 		validDNSProtocolsRegexp.MatchString(u.Scheme) &&
 		len(u.Hostname()) >= 4 &&
 		isPort(u.Port())
-}
-
-// IsPacURIOrText checks if the given text, or URI is valid for the PAC loader:
-// - If it's a URI, it needs to be a valid URI.
-// - If it's text, it needs to be a valid PAC script.
-func IsPacURIOrText(fl validator.FieldLevel) bool {
-	v := fl.Field().String()
-
-	// If it's a URI, it needs to be a valid URI.
-	if strings.HasPrefix(v, "http") || strings.HasPrefix(v, "file") {
-		_, err := url.Parse(v)
-		return err == nil
-	}
-
-	// If it's text, it needs to be a valid PAC script.
-	return strings.Contains(v, "FindProxyForURL")
 }
 
 var validProxySchemesRegexp = regexp.MustCompile(`(?mi)http|https|socks5|socks|quic`)
