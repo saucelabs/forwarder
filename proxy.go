@@ -97,7 +97,7 @@ type ProxyConfig struct {
 	// - Some hostname (x.io - min 4 chars), or IP
 	// - Port in a valid range: 80 - 65535.
 	// Example: http://127.0.0.1:8087/data.pac
-	PACURI string `json:"pac_uri" validate:"omitempty,gte=6,excluded_with=UpstreamProxyURI"`
+	PACURI string `json:"pac_uri" validate:"omitempty,proxyURI,excluded_with=UpstreamProxyURI"`
 
 	// Credentials for proxies specified in PAC content.
 	PACProxiesCredentials []string
