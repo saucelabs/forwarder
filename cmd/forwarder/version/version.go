@@ -20,7 +20,7 @@ var (
 func Command() *cobra.Command {
 	return &cobra.Command{
 		Use:   "version",
-		Short: "Prints version information",
+		Short: "Print version information",
 		Run: func(cmd *cobra.Command, args []string) {
 			w := cmd.OutOrStdout()
 
