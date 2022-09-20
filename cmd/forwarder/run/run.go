@@ -23,7 +23,7 @@ func (c *command) RunE(cmd *cobra.Command, args []string) error {
 	return p.Run()
 }
 
-const long = `Run starts the proxy. Proxy can be protected with basic auth.
+const long = `Start the proxy. Proxy can be protected with basic auth.
 It can forward connections to an upstream proxy (protected, or not).
 The upstream proxy can be automatically setup via PAC (protected, or not).
 Also, credentials for proxies specified in PAC can be set.
@@ -117,7 +117,7 @@ func Command() (cmd *cobra.Command) {
 	}()
 	return &cobra.Command{
 		Use:     "run",
-		Short:   "Starts the proxy",
+		Short:   "Start the proxy",
 		Long:    long,
 		Example: example,
 		RunE:    c.RunE,
