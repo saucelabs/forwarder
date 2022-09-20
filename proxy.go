@@ -15,7 +15,6 @@ import (
 	"net/url"
 	"os"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/elazarl/goproxy"
@@ -40,21 +39,6 @@ const (
 	Direct   Mode = "DIRECT"
 	Upstream Mode = "Upstream"
 	PAC      Mode = "PAC"
-)
-
-// State helps the proxy to don't run the same state multiple times.
-type State string
-
-const (
-	// Initializing means that a new proxy has been instantiated, but has not
-	// yet finished setup.
-	Initializing State = "Initializing"
-
-	// Setup state means it's done setting it up, but not running yet.
-	Setup State = "Setup"
-
-	// Running means proxy is running.
-	Running State = "Running"
 )
 
 var (
@@ -133,12 +117,6 @@ type Proxy struct {
 	// Mode the Proxy is running.
 	Mode Mode
 
-	// Current state of the proxy. Multiple calls to `Run`, if running, will do
-	// nothing.
-	State State
-
-	mutex *sync.RWMutex
-
 	// Parsed local proxy URI.
 	parsedLocalProxyURI *url.URL
 
@@ -165,8 +143,6 @@ func NewProxy(cfg ProxyConfig, log Logger) (*Proxy, error) { //nolint // FIXME F
 	p := &Proxy{
 		config: cfg.Clone(),
 		Mode:   Direct,
-		State:  Initializing,
-		mutex:  &sync.RWMutex{},
 		log:    log,
 	}
 
@@ -260,9 +236,6 @@ func NewProxy(cfg ProxyConfig, log Logger) (*Proxy, error) { //nolint // FIXME F
 		p.setupBasicAuth(u)
 	}
 
-	// Updates state.
-	p.State = Setup
-
 	return p, nil
 }
 
@@ -300,9 +273,6 @@ func resetUpstreamSettings(ctx *goproxy.ProxyCtx) {
 
 // Sets the default DNS.
 func (p *Proxy) setupDNS() error {
-	p.mutex.Lock()
-	defer p.mutex.Unlock()
-
 	parsedDNSURIs := make([]*url.URL, 0, len(p.config.DNSURIs))
 	for _, dnsURI := range p.config.DNSURIs {
 		parsedDNSURI, err := url.ParseRequestURI(dnsURI)
@@ -464,21 +434,7 @@ func (p *Proxy) setupBasicAuth(u *url.Userinfo) {
 // Run starts the proxy.
 // It's safe to call it multiple times - nothing will happen.
 func (p *Proxy) Run() error {
-	// Do nothing if already running.
-	p.mutex.RLock()
-	if p.State == Running {
-		p.log.Debugf("Proxy is already running")
-		return nil
-	}
-	p.mutex.RUnlock()
-
 	p.log.Infof("Listening on %s", p.parsedLocalProxyURI.Host)
-
-	// Updates state.
-	p.mutex.Lock()
-	p.State = Running
-	p.mutex.Unlock()
-
 	if err := http.ListenAndServe(p.parsedLocalProxyURI.Host, p.proxy); err != nil { //nolint:gosec // FIXME https://github.com/saucelabs/forwarder/issues/45
 		return fmt.Errorf("start proxy: %w", err)
 	}
