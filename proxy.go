@@ -42,15 +42,6 @@ const (
 	PAC      Mode = "PAC"
 )
 
-// Valid proxy schemes.
-const (
-	HTTP   = "http"
-	HTTPS  = "https"
-	SOCKS5 = "socks5"
-	SOCKS  = "socks"
-	QUIC   = "quic"
-)
-
 // State helps the proxy to don't run the same state multiple times.
 type State string
 

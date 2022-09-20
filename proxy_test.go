@@ -22,7 +22,7 @@ import (
 
 const (
 	defaultProxyHostname            = "127.0.0.1"
-	defaultProxyScheme              = HTTP
+	defaultProxyScheme              = "http"
 	localProxyCredentialPassword    = "p123"
 	localProxyCredentialUsername    = "u123"
 	upstreamProxyCredentialPassword = "p456"
