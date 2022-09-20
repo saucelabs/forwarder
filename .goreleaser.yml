@@ -16,9 +16,9 @@ builds:
       - -trimpath
     ldflags:
       - -extldflags '-static'
-      - -X github.com/saucelabs/forwarder/cmd/forwarder.buildCommit={{.Commit}}
-      - -X github.com/saucelabs/forwarder/cmd/forwarder.buildVersion={{.Version}}
-      - -X github.com/saucelabs/forwarder/cmd/forwarder.buildTime={{.Date}}
+      - -X github.com/saucelabs/forwarder/cmd/forwarder/version.buildCommit={{.Commit}}
+      - -X github.com/saucelabs/forwarder/cmd/forwarder/version.buildVersion={{.Version}}
+      - -X github.com/saucelabs/forwarder/cmd/forwarder/version.buildTime={{.Date}}
     goos:
       - linux
       - darwin

@@ -5,6 +5,7 @@
 package main
 
 import (
+	"github.com/saucelabs/forwarder/cmd/forwarder/version"
 	"github.com/spf13/cobra"
 )
 
@@ -12,4 +13,10 @@ import (
 var rootCmd = &cobra.Command{
 	Use:   "proxy",
 	Short: "A simple flexible forward proxy",
+}
+
+func init() {
+	rootCmd.AddCommand(
+		version.Command(),
+	)
 }
