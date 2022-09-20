@@ -27,15 +27,6 @@ const long = `Start the proxy. Proxy can be protected with basic auth.
 It can forward connections to an upstream proxy (protected, or not).
 The upstream proxy can be automatically setup via PAC (protected, or not).
 Also, credentials for proxies specified in PAC can be set.
-
-All credentials can be set via env vars:
-
-- Local proxy: FORWARDER_LOCALPROXY_AUTH
-- Upstream proxy: FORWARDER_UPSTREAMPROXY_AUTH
-- PAC URI: PACMAN_AUTH
-- PAC proxies: PACMAN_PROXIES_AUTH
-- Target URLs: FORWARDER_SITE_CREDENTIALS
-
 Note: Can't setup upstream, and PAC at the same time.
 `
 
