@@ -82,6 +82,13 @@ func TestProxyConfigValidate(t *testing.T) {
 			},
 			err: "proxyURI",
 		},
+		{
+			name: "Invalid PAC server URI",
+			config: ProxyConfig{
+				PACURI: "foo",
+			},
+			err: "proxyURI",
+		},
 	}
 
 	for i := range tests {
