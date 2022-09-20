@@ -104,6 +104,7 @@ func Command() (cmd *cobra.Command) {
 	}
 	defer func() {
 		fs := cmd.Flags()
+
 		fs.StringVarP(&c.proxyConfig.LocalProxyURI, "local-proxy-uri", "l", "http://localhost:8080", "sets local proxy URI")
 		fs.StringVarP(&c.proxyConfig.UpstreamProxyURI, "upstream-proxy-uri", "u", "", "sets upstream proxy URI")
 		fs.StringSliceVarP(&c.proxyConfig.DNSURIs, "dns-uri", "n", nil, "sets dns URI")
@@ -111,9 +112,10 @@ func Command() (cmd *cobra.Command) {
 		fs.StringSliceVarP(&c.proxyConfig.PACProxiesCredentials, "pac-proxies-credentials", "d", nil, "sets PAC proxies credentials using standard URI format")
 		fs.StringSliceVar(&c.proxyConfig.SiteCredentials, "site-credentials", nil, "sets target site credentials")
 		fs.BoolVarP(&c.proxyConfig.ProxyLocalhost, "proxy-localhost", "t", false, "if set, will proxy localhost requests to an upstream proxy - if any")
-		fs.StringVar(&c.logConfig.Level, "log-level", c.logConfig.Level, "sets the log level (default info)")
-		fs.StringVar(&c.logConfig.FileLevel, "log-file-level", c.logConfig.FileLevel, "sets the log file level (default info)")
-		fs.StringVar(&c.logConfig.FilePath, "log-file-path", c.logConfig.FilePath, `sets the log file path (default "OS temp dir")`)
+
+		fs.StringVar(&c.logConfig.Level, "log-level", c.logConfig.Level, "sets the log level")
+		fs.StringVar(&c.logConfig.FileLevel, "log-file-level", c.logConfig.FileLevel, "sets the log file level")
+		fs.StringVar(&c.logConfig.FilePath, "log-file-path", c.logConfig.FilePath, "sets the log file path")
 	}()
 	return &cobra.Command{
 		Use:     "run",
