@@ -32,7 +32,7 @@ const (
 	authHeader      = "Authorization"
 )
 
-// Possible ways to run Forwarder.
+// Mode specifies mode of operation of the proxy.
 type Mode string
 
 const (
@@ -114,9 +114,6 @@ func (c *ProxyConfig) Validate() error {
 type Proxy struct {
 	config ProxyConfig
 
-	// Mode the Proxy is running.
-	Mode Mode
-
 	// Parsed local proxy URI.
 	parsedLocalProxyURI *url.URL
 
@@ -142,7 +139,6 @@ func NewProxy(cfg ProxyConfig, log Logger) (*Proxy, error) { //nolint // FIXME F
 
 	p := &Proxy{
 		config: cfg.Clone(),
-		Mode:   Direct,
 		log:    log,
 	}
 
@@ -203,8 +199,6 @@ func NewProxy(cfg ProxyConfig, log Logger) (*Proxy, error) { //nolint // FIXME F
 	p.config.LocalProxyURI = parsedLocalProxyURI.String()
 
 	if p.config.UpstreamProxyURI != "" {
-		p.Mode = Upstream
-
 		parsedUpstreamProxyURI, err := url.ParseRequestURI(p.config.UpstreamProxyURI)
 		if err != nil {
 			return nil, customerror.Wrap(ErrInvalidUpstreamProxyURI, err)
@@ -224,7 +218,6 @@ func NewProxy(cfg ProxyConfig, log Logger) (*Proxy, error) { //nolint // FIXME F
 		if err != nil {
 			return nil, fmt.Errorf("pac parser: %w", err)
 		}
-		p.Mode = PAC
 		p.pacParser = pacParser
 	}
 
@@ -242,6 +235,18 @@ func NewProxy(cfg ProxyConfig, log Logger) (*Proxy, error) { //nolint // FIXME F
 // Config returns a copy of the proxy configuration.
 func (p *Proxy) Config() ProxyConfig {
 	return p.config.Clone()
+}
+
+// Mode returns mode of operation of the proxy as specified in the config.
+func (p *Proxy) Mode() Mode {
+	switch {
+	case p.config.UpstreamProxyURI != "":
+		return Upstream
+	case p.config.PACURI != "":
+		return PAC
+	default:
+		return Direct
+	}
 }
 
 // Sets the `Proxy-Authorization` header based on `uri` user info.
@@ -400,7 +405,7 @@ func (p *Proxy) setupHandlers(ctx *goproxy.ProxyCtx) error {
 		return nil
 	}
 
-	switch p.Mode {
+	switch p.Mode() {
 	case Direct:
 		// Do nothing
 	case Upstream:
