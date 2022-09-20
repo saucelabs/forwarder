@@ -10,10 +10,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const envPrefix = "FORWARDER"
+
 // rootCmd represents the base command when called without any subcommands.
 var rootCmd = &cobra.Command{
 	Use:   "proxy",
 	Short: "A simple flexible forward proxy",
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		return bindFlagsToEnv(cmd, envPrefix)
+	},
 }
 
 func init() {
@@ -21,4 +26,7 @@ func init() {
 		run.Command(),
 		version.Command(),
 	)
+	for _, cmd := range rootCmd.Commands() {
+		appendEnvToUsage(cmd, envPrefix)
+	}
 }
