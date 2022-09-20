@@ -58,8 +58,6 @@ const (
 )
 
 var (
-	ErrFailedToAllocatePort    = customerror.New("No available port to use", customerror.WithStatusCode(http.StatusInternalServerError))
-	ErrFailedToDialToDNS       = customerror.NewFailedToError("dial to DNS")
 	ErrInvalidDNSURI           = customerror.NewInvalidError("dns URI")
 	ErrInvalidLocalProxyURI    = customerror.NewInvalidError("local proxy URI")
 	ErrInvalidPACProxyURI      = customerror.NewInvalidError("PAC proxy URI")
