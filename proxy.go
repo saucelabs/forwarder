@@ -142,11 +142,6 @@ func NewProxy(cfg ProxyConfig, log Logger) (*Proxy, error) { //nolint // FIXME F
 		log:    log,
 	}
 
-	if len(cfg.SiteCredentials) == 0 {
-		if siteCredentialsFromEnv := loadSiteCredentialsFromEnvVar("FORWARDER_SITE_CREDENTIALS"); siteCredentialsFromEnv != nil {
-			cfg.SiteCredentials = siteCredentialsFromEnv
-		}
-	}
 	// Parse site credential list into map of host:port -> base64 encoded input.
 	creds, err := newUserInfoMatcher(cfg.SiteCredentials, log)
 	if err != nil {
@@ -542,15 +537,4 @@ func loadCredentialFromEnvVar(envVar string, uri *url.URL) error {
 	}
 
 	return nil
-}
-
-// loadSiteCredentialsFromEnvVar loads URLs and their basic auth from the env var.
-func loadSiteCredentialsFromEnvVar(envVar string) []string {
-	basicAuthURLstr := os.Getenv(envVar)
-
-	if basicAuthURLstr == "" {
-		return nil
-	}
-
-	return strings.Split(basicAuthURLstr, ",")
 }
