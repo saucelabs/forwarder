@@ -97,7 +97,9 @@ func Command() (cmd *cobra.Command) {
 		fs := cmd.Flags()
 
 		fs.StringVarP(&c.proxyConfig.LocalProxyURI, "local-proxy-uri", "l", "http://localhost:8080", "sets local proxy URI")
+		fs.StringVar(&c.proxyConfig.LocalProxyAuth, "local-proxy-auth", "", "sets local proxy basic auth in the form of username:password")
 		fs.StringVarP(&c.proxyConfig.UpstreamProxyURI, "upstream-proxy-uri", "u", "", "sets upstream proxy URI")
+		fs.StringVar(&c.proxyConfig.UpstreamProxyAuth, "upstream-proxy-auth", "", "sets upstream proxy basic auth in the form of username:password")
 		fs.StringSliceVarP(&c.proxyConfig.DNSURIs, "dns-uri", "n", nil, "sets dns URI")
 		fs.StringVarP(&c.proxyConfig.PACURI, "pac-uri", "p", "", "sets URI to PAC content, or directly, the PAC content")
 		fs.StringSliceVarP(&c.proxyConfig.PACProxiesCredentials, "pac-proxies-credentials", "d", nil, "sets PAC proxies credentials using standard URI format")

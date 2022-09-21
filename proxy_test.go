@@ -124,19 +124,17 @@ func TestNewProxy(t *testing.T) { //nolint // FIXME cognitive complexity 88 of f
 	type args struct {
 		dnsURIs               []string
 		localProxyURI         *url.URL
+		localProxyAuth        string
 		upstreamProxyURI      *url.URL
+		upstreamProxyAuth     string
 		pacURI                *url.URL
 		pacProxiesCredentials []string
 		siteCredentials       []string
 	}
 	tests := []struct {
-		name             string
-		args             args
-		preFunc          func()
-		postFunc         func()
-		preUpstreamFunc  func()
-		postUpstreamFunc func()
-		wantPAC          bool
+		name    string
+		args    args
+		wantPAC bool
 	}{
 		{
 			name: "Local proxy",
@@ -174,46 +172,16 @@ func TestNewProxy(t *testing.T) { //nolint // FIXME cognitive complexity 88 of f
 		{
 			name: "Protected local proxy, and protected upstream proxy",
 			args: args{
-				localProxyURI:    newProxyURL(r.MustGenerate(), wrongCredentialUsername, wrongCredentialPassword),
-				upstreamProxyURI: newProxyURL(r.MustGenerate(), wrongCredentialUsername, wrongCredentialPassword),
-			},
-			preFunc: func() {
-				// Local proxy.
-				os.Setenv("FORWARDER_LOCALPROXY_AUTH", url.UserPassword(
-					localProxyCredentialUsername,
-					localProxyCredentialPassword,
-				).String())
-
-				// Upstream proxy.
-				os.Setenv("FORWARDER_UPSTREAMPROXY_AUTH", url.UserPassword(
-					upstreamProxyCredentialUsername,
-					upstreamProxyCredentialPassword,
-				).String())
-			},
-			postFunc: func() {
-				os.Unsetenv("FORWARDER_LOCALPROXY_AUTH")
-
-				os.Unsetenv("FORWARDER_UPSTREAMPROXY_AUTH")
-			},
-			preUpstreamFunc: func() {
-				// Local proxy.
-				os.Setenv("FORWARDER_LOCALPROXY_AUTH", url.UserPassword(
-					upstreamProxyCredentialUsername,
-					upstreamProxyCredentialPassword,
-				).String())
-			},
-			postUpstreamFunc: func() {
-				os.Unsetenv("FORWARDER_LOCALPROXY_AUTH")
+				localProxyURI:     newProxyURL(r.MustGenerate(), wrongCredentialUsername, wrongCredentialPassword),
+				localProxyAuth:    url.UserPassword(localProxyCredentialUsername, localProxyCredentialPassword).String(),
+				upstreamProxyURI:  newProxyURL(r.MustGenerate(), wrongCredentialUsername, wrongCredentialPassword),
+				upstreamProxyAuth: url.UserPassword(upstreamProxyCredentialUsername, upstreamProxyCredentialPassword).String(),
 			},
 		},
 	}
 	for i := range tests {
 		tc := tests[i]
 		t.Run(tc.name, func(t *testing.T) {
-			if tc.preFunc != nil {
-				tc.preFunc()
-			}
-
 			//////
 			// Target/end server.
 			//////
@@ -329,10 +297,6 @@ func TestNewProxy(t *testing.T) { //nolint // FIXME cognitive complexity 88 of f
 			// Upstream Proxy.
 			//////
 
-			if tc.preUpstreamFunc != nil {
-				tc.preUpstreamFunc()
-			}
-
 			if upstreamProxyURI != "" {
 				upstreamProxy, err := NewProxy(ProxyConfig{LocalProxyURI: upstreamProxyURI}, namedStdLogger("upstream"))
 				if err != nil {
@@ -343,10 +307,6 @@ func TestNewProxy(t *testing.T) { //nolint // FIXME cognitive complexity 88 of f
 
 				// Give enough time to start, and be ready.
 				time.Sleep(1 * time.Second)
-			}
-
-			if tc.postUpstreamFunc != nil {
-				tc.postUpstreamFunc()
 			}
 
 			//////
@@ -371,10 +331,6 @@ func TestNewProxy(t *testing.T) { //nolint // FIXME cognitive complexity 88 of f
 
 			if statusCode != http.StatusOK {
 				t.Fatal("Expected status code to be OK")
-			}
-
-			if tc.postFunc != nil {
-				tc.postFunc()
 			}
 		})
 	}
