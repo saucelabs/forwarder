@@ -5,11 +5,9 @@
 package forwarder
 
 import (
-	"context"
 	"crypto/subtle"
 	"crypto/tls"
 	"fmt"
-	"github.com/saucelabs/customerror"
 	"net"
 	"net/http"
 	"net/http/httputil"
@@ -137,6 +135,13 @@ func NewProxy(cfg ProxyConfig, log Logger) (*Proxy, error) {
 	return p, nil
 }
 
+func (p *Proxy) setupDNS() {
+	d := net.Dialer{
+		Timeout: DNSTimeout,
+	}
+	setupDNS(p.config.DNSURIs, &d, p.log)
+}
+
 func (p *Proxy) setupProxy() {
 	p.proxy.Logger = goproxyLogger{p.log}
 	p.proxy.Verbose = true
@@ -199,54 +204,6 @@ func resetUpstreamSettings(ctx *goproxy.ProxyCtx) {
 		},
 		Proxy: nil,
 	}
-}
-
-// Sets the default DNS.
-func (p *Proxy) setupDNS() error {
-	net.DefaultResolver = &net.Resolver{
-		PreferGo: true,
-		Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
-			d := net.Dialer{Timeout: DNSTimeout}
-
-			var finalConn net.Conn
-			var finalError error
-
-			for i := 0; i < len(p.config.DNSURIs); i++ {
-				parsedDNSURI := p.config.DNSURIs[i]
-
-				c, err := d.DialContext(ctx, parsedDNSURI.Scheme, parsedDNSURI.Host)
-
-				finalConn = c
-				finalError = err
-
-				if err != nil {
-					errMsg := fmt.Sprintf("dial to DNS @ %s", parsedDNSURI.String())
-
-					p.log.Debugf(customerror.NewFailedToError(errMsg, customerror.WithError(err)).Error())
-				} else {
-					p.log.Debugf("Request resolved by DNS @ %s", parsedDNSURI)
-
-					break
-				}
-			}
-
-			if finalError != nil {
-				ErrAllDNSResolversFailed := customerror.New(
-					"All DNS resolvers failed",
-					customerror.WithStatusCode(http.StatusInternalServerError),
-					customerror.WithError(finalError),
-				)
-
-				p.log.Debugf("error %s", ErrAllDNSResolversFailed)
-
-				return finalConn, ErrAllDNSResolversFailed
-			}
-
-			return finalConn, nil
-		},
-	}
-
-	return nil
 }
 
 // Returns `true` if should NOT proxy connections to any upstream proxy.
