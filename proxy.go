@@ -9,16 +9,15 @@ import (
 	"crypto/subtle"
 	"crypto/tls"
 	"fmt"
+	"github.com/saucelabs/customerror"
 	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
-	"strings"
 	"time"
 
 	"github.com/elazarl/goproxy"
 	"github.com/elazarl/goproxy/ext/auth"
-	"github.com/saucelabs/customerror"
 	"github.com/saucelabs/forwarder/validation"
 	"github.com/saucelabs/pacman"
 )
@@ -40,63 +39,48 @@ const (
 	PAC      Mode = "PAC"
 )
 
-var (
-	ErrInvalidDNSURI           = customerror.NewInvalidError("dns URI")
-	ErrInvalidLocalProxyURI    = customerror.NewInvalidError("local proxy URI")
-	ErrInvalidPACProxyURI      = customerror.NewInvalidError("PAC proxy URI")
-	ErrInvalidPACURI           = customerror.NewInvalidError("PAC URI")
-	ErrInvalidUpstreamProxyURI = customerror.NewInvalidError("upstream proxy URI")
-)
-
 // ProxyConfig definition.
 type ProxyConfig struct {
-	// LocalProxyURI is the local proxy URI:
-	// - Known schemes: http, https, socks, socks5, or quic
-	// - Some hostname (x.io - min 4 chars), or IP
-	// - Port in a valid range: 80 - 65535.
-	// Example: http://127.0.0.1:8080
-	LocalProxyURI string `json:"local_proxy_uri" validate:"required,proxyURI"`
+	// LocalProxyURI is the local proxy URI, ex. http://user:password@127.0.0.1:8080.
+	// Requirements:
+	// - Known schemes: http, https, socks, socks5, or quic.
+	// - Hostname or IP.
+	// - Port in a valid range: 1 - 65535.
+	// - Username and password are optional.
+	LocalProxyURI *url.URL `json:"local_proxy_uri"`
 
-	// LocalProxyAuth is the local proxy basic auth in the form of username:password.
-	LocalProxyAuth string `json:"local_proxy_auth" validate:"omitempty,basicAuth"`
+	// UpstreamProxyURI is the upstream proxy URI, ex. http://user:password@127.0.0.1:8080.
+	// Only one of `UpstreamProxyURI` or `PACURI` can be set.
+	// Requirements:
+	// - Known schemes: http, https, socks, socks5, or quic.
+	// - Hostname or IP.
+	// - Port in a valid range: 1 - 65535.
+	// - Username and password are optional.
+	UpstreamProxyURI *url.URL `json:"upstream_proxy_uri"`
 
-	// UpstreamProxyURI is the upstream proxy URI:
-	// - Known schemes: http, https, socks, socks5, or quic
-	// - Some hostname (x.io - min 4 chars), or IP
-	// - Port in a valid range: 80 - 65535.
-	// Example: http://u456:p456@127.0.0.1:8085
-	UpstreamProxyURI string `json:"upstream_proxy_uri" validate:"omitempty,proxyURI,excluded_with=PACURI"`
-
-	// UpstreamProxyAuth is the upstream proxy basic auth in the form of username:password.
-	UpstreamProxyAuth string `json:"upstream_proxy_auth" validate:"omitempty,basicAuth"`
-
-	// PACURI is the PAC URI:
-	// - Known schemes: http, https, socks, socks5, or quic
-	// - Some hostname (x.io - min 4 chars), or IP
-	// - Port in a valid range: 80 - 65535.
-	// Example: http://127.0.0.1:8087/data.pac
-	PACURI string `json:"pac_uri" validate:"omitempty,proxyURI,excluded_with=UpstreamProxyURI"`
+	// PACURI is the PAC URI, which is used to determine the upstream proxy, ex. http://127.0.0.1:8087/data.pac.
+	// Only one of `UpstreamProxyURI` or `PACURI` can be set.
+	PACURI *url.URL `json:"pac_uri"`
 
 	// Credentials for proxies specified in PAC content.
-	PACProxiesCredentials []string
+	PACProxiesCredentials []string `json:"pac_proxies_credentials"`
 
-	// DNSURIs are DNS URIs:
-	// - Known protocol: udp, tcp
-	// - Some hostname (x.io - min 4 chars), or IP
-	// - Port in a valid range: 53 - 65535.
-	// Example: udp://10.0.0.3:53
-	DNSURIs []string `json:"dns_uris" validate:"omitempty,dive,dnsURI"`
+	// DNSURIs are DNS URIs, ex. udp://1.1.1.1:53.
+	// Requirements:
+	// - Known schemes: udp, tcp
+	// - IP ONLY.
+	// - Port in a valid range: 1 - 65535.
+	DNSURIs []*url.URL `json:"dns_uris"`
 
-	// ProxyLocalhost if `true`, requests to `localhost`/`127.0.0.1` will be
-	// forwarded to any upstream - if set.
-	ProxyLocalhost bool
+	// ProxyLocalhost if `true`, requests to `localhost`, `127.0.0.*`, `0:0:0:0:0:0:0:1` will be forwarded to upstream.
+	ProxyLocalhost bool `json:"proxy_localhost"`
 
-	// SiteCredentials contains URLs with the credentials, for example:
+	// SiteCredentials contains URLs with the credentials, ex.:
 	// - https://usr1:pwd1@foo.bar:4443
 	// - http://usr2:pwd2@bar.foo:8080
 	// - usr3:pwd3@bar.foo:8080
 	// Proxy will add basic auth headers for requests to these URLs.
-	SiteCredentials []string `json:"site_credentials" validate:"omitempty"`
+	SiteCredentials []string `json:"site_credentials"`
 }
 
 func (c *ProxyConfig) Clone() ProxyConfig {
@@ -110,58 +94,51 @@ func (c *ProxyConfig) Validate() error {
 	return v.Struct(c)
 }
 
-// Proxy definition. Proxy can be protected, or not. It can forward connections
-// to an upstream proxy protected, or not. The upstream proxy can be
-// automatically setup via PAC. PAC content can be retrieved from multiple
-// sources, e.g.: a HTTP server, also, protected or not.
-//
-// Protection means basic auth protection.
+// Proxy definition. Proxy can be protected, or not.
+// It can forward connections to an upstream proxy protected, or not.
+// The upstream proxy can be automatically setup via PAC.
+// PAC content can be retrieved from multiple sources, e.g.: a HTTP server, also, protected or not.
+// Protection means basic auth.
 type Proxy struct {
-	config ProxyConfig
-
-	// Parsed local proxy URI.
-	parsedLocalProxyURI *url.URL
-
-	// Parsed upstream proxy URI.
-	parsedUpstreamProxyURI *url.URL
-
-	// PAC parser implementation.
+	config    ProxyConfig
+	userInfo  *userInfoMatcher
 	pacParser *pacman.Parser
-
-	// credentials for passing basic authentication to requests
-	creds *userInfoMatcher
-
-	// Underlying proxy implementation.
-	proxy *goproxy.ProxyHttpServer
-
-	log Logger
+	proxy     *goproxy.ProxyHttpServer
+	log       Logger
 }
 
-func NewProxy(cfg ProxyConfig, log Logger) (*Proxy, error) { //nolint // FIXME Function 'NewProxy' has too many statements (67 > 40) (funlen)
+func NewProxy(cfg ProxyConfig, log Logger) (*Proxy, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, err
 	}
 
-	p := &Proxy{
-		config: cfg.Clone(),
-		log:    log,
-	}
-
 	// Parse site credential list into map of host:port -> base64 encoded input.
-	creds, err := newUserInfoMatcher(cfg.SiteCredentials, log)
+	m, err := newUserInfoMatcher(cfg.SiteCredentials, log)
 	if err != nil {
 		return nil, fmt.Errorf("parse credentials: %w", err)
 	}
-	p.creds = creds
 
-	//////
-	// Underlying proxy implementation setup.
-	//////
+	p := &Proxy{
+		config:   cfg.Clone(),
+		userInfo: m,
+		proxy:    goproxy.NewProxyHttpServer(),
+		log:      log,
+	}
+	if p.config.PACURI != nil {
+		pacParser, err := pacman.New(p.config.PACURI.String(), p.config.PACProxiesCredentials...)
+		if err != nil {
+			return nil, fmt.Errorf("pac parser: %w", err)
+		}
+		p.pacParser = pacParser
+	}
+	p.setupDNS()
+	p.setupProxy()
 
-	// Instantiate underlying proxy implementation. It can be abstracted in the
-	// future to allow easy swapping.
-	p.proxy = goproxy.NewProxyHttpServer()
-	p.proxy.Logger = goproxyLogger{log}
+	return p, nil
+}
+
+func (p *Proxy) setupProxy() {
+	p.proxy.Logger = goproxyLogger{p.log}
 	p.proxy.Verbose = true
 	p.proxy.KeepDestinationHeaders = true
 	// This is required.
@@ -170,64 +147,14 @@ func NewProxy(cfg ProxyConfig, log Logger) (*Proxy, error) { //nolint // FIXME F
 	// See: https://github.com/golang/go/issues/28866
 	// See: https://github.com/elazarl/goproxy/issues/306
 	p.proxy.KeepHeader = true
-
-	//////
-	// DNS.
-	//////
-
-	if p.config.DNSURIs != nil {
-		if err := p.setupDNS(); err != nil {
-			return nil, err
-		}
-	}
-
-	//////
-	// Local proxy setup.
-	//////
-
-	parsedLocalProxyURI, err := url.ParseRequestURI(p.config.LocalProxyURI)
-	if err != nil {
-		return nil, customerror.Wrap(ErrInvalidLocalProxyURI, err)
-	}
-	if p.config.LocalProxyAuth != "" {
-		u, p, _ := strings.Cut(p.config.LocalProxyAuth, ":") // Data is already validated to contain password.
-		parsedLocalProxyURI.User = url.UserPassword(u, p)
-	}
-
-	p.parsedLocalProxyURI = parsedLocalProxyURI
-	p.config.LocalProxyURI = parsedLocalProxyURI.String()
-
-	if p.config.UpstreamProxyURI != "" {
-		parsedUpstreamProxyURI, err := url.ParseRequestURI(p.config.UpstreamProxyURI)
-		if err != nil {
-			return nil, customerror.Wrap(ErrInvalidUpstreamProxyURI, err)
-		}
-		if p.config.UpstreamProxyAuth != "" {
-			u, p, _ := strings.Cut(p.config.UpstreamProxyAuth, ":") // Data is already validated to contain password.
-			parsedUpstreamProxyURI.User = url.UserPassword(u, p)
-		}
-
-		p.parsedUpstreamProxyURI = parsedUpstreamProxyURI
-		p.config.UpstreamProxyURI = parsedUpstreamProxyURI.String()
-	}
-
-	if p.config.PACURI != "" {
-		pacParser, err := pacman.New(p.config.PACURI, p.config.PACProxiesCredentials...)
-		if err != nil {
-			return nil, fmt.Errorf("pac parser: %w", err)
-		}
-		p.pacParser = pacParser
-	}
-
-	// Setup the request and response handlers
-	p.setupProxyHandlers()
+	p.proxy.Tr = &http.Transport{}
 
 	// Local proxy authentication.
-	if u := parsedLocalProxyURI.User; u.Username() != "" {
+	if u := p.config.LocalProxyURI.User; u.Username() != "" {
 		p.setupBasicAuth(u)
 	}
 
-	return p, nil
+	p.setupProxyHandlers()
 }
 
 // Config returns a copy of the proxy configuration.
@@ -238,9 +165,9 @@ func (p *Proxy) Config() ProxyConfig {
 // Mode returns mode of operation of the proxy as specified in the config.
 func (p *Proxy) Mode() Mode {
 	switch {
-	case p.config.UpstreamProxyURI != "":
+	case p.config.UpstreamProxyURI != nil:
 		return Upstream
-	case p.config.PACURI != "":
+	case p.config.PACURI != nil:
 		return PAC
 	default:
 		return Direct
@@ -276,16 +203,6 @@ func resetUpstreamSettings(ctx *goproxy.ProxyCtx) {
 
 // Sets the default DNS.
 func (p *Proxy) setupDNS() error {
-	parsedDNSURIs := make([]*url.URL, 0, len(p.config.DNSURIs))
-	for _, dnsURI := range p.config.DNSURIs {
-		parsedDNSURI, err := url.ParseRequestURI(dnsURI)
-		if err != nil {
-			return customerror.Wrap(ErrInvalidDNSURI, err)
-		}
-
-		parsedDNSURIs = append(parsedDNSURIs, parsedDNSURI)
-	}
-
 	net.DefaultResolver = &net.Resolver{
 		PreferGo: true,
 		Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
@@ -294,8 +211,8 @@ func (p *Proxy) setupDNS() error {
 			var finalConn net.Conn
 			var finalError error
 
-			for i := 0; i < len(parsedDNSURIs); i++ {
-				parsedDNSURI := parsedDNSURIs[i]
+			for i := 0; i < len(p.config.DNSURIs); i++ {
+				parsedDNSURI := p.config.DNSURIs[i]
 
 				c, err := d.DialContext(ctx, parsedDNSURI.Scheme, parsedDNSURI.Host)
 
@@ -407,7 +324,7 @@ func (p *Proxy) setupHandlers(ctx *goproxy.ProxyCtx) error {
 	case Direct:
 		// Do nothing
 	case Upstream:
-		p.setupUpstreamProxyConnection(ctx, p.parsedUpstreamProxyURI)
+		p.setupUpstreamProxyConnection(ctx, p.config.UpstreamProxyURI)
 	case PAC:
 		if err := setupPACUpstreamProxyConnection(p, ctx); err != nil {
 			return err
@@ -422,7 +339,7 @@ func (p *Proxy) setupBasicAuth(u *url.Userinfo) {
 	// TODO: Allows to set `realm`.
 	auth.ProxyBasic(p.proxy, "localhost", func(username, password string) (ok bool) {
 		defer func() {
-			p.log.Debugf("Incoming request. This proxy (%s) is protected authorized=%v", p.parsedLocalProxyURI.Redacted(), ok)
+			p.log.Debugf("Incoming request. This proxy (%s) is protected authorized=%v", p.config.LocalProxyURI.Redacted(), ok)
 		}()
 
 		pwd, _ := u.Password()
@@ -431,14 +348,14 @@ func (p *Proxy) setupBasicAuth(u *url.Userinfo) {
 			subtle.ConstantTimeCompare([]byte(pwd), []byte(password)) == 1
 	})
 
-	p.log.Debugf("Basic auth setup for proxy @ %s", p.parsedLocalProxyURI.Redacted())
+	p.log.Debugf("Basic auth setup for proxy @ %s", p.config.LocalProxyURI.Redacted())
 }
 
 // Run starts the proxy.
 // It's safe to call it multiple times - nothing will happen.
 func (p *Proxy) Run() error {
-	p.log.Infof("Listening on %s", p.parsedLocalProxyURI.Host)
-	if err := http.ListenAndServe(p.parsedLocalProxyURI.Host, p.proxy); err != nil { //nolint:gosec // FIXME https://github.com/saucelabs/forwarder/issues/45
+	p.log.Infof("Listening on %s", p.config.LocalProxyURI.Host)
+	if err := http.ListenAndServe(p.config.LocalProxyURI.Host, p.proxy); err != nil { //nolint:gosec // FIXME https://github.com/saucelabs/forwarder/issues/45
 		return fmt.Errorf("start proxy: %w", err)
 	}
 
@@ -517,7 +434,7 @@ func (p *Proxy) maybeAddAuthHeader(req *http.Request) {
 		}
 	}
 
-	if u := p.creds.Match(hostport); u != nil {
+	if u := p.userInfo.Match(hostport); u != nil {
 		req.Header.Set(authHeader, fmt.Sprintf("Basic %s", userInfoBase64(u)))
 	}
 }
