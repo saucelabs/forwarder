@@ -13,7 +13,6 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
-	"os"
 	"strings"
 	"time"
 
@@ -58,12 +57,18 @@ type ProxyConfig struct {
 	// Example: http://127.0.0.1:8080
 	LocalProxyURI string `json:"local_proxy_uri" validate:"required,proxyURI"`
 
+	// LocalProxyAuth is the local proxy basic auth in the form of username:password.
+	LocalProxyAuth string `json:"local_proxy_auth" validate:"omitempty,basicAuth"`
+
 	// UpstreamProxyURI is the upstream proxy URI:
 	// - Known schemes: http, https, socks, socks5, or quic
 	// - Some hostname (x.io - min 4 chars), or IP
 	// - Port in a valid range: 80 - 65535.
 	// Example: http://u456:p456@127.0.0.1:8085
 	UpstreamProxyURI string `json:"upstream_proxy_uri" validate:"omitempty,proxyURI,excluded_with=PACURI"`
+
+	// UpstreamProxyAuth is the upstream proxy basic auth in the form of username:password.
+	UpstreamProxyAuth string `json:"upstream_proxy_auth" validate:"omitempty,basicAuth"`
 
 	// PACURI is the PAC URI:
 	// - Known schemes: http, https, socks, socks5, or quic
@@ -184,10 +189,9 @@ func NewProxy(cfg ProxyConfig, log Logger) (*Proxy, error) { //nolint // FIXME F
 	if err != nil {
 		return nil, customerror.Wrap(ErrInvalidLocalProxyURI, err)
 	}
-
-	err = loadCredentialFromEnvVar("FORWARDER_LOCALPROXY_AUTH", parsedLocalProxyURI)
-	if err != nil {
-		return nil, err
+	if p.config.LocalProxyAuth != "" {
+		u, p, _ := strings.Cut(p.config.LocalProxyAuth, ":") // Data is already validated to contain password.
+		parsedLocalProxyURI.User = url.UserPassword(u, p)
 	}
 
 	p.parsedLocalProxyURI = parsedLocalProxyURI
@@ -198,10 +202,9 @@ func NewProxy(cfg ProxyConfig, log Logger) (*Proxy, error) { //nolint // FIXME F
 		if err != nil {
 			return nil, customerror.Wrap(ErrInvalidUpstreamProxyURI, err)
 		}
-
-		err = loadCredentialFromEnvVar("FORWARDER_UPSTREAMPROXY_AUTH", parsedUpstreamProxyURI)
-		if err != nil {
-			return nil, err
+		if p.config.UpstreamProxyAuth != "" {
+			u, p, _ := strings.Cut(p.config.UpstreamProxyAuth, ":") // Data is already validated to contain password.
+			parsedUpstreamProxyURI.User = url.UserPassword(u, p)
 		}
 
 		p.parsedUpstreamProxyURI = parsedUpstreamProxyURI
@@ -517,24 +520,4 @@ func (p *Proxy) maybeAddAuthHeader(req *http.Request) {
 	if u := p.creds.Match(hostport); u != nil {
 		req.Header.Set(authHeader, fmt.Sprintf("Basic %s", userInfoBase64(u)))
 	}
-}
-
-// loadCredentialFromEnvVar loads credentials from the env var, validate and set the URL's user:pwd.
-func loadCredentialFromEnvVar(envVar string, uri *url.URL) error {
-	credentialFromEnvVar := os.Getenv(envVar)
-
-	if credentialFromEnvVar != "" {
-		v := validation.Validator()
-		if err := v.Var(credentialFromEnvVar, "basicAuth"); err != nil {
-			errMsg := fmt.Sprintf("env var (%s)", envVar)
-
-			return customerror.NewInvalidError(errMsg, customerror.WithError(err))
-		}
-
-		cred := strings.Split(credentialFromEnvVar, ":")
-
-		uri.User = url.UserPassword(cred[0], cred[1])
-	}
-
-	return nil
 }
