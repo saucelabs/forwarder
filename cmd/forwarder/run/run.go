@@ -5,16 +5,27 @@
 package run
 
 import (
+	"github.com/mmatczuk/anyflag"
 	"github.com/saucelabs/forwarder"
 	"github.com/spf13/cobra"
+	"net/url"
 )
 
 type command struct {
-	proxyConfig forwarder.ProxyConfig
-	logConfig   logConfig
+	proxyConfig       forwarder.ProxyConfig
+	localProxyAuth    *url.Userinfo
+	upstreamProxyAuth *url.Userinfo
+	logConfig         logConfig
 }
 
 func (c *command) RunE(cmd *cobra.Command, args []string) error {
+	if c.localProxyAuth != nil && c.proxyConfig.LocalProxyURI != nil {
+		c.proxyConfig.LocalProxyURI.User = c.localProxyAuth
+	}
+	if c.upstreamProxyAuth != nil && c.proxyConfig.UpstreamProxyURI != nil {
+		c.proxyConfig.UpstreamProxyURI.User = c.upstreamProxyAuth
+	}
+
 	p, err := forwarder.NewProxy(c.proxyConfig, newLogger(c.logConfig))
 	if err != nil {
 		return err
@@ -96,12 +107,12 @@ func Command() (cmd *cobra.Command) {
 	defer func() {
 		fs := cmd.Flags()
 
-		fs.StringVarP(&c.proxyConfig.LocalProxyURI, "local-proxy-uri", "l", "http://localhost:8080", "sets local proxy URI")
-		fs.StringVar(&c.proxyConfig.LocalProxyAuth, "local-proxy-auth", "", "sets local proxy basic auth in the form of username:password")
-		fs.StringVarP(&c.proxyConfig.UpstreamProxyURI, "upstream-proxy-uri", "u", "", "sets upstream proxy URI")
-		fs.StringVar(&c.proxyConfig.UpstreamProxyAuth, "upstream-proxy-auth", "", "sets upstream proxy basic auth in the form of username:password")
-		fs.StringSliceVarP(&c.proxyConfig.DNSURIs, "dns-uri", "n", nil, "sets dns URI")
-		fs.StringVarP(&c.proxyConfig.PACURI, "pac-uri", "p", "", "sets URI to PAC content, or directly, the PAC content")
+		fs.VarP(anyflag.NewValue[*url.URL](&url.URL{Scheme: "http", Host: "localhost:8080"}, &c.proxyConfig.LocalProxyURI, parseProxyURI), "local-proxy-uri", "l", "sets local proxy URI")
+		fs.VarP(anyflag.NewValue[*url.Userinfo](nil, &c.localProxyAuth, parseBasicAuth), "local-proxy-auth", "", "sets local proxy basic auth in the form of username:password")
+		fs.VarP(anyflag.NewValue[*url.URL](nil, &c.proxyConfig.UpstreamProxyURI, parseProxyURI), "upstream-proxy-uri", "u", "sets upstream proxy URI")
+		fs.VarP(anyflag.NewValue[*url.Userinfo](nil, &c.upstreamProxyAuth, parseBasicAuth), "upstream-proxy-auth", "", "sets upstream proxy basic auth in the form of username:password")
+		fs.VarP(anyflag.NewSliceValue[*url.URL](nil, &c.proxyConfig.DNSURIs, parseDNSURI), "dns-uri", "n", "sets dns URI")
+		fs.VarP(anyflag.NewValue[*url.URL](nil, &c.proxyConfig.PACURI, url.ParseRequestURI), "pac-uri", "p", "sets URI to PAC content, or directly, the PAC content")
 		fs.StringSliceVarP(&c.proxyConfig.PACProxiesCredentials, "pac-proxies-credentials", "d", nil, "sets PAC proxies credentials using standard URI format")
 		fs.StringSliceVar(&c.proxyConfig.SiteCredentials, "site-credentials", nil, "sets target site credentials")
 		fs.BoolVarP(&c.proxyConfig.ProxyLocalhost, "proxy-localhost", "t", false, "if set, will proxy localhost requests to an upstream proxy - if any")
