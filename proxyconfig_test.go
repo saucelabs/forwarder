@@ -128,6 +128,55 @@ func TestParseUserInfo(t *testing.T) {
 	}
 }
 
+func TestParseProxyURI(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		err   string
+	}{
+		{
+			name:  "normal",
+			input: "http://192.188.1.100:8080",
+		},
+		{
+			name:  "invalid scheme",
+			input: "tcp://192.188.1.100:8080",
+			err:   "invalid scheme",
+		},
+		{
+			name:  "no port",
+			input: "http://192.188.1.100",
+			err:   "port is required",
+		},
+		{
+			name:  "port 0",
+			input: "http://192.188.1.100:0",
+			err:   "invalid port: 0",
+		},
+		{
+			name:  "host too short",
+			input: "http://foo:8080",
+			err:   "invalid host",
+		},
+	}
+
+	for i := range tests {
+		tc := &tests[i]
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := ParseProxyURI(tc.input)
+			if err != nil {
+				if tc.err == "" {
+					t.Fatalf("expected success, got %q", err)
+				}
+				if !strings.Contains(err.Error(), tc.err) {
+					t.Fatalf("expected error to contain %q, got %q", tc.err, err)
+				}
+				return
+			}
+		})
+	}
+}
+
 func TestParseDNSURIDefaults(t *testing.T) {
 	u, err := ParseDNSURI("1.1.1.1")
 	if err != nil {

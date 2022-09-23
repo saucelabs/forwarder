@@ -47,6 +47,7 @@ linters-settings:
 issues:
   exclude:
     - "can be `fmt.Stringer`"
+    - "string `https?` has \\d+ occurrences"
 
   exclude-rules:
     - path: cmd/
