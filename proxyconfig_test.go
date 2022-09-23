@@ -76,6 +76,58 @@ func TestProxyConfigValidate(t *testing.T) {
 	}
 }
 
+func TestParseUserInfo(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		err   string
+	}{
+		{
+			name:  "normal",
+			input: "user:pass",
+		},
+		{
+			name:  "no password",
+			input: "user",
+			err:   "expected username:password",
+		},
+		{
+			name:  "empty password",
+			input: "user:",
+			err:   "password cannot be empty",
+		},
+		{
+			name:  "no user",
+			input: ":pass",
+			err:   "username cannot be empty",
+		},
+		{
+			name:  "empty",
+			input: "",
+		},
+	}
+
+	for i := range tests {
+		tc := &tests[i]
+		t.Run(tc.name, func(t *testing.T) {
+			ui, err := ParseUserInfo(tc.input)
+			if err != nil {
+				if tc.err == "" {
+					t.Fatalf("expected success, got %q", err)
+				}
+				if !strings.Contains(err.Error(), tc.err) {
+					t.Fatalf("expected error to contain %q, got %q", tc.err, err)
+				}
+				return
+			}
+
+			if ui.String() != tc.input {
+				t.Errorf("expected %q, got %q", tc.input, ui.String())
+			}
+		})
+	}
+}
+
 func TestParseDNSURIDefaults(t *testing.T) {
 	u, err := ParseDNSURI("1.1.1.1")
 	if err != nil {

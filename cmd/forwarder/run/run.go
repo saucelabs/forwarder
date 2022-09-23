@@ -109,9 +109,9 @@ func Command() (cmd *cobra.Command) {
 		fs := cmd.Flags()
 
 		fs.VarP(anyflag.NewValue[*url.URL](&url.URL{Scheme: "http", Host: "localhost:8080"}, &c.proxyConfig.LocalProxyURI, parseProxyURI), "local-proxy-uri", "l", "sets local proxy URI")
-		fs.VarP(anyflag.NewValue[*url.Userinfo](nil, &c.localProxyAuth, parseBasicAuth), "local-proxy-auth", "", "sets local proxy basic auth in the form of username:password")
+		fs.VarP(anyflag.NewValue[*url.Userinfo](nil, &c.localProxyAuth, forwarder.ParseUserInfo), "local-proxy-auth", "", "sets local proxy basic auth in the form of username:password")
 		fs.VarP(anyflag.NewValue[*url.URL](nil, &c.proxyConfig.UpstreamProxyURI, parseProxyURI), "upstream-proxy-uri", "u", "sets upstream proxy URI")
-		fs.VarP(anyflag.NewValue[*url.Userinfo](nil, &c.upstreamProxyAuth, parseBasicAuth), "upstream-proxy-auth", "", "sets upstream proxy basic auth in the form of username:password")
+		fs.VarP(anyflag.NewValue[*url.Userinfo](nil, &c.upstreamProxyAuth, forwarder.ParseUserInfo), "upstream-proxy-auth", "", "sets upstream proxy basic auth in the form of username:password")
 		fs.VarP(anyflag.NewSliceValue[*url.URL](nil, &c.proxyConfig.DNSURIs, forwarder.ParseDNSURI), "dns-uri", "n", "sets dns URI")
 		fs.VarP(anyflag.NewValue[*url.URL](nil, &c.proxyConfig.PACURI, url.ParseRequestURI), "pac-uri", "p", "sets URI to PAC content, or directly, the PAC content")
 		fs.StringSliceVarP(&c.proxyConfig.PACProxiesCredentials, "pac-proxies-credentials", "d", nil, "sets PAC proxies credentials using standard URI format")
