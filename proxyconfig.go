@@ -1,7 +1,10 @@
 package forwarder
 
 import (
+	"fmt"
+	"net"
 	"net/url"
+	"strconv"
 
 	"github.com/saucelabs/forwarder/validation"
 )
@@ -50,7 +53,7 @@ type ProxyConfig struct {
 	SiteCredentials []string `json:"site_credentials"`
 }
 
-func (c *ProxyConfig) Clone() ProxyConfig {
+func (c *ProxyConfig) Clone() *ProxyConfig {
 	v := new(ProxyConfig)
 	deepCopy(v, c)
 	return v
@@ -59,4 +62,66 @@ func (c *ProxyConfig) Clone() ProxyConfig {
 func (c *ProxyConfig) Validate() error {
 	v := validation.Validator()
 	return v.Struct(c)
+}
+
+// ParseDNSURI parses a DNS URI as a URL.
+// It supports IP only or full URL.
+// Hostname is not allowed.
+// Examples: `udp://1.1.1.1:53`, `1.1.1.1`.
+//
+// Requirements:
+// - (Optional) protocol: udp, tcp (default upd)
+// - Only IP not a hostname.
+// - (Optional) port in a valid range: 1 - 65535 (default 53).
+// - No username and password.
+// - No path, query, and fragment.
+func ParseDNSURI(val string) (*url.URL, error) {
+	u, err := url.Parse(val)
+	if err != nil {
+		return nil, err
+	}
+	if u.Host == "" {
+		*u = url.URL{Host: val}
+	}
+	if u.Scheme == "" {
+		u.Scheme = "udp"
+	}
+	if u.Port() == "" {
+		u.Host += ":53"
+	}
+	if err := validateDNSURI(u); err != nil {
+		return nil, err
+	}
+
+	return u, nil
+}
+
+func validateDNSURI(u *url.URL) error {
+	if u.Scheme != "udp" && u.Scheme != "tcp" {
+		return fmt.Errorf("invalid protocol: %s, supported protocols are upd and tcp", u.Scheme)
+	}
+	if net.ParseIP(u.Hostname()) == nil {
+		return fmt.Errorf("invalid hostname: %s DNS must be an IP address", u.Hostname())
+	}
+	if !isPort(u.Port()) {
+		return fmt.Errorf("invalid port: %s", u.Port())
+	}
+	if u.User != nil {
+		return fmt.Errorf("username and password are not allowed in DNS URI")
+	}
+	if u.Path != "" || u.RawQuery != "" || u.Fragment != "" {
+		return fmt.Errorf("path, query, and fragment are not allowed in DNS URI")
+	}
+
+	return nil
+}
+
+// isPort returns true iff port string is a valid port number.
+func isPort(port string) bool {
+	p, err := strconv.Atoi(port)
+	if err != nil {
+		return false
+	}
+
+	return p >= 1 && p <= 65535
 }
