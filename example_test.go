@@ -110,7 +110,7 @@ func ExampleNew() {
 		PACURI:                pacServerURI,
 		PACProxiesCredentials: []string{upstreamProxyURI.String()},
 	}
-	localProxy, err := NewProxy(c, log)
+	localProxy, err := NewProxy(&c, log)
 	if err != nil {
 		panic(err)
 	}
@@ -124,7 +124,7 @@ func ExampleNew() {
 	// Upstream Proxy.
 	//////
 
-	upstreamProxy, err := NewProxy(ProxyConfig{LocalProxyURI: upstreamProxyURI}, log)
+	upstreamProxy, err := NewProxy(&ProxyConfig{LocalProxyURI: upstreamProxyURI}, log)
 	if err != nil {
 		panic(err)
 	}

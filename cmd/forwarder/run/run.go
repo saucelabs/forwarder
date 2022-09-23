@@ -26,7 +26,7 @@ func (c *command) RunE(cmd *cobra.Command, args []string) error {
 		c.proxyConfig.UpstreamProxyURI.User = c.upstreamProxyAuth
 	}
 
-	p, err := forwarder.NewProxy(c.proxyConfig, newLogger(c.logConfig))
+	p, err := forwarder.NewProxy(&c.proxyConfig, newLogger(c.logConfig))
 	if err != nil {
 		return err
 	}

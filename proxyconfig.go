@@ -51,8 +51,8 @@ type ProxyConfig struct {
 }
 
 func (c *ProxyConfig) Clone() ProxyConfig {
-	var v ProxyConfig
-	deepCopy(&v, c)
+	v := new(ProxyConfig)
+	deepCopy(v, c)
 	return v
 }
 
