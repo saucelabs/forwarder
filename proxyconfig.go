@@ -98,6 +98,47 @@ func validatedUserInfo(ui *url.Userinfo) error {
 	return nil
 }
 
+// ParseProxyURI parser a Proxy URI as URL
+//
+// Requirements:
+// - Protocol: http, https, socks5, socks, quic.
+// - Hostname min 4 chars.
+// - Port in a valid range: 1 - 65535.
+// - (Optional) username and password.
+func ParseProxyURI(val string) (*url.URL, error) {
+	u, err := url.Parse(val)
+	if err != nil {
+		return nil, err
+	}
+	if err := validateProxyURI(u); err != nil {
+		return nil, err
+	}
+
+	return u, nil
+}
+
+const minHostLength = 4
+
+func validateProxyURI(u *url.URL) error {
+	if u.Scheme != "http" && u.Scheme != "https" && u.Scheme != "socks5" && u.Scheme != "socks" && u.Scheme != "quic" {
+		return fmt.Errorf("invalid scheme %q", u.Scheme)
+	}
+	if len(u.Hostname()) < minHostLength {
+		return fmt.Errorf("invalid hostname: %s is too short", u.Hostname())
+	}
+	if u.Port() == "" {
+		return fmt.Errorf("port is required")
+	}
+	if !isPort(u.Port()) {
+		return fmt.Errorf("invalid port: %s", u.Port())
+	}
+	if err := validatedUserInfo(u.User); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // ParseDNSURI parses a DNS URI as URL.
 // It supports IP only or full URL.
 // Hostname is not allowed.
