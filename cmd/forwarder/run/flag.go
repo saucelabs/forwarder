@@ -17,7 +17,3 @@ func parseBasicAuth(val string) (*url.Userinfo, error) {
 func parseProxyURI(val string) (*url.URL, error) {
 	return url.ParseRequestURI(val)
 }
-
-func parseDNSURI(val string) (*url.URL, error) {
-	return url.ParseRequestURI(val)
-}
