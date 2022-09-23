@@ -50,9 +50,8 @@ issues:
     - "string `https?` has \\d+ occurrences"
 
   exclude-rules:
-    - path: cmd/
+    - path: cmd/forwarder/version/version.go
       linters:
-        - gochecknoinits
         - gochecknoglobals
 
     - path: _test\.go
