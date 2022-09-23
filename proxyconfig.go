@@ -5,6 +5,7 @@ import (
 	"net"
 	"net/url"
 	"strconv"
+	"strings"
 
 	"github.com/saucelabs/forwarder/validation"
 )
@@ -64,7 +65,40 @@ func (c *ProxyConfig) Validate() error {
 	return v.Struct(c)
 }
 
-// ParseDNSURI parses a DNS URI as a URL.
+// ParseUserInfo parses a user:password string into *url.Userinfo.
+// Username and password cannot be empty.
+func ParseUserInfo(val string) (*url.Userinfo, error) {
+	if val == "" {
+		return nil, nil //nolint:nilnil // nil is a valid value for Userinfo in URL
+	}
+
+	u, p, ok := strings.Cut(val, ":")
+	if !ok {
+		return nil, fmt.Errorf("expected username:password")
+	}
+	ui := url.UserPassword(u, p)
+	if err := validatedUserInfo(ui); err != nil {
+		return nil, err
+	}
+
+	return ui, nil
+}
+
+func validatedUserInfo(ui *url.Userinfo) error {
+	if ui == nil {
+		return nil
+	}
+	if ui.Username() == "" {
+		return fmt.Errorf("username cannot be empty")
+	}
+	if p, _ := ui.Password(); p == "" {
+		return fmt.Errorf("password cannot be empty")
+	}
+
+	return nil
+}
+
+// ParseDNSURI parses a DNS URI as URL.
 // It supports IP only or full URL.
 // Hostname is not allowed.
 // Examples: `udp://1.1.1.1:53`, `1.1.1.1`.
