@@ -128,6 +128,8 @@ func Command() (cmd *cobra.Command) {
 		fs.StringVar(&c.logConfig.Level, "log-level", c.logConfig.Level, "sets the log level")
 		fs.StringVar(&c.logConfig.FileLevel, "log-file-level", c.logConfig.FileLevel, "sets the log file level")
 		fs.StringVar(&c.logConfig.FilePath, "log-file-path", c.logConfig.FilePath, "sets the log file path")
+
+		cmd.MarkFlagsMutuallyExclusive("upstream-proxy-uri", "pac-uri")
 	}()
 	return &cobra.Command{
 		Use:     "run",
