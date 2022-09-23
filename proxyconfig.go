@@ -6,8 +6,6 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
-
-	"github.com/saucelabs/forwarder/validation"
 )
 
 // ProxyConfig definition.
@@ -61,8 +59,28 @@ func (c *ProxyConfig) Clone() *ProxyConfig {
 }
 
 func (c *ProxyConfig) Validate() error {
-	v := validation.Validator()
-	return v.Struct(c)
+	if c.LocalProxyURI == nil {
+		return fmt.Errorf("local_proxy_uri is required")
+	}
+	if err := validateProxyURI(c.LocalProxyURI); err != nil {
+		return fmt.Errorf("local_proxy_uri: %w", err)
+	}
+	if err := validateProxyURI(c.UpstreamProxyURI); err != nil {
+		return fmt.Errorf("upstream_proxy_uri: %w", err)
+	}
+	if err := validateProxyURI(c.PACURI); err != nil {
+		return fmt.Errorf("pac_uri: %w", err)
+	}
+	if c.UpstreamProxyURI != nil && c.PACURI != nil {
+		return fmt.Errorf("only one of upstream_proxy_uri or pac_uri can be set")
+	}
+	for i, u := range c.DNSURIs {
+		if err := validateDNSURI(u); err != nil {
+			return fmt.Errorf("dns_uris[%d]: %w", i, err)
+		}
+	}
+
+	return nil
 }
 
 // ParseUserInfo parses a user:password string into *url.Userinfo.
@@ -120,6 +138,9 @@ func ParseProxyURI(val string) (*url.URL, error) {
 const minHostLength = 4
 
 func validateProxyURI(u *url.URL) error {
+	if u == nil {
+		return nil
+	}
 	if u.Scheme != "http" && u.Scheme != "https" && u.Scheme != "socks5" && u.Scheme != "socks" && u.Scheme != "quic" {
 		return fmt.Errorf("invalid scheme %q", u.Scheme)
 	}
@@ -145,7 +166,7 @@ func validateProxyURI(u *url.URL) error {
 // Examples: `udp://1.1.1.1:53`, `1.1.1.1`.
 //
 // Requirements:
-// - (Optional) protocol: udp, tcp (default upd)
+// - (Optional) protocol: udp, tcp (default udp)
 // - Only IP not a hostname.
 // - (Optional) port in a valid range: 1 - 65535 (default 53).
 // - No username and password.
@@ -173,7 +194,7 @@ func ParseDNSURI(val string) (*url.URL, error) {
 
 func validateDNSURI(u *url.URL) error {
 	if u.Scheme != "udp" && u.Scheme != "tcp" {
-		return fmt.Errorf("invalid protocol: %s, supported protocols are upd and tcp", u.Scheme)
+		return fmt.Errorf("invalid protocol: %s, supported protocols are udp and tcp", u.Scheme)
 	}
 	if net.ParseIP(u.Hostname()) == nil {
 		return fmt.Errorf("invalid hostname: %s DNS must be an IP address", u.Hostname())

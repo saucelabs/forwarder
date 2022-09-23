@@ -7,7 +7,10 @@ import (
 )
 
 func TestProxyConfigValidate(t *testing.T) {
-	emptyURI := &url.URL{}
+	var (
+		validURL = newProxyURL(80, localProxyCredentialUsername, localProxyCredentialPassword)
+		emptyURL = &url.URL{}
+	)
 
 	tests := []struct {
 		name   string
@@ -15,62 +18,61 @@ func TestProxyConfigValidate(t *testing.T) {
 		err    string
 	}{
 		{
-			name: "Valid",
+			name: "normal",
 			config: ProxyConfig{
-				LocalProxyURI: newProxyURL(80, localProxyCredentialUsername, localProxyCredentialPassword),
+				LocalProxyURI: validURL,
 			},
 		},
 		{
-			name: "Both upstream and PAC are set",
+			name: "both upstream and PAC are set",
 			config: ProxyConfig{
-				LocalProxyURI:    newProxyURL(80, localProxyCredentialUsername, localProxyCredentialPassword),
+				LocalProxyURI:    validURL,
 				UpstreamProxyURI: newProxyURL(80, upstreamProxyCredentialUsername, upstreamProxyCredentialPassword),
 				PACURI:           newProxyURL(80, "", ""),
 			},
-			err: "excluded_with",
+			err: "only one of upstream_proxy_uri or pac_uri can be set",
 		},
 		{
-			name: "Missing local proxy URI",
-			err:  "required",
+			name: "missing local proxy URI",
+			err:  "local_proxy_uri is required",
 		},
 		{
-			name: "Invalid local proxy URI",
+			name: "invalid local proxy URI",
 			config: ProxyConfig{
-				LocalProxyURI: emptyURI,
+				LocalProxyURI: emptyURL,
 			},
-			err: "proxyURI",
+			err: "local_proxy_uri: invalid scheme",
 		},
 		{
-			name: "Invalid upstream proxy URI",
+			name: "invalid upstream proxy URI",
 			config: ProxyConfig{
-				LocalProxyURI:    newProxyURL(80, "", ""),
-				UpstreamProxyURI: emptyURI,
+				LocalProxyURI:    validURL,
+				UpstreamProxyURI: emptyURL,
 			},
-			err: "proxyURI",
+			err: "upstream_proxy_uri: invalid scheme",
 		},
 		{
-			name: "Invalid PAC server URI",
+			name: "invalid PAC server URI",
 			config: ProxyConfig{
-				PACURI: emptyURI,
+				LocalProxyURI: validURL,
+				PACURI:        emptyURL,
 			},
-			err: "proxyURI",
+			err: "pac_uri: invalid scheme",
 		},
 	}
 
 	for i := range tests {
-		tc := tests[i]
+		tc := &tests[i]
 		t.Run(tc.name, func(t *testing.T) {
 			err := tc.config.Validate()
-			if err != nil && tc.err == "" {
-				t.Fatalf("Expected no error, got %s", err)
-			}
-
-			if err == nil && tc.err != "" {
-				t.Fatal("Expected error, got none")
-			}
-
-			if err != nil && tc.err != "" && !strings.Contains(err.Error(), tc.err) {
-				t.Fatalf("Expected error to contain %s, got %s", tc.err, err)
+			if err != nil {
+				if tc.err == "" {
+					t.Fatalf("expected success, got %q", err)
+				}
+				if !strings.Contains(err.Error(), tc.err) {
+					t.Fatalf("expected error to contain %q, got %q", tc.err, err)
+				}
+				return
 			}
 		})
 	}

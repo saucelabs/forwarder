@@ -5,7 +5,6 @@ go 1.19
 require (
 	github.com/elazarl/goproxy v0.0.0-20220529153421-8ea89ba92021
 	github.com/elazarl/goproxy/ext v0.0.0-20220529153421-8ea89ba92021
-	github.com/go-playground/validator/v10 v10.11.0
 	github.com/mmatczuk/anyflag v0.0.0-20220922124731-157cfae584dd
 	github.com/saucelabs/pacman v0.1.2
 	github.com/saucelabs/randomness v0.0.7
@@ -24,6 +23,7 @@ require (
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/go-playground/locales v0.14.0 // indirect
 	github.com/go-playground/universal-translator v0.18.0 // indirect
+	github.com/go-playground/validator/v10 v10.11.0 // indirect
 	github.com/go-sourcemap/sourcemap v2.1.3+incompatible // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
