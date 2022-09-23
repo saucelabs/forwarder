@@ -130,7 +130,7 @@ func TestNewProxy(t *testing.T) { //nolint // FIXME cognitive complexity 88 of f
 			// in the PAC content.
 			//////
 
-			localProxy, err := NewProxy(tc.config, namedStdLogger("local"))
+			localProxy, err := NewProxy(&tc.config, namedStdLogger("local"))
 			if err != nil {
 				t.Fatalf("NewProxy() error = %v", err)
 			}
@@ -143,7 +143,7 @@ func TestNewProxy(t *testing.T) { //nolint // FIXME cognitive complexity 88 of f
 			//////
 
 			if tc.config.UpstreamProxyURI != nil {
-				upstreamProxy, err := NewProxy(ProxyConfig{LocalProxyURI: tc.config.UpstreamProxyURI}, namedStdLogger("upstream"))
+				upstreamProxy, err := NewProxy(&ProxyConfig{LocalProxyURI: tc.config.UpstreamProxyURI}, namedStdLogger("upstream"))
 				if err != nil {
 					t.Fatalf("NewProxy() error = %v", err)
 				}
@@ -201,7 +201,7 @@ func BenchmarkNew(b *testing.B) {
 
 	localProxyURI := newProxyURL(r.MustGenerate(), "", "")
 
-	proxy, err := NewProxy(ProxyConfig{LocalProxyURI: localProxyURI}, nopLogger{})
+	proxy, err := NewProxy(&ProxyConfig{LocalProxyURI: localProxyURI}, nopLogger{})
 	if err != nil {
 		b.Fatal("Failed to create proxy.", err)
 	}

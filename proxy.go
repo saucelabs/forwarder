@@ -49,7 +49,9 @@ type Proxy struct {
 	log       Logger
 }
 
-func NewProxy(cfg ProxyConfig, log Logger) (*Proxy, error) {
+func NewProxy(cfg *ProxyConfig, log Logger) (*Proxy, error) {
+	cfg = cfg.Clone()
+
 	if err := cfg.Validate(); err != nil {
 		return nil, err
 	}
@@ -61,7 +63,7 @@ func NewProxy(cfg ProxyConfig, log Logger) (*Proxy, error) {
 	}
 
 	p := &Proxy{
-		config:   cfg.Clone(),
+		config:   *cfg,
 		userInfo: m,
 		proxy:    goproxy.NewProxyHttpServer(),
 		log:      log,
@@ -107,7 +109,7 @@ func (p *Proxy) setupProxy() {
 }
 
 // Config returns a copy of the proxy configuration.
-func (p *Proxy) Config() ProxyConfig {
+func (p *Proxy) Config() *ProxyConfig {
 	return p.config.Clone()
 }
 
