@@ -65,7 +65,6 @@ func NewProxy(cfg *ProxyConfig, log Logger) (*Proxy, error) {
 	p := &Proxy{
 		config:   *cfg,
 		userInfo: m,
-		proxy:    goproxy.NewProxyHttpServer(),
 		log:      log,
 	}
 	p.setupDNS()
@@ -91,6 +90,7 @@ func (p *Proxy) setupDNS() {
 }
 
 func (p *Proxy) setupProxy() {
+	p.proxy = goproxy.NewProxyHttpServer()
 	p.proxy.Logger = goproxyLogger{p.log}
 	p.proxy.Verbose = true
 	p.proxy.KeepDestinationHeaders = true
