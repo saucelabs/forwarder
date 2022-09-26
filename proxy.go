@@ -68,6 +68,8 @@ func NewProxy(cfg *ProxyConfig, log Logger) (*Proxy, error) {
 		proxy:    goproxy.NewProxyHttpServer(),
 		log:      log,
 	}
+	p.setupDNS()
+
 	if p.config.PACURI != nil {
 		pacParser, err := pacman.New(p.config.PACURI.String(), p.config.PACProxiesCredentials...)
 		if err != nil {
@@ -75,7 +77,7 @@ func NewProxy(cfg *ProxyConfig, log Logger) (*Proxy, error) {
 		}
 		p.pacParser = pacParser
 	}
-	p.setupDNS()
+
 	p.setupProxy()
 
 	return p, nil
