@@ -102,12 +102,32 @@ func (p *Proxy) setupProxy() {
 	p.proxy.KeepHeader = true
 	p.proxy.Tr = &http.Transport{}
 
-	// Local proxy authentication.
-	if u := p.config.LocalProxyURI.User; u.Username() != "" {
-		p.setupBasicAuth(u)
+	p.setupBasicAuth()
+	p.setupProxyHandlers()
+}
+
+// setupBasicAuth enables basic auth for the proxy.
+func (p *Proxy) setupBasicAuth() {
+	u := p.config.LocalProxyURI.User
+
+	if u == nil || u.Username() == "" {
+		return
 	}
 
-	p.setupProxyHandlers()
+	const realm = "Forwarder"
+
+	p.log.Infof("Basic auth enabled for realm %q and user %q", realm, u.Username())
+
+	auth.ProxyBasic(p.proxy, realm, func(username, password string) bool {
+		pwd, _ := u.Password()
+		// Securely compare passwords.
+		ok := subtle.ConstantTimeCompare([]byte(u.Username()), []byte(username)) == 1 &&
+			subtle.ConstantTimeCompare([]byte(pwd), []byte(password)) == 1
+		if !ok {
+			p.log.Infof("invalid credentials for %s", username)
+		}
+		return ok
+	})
 }
 
 // Config returns a copy of the proxy configuration.
@@ -237,23 +257,6 @@ func (p *Proxy) setupHandlers(ctx *goproxy.ProxyCtx) error {
 	}
 
 	return nil
-}
-
-// setupBasicAuth protects proxy with basic auth.
-func (p *Proxy) setupBasicAuth(u *url.Userinfo) {
-	// TODO: Allows to set `realm`.
-	auth.ProxyBasic(p.proxy, "localhost", func(username, password string) (ok bool) {
-		defer func() {
-			p.log.Debugf("Incoming request. This proxy (%s) is protected authorized=%v", p.config.LocalProxyURI.Redacted(), ok)
-		}()
-
-		pwd, _ := u.Password()
-		// Securely compare passwords.
-		return subtle.ConstantTimeCompare([]byte(u.Username()), []byte(username)) == 1 &&
-			subtle.ConstantTimeCompare([]byte(pwd), []byte(password)) == 1
-	})
-
-	p.log.Debugf("Basic auth setup for proxy @ %s", p.config.LocalProxyURI.Redacted())
 }
 
 // Run starts the proxy.
