@@ -169,13 +169,8 @@ func TestNewProxy(t *testing.T) { //nolint // FIXME cognitive complexity 88 of f
 				Transport: tr,
 			}
 
-			statusCode, _, err := executeRequest(client, targetServerURL)
-			if err != nil {
+			if _, err := assertRequest(client, targetServerURL, http.StatusOK); err != nil {
 				t.Fatalf("Failed to execute request: %v", err)
-			}
-
-			if statusCode != http.StatusOK {
-				t.Fatal("Expected status code to be OK")
 			}
 		})
 	}
@@ -227,8 +222,7 @@ func BenchmarkNew(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		_, _, err := executeRequest(client, testServer.URL)
-		if err != nil {
+		if _, err := assertRequest(client, testServer.URL, http.StatusOK); err != nil {
 			b.Fatal(err)
 		}
 	}
@@ -277,10 +271,10 @@ func httpServerStub(body, encodedCredential string, log Logger) *httptest.Server
 	return s
 }
 
-func executeRequest(client *http.Client, uri string) (statusCode int, body string, err error) {
+func assertRequest(client *http.Client, uri string, statusCode int) (body string, err error) {
 	u, err := url.ParseRequestURI(uri)
 	if err != nil {
-		return 0, "", fmt.Errorf("Failed to parse URI: %w", err)
+		return "", fmt.Errorf("Failed to parse URI: %w", err)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
@@ -288,7 +282,7 @@ func executeRequest(client *http.Client, uri string) (statusCode int, body strin
 
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), http.NoBody)
 	if err != nil {
-		return 0, "", fmt.Errorf("Failed to create request: %w", err)
+		return "", fmt.Errorf("Failed to create request: %w", err)
 	}
 
 	if u.User != nil {
@@ -299,19 +293,19 @@ func executeRequest(client *http.Client, uri string) (statusCode int, body strin
 
 	response, err := client.Do(request)
 	if err != nil {
-		return 0, "", fmt.Errorf("Failed to execute request: %w", err)
+		return "", fmt.Errorf("Failed to execute request: %w", err)
 	}
 
 	defer response.Body.Close()
 
 	data, err := io.ReadAll(response.Body)
 	if err != nil {
-		return 0, "", fmt.Errorf("Failed to read body: %w", err)
+		return "", fmt.Errorf("Failed to read body: %w", err)
 	}
 
-	if response.StatusCode != http.StatusOK {
-		return 0, "", fmt.Errorf("Failed request, non-2xx code (%d): %s", response.StatusCode, data)
+	if response.StatusCode != statusCode {
+		return "", fmt.Errorf("Expected status code to be %d, got %d", statusCode, response.StatusCode)
 	}
 
-	return response.StatusCode, string(data), nil
+	return string(data), nil
 }
