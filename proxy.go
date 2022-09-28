@@ -103,6 +103,7 @@ func (p *Proxy) setupProxy() {
 	p.proxy.Tr = &http.Transport{}
 
 	p.setupBasicAuth()
+	p.setupLocalhostProxy()
 	p.setupProxyHandlers()
 }
 
@@ -128,6 +129,18 @@ func (p *Proxy) setupBasicAuth() {
 		}
 		return ok
 	})
+}
+
+func (p *Proxy) setupLocalhostProxy() {
+	if !p.config.ProxyLocalhost {
+		p.log.Infof("Localhost proxy disabled")
+		p.proxy.OnRequest(goproxy.IsLocalHost).DoFunc(func(r *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
+			return nil, goproxy.NewResponse(r, goproxy.ContentTypeText, http.StatusBadGateway, "Can't use proxy for local addresses")
+		})
+	} else {
+		p.log.Infof("Localhost proxy enabled")
+		p.proxy.OnRequest(goproxy.IsLocalHost).HandleConnect(goproxy.AlwaysMitm)
+	}
 }
 
 // Config returns a copy of the proxy configuration.
@@ -172,17 +185,6 @@ func resetUpstreamSettings(ctx *goproxy.ProxyCtx) {
 		},
 		Proxy: nil,
 	}
-}
-
-// Returns `true` if should NOT proxy connections to any upstream proxy.
-func (p *Proxy) shouldNotProxyLocalhost(ctx *goproxy.ProxyCtx) bool {
-	if !p.config.ProxyLocalhost && isLocalhost(ctx.Req.URL.Hostname()) {
-		resetUpstreamSettings(ctx)
-
-		return true
-	}
-
-	return false
 }
 
 // setupUpstreamProxyConnection forwards connections to an upstream proxy.
@@ -239,12 +241,6 @@ func setupPACUpstreamProxyConnection(p *Proxy, ctx *goproxy.ProxyCtx) error {
 
 // DRY on handler's code.
 func (p *Proxy) setupHandlers(ctx *goproxy.ProxyCtx) error {
-	if p.shouldNotProxyLocalhost(ctx) {
-		p.log.Debugf("Not proxifying request to localhost URL: %s", ctx.Req.URL.String())
-
-		return nil
-	}
-
 	switch p.Mode() {
 	case Direct:
 		// Do nothing

@@ -59,7 +59,8 @@ func TestNewProxy(t *testing.T) { //nolint // FIXME cognitive complexity 88 of f
 		{
 			name: "Local proxy",
 			config: ProxyConfig{
-				LocalProxyURI: newProxyURL(r.MustGenerate(), "", ""),
+				LocalProxyURI:  newProxyURL(r.MustGenerate(), "", ""),
+				ProxyLocalhost: true,
 			},
 		},
 		{
@@ -67,19 +68,22 @@ func TestNewProxy(t *testing.T) { //nolint // FIXME cognitive complexity 88 of f
 			config: ProxyConfig{
 				LocalProxyURI:   newProxyURL(r.MustGenerate(), "", ""),
 				SiteCredentials: []string{},
+				ProxyLocalhost:  true,
 			},
 		},
 		{
 			name: "Local proxy with DNS",
 			config: ProxyConfig{
-				DNSURIs:       []*url.URL{{Scheme: "udp", Host: "1.1.1.1:53"}},
-				LocalProxyURI: newProxyURL(r.MustGenerate(), "", ""),
+				DNSURIs:        []*url.URL{{Scheme: "udp", Host: "1.1.1.1:53"}},
+				LocalProxyURI:  newProxyURL(r.MustGenerate(), "", ""),
+				ProxyLocalhost: true,
 			},
 		},
 		{
 			name: "Protected local proxy",
 			config: ProxyConfig{
-				LocalProxyURI: newProxyURL(r.MustGenerate(), localProxyCredentialUsername, localProxyCredentialPassword),
+				LocalProxyURI:  newProxyURL(r.MustGenerate(), localProxyCredentialUsername, localProxyCredentialPassword),
+				ProxyLocalhost: true,
 			},
 		},
 		{
@@ -87,6 +91,7 @@ func TestNewProxy(t *testing.T) { //nolint // FIXME cognitive complexity 88 of f
 			config: ProxyConfig{
 				LocalProxyURI:    newProxyURL(r.MustGenerate(), localProxyCredentialUsername, localProxyCredentialPassword),
 				UpstreamProxyURI: newProxyURL(r.MustGenerate(), "", ""),
+				ProxyLocalhost:   true,
 			},
 		},
 	}
@@ -143,7 +148,7 @@ func TestNewProxy(t *testing.T) { //nolint // FIXME cognitive complexity 88 of f
 			//////
 
 			if tc.config.UpstreamProxyURI != nil {
-				upstreamProxy, err := NewProxy(&ProxyConfig{LocalProxyURI: tc.config.UpstreamProxyURI}, namedStdLogger("upstream"))
+				upstreamProxy, err := NewProxy(&ProxyConfig{LocalProxyURI: tc.config.UpstreamProxyURI, ProxyLocalhost: true}, namedStdLogger("upstream"))
 				if err != nil {
 					t.Fatalf("NewProxy() error = %v", err)
 				}
@@ -170,6 +175,65 @@ func TestNewProxy(t *testing.T) { //nolint // FIXME cognitive complexity 88 of f
 			}
 
 			if _, err := assertRequest(client, targetServerURL, http.StatusOK); err != nil {
+				t.Fatalf("Failed to execute request: %v", err)
+			}
+		})
+	}
+}
+
+func TestProxyLocalhost(t *testing.T) {
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer s.Close()
+
+	r, err := randomness.New(10000, 20000, 100, true)
+	if err != nil {
+		t.Fatal("Failed to create randomness", err)
+	}
+
+	tests := []struct {
+		name           string
+		ProxyLocalhost bool
+		StatusCode     int
+	}{
+		{
+			name:           "enabled",
+			ProxyLocalhost: true,
+			StatusCode:     http.StatusOK,
+		},
+		{
+			name:           "disabled",
+			ProxyLocalhost: false,
+			StatusCode:     http.StatusBadGateway,
+		},
+	}
+
+	for i := range tests {
+		tc := tests[i]
+
+		t.Run(tc.name, func(t *testing.T) {
+			// Start local proxy.
+			localProxy, err := NewProxy(&ProxyConfig{
+				LocalProxyURI:  newProxyURL(r.MustGenerate(), "", ""),
+				ProxyLocalhost: tc.ProxyLocalhost,
+			}, namedStdLogger("local"))
+			if err != nil {
+				t.Fatalf("NewProxy() error = %v", err)
+			}
+			go localProxy.MustRun()
+			// Give enough time to start, and be ready.
+			time.Sleep(1 * time.Second)
+
+			// Client's proxy settings.
+			client := &http.Client{
+				Transport: &http.Transport{
+					Proxy: http.ProxyURL(localProxy.Config().LocalProxyURI),
+				},
+			}
+
+			// Make request to localhost.
+			if _, err := assertRequest(client, s.URL, tc.StatusCode); err != nil {
 				t.Fatalf("Failed to execute request: %v", err)
 			}
 		})

@@ -8,7 +8,6 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
-	"regexp"
 	"strings"
 )
 
@@ -35,15 +34,4 @@ func normalizeURLScheme(uri string) string {
 		scheme = "https"
 	}
 	return fmt.Sprintf("%s://%s", scheme, uri)
-}
-
-var localHostIpv4Regexp = regexp.MustCompile(`127\.0\.0\.\d+`)
-
-// isLocalhost checks whether the destination host is explicitly local host.
-// Note: there can be IPv6 addresses it doesn't catch.
-func isLocalhost(hostName string) bool {
-	return hostName == "localhost" ||
-		hostName == "0:0:0:0:0:0:0:1" ||
-		hostName == "::1" ||
-		localHostIpv4Regexp.MatchString(hostName)
 }
