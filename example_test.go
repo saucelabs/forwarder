@@ -153,15 +153,13 @@ func ExampleNew() {
 		Transport: tr,
 	}
 
-	statusCode, body, err := executeRequest(client, targetServerURI.String())
+	body, err := assertRequest(client, targetServerURI.String(), http.StatusOK)
 	if err != nil {
 		panic(err)
 	}
 
-	fmt.Println(statusCode)
 	fmt.Println(body)
 
 	// output:
-	// 200
 	// body
 }
