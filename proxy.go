@@ -100,7 +100,6 @@ func (p *Proxy) setupProxy() {
 	// See: https://github.com/golang/go/issues/28866
 	// See: https://github.com/elazarl/goproxy/issues/306
 	p.proxy.KeepHeader = true
-	p.proxy.Tr = &http.Transport{}
 
 	p.setupBasicAuth()
 	p.setupLocalhostProxy()
