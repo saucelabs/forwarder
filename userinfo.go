@@ -28,8 +28,6 @@ type userInfoMatcher struct {
 	log Logger
 }
 
-var nopUserInfoMatcher = (*userInfoMatcher)(nil)
-
 // newUserInfoMatcher takes a list of "user:pass@host:port" strings and creates a matcher.
 // Port '0' means a wildcard port.
 // Host '*' means a wildcard host.
@@ -88,19 +86,45 @@ func newUserInfoMatcher(credentials []string, log Logger) (*userInfoMatcher, err
 	}
 
 	if !ok {
-		m = nopUserInfoMatcher
+		m = nil
 	}
 
 	return m, nil
 }
 
-// Match `hostport` to one of the configured input.
-// Priority is exact Match, then host, then port, then global wildcard.
-func (m *userInfoMatcher) Match(hostport string) *url.Userinfo {
-	if m == nopUserInfoMatcher {
+// MatchURL adds standard http and https ports if they are missing in URL and calls Match function.
+func (m *userInfoMatcher) MatchURL(u *url.URL) *url.Userinfo {
+	if m == nil {
 		return nil
 	}
 
+	const (
+		httpPort  = 80
+		httpsPort = 443
+	)
+
+	hostport := u.Host
+	if u.Port() == "" {
+		switch u.Scheme {
+		case "http":
+			hostport = fmt.Sprintf("%s:%d", u.Host, httpPort)
+		case "https":
+			hostport = fmt.Sprintf("%s:%d", u.Host, httpsPort)
+		default:
+			m.log.Errorf("Failed to determine port for %s.", u.Redacted())
+			return nil
+		}
+	}
+
+	return m.Match(hostport)
+}
+
+// Match `hostport` to one of the configured input.
+// Priority is exact Match, then host, then port, then global wildcard.
+func (m *userInfoMatcher) Match(hostport string) *url.Userinfo {
+	if m == nil {
+		return nil
+	}
 	if u, ok := m.hostport[hostport]; ok {
 		m.log.Debugf(hostport)
 		return u

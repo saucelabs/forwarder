@@ -8,6 +8,8 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
+	"net/http"
+	"net/url"
 	"strings"
 )
 
@@ -34,4 +36,18 @@ func normalizeURLScheme(uri string) string {
 		scheme = "https"
 	}
 	return fmt.Sprintf("%s://%s", scheme, uri)
+}
+
+func addProxyBasicAuthHeader(req *http.Request, u *url.Userinfo) {
+	if u == nil || u.Username() == "" {
+		return
+	}
+	req.Header.Set("Proxy-Authorization", "Basic "+userInfoBase64(u))
+}
+
+func addBasicAuthHeader(req *http.Request, u *url.Userinfo) {
+	if u == nil || u.Username() == "" {
+		return
+	}
+	req.Header.Set("Authorization", "Basic "+userInfoBase64(u))
 }
