@@ -21,7 +21,6 @@ import (
 const (
 	defaultTimeFormat = "2006-01-02T15-04-05"
 	infoLevel         = "info"
-	name              = "proxy"
 )
 
 // logConfig is a configuration for the logger.
@@ -34,12 +33,12 @@ type logConfig struct {
 func defaultLogConfig() logConfig {
 	return logConfig{
 		FileLevel: infoLevel,
-		FilePath:  filepath.Join(os.TempDir(), fmt.Sprintf("%s-%s.log", name, time.Now().Format(defaultTimeFormat))),
+		FilePath:  filepath.Join(os.TempDir(), fmt.Sprintf("%s-%s.log", "forwarder", time.Now().Format(defaultTimeFormat))),
 		Level:     infoLevel,
 	}
 }
 
-func newLogger(cfg logConfig) forwarderLogger {
+func newLogger(cfg logConfig, name string) forwarderLogger {
 	l := sypl.NewDefault(name, level.MustFromString(cfg.Level))
 	l.AddOutputs(
 		output.File(cfg.FilePath, level.MustFromString(cfg.FileLevel)).SetFormatter(formatter.Text()),

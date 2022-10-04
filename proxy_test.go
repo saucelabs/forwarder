@@ -40,6 +40,78 @@ const (
 `
 )
 
+func TestProxyConfigValidate(t *testing.T) {
+	var (
+		validURL = newProxyURL(80, localProxyCredentialUsername, localProxyCredentialPassword)
+		emptyURL = &url.URL{}
+	)
+
+	tests := []struct {
+		name   string
+		config ProxyConfig
+		err    string
+	}{
+		{
+			name: "normal",
+			config: ProxyConfig{
+				LocalProxyURI: validURL,
+			},
+		},
+		{
+			name: "both upstream and PAC are set",
+			config: ProxyConfig{
+				LocalProxyURI:    validURL,
+				UpstreamProxyURI: newProxyURL(80, upstreamProxyCredentialUsername, upstreamProxyCredentialPassword),
+				PACURI:           newProxyURL(80, "", ""),
+			},
+			err: "only one of upstream_proxy_uri or pac_uri can be set",
+		},
+		{
+			name: "missing local proxy URI",
+			err:  "local_proxy_uri is required",
+		},
+		{
+			name: "invalid local proxy URI",
+			config: ProxyConfig{
+				LocalProxyURI: emptyURL,
+			},
+			err: "local_proxy_uri: invalid scheme",
+		},
+		{
+			name: "invalid upstream proxy URI",
+			config: ProxyConfig{
+				LocalProxyURI:    validURL,
+				UpstreamProxyURI: emptyURL,
+			},
+			err: "upstream_proxy_uri: invalid scheme",
+		},
+		{
+			name: "invalid PAC server URI",
+			config: ProxyConfig{
+				LocalProxyURI: validURL,
+				PACURI:        emptyURL,
+			},
+			err: "pac_uri: invalid scheme",
+		},
+	}
+
+	for i := range tests {
+		tc := &tests[i]
+		t.Run(tc.name, func(t *testing.T) {
+			err := tc.config.Validate()
+			if err != nil {
+				if tc.err == "" {
+					t.Fatalf("expected success, got %q", err)
+				}
+				if !strings.Contains(err.Error(), tc.err) {
+					t.Fatalf("expected error to contain %q, got %q", tc.err, err)
+				}
+				return
+			}
+		})
+	}
+}
+
 func TestNewProxy(t *testing.T) { //nolint // FIXME cognitive complexity 88 of func `TestNewProxy` is high (> 40) (gocognit); calculated cyclomatic complexity for function TestNewProxy is 28, max is 10 (cyclop)
 	//////
 	// Randomness automates port allocation, ensuring no collision happens
@@ -69,14 +141,6 @@ func TestNewProxy(t *testing.T) { //nolint // FIXME cognitive complexity 88 of f
 				LocalProxyURI:   newProxyURL(r.MustGenerate(), "", ""),
 				SiteCredentials: []string{},
 				ProxyLocalhost:  true,
-			},
-		},
-		{
-			name: "Local proxy with DNS",
-			config: ProxyConfig{
-				DNSURIs:        []*url.URL{{Scheme: "udp", Host: "1.1.1.1:53"}},
-				LocalProxyURI:  newProxyURL(r.MustGenerate(), "", ""),
-				ProxyLocalhost: true,
 			},
 		},
 		{
@@ -135,7 +199,7 @@ func TestNewProxy(t *testing.T) { //nolint // FIXME cognitive complexity 88 of f
 			// in the PAC content.
 			//////
 
-			localProxy, err := NewProxy(&tc.config, namedStdLogger("local"))
+			localProxy, err := NewProxy(&tc.config, nil, namedStdLogger("local"))
 			if err != nil {
 				t.Fatalf("NewProxy() error = %v", err)
 			}
@@ -148,7 +212,7 @@ func TestNewProxy(t *testing.T) { //nolint // FIXME cognitive complexity 88 of f
 			//////
 
 			if tc.config.UpstreamProxyURI != nil {
-				upstreamProxy, err := NewProxy(&ProxyConfig{LocalProxyURI: tc.config.UpstreamProxyURI, ProxyLocalhost: true}, namedStdLogger("upstream"))
+				upstreamProxy, err := NewProxy(&ProxyConfig{LocalProxyURI: tc.config.UpstreamProxyURI, ProxyLocalhost: true}, nil, namedStdLogger("upstream"))
 				if err != nil {
 					t.Fatalf("NewProxy() error = %v", err)
 				}
@@ -217,7 +281,7 @@ func TestProxyLocalhost(t *testing.T) {
 			localProxy, err := NewProxy(&ProxyConfig{
 				LocalProxyURI:  newProxyURL(r.MustGenerate(), "", ""),
 				ProxyLocalhost: tc.ProxyLocalhost,
-			}, namedStdLogger("local"))
+			}, nil, namedStdLogger("local"))
 			if err != nil {
 				t.Fatalf("NewProxy() error = %v", err)
 			}
@@ -260,7 +324,7 @@ func BenchmarkNew(b *testing.B) {
 
 	localProxyURI := newProxyURL(r.MustGenerate(), "", "")
 
-	proxy, err := NewProxy(&ProxyConfig{LocalProxyURI: localProxyURI}, nopLogger{})
+	proxy, err := NewProxy(&ProxyConfig{LocalProxyURI: localProxyURI}, nil, nopLogger{})
 	if err != nil {
 		b.Fatal("Failed to create proxy.", err)
 	}
