@@ -5,6 +5,7 @@
 package run
 
 import (
+	"net"
 	"net/url"
 
 	"github.com/mmatczuk/anyflag"
@@ -13,6 +14,7 @@ import (
 )
 
 type command struct {
+	dnsConfig         *forwarder.DNSConfig
 	proxyConfig       forwarder.ProxyConfig
 	localProxyAuth    *url.Userinfo
 	upstreamProxyAuth *url.Userinfo
@@ -27,7 +29,16 @@ func (c *command) RunE(cmd *cobra.Command, args []string) error {
 		c.proxyConfig.UpstreamProxyURI.User = c.upstreamProxyAuth
 	}
 
-	p, err := forwarder.NewProxy(&c.proxyConfig, newLogger(c.logConfig))
+	var resolver *net.Resolver
+	if len(c.dnsConfig.Servers) > 0 {
+		r, err := forwarder.NewResolver(c.dnsConfig, newLogger(c.logConfig, "dns"))
+		if err != nil {
+			return err
+		}
+		resolver = r
+	}
+
+	p, err := forwarder.NewProxy(&c.proxyConfig, resolver, newLogger(c.logConfig, "proxy"))
 	if err != nil {
 		return err
 	}
@@ -103,10 +114,15 @@ const example = `Start a proxy listening to http://localhost:8080:
 
 func Command() (cmd *cobra.Command) {
 	c := command{
+		dnsConfig: forwarder.DefaultDNSConfig(),
 		logConfig: defaultLogConfig(),
 	}
 	defer func() {
 		fs := cmd.Flags()
+
+		fs.VarP(anyflag.NewSliceValue[*url.URL](nil, &c.dnsConfig.Servers, forwarder.ParseDNSURI),
+			"dns-server", "n", "sets DNS server, ex. -n udp://1.1.1.1:53 (can be specified multiple times)")
+		fs.DurationVar(&c.dnsConfig.Timeout, "dns-timeout", c.dnsConfig.Timeout, "sets timeout for DNS queries if DNS server is specified")
 
 		fs.VarP(anyflag.NewValue[*url.URL](&url.URL{Scheme: "http", Host: "localhost:8080"}, &c.proxyConfig.LocalProxyURI, forwarder.ParseProxyURI),
 			"local-proxy-uri", "l", "sets local proxy URI")
@@ -116,8 +132,6 @@ func Command() (cmd *cobra.Command) {
 			"upstream-proxy-uri", "u", "sets upstream proxy URI")
 		fs.VarP(anyflag.NewValue[*url.Userinfo](nil, &c.upstreamProxyAuth, forwarder.ParseUserInfo),
 			"upstream-proxy-auth", "", "sets upstream proxy basic auth in the form of username:password")
-		fs.VarP(anyflag.NewSliceValue[*url.URL](nil, &c.proxyConfig.DNSURIs, forwarder.ParseDNSURI),
-			"dns-uri", "n", "sets dns URI")
 		fs.VarP(anyflag.NewValue[*url.URL](nil, &c.proxyConfig.PACURI, url.ParseRequestURI),
 			"pac-uri", "p", "sets URI to PAC content, or directly, the PAC content")
 

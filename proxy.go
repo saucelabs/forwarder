@@ -5,6 +5,7 @@
 package forwarder
 
 import (
+	"context"
 	"crypto/subtle"
 	"fmt"
 	"net"
@@ -17,9 +18,74 @@ import (
 	"github.com/saucelabs/pacman"
 )
 
-const (
-	DNSTimeout = 1 * time.Minute
-)
+// ProxyConfig definition.
+type ProxyConfig struct {
+	// LocalProxyURI is the local proxy URI, ex. http://user:password@127.0.0.1:8080.
+	// Requirements:
+	// - Known schemes: http, https, socks, socks5, or quic.
+	// - Hostname or IP.
+	// - Port in a valid range: 1 - 65535.
+	// - Username and password are optional.
+	LocalProxyURI *url.URL `json:"local_proxy_uri"`
+
+	// UpstreamProxyURI is the upstream proxy URI, ex. http://user:password@127.0.0.1:8080.
+	// Only one of `UpstreamProxyURI` or `PACURI` can be set.
+	// Requirements:
+	// - Known schemes: http, https, socks, socks5, or quic.
+	// - Hostname or IP.
+	// - Port in a valid range: 1 - 65535.
+	// - Username and password are optional.
+	UpstreamProxyURI *url.URL `json:"upstream_proxy_uri"`
+
+	// PACURI is the PAC URI, which is used to determine the upstream proxy, ex. http://127.0.0.1:8087/data.pac.
+	// Only one of `UpstreamProxyURI` or `PACURI` can be set.
+	PACURI *url.URL `json:"pac_uri"`
+
+	// Credentials for proxies specified in PAC content.
+	PACProxiesCredentials []string `json:"pac_proxies_credentials"`
+
+	// ProxyLocalhost if `true`, requests to `localhost`, `127.0.0.*`, `0:0:0:0:0:0:0:1` will be forwarded to upstream.
+	ProxyLocalhost bool `json:"proxy_localhost"`
+
+	// SiteCredentials contains URLs with the credentials, ex.:
+	// - https://usr1:pwd1@foo.bar:4443
+	// - http://usr2:pwd2@bar.foo:8080
+	// - usr3:pwd3@bar.foo:8080
+	// Proxy will add basic auth headers for requests to these URLs.
+	SiteCredentials []string `json:"site_credentials"`
+}
+
+func DefaultProxyConfig() *ProxyConfig {
+	return &ProxyConfig{
+		LocalProxyURI: &url.URL{Scheme: "http", Host: "localhost:8080"},
+	}
+}
+
+func (c *ProxyConfig) Clone() *ProxyConfig {
+	v := new(ProxyConfig)
+	deepCopy(v, c)
+	return v
+}
+
+func (c *ProxyConfig) Validate() error {
+	if c.LocalProxyURI == nil {
+		return fmt.Errorf("local_proxy_uri is required")
+	}
+	if err := validateProxyURI(c.LocalProxyURI); err != nil {
+		return fmt.Errorf("local_proxy_uri: %w", err)
+	}
+	if err := validateProxyURI(c.UpstreamProxyURI); err != nil {
+		return fmt.Errorf("upstream_proxy_uri: %w", err)
+	}
+	if err := validateProxyURI(c.PACURI); err != nil {
+		return fmt.Errorf("pac_uri: %w", err)
+	}
+	if c.UpstreamProxyURI != nil && c.PACURI != nil {
+		return fmt.Errorf("only one of upstream_proxy_uri or pac_uri can be set")
+	}
+
+	return nil
+}
 
 // Mode specifies mode of operation of the proxy.
 type Mode string
@@ -37,13 +103,14 @@ const (
 // Protection means basic auth.
 type Proxy struct {
 	config    ProxyConfig
+	transport *http.Transport
 	userInfo  *userInfoMatcher
 	pacParser *pacman.Parser
 	proxy     *goproxy.ProxyHttpServer
 	log       Logger
 }
 
-func NewProxy(cfg *ProxyConfig, log Logger) (*Proxy, error) {
+func NewProxy(cfg *ProxyConfig, r *net.Resolver, log Logger) (*Proxy, error) {
 	cfg = cfg.Clone()
 
 	if err := cfg.Validate(); err != nil {
@@ -61,7 +128,7 @@ func NewProxy(cfg *ProxyConfig, log Logger) (*Proxy, error) {
 		userInfo: m,
 		log:      log,
 	}
-	p.setupDNS()
+	p.setupTransport(r)
 
 	if p.config.PACURI != nil {
 		pacParser, err := pacman.New(p.config.PACURI.String(), p.config.PACProxiesCredentials...)
@@ -76,11 +143,18 @@ func NewProxy(cfg *ProxyConfig, log Logger) (*Proxy, error) {
 	return p, nil
 }
 
-func (p *Proxy) setupDNS() {
-	d := net.Dialer{
-		Timeout: DNSTimeout,
-	}
-	setupDNS(p.config.DNSURIs, &d, p.log)
+func (p *Proxy) setupTransport(r *net.Resolver) {
+	p.transport = http.DefaultTransport.(*http.Transport).Clone() //nolint:forcetypeassert // We know it's a *http.Transport.
+	p.transport.DialContext = defaultTransportDialContext(&net.Dialer{
+		Timeout:   30 * time.Second,
+		KeepAlive: 30 * time.Second,
+		Resolver:  r,
+	})
+	p.transport.Proxy = nil
+}
+
+func defaultTransportDialContext(dialer *net.Dialer) func(context.Context, string, string) (net.Conn, error) {
+	return dialer.DialContext
 }
 
 func (p *Proxy) setupProxy() {
@@ -95,6 +169,7 @@ func (p *Proxy) setupProxy() {
 	// See: https://github.com/elazarl/goproxy/issues/306
 	p.proxy.KeepHeader = true
 
+	p.proxy.Tr = p.transport.Clone()
 	p.setupLocalhostProxy()
 
 	switch p.Mode() {
@@ -125,9 +200,7 @@ func (p *Proxy) setupLocalhostProxy() {
 }
 
 func (p *Proxy) setupDirect() {
-	p.proxy.Tr.Proxy = func(request *http.Request) (*url.URL, error) {
-		return nil, nil //nolint:nilnil // nil url means direct connection
-	}
+	p.proxy.Tr.Proxy = nil
 	p.proxy.ConnectDial = nil
 }
 

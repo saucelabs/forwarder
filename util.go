@@ -5,23 +5,11 @@
 package forwarder
 
 import (
-	"bytes"
-	"encoding/gob"
 	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
 )
-
-func deepCopy(dst, src interface{}) {
-	var buf bytes.Buffer
-	if err := gob.NewEncoder(&buf).Encode(src); err != nil {
-		panic(err)
-	}
-	if err := gob.NewDecoder(&buf).Decode(dst); err != nil {
-		panic(err)
-	}
-}
 
 // normalizeURLScheme ensures that the URL starts with the scheme.
 func normalizeURLScheme(uri string) string {

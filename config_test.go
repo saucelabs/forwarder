@@ -1,82 +1,9 @@
 package forwarder
 
 import (
-	"net/url"
 	"strings"
 	"testing"
 )
-
-func TestProxyConfigValidate(t *testing.T) {
-	var (
-		validURL = newProxyURL(80, localProxyCredentialUsername, localProxyCredentialPassword)
-		emptyURL = &url.URL{}
-	)
-
-	tests := []struct {
-		name   string
-		config ProxyConfig
-		err    string
-	}{
-		{
-			name: "normal",
-			config: ProxyConfig{
-				LocalProxyURI: validURL,
-			},
-		},
-		{
-			name: "both upstream and PAC are set",
-			config: ProxyConfig{
-				LocalProxyURI:    validURL,
-				UpstreamProxyURI: newProxyURL(80, upstreamProxyCredentialUsername, upstreamProxyCredentialPassword),
-				PACURI:           newProxyURL(80, "", ""),
-			},
-			err: "only one of upstream_proxy_uri or pac_uri can be set",
-		},
-		{
-			name: "missing local proxy URI",
-			err:  "local_proxy_uri is required",
-		},
-		{
-			name: "invalid local proxy URI",
-			config: ProxyConfig{
-				LocalProxyURI: emptyURL,
-			},
-			err: "local_proxy_uri: invalid scheme",
-		},
-		{
-			name: "invalid upstream proxy URI",
-			config: ProxyConfig{
-				LocalProxyURI:    validURL,
-				UpstreamProxyURI: emptyURL,
-			},
-			err: "upstream_proxy_uri: invalid scheme",
-		},
-		{
-			name: "invalid PAC server URI",
-			config: ProxyConfig{
-				LocalProxyURI: validURL,
-				PACURI:        emptyURL,
-			},
-			err: "pac_uri: invalid scheme",
-		},
-	}
-
-	for i := range tests {
-		tc := &tests[i]
-		t.Run(tc.name, func(t *testing.T) {
-			err := tc.config.Validate()
-			if err != nil {
-				if tc.err == "" {
-					t.Fatalf("expected success, got %q", err)
-				}
-				if !strings.Contains(err.Error(), tc.err) {
-					t.Fatalf("expected error to contain %q, got %q", tc.err, err)
-				}
-				return
-			}
-		})
-	}
-}
 
 func TestParseUserInfo(t *testing.T) {
 	tests := []struct {
