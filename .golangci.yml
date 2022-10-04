@@ -39,6 +39,8 @@ linters-settings:
       - diagnostic
       - performance
       - style
+  gomnd:
+    ignored-numbers: [0, 1, 5, 10, 30, 50, 90, 100]
   lll:
     line-length: 180
   nestif:
