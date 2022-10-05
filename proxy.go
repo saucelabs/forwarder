@@ -19,7 +19,85 @@ import (
 	"github.com/saucelabs/pacman"
 )
 
-// ProxyConfig definition.
+type HTTPTransportConfig struct {
+	// DialTimeout is the maximum amount of time a dial will wait for
+	// a connect to complete.
+	//
+	// With or without a timeout, the operating system may impose
+	// its own earlier timeout. For instance, TCP timeouts are
+	// often around 3 minutes.
+	DialTimeout time.Duration `json:"dial_timeout"`
+
+	// KeepAlive specifies the interval between keep-alive
+	// probes for an active network connection.
+	// If zero, keep-alive probes are sent with a default value
+	// (currently 15 seconds), if supported by the protocol and operating
+	// system. Network protocols or operating systems that do
+	// not support keep-alives ignore this field.
+	// If negative, keep-alive probes are disabled.
+	KeepAlive time.Duration `json:"keep_alive"`
+
+	// TLSHandshakeTimeout specifies the maximum amount of time waiting to
+	// wait for a TLS handshake. Zero means no timeout.
+	TLSHandshakeTimeout time.Duration `json:"tls_handshake_timeout"`
+
+	// MaxIdleConns controls the maximum number of idle (keep-alive)
+	// connections across all hosts. Zero means no limit.
+	MaxIdleConns int `json:"max_idle_conns"`
+
+	// MaxIdleConnsPerHost, if non-zero, controls the maximum idle
+	// (keep-alive) connections to keep per-host. If zero,
+	// DefaultMaxIdleConnsPerHost is used.
+	MaxIdleConnsPerHost int `json:"max_idle_conns_per_host"`
+
+	// MaxConnsPerHost optionally limits the total number of
+	// connections per host, including connections in the dialing,
+	// active, and idle states. On limit violation, dials will block.
+	//
+	// Zero means no limit.
+	MaxConnsPerHost int `json:"max_conns_per_host"`
+
+	// IdleConnTimeout is the maximum amount of time an idle
+	// (keep-alive) connection will remain idle before closing
+	// itself.
+	// Zero means no limit.
+	IdleConnTimeout time.Duration `json:"idle_conn_timeout"`
+
+	// ResponseHeaderTimeout, if non-zero, specifies the amount of
+	// time to wait for a server's response headers after fully
+	// writing the request (including its body, if any). This
+	// time does not include the time to read the response body.
+	ResponseHeaderTimeout time.Duration `json:"response_header_timeout"`
+
+	// ExpectContinueTimeout, if non-zero, specifies the amount of
+	// time to wait for a server's first response headers after fully
+	// writing the request headers if the request has an
+	// "Expect: 100-continue" header. Zero means no timeout and
+	// causes the body to be sent immediately, without
+	// waiting for the server to approve.
+	// This time does not include the time to send the request header.
+	ExpectContinueTimeout time.Duration `json:"expect_continue_timeout"`
+}
+
+func DefaultHTTPTransportConfig() *HTTPTransportConfig {
+	// The default values are taken from [hashicorp/go-cleanhttp](https://github.com/hashicorp/go-cleanhttp/blob/a0807dd79fc1680a7b1f2d5a2081d92567aab97d/cleanhttp.go#L19.
+	return &HTTPTransportConfig{
+		DialTimeout:           30 * time.Second,
+		KeepAlive:             30 * time.Second,
+		MaxIdleConns:          100,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+		MaxIdleConnsPerHost:   runtime.GOMAXPROCS(0) + 1,
+	}
+}
+
+func (c *HTTPTransportConfig) Clone() *HTTPTransportConfig {
+	v := new(HTTPTransportConfig)
+	deepCopy(v, c)
+	return v
+}
+
 type ProxyConfig struct {
 	// LocalProxyURI is the local proxy URI, ex. http://user:password@127.0.0.1:8080.
 	// Requirements:
@@ -54,11 +132,16 @@ type ProxyConfig struct {
 	// - usr3:pwd3@bar.foo:8080
 	// Proxy will add basic auth headers for requests to these URLs.
 	SiteCredentials []string `json:"site_credentials"`
+
+	// HTTP specifies http.Transport configuration used when making HTTP requests.
+	// If nil, DefaultHTTPTransportConfig will be used.
+	HTTP *HTTPTransportConfig `json:"http"`
 }
 
 func DefaultProxyConfig() *ProxyConfig {
 	return &ProxyConfig{
 		LocalProxyURI: &url.URL{Scheme: "http", Host: "localhost:8080"},
+		HTTP:          DefaultHTTPTransportConfig(),
 	}
 }
 
@@ -104,6 +187,9 @@ type Proxy struct {
 
 func NewProxy(cfg *ProxyConfig, r *net.Resolver, log Logger) (*Proxy, error) {
 	cfg = cfg.Clone()
+	if cfg.HTTP == nil {
+		cfg.HTTP = DefaultHTTPTransportConfig()
+	}
 
 	if err := cfg.Validate(); err != nil {
 		return nil, err
@@ -136,20 +222,22 @@ func NewProxy(cfg *ProxyConfig, r *net.Resolver, log Logger) (*Proxy, error) {
 }
 
 func (p *Proxy) setupTransport(r *net.Resolver) {
-	// The default values are taken from [hashicorp/go-cleanhttp](https://github.com/hashicorp/go-cleanhttp/blob/a0807dd79fc1680a7b1f2d5a2081d92567aab97d/cleanhttp.go#L19.
+	p.log.Infof("Using HTTP transport config: %+v", *p.config.HTTP)
+
+	c := p.config.HTTP
 	p.transport = &http.Transport{
 		Proxy: nil,
 		DialContext: defaultTransportDialContext(&net.Dialer{
-			Timeout:   30 * time.Second,
-			KeepAlive: 30 * time.Second,
+			Timeout:   c.DialTimeout,
+			KeepAlive: c.KeepAlive,
 			Resolver:  r,
 		}),
-		MaxIdleConns:          100,
-		IdleConnTimeout:       90 * time.Second,
-		TLSHandshakeTimeout:   10 * time.Second,
-		ExpectContinueTimeout: 1 * time.Second,
+		MaxIdleConns:          c.MaxIdleConns,
+		IdleConnTimeout:       c.IdleConnTimeout,
+		TLSHandshakeTimeout:   c.TLSHandshakeTimeout,
+		ExpectContinueTimeout: c.ExpectContinueTimeout,
 		ForceAttemptHTTP2:     true,
-		MaxIdleConnsPerHost:   runtime.GOMAXPROCS(0) + 1,
+		MaxIdleConnsPerHost:   c.MaxIdleConnsPerHost,
 	}
 
 	p.transport.Proxy = nil
