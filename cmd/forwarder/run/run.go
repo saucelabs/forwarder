@@ -15,7 +15,7 @@ import (
 
 type command struct {
 	dnsConfig         *forwarder.DNSConfig
-	proxyConfig       forwarder.ProxyConfig
+	proxyConfig       *forwarder.ProxyConfig
 	localProxyAuth    *url.Userinfo
 	upstreamProxyAuth *url.Userinfo
 	logConfig         logConfig
@@ -38,7 +38,7 @@ func (c *command) RunE(cmd *cobra.Command, args []string) error {
 		resolver = r
 	}
 
-	p, err := forwarder.NewProxy(&c.proxyConfig, resolver, newLogger(c.logConfig, "proxy"))
+	p, err := forwarder.NewProxy(c.proxyConfig, resolver, newLogger(c.logConfig, "proxy"))
 	if err != nil {
 		return err
 	}
@@ -114,8 +114,9 @@ const example = `Start a proxy listening to http://localhost:8080:
 
 func Command() (cmd *cobra.Command) {
 	c := command{
-		dnsConfig: forwarder.DefaultDNSConfig(),
-		logConfig: defaultLogConfig(),
+		dnsConfig:   forwarder.DefaultDNSConfig(),
+		proxyConfig: forwarder.DefaultProxyConfig(),
+		logConfig:   defaultLogConfig(),
 	}
 	defer func() {
 		fs := cmd.Flags()
@@ -124,20 +125,22 @@ func Command() (cmd *cobra.Command) {
 			"dns-server", "n", "sets DNS server, ex. -n udp://1.1.1.1:53 (can be specified multiple times)")
 		fs.DurationVar(&c.dnsConfig.Timeout, "dns-timeout", c.dnsConfig.Timeout, "sets timeout for DNS queries if DNS server is specified")
 
-		fs.VarP(anyflag.NewValue[*url.URL](&url.URL{Scheme: "http", Host: "localhost:8080"}, &c.proxyConfig.LocalProxyURI, forwarder.ParseProxyURI),
+		fs.VarP(anyflag.NewValue[*url.URL](c.proxyConfig.LocalProxyURI, &c.proxyConfig.LocalProxyURI, forwarder.ParseProxyURI),
 			"local-proxy-uri", "l", "sets local proxy URI")
-		fs.VarP(anyflag.NewValue[*url.Userinfo](nil, &c.localProxyAuth, forwarder.ParseUserInfo),
+		fs.VarP(anyflag.NewValue[*url.Userinfo](c.localProxyAuth, &c.localProxyAuth, forwarder.ParseUserInfo),
 			"local-proxy-auth", "", "sets local proxy basic auth in the form of username:password")
-		fs.VarP(anyflag.NewValue[*url.URL](nil, &c.proxyConfig.UpstreamProxyURI, forwarder.ParseProxyURI),
+		fs.VarP(anyflag.NewValue[*url.URL](c.proxyConfig.UpstreamProxyURI, &c.proxyConfig.UpstreamProxyURI, forwarder.ParseProxyURI),
 			"upstream-proxy-uri", "u", "sets upstream proxy URI")
-		fs.VarP(anyflag.NewValue[*url.Userinfo](nil, &c.upstreamProxyAuth, forwarder.ParseUserInfo),
+		fs.VarP(anyflag.NewValue[*url.Userinfo](c.upstreamProxyAuth, &c.upstreamProxyAuth, forwarder.ParseUserInfo),
 			"upstream-proxy-auth", "", "sets upstream proxy basic auth in the form of username:password")
-		fs.VarP(anyflag.NewValue[*url.URL](nil, &c.proxyConfig.PACURI, url.ParseRequestURI),
+		fs.VarP(anyflag.NewValue[*url.URL](c.proxyConfig.PACURI, &c.proxyConfig.PACURI, url.ParseRequestURI),
 			"pac-uri", "p", "sets URI to PAC content, or directly, the PAC content")
-
-		fs.StringSliceVarP(&c.proxyConfig.PACProxiesCredentials, "pac-proxies-credentials", "d", nil, "sets PAC proxies credentials using standard URI format")
-		fs.StringSliceVar(&c.proxyConfig.SiteCredentials, "site-credentials", nil, "sets target site credentials")
-		fs.BoolVarP(&c.proxyConfig.ProxyLocalhost, "proxy-localhost", "t", false, "if set, will proxy localhost requests to an upstream proxy - if any")
+		fs.StringSliceVarP(&c.proxyConfig.PACProxiesCredentials, "pac-proxies-credentials", "d", c.proxyConfig.PACProxiesCredentials,
+			"sets PAC proxies credentials using standard URI format")
+		fs.StringSliceVar(&c.proxyConfig.SiteCredentials, "site-credentials", c.proxyConfig.SiteCredentials,
+			"sets target site credentials")
+		fs.BoolVarP(&c.proxyConfig.ProxyLocalhost, "proxy-localhost", "t", c.proxyConfig.ProxyLocalhost,
+			"if set, will proxy localhost requests to an upstream proxy")
 
 		fs.StringVar(&c.logConfig.Level, "log-level", c.logConfig.Level, "sets the log level")
 		fs.StringVar(&c.logConfig.FileLevel, "log-file-level", c.logConfig.FileLevel, "sets the log file level")
