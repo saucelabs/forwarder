@@ -142,6 +142,25 @@ func Command() (cmd *cobra.Command) {
 		fs.BoolVarP(&c.proxyConfig.ProxyLocalhost, "proxy-localhost", "t", c.proxyConfig.ProxyLocalhost,
 			"if set, will proxy localhost requests to an upstream proxy")
 
+		fs.DurationVar(&c.proxyConfig.HTTP.DialTimeout, "http-dial-timeout", c.proxyConfig.HTTP.DialTimeout,
+			"sets dial timeout for HTTP connections")
+		fs.DurationVar(&c.proxyConfig.HTTP.KeepAlive, "http-keep-alive", c.proxyConfig.HTTP.KeepAlive,
+			"sets keep alive interval for HTTP connections")
+		fs.DurationVar(&c.proxyConfig.HTTP.TLSHandshakeTimeout, "http-tls-handshake-timeout", c.proxyConfig.HTTP.TLSHandshakeTimeout,
+			"sets TLS handshake timeout for HTTP connections")
+		fs.IntVar(&c.proxyConfig.HTTP.MaxIdleConns, "http-max-idle-conns", c.proxyConfig.HTTP.MaxIdleConns,
+			"sets maximum number of idle connections for HTTP connections")
+		fs.IntVar(&c.proxyConfig.HTTP.MaxIdleConnsPerHost, "http-max-idle-conns-per-host", c.proxyConfig.HTTP.MaxIdleConnsPerHost,
+			"sets maximum number of idle connections per host for HTTP connections")
+		fs.IntVar(&c.proxyConfig.HTTP.MaxConnsPerHost, "http-max-conns-per-host", c.proxyConfig.HTTP.MaxConnsPerHost,
+			"sets maximum number of connections per host for HTTP connections")
+		fs.DurationVar(&c.proxyConfig.HTTP.IdleConnTimeout, "http-idle-conn-timeout", c.proxyConfig.HTTP.IdleConnTimeout,
+			"sets idle connection timeout for HTTP connections")
+		fs.DurationVar(&c.proxyConfig.HTTP.ResponseHeaderTimeout, "http-response-header-timeout", c.proxyConfig.HTTP.ResponseHeaderTimeout,
+			"sets response header timeout for HTTP connections")
+		fs.DurationVar(&c.proxyConfig.HTTP.ExpectContinueTimeout, "http-expect-continue-timeout", c.proxyConfig.HTTP.ExpectContinueTimeout,
+			"sets expect continue timeout for HTTP connections")
+
 		fs.StringVar(&c.logConfig.Level, "log-level", c.logConfig.Level, "sets the log level")
 		fs.StringVar(&c.logConfig.FileLevel, "log-file-level", c.logConfig.FileLevel, "sets the log file level")
 		fs.StringVar(&c.logConfig.FilePath, "log-file-path", c.logConfig.FilePath, "sets the log file path")
