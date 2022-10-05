@@ -11,6 +11,7 @@ import (
 	"github.com/mmatczuk/anyflag"
 	"github.com/saucelabs/forwarder"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 type command struct {
@@ -120,50 +121,9 @@ func Command() (cmd *cobra.Command) {
 	}
 	defer func() {
 		fs := cmd.Flags()
-
-		fs.VarP(anyflag.NewSliceValue[*url.URL](nil, &c.dnsConfig.Servers, forwarder.ParseDNSURI),
-			"dns-server", "n", "DNS server, ex. -n udp://1.1.1.1:53 (can be specified multiple times)")
-		fs.DurationVar(&c.dnsConfig.Timeout, "dns-timeout", c.dnsConfig.Timeout, "timeout for DNS queries if DNS server is specified")
-
-		fs.VarP(anyflag.NewValue[*url.URL](c.proxyConfig.LocalProxyURI, &c.proxyConfig.LocalProxyURI, forwarder.ParseProxyURI),
-			"local-proxy-uri", "l", "local proxy URI")
-		fs.VarP(anyflag.NewValue[*url.Userinfo](c.localProxyAuth, &c.localProxyAuth, forwarder.ParseUserInfo),
-			"local-proxy-auth", "", "local proxy basic auth in the form of username:password")
-		fs.VarP(anyflag.NewValue[*url.URL](c.proxyConfig.UpstreamProxyURI, &c.proxyConfig.UpstreamProxyURI, forwarder.ParseProxyURI),
-			"upstream-proxy-uri", "u", "upstream proxy URI")
-		fs.VarP(anyflag.NewValue[*url.Userinfo](c.upstreamProxyAuth, &c.upstreamProxyAuth, forwarder.ParseUserInfo),
-			"upstream-proxy-auth", "", "upstream proxy basic auth in the form of username:password")
-		fs.VarP(anyflag.NewValue[*url.URL](c.proxyConfig.PACURI, &c.proxyConfig.PACURI, url.ParseRequestURI),
-			"pac-uri", "p", "URI to PAC content, or directly, the PAC content")
-		fs.StringSliceVarP(&c.proxyConfig.PACProxiesCredentials, "pac-proxies-credentials", "d", c.proxyConfig.PACProxiesCredentials,
-			"PAC proxies credentials using standard URI format")
-		fs.StringSliceVar(&c.proxyConfig.SiteCredentials, "site-credentials", c.proxyConfig.SiteCredentials,
-			"target site credentials")
-		fs.BoolVarP(&c.proxyConfig.ProxyLocalhost, "proxy-localhost", "t", c.proxyConfig.ProxyLocalhost,
-			"if set, will proxy localhost requests to an upstream proxy")
-
-		fs.DurationVar(&c.proxyConfig.HTTP.DialTimeout, "http-dial-timeout", c.proxyConfig.HTTP.DialTimeout,
-			"dial timeout for HTTP connections")
-		fs.DurationVar(&c.proxyConfig.HTTP.KeepAlive, "http-keep-alive", c.proxyConfig.HTTP.KeepAlive,
-			"keep alive interval for HTTP connections")
-		fs.DurationVar(&c.proxyConfig.HTTP.TLSHandshakeTimeout, "http-tls-handshake-timeout", c.proxyConfig.HTTP.TLSHandshakeTimeout,
-			"TLS handshake timeout for HTTP connections")
-		fs.IntVar(&c.proxyConfig.HTTP.MaxIdleConns, "http-max-idle-conns", c.proxyConfig.HTTP.MaxIdleConns,
-			"maximum number of idle connections for HTTP connections")
-		fs.IntVar(&c.proxyConfig.HTTP.MaxIdleConnsPerHost, "http-max-idle-conns-per-host", c.proxyConfig.HTTP.MaxIdleConnsPerHost,
-			"maximum number of idle connections per host for HTTP connections")
-		fs.IntVar(&c.proxyConfig.HTTP.MaxConnsPerHost, "http-max-conns-per-host", c.proxyConfig.HTTP.MaxConnsPerHost,
-			"maximum number of connections per host for HTTP connections")
-		fs.DurationVar(&c.proxyConfig.HTTP.IdleConnTimeout, "http-idle-conn-timeout", c.proxyConfig.HTTP.IdleConnTimeout,
-			"idle connection timeout for HTTP connections")
-		fs.DurationVar(&c.proxyConfig.HTTP.ResponseHeaderTimeout, "http-response-header-timeout", c.proxyConfig.HTTP.ResponseHeaderTimeout,
-			"response header timeout for HTTP connections")
-		fs.DurationVar(&c.proxyConfig.HTTP.ExpectContinueTimeout, "http-expect-continue-timeout", c.proxyConfig.HTTP.ExpectContinueTimeout,
-			"expect continue timeout for HTTP connections")
-
-		fs.StringVar(&c.logConfig.Level, "log-level", c.logConfig.Level, "the log level")
-		fs.StringVar(&c.logConfig.FileLevel, "log-file-level", c.logConfig.FileLevel, "the log file level")
-		fs.StringVar(&c.logConfig.FilePath, "log-file-path", c.logConfig.FilePath, "the log file path")
+		c.bindDNSConfig(fs)
+		c.bindProxyConfig(fs)
+		c.bindLogConfig(fs)
 
 		cmd.MarkFlagsMutuallyExclusive("upstream-proxy-uri", "pac-uri")
 	}()
@@ -174,4 +134,54 @@ func Command() (cmd *cobra.Command) {
 		Example: example,
 		RunE:    c.RunE,
 	}
+}
+
+func (c *command) bindDNSConfig(fs *pflag.FlagSet) {
+	fs.VarP(anyflag.NewSliceValue[*url.URL](nil, &c.dnsConfig.Servers, forwarder.ParseDNSURI),
+		"dns-server", "n", "DNS server, ex. -n udp://1.1.1.1:53 (can be specified multiple times)")
+	fs.DurationVar(&c.dnsConfig.Timeout, "dns-timeout", c.dnsConfig.Timeout, "timeout for DNS queries if DNS server is specified")
+}
+
+func (c *command) bindProxyConfig(fs *pflag.FlagSet) {
+	fs.VarP(anyflag.NewValue[*url.URL](c.proxyConfig.LocalProxyURI, &c.proxyConfig.LocalProxyURI, forwarder.ParseProxyURI),
+		"local-proxy-uri", "l", "local proxy URI")
+	fs.VarP(anyflag.NewValue[*url.Userinfo](c.localProxyAuth, &c.localProxyAuth, forwarder.ParseUserInfo),
+		"local-proxy-auth", "", "local proxy basic auth in the form of username:password")
+	fs.VarP(anyflag.NewValue[*url.URL](c.proxyConfig.UpstreamProxyURI, &c.proxyConfig.UpstreamProxyURI, forwarder.ParseProxyURI),
+		"upstream-proxy-uri", "u", "upstream proxy URI")
+	fs.VarP(anyflag.NewValue[*url.Userinfo](c.upstreamProxyAuth, &c.upstreamProxyAuth, forwarder.ParseUserInfo),
+		"upstream-proxy-auth", "", "upstream proxy basic auth in the form of username:password")
+	fs.VarP(anyflag.NewValue[*url.URL](c.proxyConfig.PACURI, &c.proxyConfig.PACURI, url.ParseRequestURI),
+		"pac-uri", "p", "URI to PAC content, or directly, the PAC content")
+	fs.StringSliceVarP(&c.proxyConfig.PACProxiesCredentials, "pac-proxies-credentials", "d", c.proxyConfig.PACProxiesCredentials,
+		"PAC proxies credentials using standard URI format")
+	fs.StringSliceVar(&c.proxyConfig.SiteCredentials, "site-credentials", c.proxyConfig.SiteCredentials,
+		"target site credentials")
+	fs.BoolVarP(&c.proxyConfig.ProxyLocalhost, "proxy-localhost", "t", c.proxyConfig.ProxyLocalhost,
+		"if set, will proxy localhost requests to an upstream proxy")
+
+	fs.DurationVar(&c.proxyConfig.HTTP.DialTimeout, "http-dial-timeout", c.proxyConfig.HTTP.DialTimeout,
+		"dial timeout for HTTP connections")
+	fs.DurationVar(&c.proxyConfig.HTTP.KeepAlive, "http-keep-alive", c.proxyConfig.HTTP.KeepAlive,
+		"keep alive interval for HTTP connections")
+	fs.DurationVar(&c.proxyConfig.HTTP.TLSHandshakeTimeout, "http-tls-handshake-timeout", c.proxyConfig.HTTP.TLSHandshakeTimeout,
+		"TLS handshake timeout for HTTP connections")
+	fs.IntVar(&c.proxyConfig.HTTP.MaxIdleConns, "http-max-idle-conns", c.proxyConfig.HTTP.MaxIdleConns,
+		"maximum number of idle connections for HTTP connections")
+	fs.IntVar(&c.proxyConfig.HTTP.MaxIdleConnsPerHost, "http-max-idle-conns-per-host", c.proxyConfig.HTTP.MaxIdleConnsPerHost,
+		"maximum number of idle connections per host for HTTP connections")
+	fs.IntVar(&c.proxyConfig.HTTP.MaxConnsPerHost, "http-max-conns-per-host", c.proxyConfig.HTTP.MaxConnsPerHost,
+		"maximum number of connections per host for HTTP connections")
+	fs.DurationVar(&c.proxyConfig.HTTP.IdleConnTimeout, "http-idle-conn-timeout", c.proxyConfig.HTTP.IdleConnTimeout,
+		"idle connection timeout for HTTP connections")
+	fs.DurationVar(&c.proxyConfig.HTTP.ResponseHeaderTimeout, "http-response-header-timeout", c.proxyConfig.HTTP.ResponseHeaderTimeout,
+		"response header timeout for HTTP connections")
+	fs.DurationVar(&c.proxyConfig.HTTP.ExpectContinueTimeout, "http-expect-continue-timeout", c.proxyConfig.HTTP.ExpectContinueTimeout,
+		"expect continue timeout for HTTP connections")
+}
+
+func (c *command) bindLogConfig(fs *pflag.FlagSet) {
+	fs.StringVar(&c.logConfig.Level, "log-level", c.logConfig.Level, "the log level")
+	fs.StringVar(&c.logConfig.FileLevel, "log-file-level", c.logConfig.FileLevel, "the log file level")
+	fs.StringVar(&c.logConfig.FilePath, "log-file-path", c.logConfig.FilePath, "the log file path")
 }
