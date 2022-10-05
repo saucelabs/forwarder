@@ -11,6 +11,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"runtime"
 	"time"
 
 	"github.com/elazarl/goproxy"
@@ -135,12 +136,22 @@ func NewProxy(cfg *ProxyConfig, r *net.Resolver, log Logger) (*Proxy, error) {
 }
 
 func (p *Proxy) setupTransport(r *net.Resolver) {
-	p.transport = http.DefaultTransport.(*http.Transport).Clone() //nolint:forcetypeassert // We know it's a *http.Transport.
-	p.transport.DialContext = defaultTransportDialContext(&net.Dialer{
-		Timeout:   30 * time.Second,
-		KeepAlive: 30 * time.Second,
-		Resolver:  r,
-	})
+	// The default values are taken from [hashicorp/go-cleanhttp](https://github.com/hashicorp/go-cleanhttp/blob/a0807dd79fc1680a7b1f2d5a2081d92567aab97d/cleanhttp.go#L19.
+	p.transport = &http.Transport{
+		Proxy: nil,
+		DialContext: defaultTransportDialContext(&net.Dialer{
+			Timeout:   30 * time.Second,
+			KeepAlive: 30 * time.Second,
+			Resolver:  r,
+		}),
+		MaxIdleConns:          100,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+		ForceAttemptHTTP2:     true,
+		MaxIdleConnsPerHost:   runtime.GOMAXPROCS(0) + 1,
+	}
+
 	p.transport.Proxy = nil
 }
 
