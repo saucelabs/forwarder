@@ -87,15 +87,6 @@ func (c *ProxyConfig) Validate() error {
 	return nil
 }
 
-// Mode specifies mode of operation of the proxy.
-type Mode string
-
-const (
-	Direct   Mode = "DIRECT"
-	Upstream Mode = "Upstream"
-	PAC      Mode = "PAC"
-)
-
 // Proxy definition. Proxy can be protected, or not.
 // It can forward connections to an upstream proxy protected, or not.
 // The upstream proxy can be automatically setup via PAC.
