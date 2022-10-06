@@ -21,6 +21,7 @@ linters:
     - maligned
     - nlreturn
     - nonamedreturns
+    - nosnakecase
     - tagliatelle
     - varnamelen
     - wrapcheck
