@@ -62,8 +62,6 @@ github.com/dop251/goja v0.0.0-20220806120448-1444e6b94559 h1:S3U65m9SN2p5CJpT3CD
 github.com/dop251/goja v0.0.0-20220806120448-1444e6b94559/go.mod h1:1jWwHOtOkEqsfX6tYsufUc7BBTuGHH2ekiJabpkN4CA=
 github.com/dop251/goja_nodejs v0.0.0-20210225215109-d91c329300e7/go.mod h1:hn7BA7c8pLvoGndExHudxTDKZ84Pyvv+90pbBjbTz0Y=
 github.com/dop251/goja_nodejs v0.0.0-20211022123610-8dd9abb0616d/go.mod h1:DngW8aVqWbuLRMHItjPUyqdj+HWPvnQe8V8y1nDpIbM=
-github.com/elazarl/goproxy v0.0.0-20220529153421-8ea89ba92021 h1:EbF0UihnxWRcIMOwoVtqnAylsqcjzqpSvMdjF2Ud4rA=
-github.com/elazarl/goproxy v0.0.0-20220529153421-8ea89ba92021/go.mod h1:Ro8st/ElPeALwNFlcTpWmkr6IoMFfkjXAvTHpevnDsM=
 github.com/elazarl/goproxy v0.0.0-20220901064549-fbd10ff4f5a1 h1:ecIiM5NYeEOhy5trm8xel6wpUhYH+QWteUKnwcbCMl4=
 github.com/elazarl/goproxy v0.0.0-20220901064549-fbd10ff4f5a1/go.mod h1:Ro8st/ElPeALwNFlcTpWmkr6IoMFfkjXAvTHpevnDsM=
 github.com/elazarl/goproxy/ext v0.0.0-20190711103511-473e67f1d7d2/go.mod h1:gNh8nYJoAm43RfaxurUnxr+N1PwuFV3ZMl/efxlIlY8=
@@ -205,8 +203,6 @@ github.com/saucelabs/lumberjack/v3 v3.0.3 h1:oKrSJqySYt1AAiguCGmQlYHroUCEFAKqQc8
 github.com/saucelabs/lumberjack/v3 v3.0.3/go.mod h1:agq9unjLlpW5MDuvj5NSAlTNYXGvLu9N3/aBuhAt5HQ=
 github.com/saucelabs/pacman v0.1.2 h1:uI7niSxxbuSPD+4TpNnGunIjUWqfvIvGzvDpw702ysA=
 github.com/saucelabs/pacman v0.1.2/go.mod h1:dlyvVTV2tb2iG0qAxOY/N0Bd2HaXvjkY2bMgGwh4aVY=
-github.com/saucelabs/randomness v0.0.7 h1:8GpY0TzBn90JqS/kq8QZWXDP2LRw+UTqkyDdnsIYT8U=
-github.com/saucelabs/randomness v0.0.7/go.mod h1:PVrK5rizeeCEWLml61QP0gX3GOs3FI7wRrf4qXg8sRU=
 github.com/saucelabs/sypl v1.5.14 h1:0ab/IrFZeKY+uPmivs+qrTUru2iyMC+QCp8hIHNKiDI=
 github.com/saucelabs/sypl v1.5.14/go.mod h1:q5DAleXY9etp15lHVzIkojjZcRj94IcNhZ2JGznck1s=
 github.com/spf13/afero v1.9.2 h1:j49Hj62F0n+DaZ1dDCvhABaPNSGNkt32oRFxI33IEMw=

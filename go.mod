@@ -7,7 +7,6 @@ require (
 	github.com/elazarl/goproxy/ext v0.0.0-20220529153421-8ea89ba92021
 	github.com/mmatczuk/anyflag v0.0.0-20220924053634-0b67a9ee53bf
 	github.com/saucelabs/pacman v0.1.2
-	github.com/saucelabs/randomness v0.0.7
 	github.com/saucelabs/sypl v1.5.14
 	github.com/spf13/cobra v1.5.0
 	github.com/spf13/pflag v1.0.5

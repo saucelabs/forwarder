@@ -92,20 +92,9 @@ func DefaultHTTPTransportConfig() *HTTPTransportConfig {
 	}
 }
 
-func (c *HTTPTransportConfig) Clone() *HTTPTransportConfig {
-	v := new(HTTPTransportConfig)
-	deepCopy(v, c)
-	return v
-}
-
 type ProxyConfig struct {
-	// LocalProxyURI is the local proxy URI, ex. http://user:password@127.0.0.1:8080.
-	// Requirements:
-	// - Known schemes: http, https, socks, socks5, or quic.
-	// - Hostname or IP.
-	// - Port in a valid range: 1 - 65535.
-	// - Username and password are optional.
-	LocalProxyURI *url.URL `json:"local_proxy_uri"`
+	// BasicAuth is the username and password for the proxy basic auth.
+	BasicAuth *url.Userinfo `json:"basic_auth"`
 
 	// UpstreamProxyURI is the upstream proxy URI, ex. http://user:password@127.0.0.1:8080.
 	// Only one of `UpstreamProxyURI` or `PACURI` can be set.
@@ -140,24 +129,11 @@ type ProxyConfig struct {
 
 func DefaultProxyConfig() *ProxyConfig {
 	return &ProxyConfig{
-		LocalProxyURI: &url.URL{Scheme: "http", Host: "localhost:8080"},
-		HTTP:          DefaultHTTPTransportConfig(),
+		HTTP: DefaultHTTPTransportConfig(),
 	}
-}
-
-func (c *ProxyConfig) Clone() *ProxyConfig {
-	v := new(ProxyConfig)
-	deepCopy(v, c)
-	return v
 }
 
 func (c *ProxyConfig) Validate() error {
-	if c.LocalProxyURI == nil {
-		return fmt.Errorf("local_proxy_uri is required")
-	}
-	if err := validateProxyURI(c.LocalProxyURI); err != nil {
-		return fmt.Errorf("local_proxy_uri: %w", err)
-	}
 	if err := validateProxyURI(c.UpstreamProxyURI); err != nil {
 		return fmt.Errorf("upstream_proxy_uri: %w", err)
 	}
@@ -186,7 +162,6 @@ type Proxy struct {
 }
 
 func NewProxy(cfg *ProxyConfig, r *net.Resolver, log Logger) (*Proxy, error) {
-	cfg = cfg.Clone()
 	if cfg.HTTP == nil {
 		cfg.HTTP = DefaultHTTPTransportConfig()
 	}
@@ -346,7 +321,7 @@ func (p *Proxy) pacFindProxy(u *url.URL) (*url.URL, error) {
 
 // setupProxyBasicAuth enables basic auth for the proxy.
 func (p *Proxy) setupProxyBasicAuth() {
-	u := p.config.LocalProxyURI.User
+	u := p.config.BasicAuth
 
 	if u == nil || u.Username() == "" {
 		return
@@ -379,11 +354,6 @@ func (p *Proxy) setupSiteBasicAuth() {
 	})
 }
 
-// Config returns a copy of the proxy configuration.
-func (p *Proxy) Config() *ProxyConfig {
-	return p.config.Clone()
-}
-
 // Mode returns mode of operation of the proxy as specified in the config.
 func (p *Proxy) Mode() Mode {
 	switch {
@@ -396,13 +366,6 @@ func (p *Proxy) Mode() Mode {
 	}
 }
 
-// Run starts the proxy.
-// It's safe to call it multiple times - nothing will happen.
-func (p *Proxy) Run() error {
-	p.log.Infof("Listening on %s", p.config.LocalProxyURI.Host)
-	if err := http.ListenAndServe(p.config.LocalProxyURI.Host, p.proxy); err != nil { //nolint:gosec // FIXME https://github.com/saucelabs/forwarder/issues/45
-		return fmt.Errorf("start proxy: %w", err)
-	}
-
-	return nil
+func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	p.proxy.ServeHTTP(w, r)
 }

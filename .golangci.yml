@@ -63,6 +63,11 @@ issues:
         - paralleltest
         - testpackage
 
+    - path: example_test\.go
+      linters:
+        - errcheck
+        - gosec
+
     - linters:
         - gochecknoglobals
       source: "(nil)"

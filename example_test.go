@@ -11,8 +11,6 @@ import (
 	"net/url"
 	"strings"
 	"time"
-
-	"github.com/saucelabs/randomness"
 )
 
 // Complete, and complex example.
@@ -21,16 +19,6 @@ import (
 func ExampleNew() {
 	// Logger
 	log := nopLogger{}
-
-	//////
-	// Randomness automates port allocation, ensuring no collision happens
-	// between tests, and examples.
-	//////
-
-	r, err := randomness.New(49000, 50000, 100, true)
-	if err != nil {
-		panic(err)
-	}
 
 	//////
 	// Target/end server.
@@ -54,10 +42,7 @@ func ExampleNew() {
 	// PAC content.
 	//////
 
-	// Use `int(r.MustGenerate())` for testing purposes. Specify a port if using
-	// a manual - external proxy (e.g.: NGINX). Good for debugging, and demo
-	// purposes.
-	upstreamProxyPort := int(r.MustGenerate())
+	upstreamProxyPort := 58080
 
 	templateMap := map[string]int{
 		"port": upstreamProxyPort,
@@ -93,7 +78,7 @@ func ExampleNew() {
 	//////
 
 	// Local proxy.
-	localProxyURI := newProxyURL(r.MustGenerate(), localProxyCredentialUsername, localProxyCredentialPassword)
+	localProxyURI := newProxyURL(48080, localProxyCredentialUsername, localProxyCredentialPassword)
 
 	// Upstream proxy.
 	upstreamProxyURI := newProxyURL(int64(upstreamProxyPort), upstreamProxyCredentialUsername, upstreamProxyCredentialPassword)
@@ -106,7 +91,7 @@ func ExampleNew() {
 	//////
 
 	c := ProxyConfig{
-		LocalProxyURI:         localProxyURI,
+		BasicAuth:             localProxyURI.User,
 		PACURI:                pacServerURI,
 		PACProxiesCredentials: []string{upstreamProxyURI.String()},
 		ProxyLocalhost:        true,
@@ -116,7 +101,7 @@ func ExampleNew() {
 		panic(err)
 	}
 
-	go localProxy.MustRun()
+	go http.ListenAndServe(localProxyURI.Host, localProxy)
 
 	// Give enough time to start, and be ready.
 	time.Sleep(1 * time.Second)
@@ -126,14 +111,14 @@ func ExampleNew() {
 	//////
 
 	upstreamProxy, err := NewProxy(&ProxyConfig{
-		LocalProxyURI:  upstreamProxyURI,
+		BasicAuth:      upstreamProxyURI.User,
 		ProxyLocalhost: true,
 	}, nil, log)
 	if err != nil {
 		panic(err)
 	}
 
-	go upstreamProxy.MustRun()
+	go http.ListenAndServe(upstreamProxyURI.Host, upstreamProxy)
 
 	// Give enough time to start, and be ready.
 	time.Sleep(1 * time.Second)

@@ -185,3 +185,15 @@ func TestParseDNSURI(t *testing.T) {
 		})
 	}
 }
+
+func TestParseHTTPScheme(t *testing.T) {
+	for _, s := range allSchemes {
+		v, err := ParseHTTPScheme(string(s))
+		if err != nil {
+			t.Fatalf("expected success, got %q", err)
+		}
+		if v != s {
+			t.Errorf("expected %q, got %q", s, v)
+		}
+	}
+}

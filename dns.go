@@ -25,12 +25,6 @@ func DefaultDNSConfig() *DNSConfig {
 	}
 }
 
-func (c *DNSConfig) Clone() *DNSConfig {
-	v := new(DNSConfig)
-	deepCopy(v, c)
-	return v
-}
-
 func (c *DNSConfig) Validate() error {
 	if len(c.Servers) == 0 {
 		return fmt.Errorf("no DNS server configured")

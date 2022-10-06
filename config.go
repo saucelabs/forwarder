@@ -1,8 +1,6 @@
 package forwarder
 
 import (
-	"bytes"
-	"encoding/gob"
 	"fmt"
 	"net"
 	"net/url"
@@ -149,12 +147,11 @@ func isPort(port string) bool {
 	return p >= 1 && p <= 65535
 }
 
-func deepCopy(dst, src interface{}) {
-	var buf bytes.Buffer
-	if err := gob.NewEncoder(&buf).Encode(src); err != nil {
-		panic(err)
+func ParseHTTPScheme(val string) (Scheme, error) {
+	for _, s := range allSchemes {
+		if string(s) == val {
+			return s, nil
+		}
 	}
-	if err := gob.NewDecoder(&buf).Decode(dst); err != nil {
-		panic(err)
-	}
+	return "", fmt.Errorf("invalid scheme %q, valid schemes are %s", val, allSchemes)
 }
