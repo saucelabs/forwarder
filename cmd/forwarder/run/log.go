@@ -60,13 +60,13 @@ type forwarderLogger struct {
 }
 
 func (l forwarderLogger) Errorf(format string, args ...interface{}) {
-	l.Sypl.Errorf(format, args...)
+	l.Sypl.Errorf(format+"\n", args...)
 }
 
 func (l forwarderLogger) Infof(format string, args ...interface{}) {
-	l.Sypl.Infof(format, args...)
+	l.Sypl.Infof(format+"\n", args...)
 }
 
 func (l forwarderLogger) Debugf(format string, args ...interface{}) {
-	l.Sypl.Debugf(format, args...)
+	l.Sypl.Debugf(format+"\n", args...)
 }
