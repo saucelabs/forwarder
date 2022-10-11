@@ -20,7 +20,9 @@ const (
 	HTTP2Scheme Scheme = "h2"
 )
 
-var allSchemes = []Scheme{HTTPScheme, HTTPSScheme, HTTP2Scheme} //nolint:gochecknoglobals // this is needed for parsing
+func (s Scheme) String() string {
+	return string(s)
+}
 
 type HTTPServerConfig struct {
 	Protocol    Scheme        `json:"protocol"`

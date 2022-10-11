@@ -146,12 +146,3 @@ func isPort(port string) bool {
 
 	return p >= 1 && p <= 65535
 }
-
-func ParseHTTPScheme(val string) (Scheme, error) {
-	for _, s := range allSchemes {
-		if string(s) == val {
-			return s, nil
-		}
-	}
-	return "", fmt.Errorf("invalid scheme %q, valid schemes are %s", val, allSchemes)
-}

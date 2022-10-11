@@ -187,7 +187,8 @@ func (c *command) bindProxyConfig(fs *pflag.FlagSet) {
 }
 
 func (c *command) bindHTTPServerConfig(fs *pflag.FlagSet) {
-	fs.VarP(anyflag.NewValue[forwarder.Scheme](c.httpServerConfig.Protocol, &c.httpServerConfig.Protocol, forwarder.ParseHTTPScheme),
+	fs.VarP(anyflag.NewValue[forwarder.Scheme](c.httpServerConfig.Protocol, &c.httpServerConfig.Protocol,
+		anyflag.EnumParser[forwarder.Scheme](forwarder.HTTPScheme, forwarder.HTTPSScheme, forwarder.HTTP2Scheme)),
 		"protocol", "", "HTTP server protocol, one of http, https, h2")
 	fs.StringVarP(&c.httpServerConfig.Addr, "addr", "", c.httpServerConfig.Addr, "HTTP server listen address")
 	fs.StringVar(&c.httpServerConfig.CertFile, "cert-file", c.httpServerConfig.CertFile, "HTTP server TLS certificate file")
