@@ -4,6 +4,7 @@ import (
 	"crypto/subtle"
 	"encoding/base64"
 	"net/http"
+	"net/url"
 	"strings"
 )
 
@@ -66,6 +67,16 @@ func parseBasicAuth(auth string) (username, password string, ok bool) {
 	return username, password, true
 }
 
+// SetBasicAuthFromUserInfo calls SetBasicAuth with the username and password from the provided url.Userinfo.
+// If the provided userinfo is nil, the request's authorization header is not set.
+func (ba *BasicAuthUtil) SetBasicAuthFromUserInfo(r *http.Request, u *url.Userinfo) {
+	if u == nil {
+		return
+	}
+	p, _ := u.Password()
+	ba.SetBasicAuth(r, u.Username(), p)
+}
+
 // SetBasicAuth sets the request's authorization header to use HTTP
 // Basic Authentication with the provided username and password.
 //
@@ -109,6 +120,8 @@ func (ba *BasicAuthUtil) Wrap(h http.Handler, expectedUser, expectedPass string)
 			return
 		}
 
+		// Do not expose the authentication header to the upstream servers.
+		r.Header.Del(ba.Header)
 		h.ServeHTTP(w, r)
 	})
 }

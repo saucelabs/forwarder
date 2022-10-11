@@ -23,6 +23,9 @@ func TestBasicAuthUtilWrap(t *testing.T) {
 	ba := &BasicAuthUtil{Header: "Foo"}
 
 	h := ba.Wrap(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Foo") != "" {
+			t.Errorf("Auth header should not be forwarded")
+		}
 		w.WriteHeader(http.StatusOK)
 	}), "user", "pass")
 
