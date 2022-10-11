@@ -174,9 +174,7 @@ func TestHTTPProxySmoke(t *testing.T) { //nolint // FIXME cognitive complexity 8
 				},
 			}
 
-			if _, err := assertRequest(client, targetServerURL, http.StatusOK); err != nil {
-				t.Fatalf("Failed to execute request: %v", err)
-			}
+			assertRequest(t, client, targetServerURL, http.StatusOK)
 		})
 	}
 }
@@ -233,10 +231,7 @@ func TestHTTPProxyLocalhost(t *testing.T) {
 				},
 			}
 
-			// Make request to localhost.
-			if _, err := assertRequest(client, s.URL, tc.StatusCode); err != nil {
-				t.Fatalf("Failed to execute request: %v", err)
-			}
+			assertRequest(t, client, s.URL, tc.StatusCode)
 		})
 	}
 }
@@ -284,10 +279,12 @@ func httpServerStub(body, encodedCredential string, log Logger) *httptest.Server
 	return s
 }
 
-func assertRequest(client *http.Client, uri string, statusCode int) (body string, err error) {
+func assertRequest(t *testing.T, client *http.Client, uri string, statusCode int) {
+	t.Helper()
+
 	u, err := url.ParseRequestURI(uri)
 	if err != nil {
-		return "", fmt.Errorf("Failed to parse URI: %w", err)
+		t.Fatalf("Failed to parse URI: %s", err)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
@@ -295,7 +292,7 @@ func assertRequest(client *http.Client, uri string, statusCode int) (body string
 
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), http.NoBody)
 	if err != nil {
-		return "", fmt.Errorf("Failed to create request: %w", err)
+		t.Fatalf("Failed to create request: %s", err)
 	}
 
 	if u.User != nil {
@@ -306,19 +303,19 @@ func assertRequest(client *http.Client, uri string, statusCode int) (body string
 
 	response, err := client.Do(request)
 	if err != nil {
-		return "", fmt.Errorf("Failed to execute request: %w", err)
+		t.Fatalf("Failed to execute request: %s", err)
 	}
 
 	defer response.Body.Close()
 
 	data, err := io.ReadAll(response.Body)
 	if err != nil {
-		return "", fmt.Errorf("Failed to read body: %w", err)
+		t.Fatalf("Failed to read body: %s", err)
 	}
+
+	t.Logf("Response: %s", string(data))
 
 	if response.StatusCode != statusCode {
-		return "", fmt.Errorf("Expected status code to be %d, got %d", statusCode, response.StatusCode)
+		t.Fatalf("Expected status code to be %d, got %d", statusCode, response.StatusCode)
 	}
-
-	return string(data), nil
 }
