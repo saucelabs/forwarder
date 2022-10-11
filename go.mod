@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/elazarl/goproxy v0.0.0-20220901064549-fbd10ff4f5a1
 	github.com/elazarl/goproxy/ext v0.0.0-20220529153421-8ea89ba92021
-	github.com/mmatczuk/anyflag v0.0.0-20220924053634-0b67a9ee53bf
+	github.com/mmatczuk/anyflag v0.0.0-20221011091730-9f8baeb6fd9c
 	github.com/saucelabs/pacman v0.1.2
 	github.com/saucelabs/sypl v1.5.14
 	github.com/spf13/cobra v1.5.0
