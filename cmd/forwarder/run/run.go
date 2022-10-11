@@ -5,8 +5,11 @@
 package run
 
 import (
+	"context"
 	"net"
 	"net/url"
+	"os/signal"
+	"syscall"
 
 	"github.com/mmatczuk/anyflag"
 	"github.com/saucelabs/forwarder"
@@ -15,19 +18,16 @@ import (
 )
 
 type command struct {
-	dnsConfig         *forwarder.DNSConfig
-	proxyConfig       *forwarder.ProxyConfig
-	localProxyAuth    *url.Userinfo
-	upstreamProxyAuth *url.Userinfo
-	logConfig         logConfig
+	dnsConfig              *forwarder.DNSConfig
+	proxyConfig            *forwarder.ProxyConfig
+	upstreamProxyBasicAuth *url.Userinfo
+	httpServerConfig       *forwarder.HTTPServerConfig
+	logConfig              logConfig
 }
 
 func (c *command) RunE(cmd *cobra.Command, args []string) error {
-	if c.localProxyAuth != nil && c.proxyConfig.LocalProxyURI != nil {
-		c.proxyConfig.LocalProxyURI.User = c.localProxyAuth
-	}
-	if c.upstreamProxyAuth != nil && c.proxyConfig.UpstreamProxyURI != nil {
-		c.proxyConfig.UpstreamProxyURI.User = c.upstreamProxyAuth
+	if c.upstreamProxyBasicAuth != nil && c.proxyConfig.UpstreamProxyURI != nil {
+		c.proxyConfig.UpstreamProxyURI.User = c.upstreamProxyBasicAuth
 	}
 
 	var resolver *net.Resolver
@@ -44,7 +44,13 @@ func (c *command) RunE(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	return p.Run()
+	s, err := forwarder.NewHTTPServer(c.httpServerConfig, p, newLogger(c.logConfig, "server"))
+	if err != nil {
+		return err
+	}
+
+	ctx, _ := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	return s.Run(ctx)
 }
 
 const long = `Start the proxy. Proxy can be protected with basic auth.
@@ -115,14 +121,18 @@ const example = `Start a proxy listening to http://localhost:8080:
 
 func Command() (cmd *cobra.Command) {
 	c := command{
-		dnsConfig:   forwarder.DefaultDNSConfig(),
-		proxyConfig: forwarder.DefaultProxyConfig(),
-		logConfig:   defaultLogConfig(),
+		dnsConfig:        forwarder.DefaultDNSConfig(),
+		proxyConfig:      forwarder.DefaultProxyConfig(),
+		httpServerConfig: forwarder.DefaultHTTPServerConfig(),
+		logConfig:        defaultLogConfig(),
 	}
+	c.httpServerConfig.BasicAuthHeader = forwarder.ProxyAuthorizationHeader
+
 	defer func() {
 		fs := cmd.Flags()
 		c.bindDNSConfig(fs)
 		c.bindProxyConfig(fs)
+		c.bindHTTPServerConfig(fs)
 		c.bindLogConfig(fs)
 
 		cmd.MarkFlagsMutuallyExclusive("upstream-proxy-uri", "pac-uri")
@@ -143,14 +153,10 @@ func (c *command) bindDNSConfig(fs *pflag.FlagSet) {
 }
 
 func (c *command) bindProxyConfig(fs *pflag.FlagSet) {
-	fs.VarP(anyflag.NewValue[*url.URL](c.proxyConfig.LocalProxyURI, &c.proxyConfig.LocalProxyURI, forwarder.ParseProxyURI),
-		"local-proxy-uri", "l", "local proxy URI")
-	fs.VarP(anyflag.NewValue[*url.Userinfo](c.localProxyAuth, &c.localProxyAuth, forwarder.ParseUserInfo),
-		"local-proxy-auth", "", "local proxy basic auth in the form of username:password")
 	fs.VarP(anyflag.NewValue[*url.URL](c.proxyConfig.UpstreamProxyURI, &c.proxyConfig.UpstreamProxyURI, forwarder.ParseProxyURI),
 		"upstream-proxy-uri", "u", "upstream proxy URI")
-	fs.VarP(anyflag.NewValue[*url.Userinfo](c.upstreamProxyAuth, &c.upstreamProxyAuth, forwarder.ParseUserInfo),
-		"upstream-proxy-auth", "", "upstream proxy basic auth in the form of username:password")
+	fs.VarP(anyflag.NewValue[*url.Userinfo](c.upstreamProxyBasicAuth, &c.upstreamProxyBasicAuth, forwarder.ParseUserInfo),
+		"upstream-proxy-basic-auth", "", "upstream proxy basic auth in the form of `username:password`")
 	fs.VarP(anyflag.NewValue[*url.URL](c.proxyConfig.PACURI, &c.proxyConfig.PACURI, url.ParseRequestURI),
 		"pac-uri", "p", "URI to PAC content, or directly, the PAC content")
 	fs.StringSliceVarP(&c.proxyConfig.PACProxiesCredentials, "pac-proxies-credentials", "d", c.proxyConfig.PACProxiesCredentials,
@@ -178,6 +184,18 @@ func (c *command) bindProxyConfig(fs *pflag.FlagSet) {
 		"response header timeout for HTTP connections")
 	fs.DurationVar(&c.proxyConfig.HTTP.ExpectContinueTimeout, "http-expect-continue-timeout", c.proxyConfig.HTTP.ExpectContinueTimeout,
 		"expect continue timeout for HTTP connections")
+}
+
+func (c *command) bindHTTPServerConfig(fs *pflag.FlagSet) {
+	fs.VarP(anyflag.NewValue[forwarder.Scheme](c.httpServerConfig.Protocol, &c.httpServerConfig.Protocol,
+		anyflag.EnumParser[forwarder.Scheme](forwarder.HTTPScheme, forwarder.HTTPSScheme, forwarder.HTTP2Scheme)),
+		"protocol", "", "HTTP server protocol, one of http, https, h2")
+	fs.StringVarP(&c.httpServerConfig.Addr, "addr", "", c.httpServerConfig.Addr, "HTTP server listen address")
+	fs.StringVar(&c.httpServerConfig.CertFile, "cert-file", c.httpServerConfig.CertFile, "HTTP server TLS certificate file")
+	fs.StringVar(&c.httpServerConfig.KeyFile, "key-file", c.httpServerConfig.KeyFile, "HTTP server TLS key file")
+	fs.DurationVar(&c.httpServerConfig.ReadTimeout, "read-timeout", c.httpServerConfig.ReadTimeout, "HTTP server read timeout")
+	fs.VarP(anyflag.NewValue[*url.Userinfo](c.httpServerConfig.BasicAuth, &c.httpServerConfig.BasicAuth, forwarder.ParseUserInfo),
+		"basic-auth", "", "basic-auth in the form of `username:password`")
 }
 
 func (c *command) bindLogConfig(fs *pflag.FlagSet) {
