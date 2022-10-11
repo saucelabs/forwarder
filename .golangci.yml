@@ -59,6 +59,7 @@ issues:
 
     - path: _test\.go
       linters:
+        - bodyclose
         - funlen
         - paralleltest
         - testpackage
