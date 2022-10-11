@@ -92,12 +92,6 @@ func DefaultHTTPTransportConfig() *HTTPTransportConfig {
 	}
 }
 
-func (c *HTTPTransportConfig) Clone() *HTTPTransportConfig {
-	v := new(HTTPTransportConfig)
-	deepCopy(v, c)
-	return v
-}
-
 type ProxyConfig struct {
 	// LocalProxyURI is the local proxy URI, ex. http://user:password@127.0.0.1:8080.
 	// Requirements:
@@ -145,12 +139,6 @@ func DefaultProxyConfig() *ProxyConfig {
 	}
 }
 
-func (c *ProxyConfig) Clone() *ProxyConfig {
-	v := new(ProxyConfig)
-	deepCopy(v, c)
-	return v
-}
-
 func (c *ProxyConfig) Validate() error {
 	if c.LocalProxyURI == nil {
 		return fmt.Errorf("local_proxy_uri is required")
@@ -186,7 +174,6 @@ type Proxy struct {
 }
 
 func NewProxy(cfg *ProxyConfig, r *net.Resolver, log Logger) (*Proxy, error) {
-	cfg = cfg.Clone()
 	if cfg.HTTP == nil {
 		cfg.HTTP = DefaultHTTPTransportConfig()
 	}
@@ -377,11 +364,6 @@ func (p *Proxy) setupSiteBasicAuth() {
 		addBasicAuthHeader(r, p.userInfo.MatchURL(r.URL))
 		return r, nil
 	})
-}
-
-// Config returns a copy of the proxy configuration.
-func (p *Proxy) Config() *ProxyConfig {
-	return p.config.Clone()
 }
 
 // Mode returns mode of operation of the proxy as specified in the config.
