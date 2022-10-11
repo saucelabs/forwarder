@@ -126,6 +126,8 @@ func Command() (cmd *cobra.Command) {
 		httpServerConfig: forwarder.DefaultHTTPServerConfig(),
 		logConfig:        defaultLogConfig(),
 	}
+	c.httpServerConfig.BasicAuthHeader = forwarder.ProxyAuthorizationHeader
+
 	defer func() {
 		fs := cmd.Flags()
 		c.bindDNSConfig(fs)
@@ -151,8 +153,6 @@ func (c *command) bindDNSConfig(fs *pflag.FlagSet) {
 }
 
 func (c *command) bindProxyConfig(fs *pflag.FlagSet) {
-	fs.VarP(anyflag.NewValue[*url.Userinfo](c.proxyConfig.BasicAuth, &c.proxyConfig.BasicAuth, forwarder.ParseUserInfo),
-		"basic-auth", "", "basic-auth in the form of `username:password`")
 	fs.VarP(anyflag.NewValue[*url.URL](c.proxyConfig.UpstreamProxyURI, &c.proxyConfig.UpstreamProxyURI, forwarder.ParseProxyURI),
 		"upstream-proxy-uri", "u", "upstream proxy URI")
 	fs.VarP(anyflag.NewValue[*url.Userinfo](c.upstreamProxyBasicAuth, &c.upstreamProxyBasicAuth, forwarder.ParseUserInfo),
@@ -194,6 +194,8 @@ func (c *command) bindHTTPServerConfig(fs *pflag.FlagSet) {
 	fs.StringVar(&c.httpServerConfig.CertFile, "cert-file", c.httpServerConfig.CertFile, "HTTP server TLS certificate file")
 	fs.StringVar(&c.httpServerConfig.KeyFile, "key-file", c.httpServerConfig.KeyFile, "HTTP server TLS key file")
 	fs.DurationVar(&c.httpServerConfig.ReadTimeout, "read-timeout", c.httpServerConfig.ReadTimeout, "HTTP server read timeout")
+	fs.VarP(anyflag.NewValue[*url.Userinfo](c.httpServerConfig.BasicAuth, &c.httpServerConfig.BasicAuth, forwarder.ParseUserInfo),
+		"basic-auth", "", "basic-auth in the form of `username:password`")
 }
 
 func (c *command) bindLogConfig(fs *pflag.FlagSet) {

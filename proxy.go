@@ -6,7 +6,6 @@ package forwarder
 
 import (
 	"context"
-	"crypto/subtle"
 	"fmt"
 	"net"
 	"net/http"
@@ -15,7 +14,6 @@ import (
 	"time"
 
 	"github.com/elazarl/goproxy"
-	"github.com/elazarl/goproxy/ext/auth"
 	"github.com/saucelabs/pacman"
 )
 
@@ -93,9 +91,6 @@ func DefaultHTTPTransportConfig() *HTTPTransportConfig {
 }
 
 type HTTPProxyConfig struct {
-	// BasicAuth is the username and password for the proxy basic auth.
-	BasicAuth *url.Userinfo `json:"basic_auth"`
-
 	// UpstreamProxyURI is the upstream proxy URI, ex. http://user:password@127.0.0.1:8080.
 	// Only one of `UpstreamProxyURI` or `PACURI` can be set.
 	// Requirements:
@@ -158,6 +153,7 @@ type Proxy struct {
 	userInfo  *userInfoMatcher
 	pacParser *pacman.Parser
 	proxy     *goproxy.ProxyHttpServer
+	basicAuth *BasicAuthUtil
 	log       Logger
 }
 
@@ -177,9 +173,10 @@ func NewProxy(cfg *HTTPProxyConfig, r *net.Resolver, log Logger) (*Proxy, error)
 	}
 
 	p := &Proxy{
-		config:   *cfg,
-		userInfo: m,
-		log:      log,
+		config:    *cfg,
+		userInfo:  m,
+		basicAuth: &BasicAuthUtil{Header: ProxyAuthorizationHeader},
+		log:       log,
 	}
 	p.configureTransport(r)
 
@@ -248,7 +245,6 @@ func (p *Proxy) configureProxy() {
 		panic(fmt.Errorf("unknown mode %q", p.Mode()))
 	}
 
-	p.configureProxyBasicAuth()
 	p.configureSiteBasicAuth()
 }
 
@@ -273,13 +269,13 @@ func (p *Proxy) configureUpstreamProxy() {
 	p.log.Infof("Using upstream proxy %s", p.config.UpstreamProxyURI)
 
 	p.proxy.OnRequest(goproxy.IsLocalHost).DoFunc(func(r *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
-		addProxyBasicAuthHeader(r, p.config.UpstreamProxyURI.User)
+		p.basicAuth.SetBasicAuthFromUserInfo(r, p.config.UpstreamProxyURI.User)
 		return r, nil
 	})
 	p.proxy.Tr.Proxy = http.ProxyURL(p.config.UpstreamProxyURI)
 
 	p.proxy.ConnectDial = p.proxy.NewConnectDialToProxyWithHandler(p.config.UpstreamProxyURI.String(), func(r *http.Request) {
-		addProxyBasicAuthHeader(r, p.config.UpstreamProxyURI.User)
+		p.basicAuth.SetBasicAuthFromUserInfo(r, p.config.UpstreamProxyURI.User)
 	})
 }
 
@@ -319,37 +315,16 @@ func (p *Proxy) pacFindProxy(u *url.URL) (*url.URL, error) {
 	return up, nil
 }
 
-// configureProxyBasicAuth enables basic auth for the proxy.
-func (p *Proxy) configureProxyBasicAuth() {
-	u := p.config.BasicAuth
-
-	if u == nil || u.Username() == "" {
-		return
-	}
-
-	const realm = "Forwarder"
-
-	p.log.Infof("Basic auth enabled for realm %q and user %q", realm, u.Username())
-
-	auth.ProxyBasic(p.proxy, realm, func(username, password string) bool {
-		pwd, _ := u.Password()
-		// Securely compare passwords.
-		ok := subtle.ConstantTimeCompare([]byte(u.Username()), []byte(username)) == 1 &&
-			subtle.ConstantTimeCompare([]byte(pwd), []byte(password)) == 1
-		if !ok {
-			p.log.Infof("invalid credentials for %s", username)
-		}
-		return ok
-	})
-}
-
 func (p *Proxy) configureSiteBasicAuth() {
 	if p.userInfo == nil {
 		return
 	}
 
 	p.proxy.OnRequest().DoFunc(func(r *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
-		addBasicAuthHeader(r, p.userInfo.MatchURL(r.URL))
+		if u := p.userInfo.MatchURL(r.URL); u != nil {
+			pass, _ := u.Password()
+			r.SetBasicAuth(u.Username(), pass)
+		}
 		return r, nil
 	})
 }
