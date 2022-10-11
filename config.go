@@ -1,8 +1,6 @@
 package forwarder
 
 import (
-	"bytes"
-	"encoding/gob"
 	"fmt"
 	"net"
 	"net/url"
@@ -147,14 +145,4 @@ func isPort(port string) bool {
 	}
 
 	return p >= 1 && p <= 65535
-}
-
-func deepCopy(dst, src interface{}) {
-	var buf bytes.Buffer
-	if err := gob.NewEncoder(&buf).Encode(src); err != nil {
-		panic(err)
-	}
-	if err := gob.NewDecoder(&buf).Decode(dst); err != nil {
-		panic(err)
-	}
 }
