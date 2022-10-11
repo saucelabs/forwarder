@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"sync"
 	"time"
@@ -30,13 +31,17 @@ type HTTPServerConfig struct {
 	CertFile    string        `json:"cert_file"`
 	KeyFile     string        `json:"key_file"`
 	ReadTimeout time.Duration `json:"read_timeout"`
+
+	BasicAuthHeader string        `json:"basic_auth_header"`
+	BasicAuth       *url.Userinfo `json:"basic_auth"`
 }
 
 func DefaultHTTPServerConfig() *HTTPServerConfig {
 	return &HTTPServerConfig{
-		Protocol:    HTTPScheme,
-		Addr:        "0.0.0.0:8080",
-		ReadTimeout: 5 * time.Second,
+		Protocol:        HTTPScheme,
+		Addr:            "0.0.0.0:8080",
+		ReadTimeout:     5 * time.Second,
+		BasicAuthHeader: AuthorizationHeader,
 	}
 }
 
@@ -49,6 +54,11 @@ type HTTPServer struct {
 }
 
 func NewHTTPServer(cfg *HTTPServerConfig, h http.Handler, log Logger) (*HTTPServer, error) {
+	if cfg.BasicAuth != nil {
+		p, _ := cfg.BasicAuth.Password()
+		h = (&BasicAuthUtil{Header: cfg.BasicAuthHeader}).Wrap(h, cfg.BasicAuth.Username(), p)
+	}
+
 	hs := &HTTPServer{
 		config: cfg,
 		log:    log,
