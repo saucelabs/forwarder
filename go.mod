@@ -4,7 +4,6 @@ go 1.19
 
 require (
 	github.com/elazarl/goproxy v0.0.0-20220901064549-fbd10ff4f5a1
-	github.com/elazarl/goproxy/ext v0.0.0-20220529153421-8ea89ba92021
 	github.com/mmatczuk/anyflag v0.0.0-20221011091730-9f8baeb6fd9c
 	github.com/saucelabs/pacman v0.1.2
 	github.com/saucelabs/sypl v1.5.14
@@ -17,6 +16,7 @@ require (
 	github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d // indirect
 	github.com/dlclark/regexp2 v1.7.0 // indirect
 	github.com/dop251/goja v0.0.0-20220806120448-1444e6b94559 // indirect
+	github.com/elazarl/goproxy/ext v0.0.0-20220529153421-8ea89ba92021 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/fatih/color v1.13.0 // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
