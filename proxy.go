@@ -406,3 +406,7 @@ func (p *Proxy) Run() error {
 
 	return nil
 }
+
+func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	p.proxy.ServeHTTP(w, r)
+}
