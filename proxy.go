@@ -149,7 +149,7 @@ func (c *HTTPProxyConfig) Validate() error {
 
 // Proxy definition. Proxy can be protected, or not.
 // It can forward connections to an upstream proxy protected, or not.
-// The upstream proxy can be automatically setup via PAC.
+// The upstream proxy can be automatically configure via PAC.
 // PAC content can be retrieved from multiple sources, e.g.: a HTTP server, also, protected or not.
 // Protection means basic auth.
 type Proxy struct {
@@ -181,7 +181,7 @@ func NewProxy(cfg *HTTPProxyConfig, r *net.Resolver, log Logger) (*Proxy, error)
 		userInfo: m,
 		log:      log,
 	}
-	p.setupTransport(r)
+	p.configureTransport(r)
 
 	if p.config.PACURI != nil {
 		pacParser, err := pacman.New(p.config.PACURI.String(), p.config.PACProxiesCredentials...)
@@ -191,12 +191,12 @@ func NewProxy(cfg *HTTPProxyConfig, r *net.Resolver, log Logger) (*Proxy, error)
 		p.pacParser = pacParser
 	}
 
-	p.setupProxy()
+	p.configureProxy()
 
 	return p, nil
 }
 
-func (p *Proxy) setupTransport(r *net.Resolver) {
+func (p *Proxy) configureTransport(r *net.Resolver) {
 	p.log.Infof("Using HTTP transport config: %+v", *p.config.HTTP)
 
 	c := p.config.HTTP
@@ -222,7 +222,7 @@ func defaultTransportDialContext(dialer *net.Dialer) func(context.Context, strin
 	return dialer.DialContext
 }
 
-func (p *Proxy) setupProxy() {
+func (p *Proxy) configureProxy() {
 	p.proxy = goproxy.NewProxyHttpServer()
 	p.proxy.Logger = goproxyLogger{p.log}
 	p.proxy.Verbose = true
@@ -235,24 +235,24 @@ func (p *Proxy) setupProxy() {
 	p.proxy.KeepHeader = true
 
 	p.proxy.Tr = p.transport.Clone()
-	p.setupLocalhostProxy()
+	p.configureLocalhostProxy()
 
 	switch p.Mode() {
 	case Direct:
-		p.setupDirect()
+		p.configureDirect()
 	case Upstream:
-		p.setupUpstreamProxy()
+		p.configureUpstreamProxy()
 	case PAC:
-		p.setupPACProxy()
+		p.configurePACProxy()
 	default:
 		panic(fmt.Errorf("unknown mode %q", p.Mode()))
 	}
 
-	p.setupProxyBasicAuth()
-	p.setupSiteBasicAuth()
+	p.configureProxyBasicAuth()
+	p.configureSiteBasicAuth()
 }
 
-func (p *Proxy) setupLocalhostProxy() {
+func (p *Proxy) configureLocalhostProxy() {
 	if !p.config.ProxyLocalhost {
 		p.log.Infof("Localhost proxy disabled")
 		p.proxy.OnRequest(goproxy.IsLocalHost).DoFunc(func(r *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
@@ -264,12 +264,12 @@ func (p *Proxy) setupLocalhostProxy() {
 	}
 }
 
-func (p *Proxy) setupDirect() {
+func (p *Proxy) configureDirect() {
 	p.proxy.Tr.Proxy = nil
 	p.proxy.ConnectDial = nil
 }
 
-func (p *Proxy) setupUpstreamProxy() {
+func (p *Proxy) configureUpstreamProxy() {
 	p.log.Infof("Using upstream proxy %s", p.config.UpstreamProxyURI)
 
 	p.proxy.OnRequest(goproxy.IsLocalHost).DoFunc(func(r *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
@@ -283,7 +283,7 @@ func (p *Proxy) setupUpstreamProxy() {
 	})
 }
 
-func (p *Proxy) setupPACProxy() {
+func (p *Proxy) configurePACProxy() {
 	p.log.Infof("Using PAC proxy %s", p.config.PACURI)
 
 	p.proxy.Tr.Proxy = func(r *http.Request) (*url.URL, error) {
@@ -319,8 +319,8 @@ func (p *Proxy) pacFindProxy(u *url.URL) (*url.URL, error) {
 	return up, nil
 }
 
-// setupProxyBasicAuth enables basic auth for the proxy.
-func (p *Proxy) setupProxyBasicAuth() {
+// configureProxyBasicAuth enables basic auth for the proxy.
+func (p *Proxy) configureProxyBasicAuth() {
 	u := p.config.BasicAuth
 
 	if u == nil || u.Username() == "" {
@@ -343,7 +343,7 @@ func (p *Proxy) setupProxyBasicAuth() {
 	})
 }
 
-func (p *Proxy) setupSiteBasicAuth() {
+func (p *Proxy) configureSiteBasicAuth() {
 	if p.userInfo == nil {
 		return
 	}
