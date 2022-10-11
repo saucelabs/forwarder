@@ -5,7 +5,7 @@
 package main
 
 import (
-	"github.com/saucelabs/forwarder/cmd/forwarder/run"
+	"github.com/saucelabs/forwarder/cmd/forwarder/proxy"
 	"github.com/saucelabs/forwarder/cmd/forwarder/version"
 	"github.com/spf13/cobra"
 )
@@ -22,7 +22,7 @@ func rootCommand() *cobra.Command {
 	}
 
 	rootCmd.AddCommand(
-		run.Command(),
+		proxy.Command(),
 		version.Command(),
 	)
 	for _, cmd := range rootCmd.Commands() {
