@@ -19,15 +19,15 @@ import (
 
 type command struct {
 	dnsConfig              *forwarder.DNSConfig
-	proxyConfig            *forwarder.ProxyConfig
+	httpProxyConfig        *forwarder.HTTPProxyConfig
 	upstreamProxyBasicAuth *url.Userinfo
 	httpServerConfig       *forwarder.HTTPServerConfig
 	logConfig              logConfig
 }
 
 func (c *command) RunE(cmd *cobra.Command, args []string) error {
-	if c.upstreamProxyBasicAuth != nil && c.proxyConfig.UpstreamProxyURI != nil {
-		c.proxyConfig.UpstreamProxyURI.User = c.upstreamProxyBasicAuth
+	if c.upstreamProxyBasicAuth != nil && c.httpProxyConfig.UpstreamProxyURI != nil {
+		c.httpProxyConfig.UpstreamProxyURI.User = c.upstreamProxyBasicAuth
 	}
 
 	var resolver *net.Resolver
@@ -39,7 +39,7 @@ func (c *command) RunE(cmd *cobra.Command, args []string) error {
 		resolver = r
 	}
 
-	p, err := forwarder.NewProxy(c.proxyConfig, resolver, newLogger(c.logConfig, "proxy"))
+	p, err := forwarder.NewHTTPProxy(c.httpProxyConfig, resolver, newLogger(c.logConfig, "proxy"))
 	if err != nil {
 		return err
 	}
@@ -53,7 +53,7 @@ func (c *command) RunE(cmd *cobra.Command, args []string) error {
 	return s.Run(ctx)
 }
 
-const long = `Start the proxy. Proxy can be protected with basic auth.
+const long = `Start the proxy. HTTPProxy can be protected with basic auth.
 It can forward connections to an upstream proxy (protected, or not).
 The upstream proxy can be automatically setup via PAC (protected, or not).
 Also, credentials for proxies specified in PAC can be set.
@@ -122,7 +122,7 @@ const example = `Start a proxy listening to http://localhost:8080:
 func Command() (cmd *cobra.Command) {
 	c := command{
 		dnsConfig:        forwarder.DefaultDNSConfig(),
-		proxyConfig:      forwarder.DefaultProxyConfig(),
+		httpProxyConfig:  forwarder.DefaultHTTPProxyConfig(),
 		httpServerConfig: forwarder.DefaultHTTPServerConfig(),
 		logConfig:        defaultLogConfig(),
 	}
@@ -131,7 +131,7 @@ func Command() (cmd *cobra.Command) {
 	defer func() {
 		fs := cmd.Flags()
 		c.bindDNSConfig(fs)
-		c.bindProxyConfig(fs)
+		c.bindHTTPProxyConfig(fs)
 		c.bindHTTPServerConfig(fs)
 		c.bindLogConfig(fs)
 
@@ -152,37 +152,37 @@ func (c *command) bindDNSConfig(fs *pflag.FlagSet) {
 	fs.DurationVar(&c.dnsConfig.Timeout, "dns-timeout", c.dnsConfig.Timeout, "timeout for DNS queries if DNS server is specified")
 }
 
-func (c *command) bindProxyConfig(fs *pflag.FlagSet) {
-	fs.VarP(anyflag.NewValue[*url.URL](c.proxyConfig.UpstreamProxyURI, &c.proxyConfig.UpstreamProxyURI, forwarder.ParseProxyURI),
+func (c *command) bindHTTPProxyConfig(fs *pflag.FlagSet) {
+	fs.VarP(anyflag.NewValue[*url.URL](c.httpProxyConfig.UpstreamProxyURI, &c.httpProxyConfig.UpstreamProxyURI, forwarder.ParseProxyURI),
 		"upstream-proxy-uri", "u", "upstream proxy URI")
 	fs.VarP(anyflag.NewValue[*url.Userinfo](c.upstreamProxyBasicAuth, &c.upstreamProxyBasicAuth, forwarder.ParseUserInfo),
 		"upstream-proxy-basic-auth", "", "upstream proxy basic auth in the form of `username:password`")
-	fs.VarP(anyflag.NewValue[*url.URL](c.proxyConfig.PACURI, &c.proxyConfig.PACURI, url.ParseRequestURI),
+	fs.VarP(anyflag.NewValue[*url.URL](c.httpProxyConfig.PACURI, &c.httpProxyConfig.PACURI, url.ParseRequestURI),
 		"pac-uri", "p", "URI to PAC content, or directly, the PAC content")
-	fs.StringSliceVarP(&c.proxyConfig.PACProxiesCredentials, "pac-proxies-credentials", "d", c.proxyConfig.PACProxiesCredentials,
+	fs.StringSliceVarP(&c.httpProxyConfig.PACProxiesCredentials, "pac-proxies-credentials", "d", c.httpProxyConfig.PACProxiesCredentials,
 		"PAC proxies credentials using standard URI format")
-	fs.StringSliceVar(&c.proxyConfig.SiteCredentials, "site-credentials", c.proxyConfig.SiteCredentials,
+	fs.StringSliceVar(&c.httpProxyConfig.SiteCredentials, "site-credentials", c.httpProxyConfig.SiteCredentials,
 		"target site credentials")
-	fs.BoolVarP(&c.proxyConfig.ProxyLocalhost, "proxy-localhost", "t", c.proxyConfig.ProxyLocalhost,
+	fs.BoolVarP(&c.httpProxyConfig.ProxyLocalhost, "proxy-localhost", "t", c.httpProxyConfig.ProxyLocalhost,
 		"if set, will proxy localhost requests to an upstream proxy")
 
-	fs.DurationVar(&c.proxyConfig.HTTP.DialTimeout, "http-dial-timeout", c.proxyConfig.HTTP.DialTimeout,
+	fs.DurationVar(&c.httpProxyConfig.Transport.DialTimeout, "http-dial-timeout", c.httpProxyConfig.Transport.DialTimeout,
 		"dial timeout for HTTP connections")
-	fs.DurationVar(&c.proxyConfig.HTTP.KeepAlive, "http-keep-alive", c.proxyConfig.HTTP.KeepAlive,
+	fs.DurationVar(&c.httpProxyConfig.Transport.KeepAlive, "http-keep-alive", c.httpProxyConfig.Transport.KeepAlive,
 		"keep alive interval for HTTP connections")
-	fs.DurationVar(&c.proxyConfig.HTTP.TLSHandshakeTimeout, "http-tls-handshake-timeout", c.proxyConfig.HTTP.TLSHandshakeTimeout,
+	fs.DurationVar(&c.httpProxyConfig.Transport.TLSHandshakeTimeout, "http-tls-handshake-timeout", c.httpProxyConfig.Transport.TLSHandshakeTimeout,
 		"TLS handshake timeout for HTTP connections")
-	fs.IntVar(&c.proxyConfig.HTTP.MaxIdleConns, "http-max-idle-conns", c.proxyConfig.HTTP.MaxIdleConns,
+	fs.IntVar(&c.httpProxyConfig.Transport.MaxIdleConns, "http-max-idle-conns", c.httpProxyConfig.Transport.MaxIdleConns,
 		"maximum number of idle connections for HTTP connections")
-	fs.IntVar(&c.proxyConfig.HTTP.MaxIdleConnsPerHost, "http-max-idle-conns-per-host", c.proxyConfig.HTTP.MaxIdleConnsPerHost,
+	fs.IntVar(&c.httpProxyConfig.Transport.MaxIdleConnsPerHost, "http-max-idle-conns-per-host", c.httpProxyConfig.Transport.MaxIdleConnsPerHost,
 		"maximum number of idle connections per host for HTTP connections")
-	fs.IntVar(&c.proxyConfig.HTTP.MaxConnsPerHost, "http-max-conns-per-host", c.proxyConfig.HTTP.MaxConnsPerHost,
+	fs.IntVar(&c.httpProxyConfig.Transport.MaxConnsPerHost, "http-max-conns-per-host", c.httpProxyConfig.Transport.MaxConnsPerHost,
 		"maximum number of connections per host for HTTP connections")
-	fs.DurationVar(&c.proxyConfig.HTTP.IdleConnTimeout, "http-idle-conn-timeout", c.proxyConfig.HTTP.IdleConnTimeout,
+	fs.DurationVar(&c.httpProxyConfig.Transport.IdleConnTimeout, "http-idle-conn-timeout", c.httpProxyConfig.Transport.IdleConnTimeout,
 		"idle connection timeout for HTTP connections")
-	fs.DurationVar(&c.proxyConfig.HTTP.ResponseHeaderTimeout, "http-response-header-timeout", c.proxyConfig.HTTP.ResponseHeaderTimeout,
+	fs.DurationVar(&c.httpProxyConfig.Transport.ResponseHeaderTimeout, "http-response-header-timeout", c.httpProxyConfig.Transport.ResponseHeaderTimeout,
 		"response header timeout for HTTP connections")
-	fs.DurationVar(&c.proxyConfig.HTTP.ExpectContinueTimeout, "http-expect-continue-timeout", c.proxyConfig.HTTP.ExpectContinueTimeout,
+	fs.DurationVar(&c.httpProxyConfig.Transport.ExpectContinueTimeout, "http-expect-continue-timeout", c.httpProxyConfig.Transport.ExpectContinueTimeout,
 		"expect continue timeout for HTTP connections")
 }
 

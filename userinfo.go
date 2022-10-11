@@ -5,15 +5,10 @@
 package forwarder
 
 import (
-	"encoding/base64"
 	"fmt"
 	"net"
 	"net/url"
 )
-
-func userInfoBase64(u *url.Userinfo) string {
-	return base64.StdEncoding.EncodeToString([]byte(u.String()))
-}
 
 type userInfoMatcher struct {
 	// host:port input for passing basic authentication to requests

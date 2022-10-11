@@ -16,80 +16,40 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/saucelabs/randomness"
 )
 
 const (
 	defaultProxyHostname            = "127.0.0.1"
 	defaultProxyScheme              = "http"
-	localProxyCredentialPassword    = "p123"
-	localProxyCredentialUsername    = "u123"
 	upstreamProxyCredentialPassword = "p456"
 	upstreamProxyCredentialUsername = "u456"
-
-	pacTemplate = `function FindProxyForURL(url, host) {
-  if (
-    dnsDomainIs(host, "intranet.domain.com") ||
-    shExpMatch(host, "(*.abcdomain.com|abcdomain.com)")
-  )
-    return "DIRECT";
-
-  return "PROXY 127.0.0.1:{{ .port }}; DIRECT";
-}
-`
 )
 
-func TestProxyConfigValidate(t *testing.T) {
-	var (
-		validURL = newProxyURL(80, localProxyCredentialUsername, localProxyCredentialPassword)
-		emptyURL = &url.URL{}
-	)
-
+func TestHTTPProxyConfigValidate(t *testing.T) {
 	tests := []struct {
 		name   string
-		config ProxyConfig
+		config HTTPProxyConfig
 		err    string
 	}{
 		{
-			name: "normal",
-			config: ProxyConfig{
-				LocalProxyURI: validURL,
-			},
-		},
-		{
 			name: "both upstream and PAC are set",
-			config: ProxyConfig{
-				LocalProxyURI:    validURL,
+			config: HTTPProxyConfig{
 				UpstreamProxyURI: newProxyURL(80, upstreamProxyCredentialUsername, upstreamProxyCredentialPassword),
 				PACURI:           newProxyURL(80, "", ""),
 			},
 			err: "only one of upstream_proxy_uri or pac_uri can be set",
 		},
 		{
-			name: "missing local proxy URI",
-			err:  "local_proxy_uri is required",
-		},
-		{
-			name: "invalid local proxy URI",
-			config: ProxyConfig{
-				LocalProxyURI: emptyURL,
-			},
-			err: "local_proxy_uri: invalid scheme",
-		},
-		{
 			name: "invalid upstream proxy URI",
-			config: ProxyConfig{
-				LocalProxyURI:    validURL,
-				UpstreamProxyURI: emptyURL,
+			config: HTTPProxyConfig{
+				UpstreamProxyURI: &url.URL{},
 			},
 			err: "upstream_proxy_uri: invalid scheme",
 		},
 		{
 			name: "invalid PAC server URI",
-			config: ProxyConfig{
-				LocalProxyURI: validURL,
-				PACURI:        emptyURL,
+			config: HTTPProxyConfig{
+				PACURI: &url.URL{},
 			},
 			err: "pac_uri: invalid scheme",
 		},
@@ -112,49 +72,29 @@ func TestProxyConfigValidate(t *testing.T) {
 	}
 }
 
-func TestNewProxy(t *testing.T) { //nolint // FIXME cognitive complexity 88 of func `TestNewProxy` is high (> 40) (gocognit); calculated cyclomatic complexity for function TestNewProxy is 28, max is 10 (cyclop)
-	//////
-	// Randomness automates port allocation, ensuring no collision happens
-	// between tests, and examples.
-	//////
-
-	r, err := randomness.New(10000, 20000, 100, true)
-	if err != nil {
-		t.Fatal("Failed to create randomness", err)
-	}
-
+func TestHTTPProxySmoke(t *testing.T) { //nolint // FIXME cognitive complexity 88 of func `TestHTTPProxySmoke` is high (> 40) (gocognit); calculated cyclomatic complexity for function TestHTTPProxySmoke is 28, max is 10 (cyclop)
 	tests := []struct {
 		name    string
-		config  ProxyConfig
+		config  HTTPProxyConfig
 		wantPAC bool
 	}{
 		{
 			name: "Local proxy",
-			config: ProxyConfig{
-				LocalProxyURI:  newProxyURL(r.MustGenerate(), "", ""),
+			config: HTTPProxyConfig{
 				ProxyLocalhost: true,
 			},
 		},
 		{
 			name: "Local proxy with site auth",
-			config: ProxyConfig{
-				LocalProxyURI:   newProxyURL(r.MustGenerate(), "", ""),
+			config: HTTPProxyConfig{
 				SiteCredentials: []string{},
 				ProxyLocalhost:  true,
 			},
 		},
 		{
-			name: "Protected local proxy",
-			config: ProxyConfig{
-				LocalProxyURI:  newProxyURL(r.MustGenerate(), localProxyCredentialUsername, localProxyCredentialPassword),
-				ProxyLocalhost: true,
-			},
-		},
-		{
-			name: "Protected local proxy, and upstream proxy",
-			config: ProxyConfig{
-				LocalProxyURI:    newProxyURL(r.MustGenerate(), localProxyCredentialUsername, localProxyCredentialPassword),
-				UpstreamProxyURI: newProxyURL(r.MustGenerate(), "", ""),
+			name: "Protected upstream proxy",
+			config: HTTPProxyConfig{
+				UpstreamProxyURI: newProxyURL(0, upstreamProxyCredentialUsername, upstreamProxyCredentialPassword),
 				ProxyLocalhost:   true,
 			},
 		},
@@ -180,7 +120,6 @@ func TestNewProxy(t *testing.T) { //nolint // FIXME cognitive complexity 88 of f
 			if os.Getenv("FORWARDER_TEST_MODE") == "integration" {
 				targetServerURL = "https://httpbin.org/status/200"
 			}
-
 			t.Logf("Target/end server @ %s", targetServerURL)
 
 			if tc.config.SiteCredentials != nil {
@@ -191,51 +130,48 @@ func TestNewProxy(t *testing.T) { //nolint // FIXME cognitive complexity 88 of f
 				tc.config.SiteCredentials = append(tc.config.SiteCredentials, "user:pass@"+uri.Host)
 			}
 
-			//////
-			// Local proxy.
-			//
-			// It's protected with Basic Auth. Upstream proxy will be automatically, and
-			// dynamically setup via PAC, including credentials for proxies specified
-			// in the PAC content.
-			//////
-
-			localProxy, err := NewProxy(&tc.config, nil, namedStdLogger("local"))
-			if err != nil {
-				t.Fatalf("NewProxy() error = %v", err)
-			}
-			go localProxy.MustRun()
-			// Give enough time to start, and be ready.
-			time.Sleep(1 * time.Second)
-
-			//////
-			// Upstream Proxy.
-			//////
-
+			// Upstream HTTPProxy.
 			if tc.config.UpstreamProxyURI != nil {
-				upstreamProxy, err := NewProxy(&ProxyConfig{LocalProxyURI: tc.config.UpstreamProxyURI, ProxyLocalhost: true}, nil, namedStdLogger("upstream"))
+				upstreamProxy, err := NewHTTPProxy(&HTTPProxyConfig{ProxyLocalhost: true}, nil, namedStdLogger("upstream"))
 				if err != nil {
-					t.Fatalf("NewProxy() error = %v", err)
+					t.Fatalf("NewHTTPProxy() error=%v", err)
+				}
+				var h http.Handler = upstreamProxy
+				if tc.config.UpstreamProxyURI.User != nil {
+					p, _ := tc.config.UpstreamProxyURI.User.Password()
+					h = (&BasicAuthUtil{Header: ProxyAuthorizationHeader}).Wrap(upstreamProxy, tc.config.UpstreamProxyURI.User.Username(), p)
 				}
 
-				go upstreamProxy.MustRun()
+				usrv := httptest.NewServer(h)
+				for usrv.Listener.Addr() == nil {
+					time.Sleep(time.Millisecond)
+				}
+				defer usrv.Close()
 
-				// Give enough time to start, and be ready.
-				time.Sleep(1 * time.Second)
+				// Update the upstream proxy URI with host and port.
+				tc.config.UpstreamProxyURI.Host = usrv.Listener.Addr().String()
 			}
 
-			//////
-			// Client.
-			//////
-
-			t.Logf("Client is using %s as proxy", tc.config.LocalProxyURI.Redacted())
+			// Local proxy.
+			localProxy, err := NewHTTPProxy(&tc.config, nil, namedStdLogger("local"))
+			if err != nil {
+				t.Fatalf("NewHTTPProxy() error=%v", err)
+			}
+			lsrv := httptest.NewServer(localProxy)
+			for lsrv.Listener.Addr() == nil {
+				time.Sleep(time.Millisecond)
+			}
+			defer lsrv.Close()
 
 			// Client's proxy settings.
-			tr := &http.Transport{
-				Proxy: http.ProxyURL(tc.config.LocalProxyURI),
+			u, err := url.Parse(lsrv.URL)
+			if err != nil {
+				t.Fatalf("url.Parse() error=%v", err)
 			}
-
 			client := &http.Client{
-				Transport: tr,
+				Transport: &http.Transport{
+					Proxy: http.ProxyURL(u),
+				},
 			}
 
 			if _, err := assertRequest(client, targetServerURL, http.StatusOK); err != nil {
@@ -245,16 +181,11 @@ func TestNewProxy(t *testing.T) { //nolint // FIXME cognitive complexity 88 of f
 	}
 }
 
-func TestProxyLocalhost(t *testing.T) {
+func TestHTTPProxyLocalhost(t *testing.T) {
 	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer s.Close()
-
-	r, err := randomness.New(10000, 20000, 100, true)
-	if err != nil {
-		t.Fatal("Failed to create randomness", err)
-	}
 
 	tests := []struct {
 		name           string
@@ -278,21 +209,27 @@ func TestProxyLocalhost(t *testing.T) {
 
 		t.Run(tc.name, func(t *testing.T) {
 			// Start local proxy.
-			localProxy, err := NewProxy(&ProxyConfig{
-				LocalProxyURI:  newProxyURL(r.MustGenerate(), "", ""),
+			localProxy, err := NewHTTPProxy(&HTTPProxyConfig{
 				ProxyLocalhost: tc.ProxyLocalhost,
 			}, nil, namedStdLogger("local"))
 			if err != nil {
-				t.Fatalf("NewProxy() error = %v", err)
+				t.Fatalf("NewHTTPProxy() error = %v", err)
 			}
-			go localProxy.MustRun()
-			// Give enough time to start, and be ready.
-			time.Sleep(1 * time.Second)
+			lsrv := httptest.NewServer(localProxy)
+			for lsrv.Listener.Addr() == nil {
+				time.Sleep(time.Millisecond)
+			}
+			defer lsrv.Close()
 
 			// Client's proxy settings.
+			u, err := url.Parse(lsrv.URL)
+			if err != nil {
+				t.Fatalf("url.Parse() error=%v", err)
+			}
+			t.Logf("Client is using %s as proxy", lsrv.URL)
 			client := &http.Client{
 				Transport: &http.Transport{
-					Proxy: http.ProxyURL(localProxy.Config().LocalProxyURI),
+					Proxy: http.ProxyURL(u),
 				},
 			}
 
@@ -301,58 +238,6 @@ func TestProxyLocalhost(t *testing.T) {
 				t.Fatalf("Failed to execute request: %v", err)
 			}
 		})
-	}
-}
-
-func BenchmarkNew(b *testing.B) {
-	//////
-	// Target/end server.
-	//////
-
-	testServer := httpServerStub("body", "", nopLogger{})
-
-	defer func() { testServer.Close() }()
-
-	//////
-	// Proxy.
-	//////
-
-	r, err := randomness.New(30000, 40000, 100, true)
-	if err != nil {
-		b.Fatal("Failed to create proxy", err)
-	}
-
-	localProxyURI := newProxyURL(r.MustGenerate(), "", "")
-
-	proxy, err := NewProxy(&ProxyConfig{LocalProxyURI: localProxyURI}, nil, nopLogger{})
-	if err != nil {
-		b.Fatal("Failed to create proxy.", err)
-	}
-
-	go proxy.MustRun()
-
-	// Give enough time to start, and be ready.
-	time.Sleep(1 * time.Second)
-
-	//////
-	// Client.
-	//////
-
-	// Client's proxy settings.
-	tr := &http.Transport{
-		Proxy: http.ProxyURL(localProxyURI),
-	}
-
-	client := &http.Client{
-		Transport: tr,
-	}
-
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
-		if _, err := assertRequest(client, testServer.URL, http.StatusOK); err != nil {
-			b.Fatal(err)
-		}
 	}
 }
 
@@ -392,9 +277,9 @@ func httpServerStub(body, encodedCredential string, log Logger) *httptest.Server
 			return
 		}
 	}))
-
-	// Wait for the server to start.
-	time.Sleep(1 * time.Second)
+	for s.Listener.Addr() == nil {
+		time.Sleep(time.Millisecond)
+	}
 
 	return s
 }
