@@ -51,6 +51,7 @@ issues:
   exclude:
     - "can be `fmt.Stringer`"
     - "string `https?` has \\d+ occurrences"
+    - "`nop.+` is unused"
 
   exclude-rules:
     - path: cmd/forwarder/version/version.go
