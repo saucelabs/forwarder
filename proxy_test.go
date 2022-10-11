@@ -41,12 +41,12 @@ const (
 func TestProxyConfigValidate(t *testing.T) {
 	tests := []struct {
 		name   string
-		config ProxyConfig
+		config HTTPProxyConfig
 		err    string
 	}{
 		{
 			name: "both upstream and PAC are set",
-			config: ProxyConfig{
+			config: HTTPProxyConfig{
 				UpstreamProxyURI: newProxyURL(80, upstreamProxyCredentialUsername, upstreamProxyCredentialPassword),
 				PACURI:           newProxyURL(80, "", ""),
 			},
@@ -54,14 +54,14 @@ func TestProxyConfigValidate(t *testing.T) {
 		},
 		{
 			name: "invalid upstream proxy URI",
-			config: ProxyConfig{
+			config: HTTPProxyConfig{
 				UpstreamProxyURI: &url.URL{},
 			},
 			err: "upstream_proxy_uri: invalid scheme",
 		},
 		{
 			name: "invalid PAC server URI",
-			config: ProxyConfig{
+			config: HTTPProxyConfig{
 				PACURI: &url.URL{},
 			},
 			err: "pac_uri: invalid scheme",
@@ -88,32 +88,32 @@ func TestProxyConfigValidate(t *testing.T) {
 func TestNewProxy(t *testing.T) { //nolint // FIXME cognitive complexity 88 of func `TestNewProxy` is high (> 40) (gocognit); calculated cyclomatic complexity for function TestNewProxy is 28, max is 10 (cyclop)
 	tests := []struct {
 		name    string
-		config  ProxyConfig
+		config  HTTPProxyConfig
 		wantPAC bool
 	}{
 		{
 			name: "Local proxy",
-			config: ProxyConfig{
+			config: HTTPProxyConfig{
 				ProxyLocalhost: true,
 			},
 		},
 		{
 			name: "Local proxy with site auth",
-			config: ProxyConfig{
+			config: HTTPProxyConfig{
 				SiteCredentials: []string{},
 				ProxyLocalhost:  true,
 			},
 		},
 		{
 			name: "Protected local proxy",
-			config: ProxyConfig{
+			config: HTTPProxyConfig{
 				BasicAuth:      url.UserPassword(localProxyCredentialUsername, localProxyCredentialPassword),
 				ProxyLocalhost: true,
 			},
 		},
 		{
 			name: "Protected local proxy, and upstream proxy",
-			config: ProxyConfig{
+			config: HTTPProxyConfig{
 				BasicAuth:        url.UserPassword(localProxyCredentialUsername, localProxyCredentialPassword),
 				UpstreamProxyURI: newProxyURL(0, "", ""),
 				ProxyLocalhost:   true,
@@ -153,7 +153,7 @@ func TestNewProxy(t *testing.T) { //nolint // FIXME cognitive complexity 88 of f
 
 			// Upstream Proxy.
 			if tc.config.UpstreamProxyURI != nil {
-				upstreamProxy, err := NewProxy(&ProxyConfig{BasicAuth: tc.config.UpstreamProxyURI.User, ProxyLocalhost: true}, nil, namedStdLogger("upstream"))
+				upstreamProxy, err := NewProxy(&HTTPProxyConfig{BasicAuth: tc.config.UpstreamProxyURI.User, ProxyLocalhost: true}, nil, namedStdLogger("upstream"))
 				if err != nil {
 					t.Fatalf("NewProxy() error=%v", err)
 				}
@@ -226,7 +226,7 @@ func TestProxyLocalhost(t *testing.T) {
 
 		t.Run(tc.name, func(t *testing.T) {
 			// Start local proxy.
-			localProxy, err := NewProxy(&ProxyConfig{
+			localProxy, err := NewProxy(&HTTPProxyConfig{
 				ProxyLocalhost: tc.ProxyLocalhost,
 			}, nil, namedStdLogger("local"))
 			if err != nil {

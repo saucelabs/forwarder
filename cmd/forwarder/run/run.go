@@ -19,7 +19,7 @@ import (
 
 type command struct {
 	dnsConfig              *forwarder.DNSConfig
-	proxyConfig            *forwarder.ProxyConfig
+	proxyConfig            *forwarder.HTTPProxyConfig
 	upstreamProxyBasicAuth *url.Userinfo
 	httpServerConfig       *forwarder.HTTPServerConfig
 	logConfig              logConfig
@@ -122,7 +122,7 @@ const example = `Start a proxy listening to http://localhost:8080:
 func Command() (cmd *cobra.Command) {
 	c := command{
 		dnsConfig:        forwarder.DefaultDNSConfig(),
-		proxyConfig:      forwarder.DefaultProxyConfig(),
+		proxyConfig:      forwarder.DefaultHTTPProxyConfig(),
 		httpServerConfig: forwarder.DefaultHTTPServerConfig(),
 		logConfig:        defaultLogConfig(),
 	}

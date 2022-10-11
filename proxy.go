@@ -92,7 +92,7 @@ func DefaultHTTPTransportConfig() *HTTPTransportConfig {
 	}
 }
 
-type ProxyConfig struct {
+type HTTPProxyConfig struct {
 	// BasicAuth is the username and password for the proxy basic auth.
 	BasicAuth *url.Userinfo `json:"basic_auth"`
 
@@ -127,13 +127,13 @@ type ProxyConfig struct {
 	HTTP *HTTPTransportConfig `json:"http"`
 }
 
-func DefaultProxyConfig() *ProxyConfig {
-	return &ProxyConfig{
+func DefaultHTTPProxyConfig() *HTTPProxyConfig {
+	return &HTTPProxyConfig{
 		HTTP: DefaultHTTPTransportConfig(),
 	}
 }
 
-func (c *ProxyConfig) Validate() error {
+func (c *HTTPProxyConfig) Validate() error {
 	if err := validateProxyURI(c.UpstreamProxyURI); err != nil {
 		return fmt.Errorf("upstream_proxy_uri: %w", err)
 	}
@@ -153,7 +153,7 @@ func (c *ProxyConfig) Validate() error {
 // PAC content can be retrieved from multiple sources, e.g.: a HTTP server, also, protected or not.
 // Protection means basic auth.
 type Proxy struct {
-	config    ProxyConfig
+	config    HTTPProxyConfig
 	transport *http.Transport
 	userInfo  *userInfoMatcher
 	pacParser *pacman.Parser
@@ -161,7 +161,7 @@ type Proxy struct {
 	log       Logger
 }
 
-func NewProxy(cfg *ProxyConfig, r *net.Resolver, log Logger) (*Proxy, error) {
+func NewProxy(cfg *HTTPProxyConfig, r *net.Resolver, log Logger) (*Proxy, error) {
 	if cfg.HTTP == nil {
 		cfg.HTTP = DefaultHTTPTransportConfig()
 	}

@@ -90,7 +90,7 @@ func ExampleNew() {
 	// per URL via PAC.
 	//////
 
-	c := ProxyConfig{
+	c := HTTPProxyConfig{
 		BasicAuth:             localProxyURI.User,
 		PACURI:                pacServerURI,
 		PACProxiesCredentials: []string{upstreamProxyURI.String()},
@@ -110,7 +110,7 @@ func ExampleNew() {
 	// Upstream Proxy.
 	//////
 
-	upstreamProxy, err := NewProxy(&ProxyConfig{
+	upstreamProxy, err := NewProxy(&HTTPProxyConfig{
 		BasicAuth:      upstreamProxyURI.User,
 		ProxyLocalhost: true,
 	}, nil, log)
