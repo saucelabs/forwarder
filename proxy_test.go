@@ -21,21 +21,8 @@ import (
 const (
 	defaultProxyHostname            = "127.0.0.1"
 	defaultProxyScheme              = "http"
-	localProxyCredentialPassword    = "p123"
-	localProxyCredentialUsername    = "u123"
 	upstreamProxyCredentialPassword = "p456"
 	upstreamProxyCredentialUsername = "u456"
-
-	pacTemplate = `function FindProxyForURL(url, host) {
-  if (
-    dnsDomainIs(host, "intranet.domain.com") ||
-    shExpMatch(host, "(*.abcdomain.com|abcdomain.com)")
-  )
-    return "DIRECT";
-
-  return "PROXY 127.0.0.1:{{ .port }}; DIRECT";
-}
-`
 )
 
 func TestProxyConfigValidate(t *testing.T) {
@@ -105,17 +92,9 @@ func TestNewProxy(t *testing.T) { //nolint // FIXME cognitive complexity 88 of f
 			},
 		},
 		{
-			name: "Protected local proxy",
+			name: "Protected upstream proxy",
 			config: HTTPProxyConfig{
-				BasicAuth:      url.UserPassword(localProxyCredentialUsername, localProxyCredentialPassword),
-				ProxyLocalhost: true,
-			},
-		},
-		{
-			name: "Protected local proxy, and upstream proxy",
-			config: HTTPProxyConfig{
-				BasicAuth:        url.UserPassword(localProxyCredentialUsername, localProxyCredentialPassword),
-				UpstreamProxyURI: newProxyURL(0, "", ""),
+				UpstreamProxyURI: newProxyURL(0, upstreamProxyCredentialUsername, upstreamProxyCredentialPassword),
 				ProxyLocalhost:   true,
 			},
 		},
@@ -153,11 +132,17 @@ func TestNewProxy(t *testing.T) { //nolint // FIXME cognitive complexity 88 of f
 
 			// Upstream Proxy.
 			if tc.config.UpstreamProxyURI != nil {
-				upstreamProxy, err := NewProxy(&HTTPProxyConfig{BasicAuth: tc.config.UpstreamProxyURI.User, ProxyLocalhost: true}, nil, namedStdLogger("upstream"))
+				upstreamProxy, err := NewProxy(&HTTPProxyConfig{ProxyLocalhost: true}, nil, namedStdLogger("upstream"))
 				if err != nil {
 					t.Fatalf("NewProxy() error=%v", err)
 				}
-				usrv := httptest.NewServer(upstreamProxy)
+				var h http.Handler = upstreamProxy
+				if tc.config.UpstreamProxyURI.User != nil {
+					p, _ := tc.config.UpstreamProxyURI.User.Password()
+					h = (&BasicAuthUtil{Header: ProxyAuthorizationHeader}).Wrap(upstreamProxy, tc.config.UpstreamProxyURI.User.Username(), p)
+				}
+
+				usrv := httptest.NewServer(h)
 				for usrv.Listener.Addr() == nil {
 					time.Sleep(time.Millisecond)
 				}
@@ -183,8 +168,6 @@ func TestNewProxy(t *testing.T) { //nolint // FIXME cognitive complexity 88 of f
 			if err != nil {
 				t.Fatalf("url.Parse() error=%v", err)
 			}
-			u.User = tc.config.BasicAuth
-			t.Logf("Client is using %s as proxy", u)
 			client := &http.Client{
 				Transport: &http.Transport{
 					Proxy: http.ProxyURL(u),
