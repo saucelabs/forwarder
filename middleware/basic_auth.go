@@ -1,4 +1,4 @@
-package forwarder
+package middleware
 
 import (
 	"crypto/subtle"
@@ -13,21 +13,29 @@ const (
 	ProxyAuthorizationHeader = "Proxy-Authorization"
 )
 
-// BasicAuthUtil exposes common Basic Authentication functionalities from the standard library,
+// BasicAuth exposes common Basic Authentication functionalities from the standard library,
 // and allows to customize the Authentication header.
 // This is useful when you want to use Basic Authentication for a proxy.
 //
 // See https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Proxy-Authorization
 // See https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Authorization
-type BasicAuthUtil struct {
-	Header string
+type BasicAuth struct {
+	header string
+}
+
+func NewBasicAuth(header string) *BasicAuth {
+	return &BasicAuth{header: header}
+}
+
+func NewProxyBasicAuth() *BasicAuth {
+	return NewBasicAuth(ProxyAuthorizationHeader)
 }
 
 // AuthenticatedRequest parses the provided HTTP request for Basic Authentication credentials
 // and returns true if the provided credentials match the expected username and password.
 // Returns false if the request is unauthenticated.
 // Uses constant-time comparison in order to mitigate timing attacks.
-func (ba *BasicAuthUtil) AuthenticatedRequest(r *http.Request, expectedUser, expectedPass string) bool {
+func (ba *BasicAuth) AuthenticatedRequest(r *http.Request, expectedUser, expectedPass string) bool {
 	user, pass, ok := ba.BasicAuth(r)
 	if !ok || subtle.ConstantTimeCompare([]byte(user), []byte(expectedUser)) != 1 || subtle.ConstantTimeCompare([]byte(pass), []byte(expectedPass)) != 1 {
 		return false
@@ -39,8 +47,8 @@ func (ba *BasicAuthUtil) AuthenticatedRequest(r *http.Request, expectedUser, exp
 // BasicAuth returns the username and password provided in the request's authorization header,
 // if the request uses HTTP Basic Authentication.
 // See RFC 2617, Section 2.
-func (ba *BasicAuthUtil) BasicAuth(r *http.Request) (username, password string, ok bool) {
-	auth := r.Header.Get(ba.Header)
+func (ba *BasicAuth) BasicAuth(r *http.Request) (username, password string, ok bool) {
+	auth := r.Header.Get(ba.header)
 	if auth == "" {
 		return "", "", false
 	}
@@ -69,7 +77,7 @@ func parseBasicAuth(auth string) (username, password string, ok bool) {
 
 // SetBasicAuthFromUserInfo calls SetBasicAuth with the username and password from the provided url.Userinfo.
 // If the provided userinfo is nil, the request's authorization header is not set.
-func (ba *BasicAuthUtil) SetBasicAuthFromUserInfo(r *http.Request, u *url.Userinfo) {
+func (ba *BasicAuth) SetBasicAuthFromUserInfo(r *http.Request, u *url.Userinfo) {
 	if u == nil {
 		return
 	}
@@ -88,8 +96,8 @@ func (ba *BasicAuthUtil) SetBasicAuthFromUserInfo(r *http.Request, u *url.Userin
 // additional requirements on pre-escaping the username and
 // password. For instance, when used with OAuth2, both arguments must
 // be URL encoded first with url.QueryEscape.
-func (ba *BasicAuthUtil) SetBasicAuth(r *http.Request, username, password string) {
-	r.Header.Set(ba.Header, "Basic "+basicAuth(username, password))
+func (ba *BasicAuth) SetBasicAuth(r *http.Request, username, password string) {
+	r.Header.Set(ba.header, "Basic "+basicAuth(username, password))
 }
 
 // See 2 (end of page 4) https://www.ietf.org/rfc/rfc2617.txt
@@ -105,10 +113,10 @@ func basicAuth(username, password string) string {
 // If header is Proxy-Authorization and the request is not authenticated, the handler is not called and a 407 Proxy Authentication Required is returned.
 // Otherwise, if the request is not authenticated, the handler is not called and a 401 Unauthorized is returned.
 // The provided username and password are used to authenticate the request.
-func (ba *BasicAuthUtil) Wrap(h http.Handler, expectedUser, expectedPass string) http.Handler {
+func (ba *BasicAuth) Wrap(h http.Handler, expectedUser, expectedPass string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !ba.AuthenticatedRequest(r, expectedUser, expectedPass) {
-			if ba.Header == ProxyAuthorizationHeader {
+			if ba.header == ProxyAuthorizationHeader {
 				w.Header().Set("Proxy-Authenticate", "Basic realm=\"SauceLabs Forwarder\"")
 				w.Header().Set("Proxy-Connection", "close")
 				w.WriteHeader(http.StatusProxyAuthRequired)
@@ -121,7 +129,7 @@ func (ba *BasicAuthUtil) Wrap(h http.Handler, expectedUser, expectedPass string)
 		}
 
 		// Do not expose the authentication header to the upstream servers.
-		r.Header.Del(ba.Header)
+		r.Header.Del(ba.header)
 		h.ServeHTTP(w, r)
 	})
 }

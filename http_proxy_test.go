@@ -16,6 +16,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/saucelabs/forwarder/middleware"
 )
 
 const (
@@ -139,7 +141,7 @@ func TestHTTPProxySmoke(t *testing.T) { //nolint // FIXME cognitive complexity 8
 				var h http.Handler = upstreamProxy
 				if tc.config.UpstreamProxyURI.User != nil {
 					p, _ := tc.config.UpstreamProxyURI.User.Password()
-					h = (&BasicAuthUtil{Header: ProxyAuthorizationHeader}).Wrap(upstreamProxy, tc.config.UpstreamProxyURI.User.Username(), p)
+					h = middleware.NewProxyBasicAuth().Wrap(upstreamProxy, tc.config.UpstreamProxyURI.User.Username(), p)
 				}
 
 				usrv := httptest.NewServer(h)

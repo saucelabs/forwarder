@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/elazarl/goproxy"
+	"github.com/saucelabs/forwarder/middleware"
 	"github.com/saucelabs/pacman"
 )
 
@@ -150,7 +151,7 @@ type HTTPProxy struct {
 	userInfo  *userInfoMatcher
 	pacParser *pacman.Parser
 	proxy     *goproxy.ProxyHttpServer
-	basicAuth *BasicAuthUtil
+	basicAuth *middleware.BasicAuth
 	log       Logger
 }
 
@@ -172,7 +173,7 @@ func NewHTTPProxy(cfg *HTTPProxyConfig, r *net.Resolver, log Logger) (*HTTPProxy
 	p := &HTTPProxy{
 		config:    *cfg,
 		userInfo:  m,
-		basicAuth: &BasicAuthUtil{Header: ProxyAuthorizationHeader},
+		basicAuth: middleware.NewProxyBasicAuth(),
 		log:       log,
 	}
 	p.configureTransport(r)

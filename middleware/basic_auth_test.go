@@ -1,4 +1,4 @@
-package forwarder
+package middleware
 
 import (
 	"net/http"
@@ -6,8 +6,8 @@ import (
 	"testing"
 )
 
-func TestBasicAuthUtil(t *testing.T) {
-	ba := &BasicAuthUtil{Header: "Foo"}
+func TestBasicAuth(t *testing.T) {
+	ba := NewBasicAuth("Foo")
 	r := httptest.NewRequest("GET", "/", nil)
 	ba.SetBasicAuth(r, "user", "pass")
 
@@ -19,8 +19,8 @@ func TestBasicAuthUtil(t *testing.T) {
 	}
 }
 
-func TestBasicAuthUtilWrap(t *testing.T) {
-	ba := &BasicAuthUtil{Header: "Foo"}
+func TestBasicAuthWrap(t *testing.T) {
+	ba := NewBasicAuth("Foo")
 
 	h := ba.Wrap(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Foo") != "" {
