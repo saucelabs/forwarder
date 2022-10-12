@@ -11,6 +11,8 @@ import (
 	"os"
 	"sync"
 	"time"
+
+	"go.uber.org/atomic"
 )
 
 type Scheme string
@@ -49,6 +51,7 @@ type HTTPServer struct {
 	config *HTTPServerConfig
 	log    Logger
 	srv    *http.Server
+	addr   atomic.String
 
 	Listener net.Listener
 }
@@ -159,7 +162,7 @@ func (hs *HTTPServer) Run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-
+	hs.addr.Store(listener.Addr().String())
 	hs.log.Infof("HTTP server listen address=%s protocol=%s", listener.Addr(), hs.config.Protocol)
 
 	var wg sync.WaitGroup
@@ -225,4 +228,9 @@ func (hs *HTTPServer) listener() (net.Listener, error) {
 		hs.log.Errorf("Invalid protocol", "protocol=%s", hs.config.Protocol)
 		return nil, fmt.Errorf("invalid protocol %q", hs.config.Protocol)
 	}
+}
+
+// Addr returns the address the server is listening on or an empty string if the server is not running.
+func (hs *HTTPServer) Addr() string {
+	return hs.addr.Load()
 }
