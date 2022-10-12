@@ -87,20 +87,15 @@ func NewHTTPServer(cfg *HTTPServerConfig, h http.Handler, log Logger) (*HTTPServ
 
 //nolint:gosec // allow RSA keys
 func (hs *HTTPServer) configureHTTPS() error {
-	if hs.config.CertFile == "" {
-		return fmt.Errorf("cert_file cannot be empty when using HTTPS")
+	if hs.config.CertFile != "" {
+		if _, err := os.Stat(hs.config.CertFile); os.IsNotExist(err) {
+			return fmt.Errorf("cannot find SSL cert_file at %q", hs.config.CertFile)
+		}
 	}
-
-	if hs.config.KeyFile == "" {
-		return fmt.Errorf("cert_key cannot be empty when using HTTPS")
-	}
-
-	if _, err := os.Stat(hs.config.CertFile); os.IsNotExist(err) {
-		return fmt.Errorf(`cannot find SSL cert_file at %q`, hs.config.CertFile)
-	}
-
-	if _, err := os.Stat(hs.config.KeyFile); os.IsNotExist(err) {
-		return fmt.Errorf(`cannot find SSL key_file at %q`, hs.config.KeyFile)
+	if hs.config.KeyFile != "" {
+		if _, err := os.Stat(hs.config.KeyFile); os.IsNotExist(err) {
+			return fmt.Errorf("cannot find SSL key_file at %q", hs.config.KeyFile)
+		}
 	}
 
 	tlsCfg := &tls.Config{
@@ -127,20 +122,15 @@ func (hs *HTTPServer) configureHTTPS() error {
 }
 
 func (hs *HTTPServer) configureHTTP2() error {
-	if hs.config.CertFile == "" {
-		return fmt.Errorf("cert_file cannot be empty when using HTTP2")
+	if hs.config.CertFile != "" {
+		if _, err := os.Stat(hs.config.CertFile); os.IsNotExist(err) {
+			return fmt.Errorf("cannot find SSL cert_file at %q", hs.config.CertFile)
+		}
 	}
-
-	if hs.config.KeyFile == "" {
-		return fmt.Errorf("cert_key cannot be empty when using HTTP2")
-	}
-
-	if _, err := os.Stat(hs.config.CertFile); os.IsNotExist(err) {
-		return fmt.Errorf("cannot find SSL cert_file at %q", hs.config.CertFile)
-	}
-
-	if _, err := os.Stat(hs.config.KeyFile); os.IsNotExist(err) {
-		return fmt.Errorf("cannot find SSL key_file at %q", hs.config.KeyFile)
+	if hs.config.KeyFile != "" {
+		if _, err := os.Stat(hs.config.KeyFile); os.IsNotExist(err) {
+			return fmt.Errorf("cannot find SSL key_file at %q", hs.config.KeyFile)
+		}
 	}
 
 	tlsCfg := &tls.Config{
@@ -189,15 +179,23 @@ func (hs *HTTPServer) Run(ctx context.Context) error {
 	case HTTPScheme:
 		if err := hs.srv.Serve(listener); err != nil {
 			if errors.Is(err, http.ErrServerClosed) {
-				hs.log.Debugf("server was shutdown gracefully")
+				hs.log.Debugf("Server was shutdown gracefully")
 				return nil
 			}
 			return err
 		}
 	case HTTP2Scheme, HTTPSScheme:
+		if hs.config.CertFile == "" {
+			hs.log.Infof("No SSL certificate provided, using self-signed certificate")
+			cert, err := RSASelfSignedCert().Gen()
+			if err != nil {
+				return err
+			}
+			hs.srv.TLSConfig.Certificates = []tls.Certificate{cert}
+		}
 		if err := hs.srv.ServeTLS(listener, hs.config.CertFile, hs.config.KeyFile); err != nil {
 			if errors.Is(err, http.ErrServerClosed) {
-				hs.log.Debugf("server was shutdown gracefully")
+				hs.log.Debugf("Server was shutdown gracefully")
 				return nil
 			}
 			return err
