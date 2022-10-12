@@ -41,7 +41,7 @@ linters-settings:
       - performance
       - style
   gomnd:
-    ignored-numbers: [0, 1, 5, 10, 30, 50, 90, 100]
+    ignored-numbers: [0, 1, 5, 10, 30, 50, 90, 100, 128, 2048]
   lll:
     line-length: 180
   nestif:
@@ -62,6 +62,8 @@ issues:
       linters:
         - bodyclose
         - funlen
+        - gosec
+        - noctx
         - paralleltest
         - testpackage
 
