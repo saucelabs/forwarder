@@ -13,6 +13,7 @@ import (
 
 	"github.com/mmatczuk/anyflag"
 	"github.com/saucelabs/forwarder"
+	"github.com/saucelabs/forwarder/middleware"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -88,7 +89,7 @@ func Command() (cmd *cobra.Command) {
 		httpServerConfig: forwarder.DefaultHTTPServerConfig(),
 		logConfig:        defaultLogConfig(),
 	}
-	c.httpServerConfig.BasicAuthHeader = forwarder.ProxyAuthorizationHeader
+	c.httpServerConfig.BasicAuthHeader = middleware.ProxyAuthorizationHeader
 
 	defer func() {
 		fs := cmd.Flags()

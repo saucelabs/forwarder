@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/saucelabs/forwarder/middleware"
 	"go.uber.org/atomic"
 )
 
@@ -43,7 +44,7 @@ func DefaultHTTPServerConfig() *HTTPServerConfig {
 		Protocol:        HTTPScheme,
 		Addr:            "0.0.0.0:8080",
 		ReadTimeout:     5 * time.Second,
-		BasicAuthHeader: AuthorizationHeader,
+		BasicAuthHeader: middleware.AuthorizationHeader,
 	}
 }
 
@@ -59,7 +60,7 @@ type HTTPServer struct {
 func NewHTTPServer(cfg *HTTPServerConfig, h http.Handler, log Logger) (*HTTPServer, error) {
 	if cfg.BasicAuth != nil {
 		p, _ := cfg.BasicAuth.Password()
-		h = (&BasicAuthUtil{Header: cfg.BasicAuthHeader}).Wrap(h, cfg.BasicAuth.Username(), p)
+		h = middleware.NewBasicAuth(cfg.BasicAuthHeader).Wrap(h, cfg.BasicAuth.Username(), p)
 	}
 
 	hs := &HTTPServer{
