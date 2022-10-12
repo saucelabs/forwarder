@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/saucelabs/forwarder/middleware"
 	"go.uber.org/atomic"
 )
@@ -35,8 +36,10 @@ type HTTPServerConfig struct {
 	KeyFile     string        `json:"key_file"`
 	ReadTimeout time.Duration `json:"read_timeout"`
 
-	BasicAuthHeader string        `json:"basic_auth_header"`
-	BasicAuth       *url.Userinfo `json:"basic_auth"`
+	PromNamespace   string                `json:"prom_namespace"`
+	PromRegistry    prometheus.Registerer `json:"prom_registry"`
+	BasicAuthHeader string                `json:"basic_auth_header"`
+	BasicAuth       *url.Userinfo         `json:"basic_auth"`
 }
 
 func DefaultHTTPServerConfig() *HTTPServerConfig {
@@ -58,17 +61,12 @@ type HTTPServer struct {
 }
 
 func NewHTTPServer(cfg *HTTPServerConfig, h http.Handler, log Logger) (*HTTPServer, error) {
-	if cfg.BasicAuth != nil {
-		p, _ := cfg.BasicAuth.Password()
-		h = middleware.NewBasicAuth(cfg.BasicAuthHeader).Wrap(h, cfg.BasicAuth.Username(), p)
-	}
-
 	hs := &HTTPServer{
 		config: cfg,
 		log:    log,
 		srv: &http.Server{
 			Addr:        cfg.Addr,
-			Handler:     h,
+			Handler:     withMiddleware(cfg, h),
 			ReadTimeout: cfg.ReadTimeout,
 		},
 	}
@@ -87,6 +85,19 @@ func NewHTTPServer(cfg *HTTPServerConfig, h http.Handler, log Logger) (*HTTPServ
 	}
 
 	return hs, nil
+}
+
+func withMiddleware(cfg *HTTPServerConfig, h http.Handler) http.Handler {
+	// Prometheus middleware must be the first one to be executed to collect metrics for all other middlewares.
+	if cfg.PromRegistry != nil {
+		h = middleware.NewPrometheus(cfg.PromRegistry, cfg.PromNamespace).Wrap(h)
+	}
+
+	if cfg.BasicAuth != nil {
+		p, _ := cfg.BasicAuth.Password()
+		h = middleware.NewBasicAuth(cfg.BasicAuthHeader).Wrap(h, cfg.BasicAuth.Username(), p)
+	}
+	return h
 }
 
 //nolint:gosec // allow RSA keys

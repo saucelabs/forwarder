@@ -6,7 +6,7 @@
 run:
   timeout: 5m
   skip-files:
-    - internal/*
+    - middleware/delegator.go
   silent: true
 
 linters:
