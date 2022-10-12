@@ -155,7 +155,7 @@ func (hs *HTTPServer) configureHTTP2() error {
 }
 
 func (hs *HTTPServer) Run(ctx context.Context) error {
-	listener, err := hs.getListener()
+	listener, err := hs.listener()
 	if err != nil {
 		return err
 	}
@@ -209,7 +209,7 @@ func (hs *HTTPServer) Run(ctx context.Context) error {
 	return nil
 }
 
-func (hs *HTTPServer) getListener() (net.Listener, error) {
+func (hs *HTTPServer) listener() (net.Listener, error) {
 	if hs.Listener != nil {
 		return hs.Listener, nil
 	}
