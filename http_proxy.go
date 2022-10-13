@@ -101,6 +101,9 @@ type HTTPProxyConfig struct {
 	// - Username and password are optional.
 	UpstreamProxyURI *url.URL `json:"upstream_proxy_uri"`
 
+	// UpstreamProxyCredentials allow to override the credentials from the `UpstreamProxyURI`.
+	UpstreamProxyCredentials *url.Userinfo `json:"upstream_proxy_credentials"`
+
 	// PACURI is the PAC URI, which is used to determine the upstream proxy, ex. http://127.0.0.1:8087/data.pac.
 	// Only one of `UpstreamProxyURI` or `PACURI` can be set.
 	PACURI *url.URL `json:"pac_uri"`
@@ -132,6 +135,9 @@ func DefaultHTTPProxyConfig() *HTTPProxyConfig {
 func (c *HTTPProxyConfig) Validate() error {
 	if err := validateProxyURI(c.UpstreamProxyURI); err != nil {
 		return fmt.Errorf("upstream_proxy_uri: %w", err)
+	}
+	if err := validatedUserInfo(c.UpstreamProxyCredentials); err != nil {
+		return fmt.Errorf("upstream_proxy_credentials: %w", err)
 	}
 	if err := validateProxyURI(c.PACURI); err != nil {
 		return fmt.Errorf("pac_uri: %w", err)
@@ -267,13 +273,21 @@ func (hp *HTTPProxy) configureUpstreamProxy() {
 	hp.log.Infof("Using upstream proxy %s", hp.config.UpstreamProxyURI)
 
 	hp.proxy.OnRequest(goproxy.IsLocalHost).DoFunc(func(r *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
-		hp.basicAuth.SetBasicAuthFromUserInfo(r, hp.config.UpstreamProxyURI.User)
+		if hp.config.UpstreamProxyCredentials != nil {
+			hp.basicAuth.SetBasicAuthFromUserInfo(r, hp.config.UpstreamProxyCredentials)
+		} else {
+			hp.basicAuth.SetBasicAuthFromUserInfo(r, hp.config.UpstreamProxyURI.User)
+		}
 		return r, nil
 	})
 	hp.proxy.Tr.Proxy = http.ProxyURL(hp.config.UpstreamProxyURI)
 
 	hp.proxy.ConnectDial = hp.proxy.NewConnectDialToProxyWithHandler(hp.config.UpstreamProxyURI.String(), func(r *http.Request) {
-		hp.basicAuth.SetBasicAuthFromUserInfo(r, hp.config.UpstreamProxyURI.User)
+		if hp.config.UpstreamProxyCredentials != nil {
+			hp.basicAuth.SetBasicAuthFromUserInfo(r, hp.config.UpstreamProxyCredentials)
+		} else {
+			hp.basicAuth.SetBasicAuthFromUserInfo(r, hp.config.UpstreamProxyURI.User)
+		}
 	})
 }
 
