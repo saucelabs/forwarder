@@ -68,7 +68,7 @@ func HTTPServerConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPServerConfig, prefix
 		anyflag.EnumParser[forwarder.Scheme](forwarder.HTTPScheme, forwarder.HTTPSScheme, forwarder.HTTP2Scheme)),
 		namePrefix+"protocol", "", usagePrefix+"HTTP server protocol, one of http, https, h2")
 	fs.StringVarP(&cfg.Addr,
-		namePrefix+"addr", "", cfg.Addr, usagePrefix+"HTTP server listen address")
+		namePrefix+"address", "", cfg.Addr, usagePrefix+"HTTP server listen address in the form of `host:port`")
 	fs.StringVar(&cfg.CertFile,
 		namePrefix+"cert-file", cfg.CertFile, usagePrefix+"HTTP server TLS certificate file")
 	fs.StringVar(&cfg.KeyFile,
