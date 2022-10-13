@@ -45,7 +45,7 @@ type HTTPServerConfig struct {
 func DefaultHTTPServerConfig() *HTTPServerConfig {
 	return &HTTPServerConfig{
 		Protocol:        HTTPScheme,
-		Addr:            "0.0.0.0:8080",
+		Addr:            ":8080",
 		ReadTimeout:     5 * time.Second,
 		BasicAuthHeader: middleware.AuthorizationHeader,
 	}
