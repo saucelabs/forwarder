@@ -10,18 +10,22 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/saucelabs/forwarder"
 	"github.com/saucelabs/forwarder/bind"
 	"github.com/saucelabs/forwarder/middleware"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"golang.org/x/sync/errgroup"
 )
 
 type command struct {
-	dnsConfig        *forwarder.DNSConfig
-	httpProxyConfig  *forwarder.HTTPProxyConfig
-	httpServerConfig *forwarder.HTTPServerConfig
-	logConfig        logConfig
+	promReg               *prometheus.Registry
+	dnsConfig             *forwarder.DNSConfig
+	httpProxyConfig       *forwarder.HTTPProxyConfig
+	httpProxyServerConfig *forwarder.HTTPServerConfig
+	apiServerConfig       *forwarder.HTTPServerConfig
+	logConfig             logConfig
 }
 
 func (c *command) RunE(cmd *cobra.Command, args []string) error {
@@ -38,14 +42,23 @@ func (c *command) RunE(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-
-	s, err := forwarder.NewHTTPServer(c.httpServerConfig, p, newLogger(c.logConfig, "server"))
+	s, err := forwarder.NewHTTPServer(c.httpProxyServerConfig, p, newLogger(c.logConfig, "server"))
 	if err != nil {
 		return err
 	}
 
-	ctx, _ := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
-	return s.Run(ctx)
+	a, err := forwarder.NewHTTPServer(c.apiServerConfig, forwarder.APIHandler(s, c.promReg), newLogger(c.logConfig, "api"))
+	if err != nil {
+		return err
+	}
+
+	var eg *errgroup.Group
+	ctx := context.Background()
+	ctx, _ = signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	eg, ctx = errgroup.WithContext(ctx)
+	eg.Go(func() error { return s.Run(ctx) })
+	eg.Go(func() error { return a.Run(ctx) })
+	return eg.Wait()
 }
 
 const long = `Start HTTP proxy. The proxy can listen to HTTP, HTTPS or HTTP2 traffic. 
@@ -78,18 +91,23 @@ const example = `Start HTTP proxy listening to localhost:8080:
 
 func Command() (cmd *cobra.Command) {
 	c := command{
-		dnsConfig:        forwarder.DefaultDNSConfig(),
-		httpProxyConfig:  forwarder.DefaultHTTPProxyConfig(),
-		httpServerConfig: forwarder.DefaultHTTPServerConfig(),
-		logConfig:        defaultLogConfig(),
+		promReg:               prometheus.NewRegistry(),
+		dnsConfig:             forwarder.DefaultDNSConfig(),
+		httpProxyConfig:       forwarder.DefaultHTTPProxyConfig(),
+		httpProxyServerConfig: forwarder.DefaultHTTPServerConfig(),
+		apiServerConfig:       forwarder.DefaultHTTPServerConfig(),
+		logConfig:             defaultLogConfig(),
 	}
-	c.httpServerConfig.BasicAuthHeader = middleware.ProxyAuthorizationHeader
+	c.httpProxyServerConfig.PromRegistry = c.promReg
+	c.httpProxyServerConfig.BasicAuthHeader = middleware.ProxyAuthorizationHeader
+	c.apiServerConfig.Addr = "localhost:0"
 
 	defer func() {
 		fs := cmd.Flags()
 		bind.DNSConfig(fs, c.dnsConfig)
 		bind.HTTPProxyConfig(fs, c.httpProxyConfig)
-		bind.HTTPServerConfig(fs, c.httpServerConfig, "")
+		bind.HTTPServerConfig(fs, c.httpProxyServerConfig, "")
+		bind.HTTPServerConfig(fs, c.apiServerConfig, "api")
 		c.bindLogConfig(fs)
 
 		cmd.MarkFlagsMutuallyExclusive("upstream-proxy-uri", "pac-uri")
