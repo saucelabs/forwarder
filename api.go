@@ -18,7 +18,6 @@ func APIHandler(s *HTTPServer, r prometheus.Gatherer) http.Handler {
 	m.HandleFunc("/metrics", promhttp.HandlerFor(r, promhttp.HandlerOpts{}).ServeHTTP)
 
 	m.HandleFunc("/debug/pprof/", pprof.Index)
-	m.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
 	m.HandleFunc("/debug/pprof/profile", pprof.Profile)
 	m.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
 	m.HandleFunc("/debug/pprof/trace", pprof.Trace)
