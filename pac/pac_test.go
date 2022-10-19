@@ -1,12 +1,14 @@
 package pac
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"fmt"
 	"net"
 	"net/url"
 	"os"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -234,4 +236,134 @@ func TestProxyResolverChromium(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestProxyResolverLibpac(t *testing.T) {
+	tests := []int{
+		1,
+		2,
+		3,
+		// SKIP 4 - requires FindProxyForURL to be called 100 times with different URL path
+		5,
+		6,
+		// SKIP 7 - fails with got "PROXY null:8080", want "PROXY :8080"
+	}
+	for _, i := range tests {
+		testFile := fmt.Sprintf("test%d.sh", i)
+		t.Run(testFile, func(t *testing.T) {
+			pacFile, calls := readLibpacTestShellScript(t, "testdata/libpac/"+testFile)
+			if pacFile == "" {
+				t.Fatal("no PACFILE found")
+			}
+			if len(calls) == 0 {
+				t.Fatal("no calls found")
+			}
+
+			b, err := os.ReadFile("testdata/libpac/" + pacFile)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			var alerts bytes.Buffer
+			defer func() {
+				if t.Failed() && alerts.Len() > 0 {
+					t.Log(alerts.String())
+				}
+			}()
+
+			cfg := &ProxyResolverConfig{
+				Script:    string(b),
+				AlertSink: &alerts,
+			}
+
+			pr, err := NewProxyResolver(cfg, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			for _, c := range calls {
+				if c.hostname != "" {
+					t.Logf("Using custom host name %q for %q", c.hostname, c.url)
+				}
+
+				p, err := pr.FindProxyForURLAndHostname(c.url, c.hostname)
+				switch {
+				case strings.HasPrefix(c.msg, "Found proxy "):
+					if err != nil {
+						t.Fatalf("FindProxyForURL(%q) error: %v", c.url, err)
+					}
+
+					want := strings.TrimPrefix(c.msg, "Found proxy ")
+					if p.String() != want {
+						t.Errorf("FindProxyForURL(%q) = %q, want %q", c.url, p, want)
+					}
+				case strings.HasPrefix(c.msg, "Javascript call failed"):
+					if err == nil {
+						t.Fatalf("expected error %q", c.msg)
+					}
+					t.Log("FindProxyForURL error:", err)
+				default:
+					t.Errorf("Unknown call message: %q", c.msg)
+				}
+			}
+		})
+	}
+}
+
+type libpacTestCall struct {
+	url      *url.URL
+	hostname string
+	msg      string
+}
+
+func readLibpacTestShellScript(t *testing.T, path string) (pacFile string, calls []libpacTestCall) {
+	t.Helper()
+
+	f, err := os.Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if err := f.Close(); err != nil {
+			t.Fatal(err)
+		}
+	}()
+
+	pacFileRegex := regexp.MustCompile(`^PACFILE="(\d+.js)"`)
+
+	const (
+		progPos = iota + 1
+		urlPos
+		hostnamePos
+		msgPos
+	)
+
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		if m := pacFileRegex.FindStringSubmatch(line); m != nil {
+			pacFile = m[1]
+			continue
+		}
+
+		if strings.HasPrefix(line, "test_") {
+			parts := strings.SplitN(line, " ", msgPos+1)
+			u, err := url.ParseRequestURI(parts[urlPos])
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			c := libpacTestCall{
+				url: u,
+				msg: strings.Trim(parts[msgPos], `"'`),
+			}
+			if h := parts[hostnamePos]; u.Hostname() != h {
+				c.hostname = h
+			}
+			calls = append(calls, c)
+		}
+	}
+
+	return //nolint:nakedret // pacFile and calls are named return values
 }
