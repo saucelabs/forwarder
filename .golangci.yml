@@ -52,6 +52,7 @@ issues:
     - "can be `fmt.Stringer`"
     - "string `https?` has \\d+ occurrences"
     - "`nop.+` is unused"
+    - "returns interface \\(github.com/dop251/goja.Value\\)"
 
   exclude-rules:
     - path: cmd/forwarder/version/version.go
@@ -62,10 +63,15 @@ issues:
       linters:
         - bodyclose
         - funlen
+        - gocognit
         - gosec
         - noctx
         - paralleltest
         - testpackage
+
+    - linters:
+        - thelper
+      source: "configure: func\\(t \\*testing.T"
 
     - linters:
         - gochecknoglobals
@@ -74,6 +80,10 @@ issues:
     - linters:
         - gocritic
       source: "// output:"
+
+    - linters:
+        - golint
+      source: 'import _ "embed"'
 
     - linters:
         - lll
