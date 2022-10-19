@@ -7,7 +7,7 @@ function FindProxyForURL(url, host) {
     return "FAIL";
   }
 
-  return "PROXY " + makePseudoHost(url + "." + host);
+  return "PROXY " + makePseudoHost(url + "." + host) + ":80";
 }
 
 // Form a string that kind-of resembles a host. We will replace any
