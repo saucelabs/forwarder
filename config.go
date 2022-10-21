@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net"
 	"net/url"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 )
@@ -145,4 +147,23 @@ func isPort(port string) bool {
 	}
 
 	return p >= 1 && p <= 65535
+}
+
+// OpenFileParser returns a parser that calls os.OpenFile.
+// If dirPerm is set it will create the directory if it does not exist.
+// For empty path the parser returns nil file and nil error.
+func OpenFileParser(flag int, perm, dirPerm os.FileMode) func(val string) (*os.File, error) {
+	return func(val string) (*os.File, error) {
+		if val == "" {
+			return nil, nil
+		}
+
+		if dirPerm != 0 {
+			dir := filepath.Dir(val)
+			if err := os.MkdirAll(dir, dirPerm); err != nil {
+				return nil, err
+			}
+		}
+		return os.OpenFile(val, flag, perm)
+	}
 }
