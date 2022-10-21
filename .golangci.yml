@@ -51,6 +51,7 @@ issues:
   exclude:
     - "can be `fmt.Stringer`"
     - "string `https?` has \\d+ occurrences"
+    - "Magic number: 0o"
     - "`nop.+` is unused"
     - "returns interface \\(github.com/dop251/goja.Value\\)"
 

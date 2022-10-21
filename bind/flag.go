@@ -2,9 +2,11 @@ package bind
 
 import (
 	"net/url"
+	"os"
 
 	"github.com/mmatczuk/anyflag"
 	"github.com/saucelabs/forwarder"
+	"github.com/saucelabs/forwarder/log"
 	"github.com/spf13/pflag"
 )
 
@@ -77,4 +79,11 @@ func HTTPServerConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPServerConfig, prefix
 		namePrefix+"read-timeout", cfg.ReadTimeout, usagePrefix+"HTTP server read timeout")
 	fs.VarP(anyflag.NewValue[*url.Userinfo](cfg.BasicAuth, &cfg.BasicAuth, forwarder.ParseUserInfo),
 		namePrefix+"basic-auth", "", usagePrefix+"basic-auth in the form of `username:password`")
+}
+
+func LogConfig(fs *pflag.FlagSet, cfg *log.Config) {
+	fs.VarP(anyflag.NewValue[*os.File](nil, &cfg.File,
+		forwarder.OpenFileParser(os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600, 0o700)),
+		"log-file", "", "log file path (default: stdout)")
+	fs.BoolVar(&cfg.Verbose, "verbose", cfg.Verbose, "enable verbose logging")
 }

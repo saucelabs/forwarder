@@ -8,6 +8,8 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+
+	"github.com/saucelabs/forwarder/log/stdlog"
 )
 
 func TestNewUserInfoMatcherErrors(t *testing.T) {
@@ -41,7 +43,7 @@ func TestNewUserInfoMatcherErrors(t *testing.T) {
 	for i := range tests {
 		tc := tests[i]
 		t.Run(tc.name, func(t *testing.T) {
-			_, err := newUserInfoMatcher(tc.input, stdLogger{})
+			_, err := newUserInfoMatcher(tc.input, stdlog.Default())
 			if err == nil {
 				t.Fatal("expected error")
 			}
@@ -93,7 +95,7 @@ func TestUserInfoMatcherMatch(t *testing.T) {
 	for i := range tests {
 		tc := tests[i]
 		t.Run(tc.name, func(t *testing.T) {
-			m, err := newUserInfoMatcher(tc.input, stdLogger{})
+			m, err := newUserInfoMatcher(tc.input, stdlog.Default())
 			if err != nil {
 				t.Fatal(err)
 			}

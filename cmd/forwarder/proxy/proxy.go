@@ -13,9 +13,10 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/saucelabs/forwarder"
 	"github.com/saucelabs/forwarder/bind"
+	"github.com/saucelabs/forwarder/log"
+	"github.com/saucelabs/forwarder/log/stdlog"
 	"github.com/saucelabs/forwarder/middleware"
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -25,29 +26,34 @@ type command struct {
 	httpProxyConfig       *forwarder.HTTPProxyConfig
 	httpProxyServerConfig *forwarder.HTTPServerConfig
 	apiServerConfig       *forwarder.HTTPServerConfig
-	logConfig             logConfig
+	logConfig             *log.Config
 }
 
 func (c *command) RunE(cmd *cobra.Command, args []string) error {
+	if f := c.logConfig.File; f != nil {
+		defer f.Close()
+	}
+	logger := stdlog.New(c.logConfig)
+
 	var resolver *net.Resolver
 	if len(c.dnsConfig.Servers) > 0 {
-		r, err := forwarder.NewResolver(c.dnsConfig, newLogger(c.logConfig, "dns"))
+		r, err := forwarder.NewResolver(c.dnsConfig, logger.Named("dns"))
 		if err != nil {
 			return err
 		}
 		resolver = r
 	}
 
-	p, err := forwarder.NewHTTPProxy(c.httpProxyConfig, resolver, newLogger(c.logConfig, "proxy"))
+	p, err := forwarder.NewHTTPProxy(c.httpProxyConfig, resolver, logger.Named("proxy"))
 	if err != nil {
 		return err
 	}
-	s, err := forwarder.NewHTTPServer(c.httpProxyServerConfig, p, newLogger(c.logConfig, "server"))
+	s, err := forwarder.NewHTTPServer(c.httpProxyServerConfig, p, logger.Named("server"))
 	if err != nil {
 		return err
 	}
 
-	a, err := forwarder.NewHTTPServer(c.apiServerConfig, forwarder.APIHandler(s, c.promReg), newLogger(c.logConfig, "api"))
+	a, err := forwarder.NewHTTPServer(c.apiServerConfig, forwarder.APIHandler(s, c.promReg), logger.Named("api"))
 	if err != nil {
 		return err
 	}
@@ -96,7 +102,7 @@ func Command() (cmd *cobra.Command) {
 		httpProxyConfig:       forwarder.DefaultHTTPProxyConfig(),
 		httpProxyServerConfig: forwarder.DefaultHTTPServerConfig(),
 		apiServerConfig:       forwarder.DefaultHTTPServerConfig(),
-		logConfig:             defaultLogConfig(),
+		logConfig:             log.DefaultConfig(),
 	}
 	c.httpProxyServerConfig.PromRegistry = c.promReg
 	c.httpProxyServerConfig.BasicAuthHeader = middleware.ProxyAuthorizationHeader
@@ -108,7 +114,7 @@ func Command() (cmd *cobra.Command) {
 		bind.HTTPProxyConfig(fs, c.httpProxyConfig)
 		bind.HTTPServerConfig(fs, c.httpProxyServerConfig, "")
 		bind.HTTPServerConfig(fs, c.apiServerConfig, "api")
-		c.bindLogConfig(fs)
+		bind.LogConfig(fs, c.logConfig)
 
 		cmd.MarkFlagsMutuallyExclusive("upstream-proxy-uri", "pac-uri")
 	}()
@@ -119,10 +125,4 @@ func Command() (cmd *cobra.Command) {
 		Example: example,
 		RunE:    c.RunE,
 	}
-}
-
-func (c *command) bindLogConfig(fs *pflag.FlagSet) {
-	fs.StringVar(&c.logConfig.Level, "log-level", c.logConfig.Level, "the log level")
-	fs.StringVar(&c.logConfig.FileLevel, "log-file-level", c.logConfig.FileLevel, "the log file level")
-	fs.StringVar(&c.logConfig.FilePath, "log-file-path", c.logConfig.FilePath, "the log file path")
 }
