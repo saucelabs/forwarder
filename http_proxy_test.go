@@ -17,6 +17,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/saucelabs/forwarder/log/stdlog"
 	"github.com/saucelabs/forwarder/middleware"
 )
 
@@ -110,7 +111,7 @@ func TestHTTPProxySmoke(t *testing.T) { //nolint // FIXME cognitive complexity 8
 					StdEncoding.
 					EncodeToString([]byte("user:pass"))
 			}
-			targetServer := httpServerStub("body", targetCreds, namedStdLogger("target"))
+			targetServer := httpServerStub("body", targetCreds, stdlog.Default().Named("target"))
 			defer func() {
 				targetServer.Close()
 			}()
@@ -134,7 +135,7 @@ func TestHTTPProxySmoke(t *testing.T) { //nolint // FIXME cognitive complexity 8
 
 			// Upstream HTTPProxy.
 			if tc.config.UpstreamProxyURI != nil {
-				upstreamProxy, err := NewHTTPProxy(&HTTPProxyConfig{ProxyLocalhost: true}, nil, namedStdLogger("upstream"))
+				upstreamProxy, err := NewHTTPProxy(&HTTPProxyConfig{ProxyLocalhost: true}, nil, stdlog.Default().Named("upstream"))
 				if err != nil {
 					t.Fatalf("NewHTTPProxy() error=%v", err)
 				}
@@ -155,7 +156,7 @@ func TestHTTPProxySmoke(t *testing.T) { //nolint // FIXME cognitive complexity 8
 			}
 
 			// Local proxy.
-			localProxy, err := NewHTTPProxy(&tc.config, nil, namedStdLogger("local"))
+			localProxy, err := NewHTTPProxy(&tc.config, nil, stdlog.Default().Named("local"))
 			if err != nil {
 				t.Fatalf("NewHTTPProxy() error=%v", err)
 			}
@@ -211,7 +212,7 @@ func TestHTTPProxyLocalhost(t *testing.T) {
 			// Start local proxy.
 			localProxy, err := NewHTTPProxy(&HTTPProxyConfig{
 				ProxyLocalhost: tc.ProxyLocalhost,
-			}, nil, namedStdLogger("local"))
+			}, nil, stdlog.Default().Named("local"))
 			if err != nil {
 				t.Fatalf("NewHTTPProxy() error = %v", err)
 			}

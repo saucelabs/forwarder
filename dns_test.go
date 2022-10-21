@@ -5,6 +5,8 @@ import (
 	"net/url"
 	"testing"
 	"time"
+
+	"github.com/saucelabs/forwarder/log/stdlog"
 )
 
 func TestResolverLookupHost(t *testing.T) {
@@ -12,7 +14,7 @@ func TestResolverLookupHost(t *testing.T) {
 		Servers: []*url.URL{{Scheme: "udp", Host: "1.1.1.1:53"}},
 		Timeout: 5 * time.Second,
 	}
-	r, err := NewResolver(c, stdLogger{})
+	r, err := NewResolver(c, stdlog.Default())
 	if err != nil {
 		t.Fatal(err)
 	}
