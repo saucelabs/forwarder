@@ -1,6 +1,7 @@
 package forwarder
 
 import (
+	"os"
 	"strings"
 	"testing"
 )
@@ -181,6 +182,67 @@ func TestParseDNSURI(t *testing.T) {
 
 			if u.String() != tc.input {
 				t.Errorf("expected %q, got %q", tc.input, u.String())
+			}
+		})
+	}
+}
+
+func TestParseFilePath(t *testing.T) {
+	tempDir, err := os.MkdirTemp("", "com.saucelabs.ForwarderTest-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if err := os.RemoveAll(tempDir); err != nil {
+			t.Fatal(err)
+		}
+	}()
+
+	tests := []struct {
+		name  string
+		input string
+		err   string
+	}{
+		{
+			name:  "temp",
+			input: tempDir + "/foo",
+		},
+		{
+			name:  "temp subdirectory",
+			input: tempDir + "/a/b/c/foo",
+		},
+
+		{
+			name:  "insufficient permissions",
+			input: "/path/to/file",
+			err:   "mkdir",
+		},
+		{
+			name:  "empty",
+			input: "",
+		},
+	}
+
+	for i := range tests {
+		tc := &tests[i]
+		t.Run(tc.name, func(t *testing.T) {
+			f, err := OpenFileParser(os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600, 0o700)(tc.input)
+			defer func() {
+				if f == nil {
+					return
+				}
+				if err := f.Close(); err != nil {
+					t.Fatal(err)
+				}
+			}()
+			if err != nil {
+				if tc.err == "" {
+					t.Fatalf("expected success, got %q", err)
+				}
+				if !strings.Contains(err.Error(), tc.err) {
+					t.Fatalf("expected error to contain %q, got %q", tc.err, err)
+				}
+				return
 			}
 		})
 	}
