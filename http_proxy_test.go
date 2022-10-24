@@ -37,22 +37,22 @@ func TestHTTPProxyConfigValidate(t *testing.T) {
 		{
 			name: "both upstream and PAC are set",
 			config: HTTPProxyConfig{
-				UpstreamProxyURI: newProxyURL(80, upstreamProxyCredentialUsername, upstreamProxyCredentialPassword),
-				PACURI:           newProxyURL(80, "", ""),
+				UpstreamProxy: newProxyURL(80, upstreamProxyCredentialUsername, upstreamProxyCredentialPassword),
+				PAC:           newProxyURL(80, "", ""),
 			},
 			err: "only one of upstream_proxy_uri or pac_uri can be set",
 		},
 		{
-			name: "invalid upstream proxy URI",
+			name: "invalid upstream proxy ",
 			config: HTTPProxyConfig{
-				UpstreamProxyURI: &url.URL{},
+				UpstreamProxy: &url.URL{},
 			},
 			err: "upstream_proxy_uri: invalid scheme",
 		},
 		{
-			name: "invalid PAC server URI",
+			name: "invalid PAC server ",
 			config: HTTPProxyConfig{
-				PACURI: &url.URL{},
+				PAC: &url.URL{},
 			},
 			err: "pac_uri: invalid scheme",
 		},
@@ -97,8 +97,8 @@ func TestHTTPProxySmoke(t *testing.T) { //nolint // FIXME cognitive complexity 8
 		{
 			name: "Protected upstream proxy",
 			config: HTTPProxyConfig{
-				UpstreamProxyURI: newProxyURL(0, upstreamProxyCredentialUsername, upstreamProxyCredentialPassword),
-				ProxyLocalhost:   true,
+				UpstreamProxy:  newProxyURL(0, upstreamProxyCredentialUsername, upstreamProxyCredentialPassword),
+				ProxyLocalhost: true,
 			},
 		},
 	}
@@ -134,15 +134,15 @@ func TestHTTPProxySmoke(t *testing.T) { //nolint // FIXME cognitive complexity 8
 			}
 
 			// Upstream HTTPProxy.
-			if tc.config.UpstreamProxyURI != nil {
+			if tc.config.UpstreamProxy != nil {
 				upstreamProxy, err := NewHTTPProxy(&HTTPProxyConfig{ProxyLocalhost: true}, nil, stdlog.Default().Named("upstream"))
 				if err != nil {
 					t.Fatalf("NewHTTPProxy() error=%v", err)
 				}
 				var h http.Handler = upstreamProxy
-				if tc.config.UpstreamProxyURI.User != nil {
-					p, _ := tc.config.UpstreamProxyURI.User.Password()
-					h = middleware.NewProxyBasicAuth().Wrap(upstreamProxy, tc.config.UpstreamProxyURI.User.Username(), p)
+				if tc.config.UpstreamProxy.User != nil {
+					p, _ := tc.config.UpstreamProxy.User.Password()
+					h = middleware.NewProxyBasicAuth().Wrap(upstreamProxy, tc.config.UpstreamProxy.User.Username(), p)
 				}
 
 				usrv := httptest.NewServer(h)
@@ -151,8 +151,8 @@ func TestHTTPProxySmoke(t *testing.T) { //nolint // FIXME cognitive complexity 8
 				}
 				defer usrv.Close()
 
-				// Update the upstream proxy URI with host and port.
-				tc.config.UpstreamProxyURI.Host = usrv.Listener.Addr().String()
+				// Update the upstream proxy  with host and port.
+				tc.config.UpstreamProxy.Host = usrv.Listener.Addr().String()
 			}
 
 			// Local proxy.
@@ -287,7 +287,7 @@ func assertRequest(t *testing.T, client *http.Client, uri string, statusCode int
 
 	u, err := url.ParseRequestURI(uri)
 	if err != nil {
-		t.Fatalf("Failed to parse URI: %s", err)
+		t.Fatalf("Failed to parse : %s", err)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)

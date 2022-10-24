@@ -92,21 +92,21 @@ func DefaultHTTPTransportConfig() *HTTPTransportConfig {
 }
 
 type HTTPProxyConfig struct {
-	// UpstreamProxyURI is the upstream proxy URI, ex. http://user:password@127.0.0.1:8080.
-	// Only one of `UpstreamProxyURI` or `PACURI` can be set.
+	// UpstreamProxy is the upstream proxy , ex. http://user:password@127.0.0.1:8080.
+	// Only one of `UpstreamProxy` or `PAC` can be set.
 	// Requirements:
 	// - Known schemes: http, https, socks, socks5, or quic.
 	// - Hostname or IP.
 	// - Port in a valid range: 1 - 65535.
 	// - Username and password are optional.
-	UpstreamProxyURI *url.URL `json:"upstream_proxy_uri"`
+	UpstreamProxy *url.URL `json:"upstream_proxy_uri"`
 
-	// UpstreamProxyCredentials allow to override the credentials from the `UpstreamProxyURI`.
+	// UpstreamProxyCredentials allow to override the credentials from the `UpstreamProxy`.
 	UpstreamProxyCredentials *url.Userinfo `json:"upstream_proxy_credentials"`
 
-	// PACURI is the PAC URI, which is used to determine the upstream proxy, ex. http://127.0.0.1:8087/data.pac.
-	// Only one of `UpstreamProxyURI` or `PACURI` can be set.
-	PACURI *url.URL `json:"pac_uri"`
+	// PAC is the PAC , which is used to determine the upstream proxy, ex. http://127.0.0.1:8087/data.pac.
+	// Only one of `UpstreamProxy` or `PAC` can be set.
+	PAC *url.URL `json:"pac_uri"`
 
 	// Credentials for proxies specified in PAC content.
 	PACProxiesCredentials []string `json:"pac_proxies_credentials"`
@@ -133,16 +133,16 @@ func DefaultHTTPProxyConfig() *HTTPProxyConfig {
 }
 
 func (c *HTTPProxyConfig) Validate() error {
-	if err := validateProxyURI(c.UpstreamProxyURI); err != nil {
+	if err := validateProxyURL(c.UpstreamProxy); err != nil {
 		return fmt.Errorf("upstream_proxy_uri: %w", err)
 	}
 	if err := validatedUserInfo(c.UpstreamProxyCredentials); err != nil {
 		return fmt.Errorf("upstream_proxy_credentials: %w", err)
 	}
-	if err := validateProxyURI(c.PACURI); err != nil {
+	if err := validateProxyURL(c.PAC); err != nil {
 		return fmt.Errorf("pac_uri: %w", err)
 	}
-	if c.UpstreamProxyURI != nil && c.PACURI != nil {
+	if c.UpstreamProxy != nil && c.PAC != nil {
 		return fmt.Errorf("only one of upstream_proxy_uri or pac_uri can be set")
 	}
 
@@ -184,8 +184,8 @@ func NewHTTPProxy(cfg *HTTPProxyConfig, r *net.Resolver, log Logger) (*HTTPProxy
 	}
 	p.configureTransport(r)
 
-	if p.config.PACURI != nil {
-		pacParser, err := pacman.New(p.config.PACURI.String(), p.config.PACProxiesCredentials...)
+	if p.config.PAC != nil {
+		pacParser, err := pacman.New(p.config.PAC.String(), p.config.PACProxiesCredentials...)
 		if err != nil {
 			return nil, fmt.Errorf("pac parser: %w", err)
 		}
@@ -270,29 +270,29 @@ func (hp *HTTPProxy) configureDirect() {
 }
 
 func (hp *HTTPProxy) configureUpstreamProxy() {
-	hp.log.Infof("Using upstream proxy %s", hp.config.UpstreamProxyURI)
+	hp.log.Infof("Using upstream proxy %s", hp.config.UpstreamProxy)
 
 	hp.proxy.OnRequest(goproxy.IsLocalHost).DoFunc(func(r *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
 		if hp.config.UpstreamProxyCredentials != nil {
 			hp.basicAuth.SetBasicAuthFromUserInfo(r, hp.config.UpstreamProxyCredentials)
 		} else {
-			hp.basicAuth.SetBasicAuthFromUserInfo(r, hp.config.UpstreamProxyURI.User)
+			hp.basicAuth.SetBasicAuthFromUserInfo(r, hp.config.UpstreamProxy.User)
 		}
 		return r, nil
 	})
-	hp.proxy.Tr.Proxy = http.ProxyURL(hp.config.UpstreamProxyURI)
+	hp.proxy.Tr.Proxy = http.ProxyURL(hp.config.UpstreamProxy)
 
-	hp.proxy.ConnectDial = hp.proxy.NewConnectDialToProxyWithHandler(hp.config.UpstreamProxyURI.String(), func(r *http.Request) {
+	hp.proxy.ConnectDial = hp.proxy.NewConnectDialToProxyWithHandler(hp.config.UpstreamProxy.String(), func(r *http.Request) {
 		if hp.config.UpstreamProxyCredentials != nil {
 			hp.basicAuth.SetBasicAuthFromUserInfo(r, hp.config.UpstreamProxyCredentials)
 		} else {
-			hp.basicAuth.SetBasicAuthFromUserInfo(r, hp.config.UpstreamProxyURI.User)
+			hp.basicAuth.SetBasicAuthFromUserInfo(r, hp.config.UpstreamProxy.User)
 		}
 	})
 }
 
 func (hp *HTTPProxy) configurePACProxy() {
-	hp.log.Infof("Using PAC proxy %s", hp.config.PACURI)
+	hp.log.Infof("Using PAC proxy %s", hp.config.PAC)
 
 	hp.proxy.Tr.Proxy = func(r *http.Request) (*url.URL, error) {
 		return hp.pacFindProxy(r.URL)
@@ -344,9 +344,9 @@ func (hp *HTTPProxy) configureSiteBasicAuth() {
 // Mode returns mode of operation of the proxy as specified in the config.
 func (hp *HTTPProxy) Mode() Mode {
 	switch {
-	case hp.config.UpstreamProxyURI != nil:
+	case hp.config.UpstreamProxy != nil:
 		return Upstream
-	case hp.config.PACURI != nil:
+	case hp.config.PAC != nil:
 		return PAC
 	default:
 		return Direct
