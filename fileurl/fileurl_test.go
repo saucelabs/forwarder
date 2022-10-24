@@ -16,6 +16,10 @@ func TestParseFilePathOrURL(t *testing.T) {
 		want  url.URL
 	}{
 		{
+			input: "-",
+			want:  url.URL{Scheme: "file", Path: "-"},
+		},
+		{
 			input: "path/to/file",
 			want:  url.URL{Scheme: "file", Path: "path/to/file"},
 		},
