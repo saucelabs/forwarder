@@ -7,7 +7,9 @@ type Logger interface {
 	Debugf(format string, args ...interface{})
 }
 
-// nopLogger is a logger that does nothing.
+// NopLogger is a logger that does nothing.
+var NopLogger = nopLogger{} //nolint:gochecknoglobals // nop implementation
+
 type nopLogger struct{}
 
 func (l nopLogger) Errorf(format string, args ...interface{}) {
