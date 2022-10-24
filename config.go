@@ -43,19 +43,19 @@ func validatedUserInfo(ui *url.Userinfo) error {
 	return nil
 }
 
-// ParseProxyURI parser a Proxy URI as URL
+// ParseProxyURL parser a Proxy URL
 //
 // Requirements:
 // - Protocol: http, https, socks5, socks, quic.
 // - Hostname min 4 chars.
 // - Port in a valid range: 1 - 65535.
 // - (Optional) username and password.
-func ParseProxyURI(val string) (*url.URL, error) {
+func ParseProxyURL(val string) (*url.URL, error) {
 	u, err := url.Parse(val)
 	if err != nil {
 		return nil, err
 	}
-	if err := validateProxyURI(u); err != nil {
+	if err := validateProxyURL(u); err != nil {
 		return nil, err
 	}
 
@@ -64,7 +64,7 @@ func ParseProxyURI(val string) (*url.URL, error) {
 
 const minHostLength = 4
 
-func validateProxyURI(u *url.URL) error {
+func validateProxyURL(u *url.URL) error {
 	if u == nil {
 		return nil
 	}
@@ -87,7 +87,7 @@ func validateProxyURI(u *url.URL) error {
 	return nil
 }
 
-// ParseDNSURI parses a DNS URI as URL.
+// ParseDNSAddress parses a DNS URL or IP address.
 // It supports IP only or full URL.
 // Hostname is not allowed.
 // Examples: `udp://1.1.1.1:53`, `1.1.1.1`.
@@ -98,7 +98,7 @@ func validateProxyURI(u *url.URL) error {
 // - (Optional) port in a valid range: 1 - 65535 (default 53).
 // - No username and password.
 // - No path, query, and fragment.
-func ParseDNSURI(val string) (*url.URL, error) {
+func ParseDNSAddress(val string) (*url.URL, error) {
 	u, err := url.Parse(val)
 	if err != nil {
 		return nil, err
@@ -112,14 +112,14 @@ func ParseDNSURI(val string) (*url.URL, error) {
 	if u.Port() == "" {
 		u.Host += ":53"
 	}
-	if err := validateDNSURI(u); err != nil {
+	if err := validateDNSURL(u); err != nil {
 		return nil, err
 	}
 
 	return u, nil
 }
 
-func validateDNSURI(u *url.URL) error {
+func validateDNSURL(u *url.URL) error {
 	if u.Scheme != "udp" && u.Scheme != "tcp" {
 		return fmt.Errorf("invalid protocol: %s, supported protocols are udp and tcp", u.Scheme)
 	}

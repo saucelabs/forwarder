@@ -58,7 +58,7 @@ func TestParseUserInfo(t *testing.T) {
 	}
 }
 
-func TestParseProxyURI(t *testing.T) {
+func TestParseProxyURL(t *testing.T) {
 	tests := []struct {
 		name  string
 		input string
@@ -93,7 +93,7 @@ func TestParseProxyURI(t *testing.T) {
 	for i := range tests {
 		tc := &tests[i]
 		t.Run(tc.name, func(t *testing.T) {
-			_, err := ParseProxyURI(tc.input)
+			_, err := ParseProxyURL(tc.input)
 			if err != nil {
 				if tc.err == "" {
 					t.Fatalf("expected success, got %q", err)
@@ -107,8 +107,8 @@ func TestParseProxyURI(t *testing.T) {
 	}
 }
 
-func TestParseDNSURIDefaults(t *testing.T) {
-	u, err := ParseDNSURI("1.1.1.1")
+func TestParseDNSAddressDefaults(t *testing.T) {
+	u, err := ParseDNSAddress("1.1.1.1")
 	if err != nil {
 		t.Fatalf("expected success, got %q", err)
 	}
@@ -117,7 +117,7 @@ func TestParseDNSURIDefaults(t *testing.T) {
 	}
 }
 
-func TestParseDNSURI(t *testing.T) {
+func TestParseDNSAddress(t *testing.T) {
 	tests := []struct {
 		name  string
 		input string
@@ -169,7 +169,7 @@ func TestParseDNSURI(t *testing.T) {
 	for i := range tests {
 		tc := &tests[i]
 		t.Run(tc.name, func(t *testing.T) {
-			u, err := ParseDNSURI(tc.input)
+			u, err := ParseDNSAddress(tc.input)
 			if err != nil {
 				if tc.err == "" {
 					t.Fatalf("expected success, got %q", err)

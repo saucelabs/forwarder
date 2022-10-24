@@ -30,7 +30,7 @@ func (c *DNSConfig) Validate() error {
 		return fmt.Errorf("no DNS server configured")
 	}
 	for i, u := range c.Servers {
-		if err := validateDNSURI(u); err != nil {
+		if err := validateDNSURL(u); err != nil {
 			return fmt.Errorf("servers[%d]: %w", i, err)
 		}
 	}

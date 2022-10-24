@@ -13,21 +13,21 @@ import (
 )
 
 func DNSConfig(fs *pflag.FlagSet, cfg *forwarder.DNSConfig) {
-	fs.VarP(anyflag.NewSliceValue[*url.URL](nil, &cfg.Servers, forwarder.ParseDNSURI),
-		"dns-server", "n", "DNS server, ex. -n udp://1.1.1.1:53 (can be specified multiple times)")
+	fs.VarP(anyflag.NewSliceValue[*url.URL](nil, &cfg.Servers, forwarder.ParseDNSAddress),
+		"dns-server", "n", "DNS server IP or URL ex. 1.1.1.1 or udp://1.1.1.1:53 (can be specified multiple times)")
 	fs.DurationVar(&cfg.Timeout,
 		"dns-timeout", cfg.Timeout, "timeout for DNS queries if DNS server is specified")
 }
 
 func HTTPProxyConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPProxyConfig) {
-	fs.VarP(anyflag.NewValue[*url.URL](cfg.UpstreamProxyURI, &cfg.UpstreamProxyURI, forwarder.ParseProxyURI),
-		"upstream-proxy-uri", "u", "upstream proxy URI")
+	fs.VarP(anyflag.NewValue[*url.URL](cfg.UpstreamProxy, &cfg.UpstreamProxy, forwarder.ParseProxyURL),
+		"upstream-proxy", "u", "upstream proxy URL")
 	fs.VarP(anyflag.NewValue[*url.Userinfo](cfg.UpstreamProxyCredentials, &cfg.UpstreamProxyCredentials, forwarder.ParseUserInfo),
-		"upstream-proxy-credentials", "", "upstream proxy credentials in the form of `username:password`, if not specified, the credentials from the upstream proxy URI are used")
-	fs.VarP(anyflag.NewValue[*url.URL](cfg.PACURI, &cfg.PACURI, url.ParseRequestURI),
-		"pac-uri", "p", "URI to PAC content, or directly, the PAC content")
+		"upstream-proxy-credentials", "", "upstream proxy credentials in the form of `username:password`, it overrides credentials embedded in upstream-proxy URL")
+	fs.VarP(anyflag.NewValue[*url.URL](cfg.PAC, &cfg.PAC, url.ParseRequestURI),
+		"pac", "p", "local file `path or URL` to PAC content")
 	fs.StringSliceVarP(&cfg.PACProxiesCredentials, "pac-proxies-credentials", "d", cfg.PACProxiesCredentials,
-		"PAC proxies credentials using standard URI format")
+		"PAC proxies credentials in URL format ex. http://user:pass@host:port (can be specified multiple times)")
 	fs.StringSliceVar(&cfg.SiteCredentials, "site-credentials", cfg.SiteCredentials,
 		"target site credentials")
 	fs.BoolVarP(&cfg.ProxyLocalhost, "proxy-localhost", "t", cfg.ProxyLocalhost,
