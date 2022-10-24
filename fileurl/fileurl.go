@@ -14,8 +14,14 @@ var (
 // ParseFilePathOrURL extends url.Parse with the ability to parse file paths
 // and adds extended support for URL file scheme as described in RFC 8089.
 // If there is no scheme, it will be set to "file".
+// If value equals "-", it will be set to "file://-" meaning stdin.
 // See: https://datatracker.ietf.org/doc/html/rfc8089
 func ParseFilePathOrURL(val string) (*url.URL, error) {
+	// Handle stdin.
+	if val == "-" {
+		return &url.URL{Scheme: "file", Path: "-"}, nil
+	}
+
 	val = strings.ReplaceAll(val, "\\", "/")
 
 	// Handle UNC paths.
