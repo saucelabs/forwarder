@@ -32,8 +32,6 @@ func HTTPProxyConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPProxyConfig) {
 		"target site credentials")
 	fs.BoolVarP(&cfg.ProxyLocalhost, "proxy-localhost", "t", cfg.ProxyLocalhost,
 		"if set, will proxy localhost requests to an upstream proxy")
-
-	HTTPTransportConfig(fs, cfg.Transport)
 }
 
 func HTTPTransportConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPTransportConfig) {

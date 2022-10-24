@@ -23,6 +23,7 @@ import (
 type command struct {
 	promReg               *prometheus.Registry
 	dnsConfig             *forwarder.DNSConfig
+	httpTransportConfig   *forwarder.HTTPTransportConfig
 	httpProxyConfig       *forwarder.HTTPProxyConfig
 	httpProxyServerConfig *forwarder.HTTPServerConfig
 	apiServerConfig       *forwarder.HTTPServerConfig
@@ -43,8 +44,9 @@ func (c *command) RunE(cmd *cobra.Command, args []string) error {
 		}
 		resolver = r
 	}
+	t := forwarder.NewHTTPTransport(c.httpTransportConfig, resolver)
 
-	p, err := forwarder.NewHTTPProxy(c.httpProxyConfig, resolver, logger.Named("proxy"))
+	p, err := forwarder.NewHTTPProxy(c.httpProxyConfig, t, logger.Named("proxy"))
 	if err != nil {
 		return err
 	}
@@ -99,6 +101,7 @@ func Command() (cmd *cobra.Command) {
 	c := command{
 		promReg:               prometheus.NewRegistry(),
 		dnsConfig:             forwarder.DefaultDNSConfig(),
+		httpTransportConfig:   forwarder.DefaultHTTPTransportConfig(),
 		httpProxyConfig:       forwarder.DefaultHTTPProxyConfig(),
 		httpProxyServerConfig: forwarder.DefaultHTTPServerConfig(),
 		apiServerConfig:       forwarder.DefaultHTTPServerConfig(),
@@ -111,6 +114,7 @@ func Command() (cmd *cobra.Command) {
 	defer func() {
 		fs := cmd.Flags()
 		bind.DNSConfig(fs, c.dnsConfig)
+		bind.HTTPTransportConfig(fs, c.httpTransportConfig)
 		bind.HTTPProxyConfig(fs, c.httpProxyConfig)
 		bind.HTTPServerConfig(fs, c.httpProxyServerConfig, "")
 		bind.HTTPServerConfig(fs, c.apiServerConfig, "api")
