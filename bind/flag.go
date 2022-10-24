@@ -19,6 +19,11 @@ func DNSConfig(fs *pflag.FlagSet, cfg *forwarder.DNSConfig) {
 		"dns-timeout", cfg.Timeout, "timeout for DNS queries if DNS server is specified")
 }
 
+func PAC(fs *pflag.FlagSet, pac **url.URL) {
+	fs.VarP(anyflag.NewValue[*url.URL](*pac, pac, fileurl.ParseFilePathOrURL),
+		"pac", "p", "local file `path or URL` to PAC content, use \"-\" to read from stdin")
+}
+
 func HTTPProxyConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPProxyConfig) {
 	fs.VarP(anyflag.NewValue[*url.URL](cfg.UpstreamProxy, &cfg.UpstreamProxy, forwarder.ParseProxyURL),
 		"upstream-proxy", "u", "upstream proxy URL")

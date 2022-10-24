@@ -5,6 +5,8 @@
 package main
 
 import (
+	"github.com/saucelabs/forwarder/cmd/forwarder/paceval"
+	"github.com/saucelabs/forwarder/cmd/forwarder/pacserver"
 	"github.com/saucelabs/forwarder/cmd/forwarder/proxy"
 	"github.com/saucelabs/forwarder/cmd/forwarder/version"
 	"github.com/spf13/cobra"
@@ -14,7 +16,7 @@ const envPrefix = "FORWARDER"
 
 func rootCommand() *cobra.Command {
 	rootCmd := &cobra.Command{
-		Use:   "proxy",
+		Use:   "forwarder",
 		Short: "A simple flexible forward proxy",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			return bindFlagsToEnv(cmd, envPrefix)
@@ -22,6 +24,8 @@ func rootCommand() *cobra.Command {
 	}
 
 	rootCmd.AddCommand(
+		paceval.Command(),
+		pacserver.Command(),
 		proxy.Command(),
 		version.Command(),
 	)
