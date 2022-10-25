@@ -15,7 +15,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-func TestProxyResolverChromium(t *testing.T) {
+func TestProxyResolverChromium(t *testing.T) { //nolint:maintidx // long table
 	defaultQueryURL, err := url.ParseRequestURI("https://www.google.com/")
 	if err != nil {
 		t.Fatal(err)
@@ -29,6 +29,10 @@ func TestProxyResolverChromium(t *testing.T) {
 		err       string
 		evalErr   string
 	}{
+		{
+			fileName: "ambiguous_entry_point.js",
+			err:      "ambiguous entry point",
+		},
 		{
 			fileName: "b_132073833.js",
 			want:     []Proxy{{Mode: DIRECT}},
