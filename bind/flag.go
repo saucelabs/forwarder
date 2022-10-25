@@ -6,7 +6,9 @@ import (
 
 	"github.com/mmatczuk/anyflag"
 	"github.com/saucelabs/forwarder"
+	"github.com/saucelabs/forwarder/fileurl"
 	"github.com/saucelabs/forwarder/log"
+	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
 
@@ -86,4 +88,20 @@ func LogConfig(fs *pflag.FlagSet, cfg *log.Config) {
 		forwarder.OpenFileParser(os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600, 0o700)),
 		"log-file", "", "log file path (default: stdout)")
 	fs.BoolVar(&cfg.Verbose, "verbose", cfg.Verbose, "enable verbose logging")
+}
+
+func MarkFlagRequired(cmd *cobra.Command, names ...string) {
+	for _, name := range names {
+		if err := cmd.MarkFlagRequired(name); err != nil {
+			panic(err)
+		}
+	}
+}
+
+func MarkFlagFilename(cmd *cobra.Command, names ...string) {
+	for _, name := range names {
+		if err := cmd.MarkFlagFilename(name); err != nil {
+			panic(err)
+		}
+	}
 }
