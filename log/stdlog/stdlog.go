@@ -22,7 +22,7 @@ func New(cfg *flog.Config) StdLogger {
 	}
 	return StdLogger{
 		log:     log.New(w, "", log.Ldate|log.Ltime|log.LUTC),
-		verbose: true,
+		verbose: cfg.Verbose,
 	}
 }
 
