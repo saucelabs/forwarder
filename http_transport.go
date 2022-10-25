@@ -1,6 +1,7 @@
 package forwarder
 
 import (
+	"crypto/tls"
 	"net"
 	"net/http"
 	"runtime"
@@ -65,6 +66,8 @@ type HTTPTransportConfig struct {
 	// waiting for the server to approve.
 	// This time does not include the time to send the request header.
 	ExpectContinueTimeout time.Duration `json:"expect_continue_timeout"`
+
+	TLSConfig
 }
 
 func DefaultHTTPTransportConfig() *HTTPTransportConfig {
@@ -94,5 +97,8 @@ func NewHTTPTransport(cfg *HTTPTransportConfig, r *net.Resolver) *http.Transport
 		ExpectContinueTimeout: cfg.ExpectContinueTimeout,
 		ForceAttemptHTTP2:     true,
 		MaxIdleConnsPerHost:   cfg.MaxIdleConnsPerHost,
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: cfg.InsecureSkipVerify, //nolint:gosec // for self-signed certificates
+		},
 	}
 }

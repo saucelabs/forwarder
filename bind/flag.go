@@ -36,7 +36,7 @@ func HTTPProxyConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPProxyConfig) {
 	fs.StringSliceVar(&cfg.SiteCredentials, "site-credentials", cfg.SiteCredentials,
 		"target site credentials")
 	fs.BoolVarP(&cfg.ProxyLocalhost, "proxy-localhost", "t", cfg.ProxyLocalhost,
-		"if set, will proxy localhost requests to an upstream proxy")
+		"proxy localhost requests to an upstream proxy")
 }
 
 func HTTPTransportConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPTransportConfig) {
@@ -58,6 +58,8 @@ func HTTPTransportConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPTransportConfig) 
 		"http-response-header-timeout", cfg.ResponseHeaderTimeout, "response header timeout for HTTP connections")
 	fs.DurationVar(&cfg.ExpectContinueTimeout,
 		"http-expect-continue-timeout", cfg.ExpectContinueTimeout, "expect continue timeout for HTTP connections")
+
+	TLSConfig(fs, &cfg.TLSConfig)
 }
 
 func HTTPServerConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPServerConfig, prefix string) {
@@ -84,6 +86,10 @@ func HTTPServerConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPServerConfig, prefix
 		namePrefix+"read-timeout", cfg.ReadTimeout, usagePrefix+"HTTP server read timeout")
 	fs.VarP(anyflag.NewValue[*url.Userinfo](cfg.BasicAuth, &cfg.BasicAuth, forwarder.ParseUserInfo),
 		namePrefix+"basic-auth", "", usagePrefix+"basic-auth in the form of `username:password`")
+}
+
+func TLSConfig(fs *pflag.FlagSet, cfg *forwarder.TLSConfig) {
+	fs.BoolVar(&cfg.InsecureSkipVerify, "insecure-skip-verify", cfg.InsecureSkipVerify, "skip TLS verification")
 }
 
 func LogConfig(fs *pflag.FlagSet, cfg *log.Config) {
