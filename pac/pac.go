@@ -74,12 +74,17 @@ func NewProxyResolver(cfg *ProxyResolverConfig, r *net.Resolver, opts ...Option)
 	}
 
 	// Find the FindProxyForURL function.
-	if fn, ok := goja.AssertFunction(pr.vm.Get("FindProxyForURLEx")); ok {
-		pr.fn = fn
-	} else if fn, ok := goja.AssertFunction(pr.vm.Get("FindProxyForURL")); ok {
-		pr.fn = fn
-	} else {
+	fnx, fn := pr.entryPoint()
+	if fnx == nil && fn == nil {
 		return nil, fmt.Errorf("PAC script: missing required function FindProxyForURL or FindProxyForURLEx")
+	}
+	if fnx != nil && fn != nil {
+		return nil, fmt.Errorf("PAC script: ambiguous entry point, both FindProxyForURL and FindProxyForURLEx are defined")
+	}
+	if fnx != nil {
+		pr.fn = fnx
+	} else {
+		pr.fn = fn
 	}
 
 	return pr, nil
@@ -117,6 +122,12 @@ func (pr *ProxyResolver) alert(call goja.FunctionCall) goja.Value {
 		fmt.Fprintln(pr.config.AlertSink, "alert:", call.Argument(0).String())
 	}
 	return goja.Undefined()
+}
+
+func (pr *ProxyResolver) entryPoint() (fnx, fn goja.Callable) {
+	fnx, _ = goja.AssertFunction(pr.vm.Get("FindProxyForURLEx"))
+	fn, _ = goja.AssertFunction(pr.vm.Get("FindProxyForURL"))
+	return
 }
 
 // FindProxyForURL calls FindProxyForURL or FindProxyForURLEx function in the PAC script.
