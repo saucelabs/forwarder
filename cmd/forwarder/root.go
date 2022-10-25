@@ -12,7 +12,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const envPrefix = "FORWARDER"
+const (
+	envPrefix = "FORWARDER"
+	maxCols   = 80
+)
 
 func rootCommand() *cobra.Command {
 	rootCmd := &cobra.Command{
@@ -31,6 +34,7 @@ func rootCommand() *cobra.Command {
 	)
 	for _, cmd := range rootCmd.Commands() {
 		appendEnvToUsage(cmd, envPrefix)
+		wrapLongAt(cmd, maxCols)
 	}
 
 	return rootCmd
