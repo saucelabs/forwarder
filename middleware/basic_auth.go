@@ -4,7 +4,6 @@ import (
 	"crypto/subtle"
 	"encoding/base64"
 	"net/http"
-	"net/url"
 	"strings"
 )
 
@@ -73,40 +72,6 @@ func parseBasicAuth(auth string) (username, password string, ok bool) {
 		return "", "", false
 	}
 	return username, password, true
-}
-
-// SetBasicAuthFromUserInfo calls SetBasicAuth with the username and password from the provided url.Userinfo.
-// If the provided userinfo is nil, the request's authorization header is not set.
-func (ba *BasicAuth) SetBasicAuthFromUserInfo(r *http.Request, u *url.Userinfo) {
-	if u == nil {
-		return
-	}
-	p, _ := u.Password()
-	ba.SetBasicAuth(r, u.Username(), p)
-}
-
-// SetBasicAuth sets the request's authorization header to use HTTP
-// Basic Authentication with the provided username and password.
-//
-// With HTTP Basic Authentication the provided username and password
-// are not encrypted. It should generally only be used in an HTTPS
-// request.
-//
-// The username may not contain a colon. Some protocols may impose
-// additional requirements on pre-escaping the username and
-// password. For instance, when used with OAuth2, both arguments must
-// be URL encoded first with url.QueryEscape.
-func (ba *BasicAuth) SetBasicAuth(r *http.Request, username, password string) {
-	r.Header.Set(ba.header, "Basic "+basicAuth(username, password))
-}
-
-// See 2 (end of page 4) https://www.ietf.org/rfc/rfc2617.txt
-// "To receive authorization, the client sends the userid and password, separated by a single colon (":") character,
-// within a base64 encoded string in the credentials."
-// It is not meant to be urlencoded.
-func basicAuth(username, password string) string {
-	auth := username + ":" + password
-	return base64.StdEncoding.EncodeToString([]byte(auth))
 }
 
 // Wrap wraps the provided http.Handler with basic authentication.

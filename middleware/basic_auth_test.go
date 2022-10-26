@@ -7,9 +7,9 @@ import (
 )
 
 func TestBasicAuth(t *testing.T) {
-	ba := NewBasicAuth("Foo")
+	ba := NewBasicAuth(AuthorizationHeader)
 	r := httptest.NewRequest("GET", "/", nil)
-	ba.SetBasicAuth(r, "user", "pass")
+	r.SetBasicAuth("user", "pass")
 
 	if user, pass, ok := ba.BasicAuth(r); !ok || user != "user" || pass != "pass" {
 		t.Errorf("BasicAuth failed, got %v %v %v", user, pass, ok)
@@ -20,7 +20,7 @@ func TestBasicAuth(t *testing.T) {
 }
 
 func TestBasicAuthWrap(t *testing.T) {
-	ba := NewBasicAuth("Foo")
+	ba := NewBasicAuth(AuthorizationHeader)
 
 	h := ba.Wrap(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Foo") != "" {
@@ -32,7 +32,7 @@ func TestBasicAuthWrap(t *testing.T) {
 	t.Run("Authenticated", func(t *testing.T) {
 		w := httptest.NewRecorder()
 		r := httptest.NewRequest(http.MethodGet, "/", nil)
-		ba.SetBasicAuth(r, "user", "pass")
+		r.SetBasicAuth("user", "pass")
 
 		h.ServeHTTP(w, r)
 		if w.Result().StatusCode != http.StatusOK {
