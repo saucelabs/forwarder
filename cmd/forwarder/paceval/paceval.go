@@ -49,7 +49,7 @@ func (c *command) RunE(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return fmt.Errorf("parse URL: %w", err)
 		}
-		proxy, err := pr.FindProxyForURL(u)
+		proxy, err := pr.FindProxyForURL(u, "")
 		if err != nil {
 			return err
 		}
