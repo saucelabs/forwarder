@@ -133,7 +133,7 @@ func (pr *ProxyResolver) entryPoint() (fnx, fn goja.Callable) {
 // FindProxyForURL calls FindProxyForURL or FindProxyForURLEx function in the PAC script with the alternate hostname.
 // The hostname is optional, if empty it will be extracted from URL.
 // This is to handle cases when the hostname is not a valid hostname, but a URL.
-func (pr *ProxyResolver) FindProxyForURL(u *url.URL, hostname string) (Proxies, error) {
+func (pr *ProxyResolver) FindProxyForURL(u *url.URL, hostname string) (string, error) {
 	if hostname == "" {
 		hostname = u.Hostname()
 	}
@@ -151,5 +151,5 @@ func (pr *ProxyResolver) FindProxyForURL(u *url.URL, hostname string) (Proxies, 
 		return "", fmt.Errorf("PAC script: non-ASCII characters in the return value %q", s)
 	}
 
-	return Proxies(s), nil
+	return s, nil
 }

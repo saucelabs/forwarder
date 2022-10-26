@@ -231,7 +231,7 @@ func TestProxyResolverChromium(t *testing.T) { //nolint:maintidx // long table
 
 			t.Log("FindProxyForURL:", p)
 
-			got, err := p.All()
+			got, err := Proxies(p).All()
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -298,7 +298,7 @@ func TestProxyResolverLibpac(t *testing.T) {
 					}
 
 					want := strings.TrimPrefix(c.msg, "Found proxy ")
-					if p.String() != want {
+					if p != want {
 						t.Errorf("FindProxyForURL(%q) = %q, want %q", c.url, p, want)
 					}
 				case strings.HasPrefix(c.msg, "Javascript call failed"):
