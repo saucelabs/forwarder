@@ -5,7 +5,6 @@ import (
 	"net"
 	"net/url"
 	"os"
-	"strings"
 
 	"github.com/saucelabs/forwarder"
 	"github.com/saucelabs/forwarder/bind"
@@ -80,7 +79,7 @@ func Command() (cmd *cobra.Command) {
 		Short:   "Evaluate a PAC file for given URLs",
 		Long:    long,
 		RunE:    c.RunE,
-		Example: example + "\n" + supportedFunctions(),
+		Example: example,
 	}
 }
 
@@ -104,13 +103,3 @@ const example = `  # Evaluate a PAC file for a URL
   # Evaluate a PAC file for multiple URLs using a PAC file from a URL
   forwarder pac-eval --pac https://example.com/pac.js https://www.google.com https://www.facebook.com
 `
-
-func supportedFunctions() string {
-	var sb strings.Builder
-	sb.WriteString("Supported PAC util functions:")
-	for _, fn := range pac.SupportedFunctions() {
-		sb.WriteString("\n  ")
-		sb.WriteString(fn)
-	}
-	return sb.String()
-}

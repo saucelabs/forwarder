@@ -4,8 +4,24 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/saucelabs/forwarder/pac"
 	"github.com/spf13/cobra"
 )
+
+func withPACSupportedFunctions(cmd *cobra.Command) *cobra.Command {
+	cmd.Example += "\n" + pacSupportedFunctions()
+	return cmd
+}
+
+func pacSupportedFunctions() string {
+	var sb strings.Builder
+	sb.WriteString("Supported PAC util functions:")
+	for _, fn := range pac.SupportedFunctions() {
+		sb.WriteString("\n  ")
+		sb.WriteString(fn)
+	}
+	return sb.String()
+}
 
 func wrapLongAt(cmd *cobra.Command, width int) {
 	cmd.Long = wrapTextAt(cmd.Long, width)

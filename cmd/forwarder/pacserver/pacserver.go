@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"net/url"
 	"os/signal"
-	"strings"
 	"syscall"
 
 	"github.com/saucelabs/forwarder"
@@ -80,7 +79,7 @@ func Command() (cmd *cobra.Command) {
 		Short:   "Start HTTP(S) server that serves a PAC file",
 		Long:    long,
 		RunE:    c.RunE,
-		Example: example + "\n" + supportedFunctions(),
+		Example: example,
 	}
 }
 
@@ -96,24 +95,14 @@ If you start an HTTPS server and you don't provide a certificate, the server wil
 `
 
 const example = `  # Start a HTTP server serving a PAC file
-  pac-server --pac pac.js --protocol http --address localhost:8080
+  forwarder pac-server --pac pac.js --protocol http --address localhost:8080
 
   # Start a HTTPS server serving a PAC file
-  pac-server --pac pac.js --protocol https --address localhost:80443
+  forwarder pac-server --pac pac.js --protocol https --address localhost:80443
 
   # Start a HTTPS server serving a PAC file with custom certificate
-  pac-server --pac pac.js --protocol https --address localhost:80443 --cert-file cert.pem --key-file key.pem
+  forwarder pac-server --pac pac.js --protocol https --address localhost:80443 --cert-file cert.pem --key-file key.pem
 
   # Start a HTTPS server serving a PAC file with basic authentication
-  pac-server --pac pac.js --protocol https --address localhost:80443 --basic-auth user:pass
+  forwarder pac-server --pac pac.js --protocol https --address localhost:80443 --basic-auth user:pass
 `
-
-func supportedFunctions() string {
-	var sb strings.Builder
-	sb.WriteString("Supported PAC util functions:")
-	for _, fn := range pac.SupportedFunctions() {
-		sb.WriteString("\n  ")
-		sb.WriteString(fn)
-	}
-	return sb.String()
-}
