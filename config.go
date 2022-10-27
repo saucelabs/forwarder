@@ -43,6 +43,26 @@ func validatedUserInfo(ui *url.Userinfo) error {
 	return nil
 }
 
+// ParseHostPortUser parses a user:password@host:port string into HostUser.
+// User and password cannot be empty.
+func ParseHostPortUser(val string) (*HostPortUser, error) {
+	u, err := url.Parse("http://" + val)
+	if err != nil {
+		return nil, err
+	}
+
+	hpi := &HostPortUser{
+		Host:     u.Hostname(),
+		Port:     u.Port(),
+		Userinfo: u.User,
+	}
+	if err := hpi.Validate(); err != nil {
+		return nil, err
+	}
+
+	return hpi, nil
+}
+
 // ParseProxyURL parser a Proxy URL
 //
 // Requirements:
