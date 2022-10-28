@@ -1,0 +1,19 @@
+[Unit]
+Description=Sauce Labs Forwarder Service
+After=network-online.target
+
+[Service]
+Type=simple
+User=saucelabs
+Group=saucelabs
+ExecStart=/usr/bin/forwarder
+TimeoutStartSec=900
+KillMode=process
+Restart=on-failure
+RestartPreventExitStatus=1
+StandardOutput=journal
+StandardError=journal
+SyslogLevelPrefix=false
+
+[Install]
+WantedBy=multi-user.target
