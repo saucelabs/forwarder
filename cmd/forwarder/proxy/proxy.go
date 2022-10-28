@@ -166,6 +166,7 @@ const apiEndpoints = `API endpoints:
   /readyz - readiness check
   /configz - proxy configuration
   /pac - PAC file
+  /version - version information
   /debug/pprof/ - pprof endpoints
 `
 

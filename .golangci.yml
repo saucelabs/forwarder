@@ -71,6 +71,10 @@ issues:
         - paralleltest
         - testpackage
 
+    - path: internal/version/version.go
+      linters:
+        - gochecknoglobals
+
     - linters:
         - thelper
       source: "configure: func\\(t \\*testing.T"
