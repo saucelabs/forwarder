@@ -2,8 +2,6 @@
 # Use of this source code is governed by a MIT
 # license that can be found in the LICENSE file.
 
-all: dev
-
 export GOBIN := $(PWD)/bin
 export PATH  := $(GOBIN):$(PATH)
 
@@ -22,12 +20,7 @@ clean:
 	@rm -Rf bin dist *.coverprofile *.dev *.race *.test *.log
 	@go clean -cache -modcache -testcache ./... ||:
 
-.PHONY: dev
-dev: forwarder.race
-	@./forwarder.race run
-
-forwarder.race: .check-go-version $(shell go list -f '{{range .GoFiles}}{{ $$.Dir }}/{{ . }} {{end}}' ./...)
-	@go build -o ./forwarder.race -race ./cmd/forwarder
+### Testing
 
 .PHONY: .check-go-version
 .check-go-version:
@@ -56,6 +49,12 @@ integration-test:
 .PHONY: coverage
 coverage:
 	@go tool cover -func=coverage.out
+
+### Release
+
+.PHONY: dist
+dist:
+	@GORELEASER_CURRENT_TAG=1.0.0-devel goreleaser --snapshot --rm-dist
 
 .PHONY: doc
 doc:

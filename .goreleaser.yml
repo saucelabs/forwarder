@@ -29,3 +29,26 @@ builds:
 
 checksum:
   name_template: "checksums"
+
+dockers:
+  - image_templates:
+      - "{{ if .IsSnapshot }}saucelabs/{{.ProjectName}}:{{ .Tag }}-amd64{{ else }}saucelabs/{{.ProjectName}}:{{ .Version }}-amd64{{ end }}"
+    use: buildx
+    goos: linux
+    goarch: amd64
+    build_flag_templates:
+      - "--platform=linux/amd64"
+  - image_templates:
+      - "{{ if .IsSnapshot }}saucelabs/{{.ProjectName}}:{{ .Tag }}-arm64v8{{ else }}saucelabs/{{.ProjectName}}:{{ .Version }}-arm64v8{{ end }}"
+    use: buildx
+    goos: linux
+    goarch: arm64
+    goarm: 8
+    build_flag_templates:
+      - "--platform=linux/arm64/v8"
+
+docker_manifests:
+    - name_template: "saucelabs/{{.ProjectName}}:{{ .Version }}"
+      image_templates:
+        - "saucelabs/{{.ProjectName}}:{{ .Tag }}-amd64"
+        - "saucelabs/{{.ProjectName}}:{{ .Tag }}-arm64v8"
