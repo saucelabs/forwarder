@@ -1,0 +1,4 @@
+if [ $1 -eq 1 ] && [ -x /usr/bin/systemctl ]; then
+        # Initial installation
+        /usr/bin/systemctl --no-reload preset forwarder.service || :
+fi

@@ -30,16 +30,52 @@ builds:
 checksum:
   name_template: "checksums"
 
+nfpms:
+  - package_name: "forwarder"
+    file_name_template: "{{ .ProjectName }}-{{ .Version }}_{{ .Os }}.{{ .Arch }}"
+    vendor: Sauce Labs
+    maintainer: "Sauce Labs Connect Team"
+    description: "Sauce Labs Forwarder"
+    license: Mozilla Public License 2.0
+    formats:
+      - deb
+      - rpm
+    bindir: /usr/bin
+
+    contents:
+      - src: packaging/systemd/forwarder.service
+        dst: /usr/lib/systemd/system/forwarder.service
+    rpm:
+      group: Applications/Internet
+      compression: xz
+    overrides:
+      deb:
+        file_name_template: "{{ .ProjectName }}_{{ .Version }}.{{ .Os }}_{{ .Arch }}"
+        scripts:
+          preinstall: packaging/deb/forwarder.preinst
+          postinstall: packaging/deb/forwarder.postinst
+          preremove: packaging/deb/forwarder.prerm
+          postremove: packaging/deb/forwarder.postrm
+      rpm:
+        replacements:
+          amd64: x86_64
+          arm64: aarch64
+        scripts:
+          preinstall: packaging/rpm/forwarder.preinst
+          postinstall: packaging/rpm/forwarder.postinst
+          preremove: packaging/rpm/forwarder.prerm
+          postremove: packaging/rpm/forwarder.postrm
+
 dockers:
   - image_templates:
-      - "{{ if .IsSnapshot }}saucelabs/{{.ProjectName}}:{{ .Tag }}-amd64{{ else }}saucelabs/{{.ProjectName}}:{{ .Version }}-amd64{{ end }}"
+      - "{{ if .IsSnapshot }}saucelabs/{{ .ProjectName }}:{{ .Tag }}-amd64{{ else }}saucelabs/{{ .ProjectName }}:{{ .Version }}-amd64{{ end }}"
     use: buildx
     goos: linux
     goarch: amd64
     build_flag_templates:
       - "--platform=linux/amd64"
   - image_templates:
-      - "{{ if .IsSnapshot }}saucelabs/{{.ProjectName}}:{{ .Tag }}-arm64v8{{ else }}saucelabs/{{.ProjectName}}:{{ .Version }}-arm64v8{{ end }}"
+      - "{{ if .IsSnapshot }}saucelabs/{{ .ProjectName }}:{{ .Tag }}-arm64v8{{ else }}saucelabs/{{ .ProjectName }}:{{ .Version }}-arm64v8{{ end }}"
     use: buildx
     goos: linux
     goarch: arm64
@@ -48,7 +84,7 @@ dockers:
       - "--platform=linux/arm64/v8"
 
 docker_manifests:
-    - name_template: "saucelabs/{{.ProjectName}}:{{ .Version }}"
+    - name_template: "saucelabs/{{ .ProjectName }}:{{ .Version }}"
       image_templates:
-        - "saucelabs/{{.ProjectName}}:{{ .Tag }}-amd64"
-        - "saucelabs/{{.ProjectName}}:{{ .Tag }}-arm64v8"
+        - "saucelabs/{{ .ProjectName }}:{{ .Tag }}-amd64"
+        - "saucelabs/{{ .ProjectName }}:{{ .Tag }}-arm64v8"

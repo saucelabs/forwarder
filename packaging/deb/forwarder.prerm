@@ -1,0 +1,7 @@
+#!/bin/sh
+set -e
+# Automatically added by dh_systemd_start/11.1.6ubuntu1
+if [ -d /run/systemd/system ] && [ "$1" = remove ]; then
+	deb-systemd-invoke stop 'forwarder.service' >/dev/null || true
+fi
+# End automatically added section

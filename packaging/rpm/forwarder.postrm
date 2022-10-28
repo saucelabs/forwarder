@@ -1,0 +1,4 @@
+if [ $1 -ge 1 ] && [ -x /usr/bin/systemctl ]; then
+        # Package upgrade, not uninstall
+        /usr/bin/systemctl try-restart forwarder.service || :
+fi
