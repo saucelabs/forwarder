@@ -8,13 +8,8 @@ import (
 	"fmt"
 	"runtime"
 
+	"github.com/saucelabs/forwarder/internal/version"
 	"github.com/spf13/cobra"
-)
-
-var (
-	buildVersion = "Devel"
-	buildTime    = "Unknown"
-	buildCommit  = "Unknown"
 )
 
 func Command() *cobra.Command {
@@ -24,9 +19,9 @@ func Command() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			w := cmd.OutOrStdout()
 
-			fmt.Fprintln(w, "Version:\t", buildVersion)
-			fmt.Fprintln(w, "Built time:\t", buildTime)
-			fmt.Fprintln(w, "Git commit:\t", buildCommit)
+			fmt.Fprintln(w, "Version:\t", version.Version)
+			fmt.Fprintln(w, "Built time:\t", version.Time)
+			fmt.Fprintln(w, "Git commit:\t", version.Commit)
 
 			fmt.Fprintln(w, "Go Arch:\t", runtime.GOARCH)
 			fmt.Fprintln(w, "Go OS:\t\t", runtime.GOOS)
