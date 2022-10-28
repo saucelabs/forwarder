@@ -82,11 +82,11 @@ func (ba *BasicAuth) Wrap(h http.Handler, expectedUser, expectedPass string) htt
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !ba.AuthenticatedRequest(r, expectedUser, expectedPass) {
 			if ba.header == ProxyAuthorizationHeader {
-				w.Header().Set("Proxy-Authenticate", "Basic realm=\"SauceLabs Forwarder\"")
+				w.Header().Set("Proxy-Authenticate", "Basic realm=\"Sauce Labs Forwarder\"")
 				w.Header().Set("Proxy-Connection", "close")
 				w.WriteHeader(http.StatusProxyAuthRequired)
 			} else {
-				w.Header().Set("WWW-Authenticate", "Basic realm=\"SauceLabs Forwarder\"")
+				w.Header().Set("WWW-Authenticate", "Basic realm=\"Sauce Labs Forwarder\"")
 				w.Header().Set("Connection", "close")
 				w.WriteHeader(http.StatusUnauthorized)
 			}

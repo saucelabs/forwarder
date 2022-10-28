@@ -29,7 +29,7 @@ type SelfSignedCert struct {
 
 func RSASelfSignedCert() *SelfSignedCert {
 	return &SelfSignedCert{
-		Organization: []string{"SauceLabs Inc."},
+		Organization: []string{"Sauce Labs Inc."},
 		ValidFrom:    time.Now(),
 		ValidFor:     365 * 24 * time.Hour,
 		RsaBits:      2048,
