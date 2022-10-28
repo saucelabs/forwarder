@@ -17,6 +17,11 @@ install-dependencies:
 	go install golang.org/x/tools/cmd/godoc@latest
 	go install golang.org/x/tools/cmd/stringer@latest
 
+.PHONY: clean
+clean:
+	@rm -Rf bin dist *.coverprofile *.dev *.race *.test *.log
+	@go clean -cache -modcache -testcache ./... ||:
+
 .PHONY: dev
 dev: forwarder.race
 	@./forwarder.race run
