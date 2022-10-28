@@ -130,22 +130,22 @@ Basic authentication credentials for the upstream proxies and backend servers ca
 `
 
 const example = `  # Start a HTTP proxy server
-  forwarder proxy --address localhost:8080
+  forwarder proxy --address localhost:3128
 
   # Start HTTP proxy with upstream proxy
-  forwarder proxy --address localhost:8080 --upstream-proxy http://localhost:8081
+  forwarder proxy --address localhost:3128 --upstream-proxy http://localhost:8081
 
   # Start HTTP proxy with local PAC script
-  forwarder proxy --address localhost:8080 --pac ./pac.js 
+  forwarder proxy --address localhost:3128 --pac ./pac.js 
   
   # Start HTTP proxy with remote PAC script
-  forwarder proxy --address localhost:8080 --pac https://example.com/pac.js
+  forwarder proxy --address localhost:3128 --pac https://example.com/pac.js
 
   # Start HTTP proxy with custom DNS servers
-  forwarder proxy --address localhost:8080 --dns-server 4.4.4.4 --dns-server 8.8.8.8
+  forwarder proxy --address localhost:3128 --dns-server 4.4.4.4 --dns-server 8.8.8.8
 
   # Start HTTP proxy and API server 
-  forwarder proxy --address localhost:8080 --api-address localhost:8081 --api-basic-auth user:password
+  forwarder proxy --address localhost:3128 --api-address localhost:8081 --api-basic-auth user:password
 
   # Start a HTTPS proxy server
   forwarder proxy --protocol https --address localhost:8443
@@ -157,7 +157,7 @@ const example = `  # Start a HTTP proxy server
   forwarder proxy --protocol https --address localhost:8443 --basic-auth user:password
 
   # Add basic authentication header to requests to example.com and example.org on ports 80 and 443
-  forwarder proxy --address localhost:8080 -c bob:bp@example.com:* -c alice:ap@example.org:80,443
+  forwarder proxy --address localhost:3128 -c bob:bp@example.com:* -c alice:ap@example.org:80,443
 `
 
 const apiEndpoints = `API endpoints:
@@ -179,6 +179,7 @@ func Command() (cmd *cobra.Command) {
 		apiServerConfig:       forwarder.DefaultHTTPServerConfig(),
 		logConfig:             log.DefaultConfig(),
 	}
+	c.httpProxyServerConfig.Addr = ":3128"
 	c.httpProxyServerConfig.PromRegistry = c.promReg
 	c.httpProxyServerConfig.BasicAuthHeader = middleware.ProxyAuthorizationHeader
 	c.apiServerConfig.Addr = ""
