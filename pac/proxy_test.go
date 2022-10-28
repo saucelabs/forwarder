@@ -30,6 +30,11 @@ func TestProxies(t *testing.T) {
 			{Mode: PROXY, Host: "w3proxy.netscape.com", Port: "8080"},
 			{Mode: SOCKS, Host: "socks", Port: "1080"},
 		}},
+		{"SOCKS socks:1080; SOCKS4 socks4:1080; SOCKS5 socks5:1080", []Proxy{
+			{Mode: SOCKS, Host: "socks", Port: "1080"},
+			{Mode: SOCKS4, Host: "socks4", Port: "1080"},
+			{Mode: SOCKS5, Host: "socks5", Port: "1080"},
+		}},
 	}
 
 	for i := range tests {

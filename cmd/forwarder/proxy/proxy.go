@@ -6,16 +6,20 @@ package proxy
 
 import (
 	"context"
+	"fmt"
 	"net"
+	"net/url"
 	"os/signal"
 	"syscall"
 
+	"github.com/mmatczuk/anyflag"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/saucelabs/forwarder"
 	"github.com/saucelabs/forwarder/bind"
 	"github.com/saucelabs/forwarder/log"
 	"github.com/saucelabs/forwarder/log/stdlog"
 	"github.com/saucelabs/forwarder/middleware"
+	"github.com/saucelabs/forwarder/pac"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 )
@@ -24,6 +28,8 @@ type command struct {
 	promReg               *prometheus.Registry
 	dnsConfig             *forwarder.DNSConfig
 	httpTransportConfig   *forwarder.HTTPTransportConfig
+	pac                   *url.URL
+	credentials           []*forwarder.HostPortUser
 	httpProxyConfig       *forwarder.HTTPProxyConfig
 	httpProxyServerConfig *forwarder.HTTPServerConfig
 	apiServerConfig       *forwarder.HTTPServerConfig
@@ -46,7 +52,32 @@ func (c *command) RunE(cmd *cobra.Command, args []string) error {
 	}
 	t := forwarder.NewHTTPTransport(c.httpTransportConfig, resolver)
 
-	p, err := forwarder.NewHTTPProxy(c.httpProxyConfig, t, logger.Named("proxy"))
+	var (
+		script string
+		pr     forwarder.PACResolver
+	)
+	if c.pac != nil {
+		var err error
+		script, err = forwarder.ReadURL(c.pac, t)
+		if err != nil {
+			return fmt.Errorf("read PAC file: %w", err)
+		}
+		pr, err = pac.NewProxyResolverPool(&pac.ProxyResolverConfig{Script: script}, nil)
+		if err != nil {
+			return err
+		}
+		pr = &forwarder.LoggingPACResolver{
+			Resolver: pr,
+			Logger:   logger.Named("pac"),
+		}
+	}
+
+	cm, err := forwarder.NewCredentialsMatcher(c.credentials, logger.Named("credentials"))
+	if err != nil {
+		return fmt.Errorf("credentials: %w", err)
+	}
+
+	p, err := forwarder.NewHTTPProxy(c.httpProxyConfig, pr, cm, t, logger.Named("proxy"))
 	if err != nil {
 		return err
 	}
@@ -54,47 +85,88 @@ func (c *command) RunE(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+	servers := []*forwarder.HTTPServer{s}
 
-	a, err := forwarder.NewHTTPServer(c.apiServerConfig, forwarder.APIHandler(s, c.promReg), logger.Named("api"))
-	if err != nil {
-		return err
+	if c.apiServerConfig.Addr != "" {
+		h := forwarder.NewAPIHandler(c.promReg, s, script)
+		s, err := forwarder.NewHTTPServer(c.apiServerConfig, h, logger.Named("api"))
+		if err != nil {
+			return err
+		}
+		servers = append(servers, s)
 	}
 
+	return c.runHTTPServers(servers...)
+}
+
+func (c *command) runHTTPServers(servers ...*forwarder.HTTPServer) error {
 	var eg *errgroup.Group
 	ctx := context.Background()
 	ctx, _ = signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	eg, ctx = errgroup.WithContext(ctx)
-	eg.Go(func() error { return s.Run(ctx) })
-	eg.Go(func() error { return a.Run(ctx) })
+	for _, s := range servers {
+		s := s
+		eg.Go(func() error { return s.Run(ctx) })
+	}
 	return eg.Wait()
 }
 
-const long = `Start HTTP proxy. The proxy can listen to HTTP, HTTPS or HTTP2 traffic. 
-It can be configured to use upstream proxy or PAC file.
-It supports basic authentication for the proxy, the upstream proxy and backend servers. 
-It supports custom DNS servers. 
+const long = `Start HTTP(S) proxy server.
+You can start HTTP, HTTPS or H2 (HTTPS) server.
+The server may be protected by basic authentication.
+If you start an HTTPS server and you don't provide a certificate, the server will generate a self-signed certificate on startup.
+
+You can start an API server that exposes metrics, health checks and other information about the proxy server.
+You need to explicitly enable it by providing --api-address. 
+To run on a random port, use --api-address=:0. 
+It's recommended use basic authentication for the API server, especially if --proxy-localhost is enabled.
+
+The PAC file can be specified as a file path or URL with scheme "file", "http" or "https".
+All PAC util functions are supported (see below). 
+You can specify custom DNS servers.
+They are used to resolve hostnames in PAC scripts and proxy server.
+
+Basic authentication credentials for the upstream proxies and backend servers can be specified with --credentials flag.
 `
 
-const example = `Start HTTP proxy listening to localhost:8080:
-  $ forwarder proxy --address localhost:8080
+const example = `  # Start a HTTP proxy server
+  forwarder proxy --address localhost:8080
 
-  Start a protected proxy protected with basic auth:
-  $ forwarder proxy --address localhost:8080 --basic-auth user:pass
+  # Start HTTP proxy with upstream proxy
+  forwarder proxy --address localhost:8080 --upstream-proxy http://localhost:8081
 
-  Forward connections to an upstream proxy:
-  $ forwarder proxy --address localhost:8080 --upstream-proxy http://localhost:8089
+  # Start HTTP proxy with local PAC script
+  forwarder proxy --address localhost:8080 --pac ./pac.js 
+  
+  # Start HTTP proxy with remote PAC script
+  forwarder proxy --address localhost:8080 --pac https://example.com/pac.js
 
-  Forward connections to an upstream proxy protected with basic auth:
-  $ forwarder proxy --address localhost:8080 --upstream-proxy http://localhost:8089 --upstream-proxy-basic-auth user:pass
+  # Start HTTP proxy with custom DNS servers
+  forwarder proxy --address localhost:8080 --dns-server 4.4.4.4 --dns-server 8.8.8.8
 
-  Forward connections to an upstream proxy setup via PAC: 
-  $ forwarder proxy --address localhost:8080 --pac http://localhost:8090/pac
+  # Start HTTP proxy and API server 
+  forwarder proxy --address localhost:8080 --api-address localhost:8081 --api-basic-auth user:password
 
-  Forward connections to an upstream proxy, setup via PAC protected with basic auth:
-  $ forwarder proxy --address localhost:8080 --pac http://user:pass@localhost:8090/pac -d http://user3:pwd4@localhost:8091 -d http://user2:pwd2@localhost:8092 
+  # Start a HTTPS proxy server
+  forwarder proxy --protocol https --address localhost:8443
 
-  Add basic auth header to requests to foo.bar:* and qux.baz:80.
-  $ forwarder proxy --address localhost:8080 --site-credentials "foo.bar:0,qux.baz:80"
+  # Start a HTTPS server with custom certificate
+  forwarder proxy --protocol https --address localhost:8443 --cert-file ./cert.pem --key-file ./cert.key
+
+  # Start a HTTPS proxy server and require basic authentication
+  forwarder proxy --protocol https --address localhost:8443 --basic-auth user:password
+
+  # Add basic authentication header to requests to example.com and example.org on ports 80 and 443
+  forwarder proxy --address localhost:8080 -c bob:bp@example.com:* -c alice:ap@example.org:80,443
+`
+
+const apiEndpoints = `API endpoints:
+  /metrics - Prometheus metrics
+  /healthz - health check
+  /readyz - readiness check
+  /configz - proxy configuration
+  /pac - PAC file
+  /debug/pprof/ - pprof endpoints
 `
 
 func Command() (cmd *cobra.Command) {
@@ -109,24 +181,30 @@ func Command() (cmd *cobra.Command) {
 	}
 	c.httpProxyServerConfig.PromRegistry = c.promReg
 	c.httpProxyServerConfig.BasicAuthHeader = middleware.ProxyAuthorizationHeader
-	c.apiServerConfig.Addr = "localhost:0"
+	c.apiServerConfig.Addr = ""
 
 	defer func() {
 		fs := cmd.Flags()
 		bind.DNSConfig(fs, c.dnsConfig)
 		bind.HTTPTransportConfig(fs, c.httpTransportConfig)
+		bind.PAC(fs, &c.pac)
+		fs.VarP(anyflag.NewSliceValue[*forwarder.HostPortUser](c.credentials, &c.credentials, forwarder.ParseHostPortUser),
+			"credentials", "c",
+			"site or upstream proxy basic authentication credentials in the form of `username:password@host:port`, "+
+				"host and port can be set to \"*\" to match all (can be specified multiple times)")
 		bind.HTTPProxyConfig(fs, c.httpProxyConfig)
 		bind.HTTPServerConfig(fs, c.httpProxyServerConfig, "")
 		bind.HTTPServerConfig(fs, c.apiServerConfig, "api")
 		bind.LogConfig(fs, c.logConfig)
 
+		bind.MarkFlagFilename(cmd, "cert-file", "key-file", "pac")
 		cmd.MarkFlagsMutuallyExclusive("upstream-proxy", "pac")
 	}()
 	return &cobra.Command{
-		Use:     "proxy",
-		Short:   "Start HTTP proxy",
+		Use:     "proxy [--protocol <http|https|h2>] [--address <host:port>] [--upstream-proxy <url>] [--pac <file|url>] [--credentials <username:password@host:port>]... [flags]",
+		Short:   "Start HTTP(S) proxy",
 		Long:    long,
-		Example: example,
+		Example: example + "\n" + apiEndpoints,
 		RunE:    c.RunE,
 	}
 }

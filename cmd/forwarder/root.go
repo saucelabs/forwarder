@@ -27,9 +27,9 @@ func rootCommand() *cobra.Command {
 	}
 
 	rootCmd.AddCommand(
-		paceval.Command(),
-		pacserver.Command(),
-		proxy.Command(),
+		withPACSupportedFunctions(paceval.Command()),
+		withPACSupportedFunctions(pacserver.Command()),
+		withPACSupportedFunctions(proxy.Command()),
 		version.Command(),
 	)
 	for _, cmd := range rootCmd.Commands() {

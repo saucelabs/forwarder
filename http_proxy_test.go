@@ -28,58 +28,11 @@ const (
 	upstreamProxyCredentialUsername = "u456"
 )
 
-func TestHTTPProxyConfigValidate(t *testing.T) {
-	tests := []struct {
-		name   string
-		config HTTPProxyConfig
-		err    string
-	}{
-		{
-			name: "both upstream and PAC are set",
-			config: HTTPProxyConfig{
-				UpstreamProxy: newProxyURL(80, upstreamProxyCredentialUsername, upstreamProxyCredentialPassword),
-				PAC:           newProxyURL(80, "", ""),
-			},
-			err: "only one of upstream_proxy_uri or pac_uri can be set",
-		},
-		{
-			name: "invalid upstream proxy ",
-			config: HTTPProxyConfig{
-				UpstreamProxy: &url.URL{},
-			},
-			err: "upstream_proxy_uri: invalid scheme",
-		},
-		{
-			name: "invalid PAC server ",
-			config: HTTPProxyConfig{
-				PAC: &url.URL{},
-			},
-			err: "pac_uri: invalid scheme",
-		},
-	}
-
-	for i := range tests {
-		tc := &tests[i]
-		t.Run(tc.name, func(t *testing.T) {
-			err := tc.config.Validate()
-			if err != nil {
-				if tc.err == "" {
-					t.Fatalf("expected success, got %q", err)
-				}
-				if !strings.Contains(err.Error(), tc.err) {
-					t.Fatalf("expected error to contain %q, got %q", tc.err, err)
-				}
-				return
-			}
-		})
-	}
-}
-
 func TestHTTPProxySmoke(t *testing.T) { //nolint // FIXME cognitive complexity 88 of func `TestHTTPProxySmoke` is high (> 40) (gocognit); calculated cyclomatic complexity for function TestHTTPProxySmoke is 28, max is 10 (cyclop)
 	tests := []struct {
-		name    string
-		config  HTTPProxyConfig
-		wantPAC bool
+		name      string
+		config    HTTPProxyConfig
+		protected bool
 	}{
 		{
 			name: "Local proxy",
@@ -90,9 +43,9 @@ func TestHTTPProxySmoke(t *testing.T) { //nolint // FIXME cognitive complexity 8
 		{
 			name: "Local proxy with site auth",
 			config: HTTPProxyConfig{
-				SiteCredentials: []string{},
-				ProxyLocalhost:  true,
+				ProxyLocalhost: true,
 			},
+			protected: true,
 		},
 		{
 			name: "Protected upstream proxy",
@@ -106,36 +59,47 @@ func TestHTTPProxySmoke(t *testing.T) { //nolint // FIXME cognitive complexity 8
 		tc := tests[i]
 		t.Run(tc.name, func(t *testing.T) {
 			targetCreds := ""
-			if tc.config.SiteCredentials != nil {
-				targetCreds = base64.
-					StdEncoding.
-					EncodeToString([]byte("user:pass"))
+			if tc.protected {
+				targetCreds = base64.StdEncoding.EncodeToString([]byte("user:pass"))
 			}
 			targetServer := httpServerStub("body", targetCreds, stdlog.Default().Named("target"))
 			defer func() {
 				targetServer.Close()
 			}()
-			targetServerURL := targetServer.URL
+			targetServerURL, err := url.Parse(targetServer.URL)
+			if err != nil {
+				t.Fatal(err)
+			}
 
 			// Live test. Test calls to non-localhost. It matters because non-localhost
 			// uses the proxy settings in the Transport, while localhost calls, bypass
 			// it.
 			if os.Getenv("FORWARDER_TEST_MODE") == "integration" {
-				targetServerURL = "https://httpbin.org/status/200"
+				targetServerURL = &url.URL{
+					Scheme: "https",
+					Host:   "httpbin.org:443",
+					Path:   "/status/200",
+				}
 			}
 			t.Logf("Target/end server @ %s", targetServerURL)
 
-			if tc.config.SiteCredentials != nil {
-				uri, err := url.Parse(targetServerURL)
-				if err != nil {
-					panic(err)
+			var cm *CredentialsMatcher
+			if tc.protected {
+				hpu := &HostPortUser{
+					Host:     targetServerURL.Hostname(),
+					Port:     targetServerURL.Port(),
+					Userinfo: url.UserPassword("user", "pass"),
 				}
-				tc.config.SiteCredentials = append(tc.config.SiteCredentials, "user:pass@"+uri.Host)
+				var err error
+				cm, err = NewCredentialsMatcher([]*HostPortUser{hpu}, stdlog.Default().Named("credentials"))
+				if err != nil {
+					t.Fatal(err)
+				}
 			}
 
 			// Upstream HTTPProxy.
 			if tc.config.UpstreamProxy != nil {
-				upstreamProxy, err := NewHTTPProxy(&HTTPProxyConfig{ProxyLocalhost: true}, nil, stdlog.Default().Named("upstream"))
+				upstreamProxy, err := NewHTTPProxy(&HTTPProxyConfig{ProxyLocalhost: true}, nil, cm, nil, stdlog.Default().Named("upstream"))
 				if err != nil {
 					t.Fatalf("NewHTTPProxy() error=%v", err)
 				}
@@ -156,7 +120,7 @@ func TestHTTPProxySmoke(t *testing.T) { //nolint // FIXME cognitive complexity 8
 			}
 
 			// Local proxy.
-			localProxy, err := NewHTTPProxy(&tc.config, nil, stdlog.Default().Named("local"))
+			localProxy, err := NewHTTPProxy(&tc.config, nil, cm, nil, stdlog.Default().Named("local"))
 			if err != nil {
 				t.Fatalf("NewHTTPProxy() error=%v", err)
 			}
@@ -188,6 +152,11 @@ func TestHTTPProxyLocalhost(t *testing.T) {
 	}))
 	defer s.Close()
 
+	targetServerURL, err := url.Parse(s.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	tests := []struct {
 		name           string
 		ProxyLocalhost bool
@@ -212,7 +181,7 @@ func TestHTTPProxyLocalhost(t *testing.T) {
 			// Start local proxy.
 			localProxy, err := NewHTTPProxy(&HTTPProxyConfig{
 				ProxyLocalhost: tc.ProxyLocalhost,
-			}, nil, stdlog.Default().Named("local"))
+			}, nil, nil, nil, stdlog.Default().Named("local"))
 			if err != nil {
 				t.Fatalf("NewHTTPProxy() error = %v", err)
 			}
@@ -234,7 +203,7 @@ func TestHTTPProxyLocalhost(t *testing.T) {
 				},
 			}
 
-			assertRequest(t, client, s.URL, tc.StatusCode)
+			assertRequest(t, client, targetServerURL, tc.StatusCode)
 		})
 	}
 }
@@ -282,13 +251,8 @@ func httpServerStub(body, encodedCredential string, log Logger) *httptest.Server
 	return s
 }
 
-func assertRequest(t *testing.T, client *http.Client, uri string, statusCode int) {
+func assertRequest(t *testing.T, client *http.Client, u *url.URL, statusCode int) {
 	t.Helper()
-
-	u, err := url.ParseRequestURI(uri)
-	if err != nil {
-		t.Fatalf("Failed to parse : %s", err)
-	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()

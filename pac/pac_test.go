@@ -214,7 +214,7 @@ func TestProxyResolverChromium(t *testing.T) { //nolint:maintidx // long table
 				}
 			}
 
-			p, err := pr.FindProxyForURL(q)
+			p, err := pr.FindProxyForURL(q, "")
 			if tc.evalErr != "" {
 				if err == nil {
 					t.Fatal("expected error")
@@ -231,7 +231,7 @@ func TestProxyResolverChromium(t *testing.T) { //nolint:maintidx // long table
 
 			t.Log("FindProxyForURL:", p)
 
-			got, err := p.All()
+			got, err := Proxies(p).All()
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -290,7 +290,7 @@ func TestProxyResolverLibpac(t *testing.T) {
 					t.Logf("Using custom host name %q for %q", c.hostname, c.url)
 				}
 
-				p, err := pr.FindProxyForURLAndHostname(c.url, c.hostname)
+				p, err := pr.FindProxyForURL(c.url, c.hostname)
 				switch {
 				case strings.HasPrefix(c.msg, "Found proxy "):
 					if err != nil {
@@ -298,7 +298,7 @@ func TestProxyResolverLibpac(t *testing.T) {
 					}
 
 					want := strings.TrimPrefix(c.msg, "Found proxy ")
-					if p.String() != want {
+					if p != want {
 						t.Errorf("FindProxyForURL(%q) = %q, want %q", c.url, p, want)
 					}
 				case strings.HasPrefix(c.msg, "Javascript call failed"):

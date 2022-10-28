@@ -27,14 +27,6 @@ func PAC(fs *pflag.FlagSet, pac **url.URL) {
 func HTTPProxyConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPProxyConfig) {
 	fs.VarP(anyflag.NewValue[*url.URL](cfg.UpstreamProxy, &cfg.UpstreamProxy, forwarder.ParseProxyURL),
 		"upstream-proxy", "u", "upstream proxy URL")
-	fs.VarP(anyflag.NewValue[*url.Userinfo](cfg.UpstreamProxyCredentials, &cfg.UpstreamProxyCredentials, forwarder.ParseUserInfo),
-		"upstream-proxy-credentials", "", "upstream proxy credentials in the form of `username:password`, it overrides credentials embedded in upstream-proxy URL")
-	fs.VarP(anyflag.NewValue[*url.URL](cfg.PAC, &cfg.PAC, url.ParseRequestURI),
-		"pac", "p", "local file `path or URL` to PAC content")
-	fs.StringSliceVarP(&cfg.PACProxiesCredentials, "pac-proxies-credentials", "d", cfg.PACProxiesCredentials,
-		"PAC proxies credentials in URL format ex. http://user:pass@host:port (can be specified multiple times)")
-	fs.StringSliceVar(&cfg.SiteCredentials, "site-credentials", cfg.SiteCredentials,
-		"target site credentials")
 	fs.BoolVarP(&cfg.ProxyLocalhost, "proxy-localhost", "t", cfg.ProxyLocalhost,
 		"proxy localhost requests to an upstream proxy")
 }
@@ -85,7 +77,7 @@ func HTTPServerConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPServerConfig, prefix
 	fs.DurationVar(&cfg.ReadTimeout,
 		namePrefix+"read-timeout", cfg.ReadTimeout, usagePrefix+"HTTP server read timeout")
 	fs.VarP(anyflag.NewValue[*url.Userinfo](cfg.BasicAuth, &cfg.BasicAuth, forwarder.ParseUserInfo),
-		namePrefix+"basic-auth", "", usagePrefix+"basic-auth in the form of `username:password`")
+		namePrefix+"basic-auth", "", usagePrefix+"HTTP server basic-auth in the form of `username:password`")
 }
 
 func TLSConfig(fs *pflag.FlagSet, cfg *forwarder.TLSConfig) {

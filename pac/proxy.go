@@ -25,10 +25,11 @@ type Mode int
 const (
 	DIRECT Mode = iota
 	PROXY
-	SOCKS
 	HTTP
 	HTTPS
+	SOCKS
 	SOCKS4
+	SOCKS5
 )
 
 var noProxy = Proxy{ //nolint:gochecknoglobals // it's a constant
@@ -111,14 +112,16 @@ func parseMode(s string) Mode {
 		return DIRECT
 	case "PROXY":
 		return PROXY
-	case "SOCKS":
-		return SOCKS
 	case "HTTP":
 		return HTTP
 	case "HTTPS":
 		return HTTPS
+	case "SOCKS":
+		return SOCKS
 	case "SOCKS4":
 		return SOCKS4
+	case "SOCKS5":
+		return SOCKS5
 	default:
 		return DIRECT
 	}

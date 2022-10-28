@@ -6,54 +6,10 @@ package forwarder
 
 import (
 	"net/url"
-	"strings"
 	"testing"
 
 	"github.com/saucelabs/forwarder/log/stdlog"
 )
-
-func TestNewUserInfoMatcherErrors(t *testing.T) {
-	tests := []struct {
-		name  string
-		input []string
-		err   string
-	}{
-		{
-			name:  "Empty user",
-			input: []string{":pass@abc"},
-			err:   "missing username",
-		},
-		{
-			name:  "Empty password",
-			input: []string{"user:@abc"},
-			err:   "missing password",
-		},
-		{
-			name:  "Missing password",
-			input: []string{"user@abc"},
-			err:   "missing password",
-		},
-		{
-			name:  "Missing host",
-			input: []string{"user:pass"},
-			err:   "invalid URL",
-		},
-	}
-
-	for i := range tests {
-		tc := tests[i]
-		t.Run(tc.name, func(t *testing.T) {
-			_, err := newUserInfoMatcher(tc.input, stdlog.Default())
-			if err == nil {
-				t.Fatal("expected error")
-			}
-			t.Log(err)
-			if !strings.Contains(err.Error(), tc.err) {
-				t.Fatalf("expected error containing %s, got %s", tc.err, err)
-			}
-		})
-	}
-}
 
 func TestUserInfoMatcherMatch(t *testing.T) {
 	tests := []struct {
@@ -95,7 +51,18 @@ func TestUserInfoMatcherMatch(t *testing.T) {
 	for i := range tests {
 		tc := tests[i]
 		t.Run(tc.name, func(t *testing.T) {
-			m, err := newUserInfoMatcher(tc.input, stdlog.Default())
+			var (
+				credentials = make([]*HostPortUser, len(tc.input))
+				err         error
+			)
+			for i := range tc.input {
+				credentials[i], err = ParseHostPortUser(tc.input[i])
+				if err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			m, err := NewCredentialsMatcher(credentials, stdlog.Default())
 			if err != nil {
 				t.Fatal(err)
 			}
