@@ -6,6 +6,7 @@
 run:
   timeout: 5m
   skip-files:
+    - httpbin/httpbin.go
     - middleware/delegator.go
   silent: true
 

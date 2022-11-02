@@ -5,6 +5,7 @@
 package main
 
 import (
+	"github.com/saucelabs/forwarder/cmd/forwarder/httpbin"
 	"github.com/saucelabs/forwarder/cmd/forwarder/paceval"
 	"github.com/saucelabs/forwarder/cmd/forwarder/pacserver"
 	"github.com/saucelabs/forwarder/cmd/forwarder/proxy"
@@ -27,6 +28,7 @@ func rootCommand() *cobra.Command {
 	}
 
 	rootCmd.AddCommand(
+		httpbin.Command(),
 		withPACSupportedFunctions(paceval.Command()),
 		withPACSupportedFunctions(pacserver.Command()),
 		withPACSupportedFunctions(proxy.Command()),
