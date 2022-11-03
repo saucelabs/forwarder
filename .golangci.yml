@@ -5,6 +5,8 @@
 ---
 run:
   timeout: 5m
+  build-tags:
+    - e2e
   skip-files:
     - httpbin/httpbin.go
     - middleware/delegator.go
@@ -72,6 +74,10 @@ issues:
         - noctx
         - paralleltest
         - testpackage
+
+    - path: e2e/args.go
+      linters:
+        - gochecknoglobals
 
     - path: internal/version/version.go
       linters:
