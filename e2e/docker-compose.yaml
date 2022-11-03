@@ -1,0 +1,15 @@
+version: "3.8"
+
+services:
+  proxy:
+    image: saucelabs/forwarder:${FORWARDER_VERSION}
+    environment:
+      FORWARDER_VERBOSE: "true"
+    healthcheck:
+      interval: 1s
+      timeout: 250ms
+      retries: 10
+
+  upstream-proxy:
+    extends: proxy
+

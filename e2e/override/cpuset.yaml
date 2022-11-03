@@ -1,0 +1,9 @@
+version: "3.8"
+
+services:
+  proxy:
+    cpuset: "1"
+  upstream-proxy:
+    cpuset: "2"
+  httpbin:
+    cpuset: "3"

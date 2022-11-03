@@ -1,0 +1,10 @@
+version: "3.8"
+
+services:
+  httpbin:
+    extends:
+      file: docker-compose.yaml
+      service: proxy
+    command: httpbin --protocol HTTPS --address :443
+    healthcheck:
+      test: ["CMD", "curl", "-s", "-S", "-f", "-k", "https://localhost/status/200"]

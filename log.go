@@ -1,5 +1,7 @@
 package forwarder
 
+import "strings"
+
 // Logger is the logger used by the forwarder package.
 type Logger interface {
 	Errorf(format string, args ...interface{})
@@ -27,5 +29,10 @@ type goproxyLogger struct {
 }
 
 func (l goproxyLogger) Printf(format string, v ...interface{}) {
-	l.Debugf(format, v...)
+	if strings.HasPrefix(format, "[%03d] WARN: ") {
+		l.Logger.Infof(format[13:], v...)
+		return
+	}
+
+	l.Logger.Debugf(strings.Replace(format, "INFO: ", "", 1), v...)
 }
