@@ -36,7 +36,7 @@ lint:
 
 .PHONY: test
 test:
-	@go test -timeout 120s -short -v -race -cover -coverprofile=coverage.out ./...
+	@go test -timeout 120s -short -race -cover -coverprofile=coverage.out ./...
 
 .PHONY: bench
 bench:
