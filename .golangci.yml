@@ -50,6 +50,7 @@ linters-settings:
 issues:
   exclude:
     - "can be `fmt.Stringer`"
+    - "can be `expvar.Var`"
     - "Error return value of `cmd.MarkFlag.+` is not checked"
     - "string `https?` has \\d+ occurrences"
     - "Magic number: 0o"
