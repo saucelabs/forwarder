@@ -52,9 +52,18 @@ coverage:
 
 ### Release
 
+.PHONY: update-devel-image
+update-devel-image: TAG=devel
+update-devel-image: TMPDIR:=$(shell mktemp -d)
+update-devel-image:
+	@CGO_ENABLED=0 GOOS=linux go build -o $(TMPDIR)/forwarder ./cmd/forwarder
+	@ln ./Dockerfile $(TMPDIR)
+	@docker buildx build -t saucelabs/forwarder:$(TAG) $(TMPDIR)
+	@rm -rf $(TMPDIR)
+
 .PHONY: dist
 dist:
-	@GORELEASER_CURRENT_TAG=1.0.0-devel goreleaser --snapshot --rm-dist
+	@GORELEASER_CURRENT_TAG=1.0.0-rc goreleaser --snapshot --rm-dist
 
 .PHONY: doc
 doc:
