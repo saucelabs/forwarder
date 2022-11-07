@@ -47,6 +47,7 @@ type HTTPProxy struct {
 	creds     *CredentialsMatcher
 	transport *http.Transport
 	proxy     *goproxy.ProxyHttpServer
+	hosts     map[string]net.IP
 	basicAuth *middleware.BasicAuth
 	log       Logger
 }
@@ -65,11 +66,18 @@ func NewHTTPProxy(cfg *HTTPProxyConfig, pr PACResolver, cm *CredentialsMatcher, 
 		t = http.DefaultTransport.(*http.Transport).Clone() //nolint:forcetypeassert // we know it's a *http.Transport
 	}
 
+	// Read /etc/hosts and store it in memory.
+	hosts, err := ReadHostsFile()
+	if err != nil {
+		return nil, err
+	}
+
 	p := &HTTPProxy{
 		config:    *cfg,
 		pac:       pr,
 		creds:     cm,
 		transport: t,
+		hosts:     hosts,
 		basicAuth: middleware.NewProxyBasicAuth(),
 		log:       log,
 	}
@@ -158,13 +166,39 @@ func (hp *HTTPProxy) pacProxy(r *http.Request) (*url.URL, error) {
 func (hp *HTTPProxy) configureProxyLocalhost() {
 	if !hp.config.ProxyLocalhost {
 		hp.log.Infof("Localhost proxy disabled")
-		hp.proxy.OnRequest(goproxy.IsLocalHost).DoFunc(func(r *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
+		hp.proxy.OnRequest(goproxy.ReqConditionFunc(hp.isLocalhost)).DoFunc(func(r *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
 			return nil, goproxy.NewResponse(r, goproxy.ContentTypeText, http.StatusBadGateway, "Can't use proxy for local addresses")
 		})
 	} else {
 		hp.log.Infof("Localhost proxy enabled")
 		hp.proxy.OnRequest(goproxy.IsLocalHost).HandleConnect(goproxy.AlwaysMitm)
 	}
+}
+
+// The goproxy.IsLocalHost is broken.
+// In addition, it doesn't work with hostnames that are not in /etc/hosts.
+// See https://github.com/elazarl/goproxy/issues/487
+func (hp *HTTPProxy) isLocalhost(req *http.Request, _ *goproxy.ProxyCtx) bool {
+	h := req.URL.Hostname()
+
+	// Plain old localhost.
+	if h == "localhost" {
+		return true
+	}
+	// Hostname from /etc/hosts file.
+	if ip := hp.hosts[h]; ip != nil {
+		return ip.IsLoopback()
+	}
+	// IP addresses.
+	if ip := net.ParseIP(h); ip != nil {
+		return ip.IsLoopback()
+	}
+	// IPv6 without a port number - Hostname returns the invalid value.
+	if ip := net.ParseIP(req.URL.Host); ip != nil {
+		return ip.IsLoopback()
+	}
+
+	return false
 }
 
 func (hp *HTTPProxy) setBasicAuthIfNeeded() {

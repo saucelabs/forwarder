@@ -9,6 +9,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -146,65 +147,47 @@ func TestHTTPProxySmoke(t *testing.T) { //nolint // FIXME cognitive complexity 8
 	}
 }
 
-func TestHTTPProxyLocalhost(t *testing.T) {
-	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer s.Close()
+func TestHTTPProxyIsLocalhost(t *testing.T) {
+	hosts := []string{
+		"localhost",
+		"127.0.0.1",
+		"127.0.0.7",
+		"::ffff:127.0.0.1",
+		"::ffff:127.0.0.7",
+		"::1",
+		"0:0:0:0:0:0:0:1",
+	}
+	ports := []string{
+		"",
+		"80",
+		"443",
+	}
 
-	targetServerURL, err := url.Parse(s.URL)
+	p, err := NewHTTPProxy(DefaultHTTPProxyConfig(), nil, nil, nil, stdlog.Default().Named("local"))
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("NewHTTPProxy() error=%v", err)
 	}
 
-	tests := []struct {
-		name           string
-		ProxyLocalhost bool
-		StatusCode     int
-	}{
-		{
-			name:           "enabled",
-			ProxyLocalhost: true,
-			StatusCode:     http.StatusOK,
-		},
-		{
-			name:           "disabled",
-			ProxyLocalhost: false,
-			StatusCode:     http.StatusBadGateway,
-		},
-	}
-
-	for i := range tests {
-		tc := tests[i]
-
-		t.Run(tc.name, func(t *testing.T) {
-			// Start local proxy.
-			localProxy, err := NewHTTPProxy(&HTTPProxyConfig{
-				ProxyLocalhost: tc.ProxyLocalhost,
-			}, nil, nil, nil, stdlog.Default().Named("local"))
-			if err != nil {
-				t.Fatalf("NewHTTPProxy() error = %v", err)
-			}
-			lsrv := httptest.NewServer(localProxy)
-			for lsrv.Listener.Addr() == nil {
-				time.Sleep(time.Millisecond)
-			}
-			defer lsrv.Close()
-
-			// Client's proxy settings.
-			u, err := url.Parse(lsrv.URL)
-			if err != nil {
-				t.Fatalf("url.Parse() error=%v", err)
-			}
-			t.Logf("Client is using %s as proxy", lsrv.URL)
-			client := &http.Client{
-				Transport: &http.Transport{
-					Proxy: http.ProxyURL(u),
-				},
+	for _, host := range hosts {
+		for _, port := range ports {
+			if port == "" && strings.HasPrefix(host, "::ffff:") {
+				continue
 			}
 
-			assertRequest(t, client, targetServerURL, tc.StatusCode)
-		})
+			addr := host
+			if port != "" {
+				addr = net.JoinHostPort(host, port)
+			}
+			t.Run(addr, func(t *testing.T) {
+				req, err := http.NewRequest(http.MethodGet, "http://"+addr, http.NoBody)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if !p.isLocalhost(req, nil) {
+					t.Fatal("expected true")
+				}
+			})
+		}
 	}
 }
 
