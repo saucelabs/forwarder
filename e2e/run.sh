@@ -2,37 +2,23 @@
 
 set -eu -o pipefail
 
-on_error() {
-  make dump-logs
-}
+source ./lib.sh
 
-run_direct_test() {
-  trap 'on_error' ERR
+# Runs tests for all combinations of "http" and "https" with and without upstream proxy.
+for HTTPBIN_SCHEME in "http" "https"; do
+  for PROXY_SCHEME in "http" "https"; do
+    for UPSTREAM_PROXY_SCHEME in "" "http" "https"; do
+      run_test "${HTTPBIN_SCHEME}" "${PROXY_SCHEME}" "${UPSTREAM_PROXY_SCHEME}" ""
+    done
+  done
+done
 
-  PROXY_SCHEME=$1
-  HTTPBIN_SCHEME=$1
+# Runs tests for target or upstream proxy with HTTP/2.
+# HTTP/2 implies TLS, so we only test "https" scheme, otherwise it fails with "http2: unsupported scheme".
+for HTTPBIN_SCHEME in "https" "h2"; do
+  for UPSTREAM_PROXY_SCHEME in "" "h2"; do
+    run_test "${HTTPBIN_SCHEME}" "https" "${UPSTREAM_PROXY_SCHEME}" ""
+  done
+done
 
-  echo ">>> DIRECT proxy=${PROXY_SCHEME} httpbin=${HTTPBIN_SCHEME}"
-  make up CONF="override/proxy-${PROXY_SCHEME}.yaml httpbin-${HTTPBIN_SCHEME}.yaml"
-  make test ARGS="-proxy ${PROXY_SCHEME}://proxy:3128 -httpbin ${HTTPBIN_SCHEME}://httpbin -insecure-skip-verify"
-}
-
-run_direct_test http http
-run_direct_test https http
-run_direct_test https https
-run_direct_test http https
-
-run_upstream_test() {
-  trap 'on_error' ERR
-
-  UPSTREAM_PROXY_SCHEME=$1
-  PROXY_SCHEME="http"
-  HTTPBIN_SCHEME="http"
-
-  echo ">>> UPSTREAM proxy=${PROXY_SCHEME} upstream=${UPSTREAM_PROXY_SCHEME} httpbin=${HTTPBIN_SCHEME}"
-  make up CONF="override/proxy-${PROXY_SCHEME}.yaml override/upstream-proxy-${UPSTREAM_PROXY_SCHEME}.yaml httpbin-${HTTPBIN_SCHEME}.yaml"
-  make test ARGS="-proxy ${PROXY_SCHEME}://proxy:3128 -httpbin ${HTTPBIN_SCHEME}://httpbin -insecure-skip-verify"
-}
-
-run_upstream_test http
-run_upstream_test https
+RUN="Localhost" run_test "http" "http" "" "override/proxy-localhost.yaml"
