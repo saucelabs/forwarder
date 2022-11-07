@@ -1,0 +1,7 @@
+version: "3.8"
+
+services:
+  proxy:
+    ports:
+      - "3128:3128"
+      - "10000:10000"
