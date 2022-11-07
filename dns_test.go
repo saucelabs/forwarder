@@ -3,6 +3,7 @@ package forwarder
 import (
 	"context"
 	"net/url"
+	"os"
 	"testing"
 	"time"
 
@@ -10,6 +11,10 @@ import (
 )
 
 func TestResolverLookupHost(t *testing.T) {
+	if _, ok := os.LookupEnv("CI"); ok {
+		t.Skip("skipping test in CI environment")
+	}
+
 	c := &DNSConfig{
 		Servers: []*url.URL{{Scheme: "udp", Host: "1.1.1.1:53"}},
 		Timeout: 5 * time.Second,
