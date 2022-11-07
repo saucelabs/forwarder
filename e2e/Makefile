@@ -1,8 +1,8 @@
 # Ignore CPU pinning in CI.
 ifdef CI
-CPUSET := ""
+COMPOSE := docker compose -f docker-compose.yaml $(foreach f,$(CONF),-f $(f))
 else
-CPUSET := -f override/cpuset.yaml
+COMPOSE := docker compose -f docker-compose.yaml -f override/cpuset.yaml $(foreach f,$(CONF),-f $(f))
 endif
 
 # Docker tag to be tested.
@@ -10,12 +10,10 @@ ifndef FORWARDER_VERSION
 export FORWARDER_VERSION := devel
 endif
 
-COMPOSE := docker compose -f docker-compose.yaml
-
 .PHONY: up
 up:
-	@$(COMPOSE) $(CPUSET) $(foreach f,$(CONF),-f $(f) ) \
-	up -d --wait --force-recreate --remove-orphans
+	@echo "$(COMPOSE)"
+	@$(COMPOSE) up -d --wait --force-recreate --remove-orphans
 
 .PHONY: down
 down:
