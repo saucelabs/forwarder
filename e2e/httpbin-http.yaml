@@ -2,9 +2,6 @@ version: "3.8"
 
 services:
   httpbin:
-    extends:
-      file: docker-compose.yaml
-      service: proxy
     command: httpbin --address :80
     healthcheck:
       test: ["CMD", "curl", "-s", "-S", "-f", "http://localhost/status/200"]

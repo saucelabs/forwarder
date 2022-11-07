@@ -13,3 +13,5 @@ services:
   upstream-proxy:
     extends: proxy
 
+  httpbin:
+    extends: proxy
