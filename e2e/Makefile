@@ -10,18 +10,20 @@ ifndef FORWARDER_VERSION
 export FORWARDER_VERSION := devel
 endif
 
+COMPOSE := docker compose -f docker-compose.yaml
+
 .PHONY: up
 up:
-	@docker-compose -f docker-compose.yaml $(CPUSET) $(foreach f,$(CONF),-f $(f) ) \
+	@$(COMPOSE) $(CPUSET) $(foreach f,$(CONF),-f $(f) ) \
 	up -d --wait --force-recreate --remove-orphans
 
 .PHONY: down
 down:
-	@docker-compose down -v --remove-orphans
+	@$(COMPOSE) down -v --remove-orphans
 
 .PHONY: dump-logs
 dump-logs:
-	@docker-compose logs $(SRV)
+	@$(COMPOSE) logs $(SRV)
 
 .PHONY: test
 test: RUN=.
