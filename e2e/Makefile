@@ -24,7 +24,7 @@ dump-logs:
 	@$(COMPOSE) logs $(SRV)
 
 .PHONY: test
-test: RUN=.
+test: RUN ?= .
 test: e2e.test
 	@docker run --name "test-runner" --network "forwarder-e2e_default" --cpuset-cpus 0 \
 	-v "$(PWD)/e2e.test:/usr/bin/e2e.test" -i --read-only --rm ubuntu \
