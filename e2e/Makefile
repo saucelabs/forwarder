@@ -12,7 +12,7 @@ endif
 
 .PHONY: up
 up:
-	@echo "$(COMPOSE)"
+	@echo ">>> Using $(CONF)"
 	@$(COMPOSE) up -d --wait --force-recreate --remove-orphans
 
 .PHONY: down
