@@ -21,6 +21,7 @@ linters:
     - exhaustruct
     - godox
     - goerr113
+    - gomoddirectives
     - maligned
     - nlreturn
     - nonamedreturns
