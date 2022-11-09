@@ -98,6 +98,7 @@ func (hp *HTTPProxy) configureProxy() {
 	hp.proxy.KeepDestinationHeaders = true
 
 	hp.proxy.Tr = hp.transport.Clone()
+	hp.proxy.HTTPErrorHandler = httpErrorHandler
 	// Use the same dialer as the transport.
 	hp.proxy.ConnectDial = nil
 	hp.proxy.ConnectDialWithReq = nil
@@ -167,7 +168,7 @@ func (hp *HTTPProxy) configureProxyLocalhost() {
 	if !hp.config.ProxyLocalhost {
 		hp.log.Infof("Localhost proxy disabled")
 		hp.proxy.OnRequest(goproxy.ReqConditionFunc(hp.isLocalhost)).DoFunc(func(r *http.Request, ctx *goproxy.ProxyCtx) (*http.Request, *http.Response) {
-			return nil, goproxy.NewResponse(r, goproxy.ContentTypeText, http.StatusBadGateway, "Can't use proxy for local addresses")
+			return nil, errorResponse(ctx, ErrProxyLocalhost)
 		})
 	} else {
 		hp.log.Infof("Localhost proxy enabled")
