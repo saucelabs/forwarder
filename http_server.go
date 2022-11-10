@@ -30,11 +30,12 @@ func (s Scheme) String() string {
 }
 
 type HTTPServerConfig struct {
-	Protocol    Scheme        `json:"protocol"`
-	Addr        string        `json:"addr"`
-	CertFile    string        `json:"cert_file"`
-	KeyFile     string        `json:"key_file"`
-	ReadTimeout time.Duration `json:"read_timeout"`
+	Protocol        Scheme        `json:"protocol"`
+	Addr            string        `json:"addr"`
+	CertFile        string        `json:"cert_file"`
+	KeyFile         string        `json:"key_file"`
+	ReadTimeout     time.Duration `json:"read_timeout"`
+	LogHTTPRequests bool          `json:"log_http_requests"`
 
 	PromNamespace   string                `json:"prom_namespace"`
 	PromRegistry    prometheus.Registerer `json:"prom_registry"`
@@ -66,7 +67,7 @@ func NewHTTPServer(cfg *HTTPServerConfig, h http.Handler, log Logger) (*HTTPServ
 		log:    log,
 		srv: &http.Server{
 			Addr:        cfg.Addr,
-			Handler:     withMiddleware(cfg, h),
+			Handler:     withMiddleware(cfg, h, log),
 			ReadTimeout: cfg.ReadTimeout,
 		},
 	}
@@ -87,16 +88,28 @@ func NewHTTPServer(cfg *HTTPServerConfig, h http.Handler, log Logger) (*HTTPServ
 	return hs, nil
 }
 
-func withMiddleware(cfg *HTTPServerConfig, h http.Handler) http.Handler {
-	// Prometheus middleware must be the first one to be executed to collect metrics for all other middlewares.
-	if cfg.PromRegistry != nil {
-		h = middleware.NewPrometheus(cfg.PromRegistry, cfg.PromNamespace).Wrap(h)
-	}
-
+func withMiddleware(cfg *HTTPServerConfig, h http.Handler, log Logger) http.Handler {
+	// Note that the order of execution is reversed.
 	if cfg.BasicAuth != nil {
 		p, _ := cfg.BasicAuth.Password()
 		h = middleware.NewBasicAuth(cfg.BasicAuthHeader).Wrap(h, cfg.BasicAuth.Username(), p)
 	}
+
+	// Logger middleware must immediately follow the Prometheus middleware because it uses the Prometheus delegator.
+	h = middleware.Logger(func(e middleware.LogEntry) {
+		if e.Method == "CONNECT" && e.Status == 0 {
+			return
+		}
+		if e.Status >= http.StatusInternalServerError {
+			log.Errorf("%s %s %s status=%d duration=%s", e.RemoteAddr, e.Method, e.URL.Redacted(), e.Status, e.Duration)
+		} else if cfg.LogHTTPRequests {
+			log.Infof("%s %s %s status=%d duration=%s", e.RemoteAddr, e.Method, e.URL.Redacted(), e.Status, e.Duration)
+		}
+	}).Wrap(h)
+
+	// Prometheus middleware must be the first one to be executed to collect metrics for all other middlewares.
+	h = middleware.NewPrometheus(cfg.PromRegistry, cfg.PromNamespace).Wrap(h)
+
 	return h
 }
 

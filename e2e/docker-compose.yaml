@@ -4,6 +4,7 @@ services:
   proxy:
     image: saucelabs/forwarder:${FORWARDER_VERSION}
     environment:
+      FORWARDER_LOG_HTTP_REQUESTS: "true"
       FORWARDER_VERBOSE: "true"
     healthcheck:
       interval: 1s
