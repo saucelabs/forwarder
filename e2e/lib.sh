@@ -12,7 +12,7 @@ run_test() {
   UPSTREAM_PROXY_SCHEME=$3
   EXTRA_CONF=$4
 
-  CONF="httpbin-${HTTPBIN_SCHEME}.yaml override/proxy-${PROXY_SCHEME}.yaml"
+  CONF="override/httpbin-${HTTPBIN_SCHEME}.yaml override/proxy-${PROXY_SCHEME}.yaml"
   if [[ -n "${UPSTREAM_PROXY_SCHEME}" ]]; then
     CONF="${CONF} override/upstream-proxy-${UPSTREAM_PROXY_SCHEME}.yaml"
   fi

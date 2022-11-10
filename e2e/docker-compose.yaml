@@ -16,3 +16,4 @@ services:
 
   httpbin:
     extends: proxy
+    command: httpbin
