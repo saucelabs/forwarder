@@ -1,7 +1,0 @@
-version: "3.8"
-
-services:
-  httpbin:
-    command: httpbin --address :80
-    healthcheck:
-      test: ["CMD", "curl", "-s", "-S", "-f", "http://localhost/status/200"]
