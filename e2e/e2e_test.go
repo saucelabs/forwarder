@@ -10,10 +10,6 @@ import (
 )
 
 func TestStatusCodes(t *testing.T) {
-	if *httpbin == "" {
-		t.Fatal("httpbin URL not set")
-	}
-
 	// List of all valid status codes plus some non-standard ones.
 	// See https://www.iana.org/assignments/http-status-codes/http-status-codes.xhtml
 	validStatusCodes := []int{
