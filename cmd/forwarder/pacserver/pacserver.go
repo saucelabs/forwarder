@@ -1,18 +1,16 @@
 package pacserver
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"net/url"
-	"os/signal"
-	"syscall"
 
 	"github.com/saucelabs/forwarder"
 	"github.com/saucelabs/forwarder/bind"
 	"github.com/saucelabs/forwarder/log"
 	"github.com/saucelabs/forwarder/log/stdlog"
 	"github.com/saucelabs/forwarder/pac"
+	"github.com/saucelabs/forwarder/runctx"
 	"github.com/spf13/cobra"
 )
 
@@ -44,9 +42,7 @@ func (c *command) RunE(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	ctx := context.Background()
-	ctx, _ = signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
-	return s.Run(ctx)
+	return runctx.Run(s.Run)
 }
 
 func servePAC(script string) http.Handler {

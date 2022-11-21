@@ -1,18 +1,14 @@
 package httpbin
 
 import (
-	"context"
-	"os/signal"
-	"syscall"
-
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/saucelabs/forwarder"
 	"github.com/saucelabs/forwarder/bind"
 	"github.com/saucelabs/forwarder/httpbin"
 	"github.com/saucelabs/forwarder/log"
 	"github.com/saucelabs/forwarder/log/stdlog"
+	"github.com/saucelabs/forwarder/runctx"
 	"github.com/spf13/cobra"
-	"golang.org/x/sync/errgroup"
 )
 
 type command struct {
@@ -38,19 +34,7 @@ func (c *command) RunE(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	return c.runHTTPServers(s, a)
-}
-
-func (c *command) runHTTPServers(servers ...*forwarder.HTTPServer) error {
-	var eg *errgroup.Group
-	ctx := context.Background()
-	ctx, _ = signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
-	eg, ctx = errgroup.WithContext(ctx)
-	for _, s := range servers {
-		s := s
-		eg.Go(func() error { return s.Run(ctx) })
-	}
-	return eg.Wait()
+	return runctx.Funcs{s.Run, a.Run}.Run()
 }
 
 func Command() (cmd *cobra.Command) {
