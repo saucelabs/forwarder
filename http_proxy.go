@@ -87,10 +87,6 @@ func NewHTTPProxy(cfg *HTTPProxyConfig, pr PACResolver, cm *CredentialsMatcher, 
 	return p, nil
 }
 
-func defaultTransportDialContext(dialer *net.Dialer) func(context.Context, string, string) (net.Conn, error) {
-	return dialer.DialContext
-}
-
 func (hp *HTTPProxy) configureProxy() {
 	hp.proxy = goproxy.NewProxyHttpServer()
 	hp.proxy.Logger = goproxyLogger{hp.log}
