@@ -84,13 +84,16 @@ func DefaultHTTPTransportConfig() *HTTPTransportConfig {
 }
 
 func NewHTTPTransport(cfg *HTTPTransportConfig, r *net.Resolver) *http.Transport {
+	d := &net.Dialer{
+		Timeout:   cfg.DialTimeout,
+		KeepAlive: cfg.KeepAlive,
+		Resolver:  r,
+	}
+
 	return &http.Transport{
-		Proxy: nil,
-		DialContext: defaultTransportDialContext(&net.Dialer{
-			Timeout:   cfg.DialTimeout,
-			KeepAlive: cfg.KeepAlive,
-			Resolver:  r,
-		}),
+		Proxy:                 nil,
+		Dial:                  d.Dial,
+		DialContext:           d.DialContext,
 		MaxIdleConns:          cfg.MaxIdleConns,
 		IdleConnTimeout:       cfg.IdleConnTimeout,
 		TLSHandshakeTimeout:   cfg.TLSHandshakeTimeout,
