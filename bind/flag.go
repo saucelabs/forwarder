@@ -25,6 +25,7 @@ func PAC(fs *pflag.FlagSet, pac **url.URL) {
 }
 
 func HTTPProxyConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPProxyConfig) {
+	HTTPServerConfig(fs, &cfg.HTTPServerConfig, "", false)
 	fs.VarP(anyflag.NewValue[*url.URL](cfg.UpstreamProxy, &cfg.UpstreamProxy, forwarder.ParseProxyURL),
 		"upstream-proxy", "u", "upstream proxy URL")
 	fs.BoolVarP(&cfg.ProxyLocalhost, "proxy-localhost", "t", cfg.ProxyLocalhost,
@@ -54,7 +55,7 @@ func HTTPTransportConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPTransportConfig) 
 	TLSConfig(fs, &cfg.TLSConfig)
 }
 
-func HTTPServerConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPServerConfig, prefix string) {
+func HTTPServerConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPServerConfig, prefix string, http2 bool) {
 	namePrefix := prefix
 	if namePrefix != "" {
 		namePrefix += "-"
@@ -65,9 +66,15 @@ func HTTPServerConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPServerConfig, prefix
 		usagePrefix += " "
 	}
 
-	fs.VarP(anyflag.NewValue[forwarder.Scheme](cfg.Protocol, &cfg.Protocol,
-		anyflag.EnumParser[forwarder.Scheme](forwarder.HTTPScheme, forwarder.HTTPSScheme, forwarder.HTTP2Scheme)),
-		namePrefix+"protocol", "", usagePrefix+"HTTP server protocol, one of http, https, h2")
+	if http2 {
+		fs.VarP(anyflag.NewValue[forwarder.Scheme](cfg.Protocol, &cfg.Protocol,
+			anyflag.EnumParser[forwarder.Scheme](forwarder.HTTPScheme, forwarder.HTTPSScheme, forwarder.HTTP2Scheme)),
+			namePrefix+"protocol", "", usagePrefix+"HTTP server protocol, one of http, https, h2")
+	} else {
+		fs.VarP(anyflag.NewValue[forwarder.Scheme](cfg.Protocol, &cfg.Protocol,
+			anyflag.EnumParser[forwarder.Scheme](forwarder.HTTPScheme, forwarder.HTTPSScheme)),
+			namePrefix+"protocol", "", usagePrefix+"HTTP server protocol, one of http, https")
+	}
 	fs.StringVarP(&cfg.Addr,
 		namePrefix+"address", "", cfg.Addr, usagePrefix+"HTTP server listen address in the form of `host:port`")
 	fs.StringVar(&cfg.CertFile,

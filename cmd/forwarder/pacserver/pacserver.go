@@ -65,7 +65,7 @@ func Command() (cmd *cobra.Command) {
 
 		bind.PAC(fs, &c.pac)
 		bind.HTTPTransportConfig(fs, c.httpTransportConfig)
-		bind.HTTPServerConfig(fs, c.httpServerConfig, "")
+		bind.HTTPServerConfig(fs, c.httpServerConfig, "", true)
 		bind.LogConfig(fs, c.logConfig)
 
 		bind.MarkFlagFilename(cmd, "pac", "cert-file", "key-file", "log-file")

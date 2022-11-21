@@ -53,16 +53,17 @@ linters-settings:
 
 issues:
   exclude:
-    - "can be `fmt.Stringer`"
-    - "can be `expvar.Var`"
     - "Error return value of `cmd.MarkFlag.+` is not checked"
     - "Error return value of `w.Write` is not checked"
     - "Function 'RunE' has too many statements"
     - "Function 'RunE' is too long"
-    - "string `https?` has \\d+ occurrences"
     - "Magic number: 0o"
     - "`nop.+` is unused"
-    - "returns interface \\(github.com/dop251/goja.Value\\)"
+    - "can be `expvar.Var`"
+    - "can be `fmt.Stringer`"
+    - "returns interface \\(github.com/dop251/goja\\.Value\\)"
+    - "returns interface \\(github.com/google/martian/v3\\.(Request|Response)+Modifier\\)"
+    - "string `https?` has \\d+ occurrences"
 
   exclude-rules:
     - path: cmd/forwarder/version/version.go
@@ -114,4 +115,3 @@ issues:
     - linters:
         - nosnakecase
       source: "func Example"
-

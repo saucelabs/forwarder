@@ -47,8 +47,8 @@ func Command() (cmd *cobra.Command) {
 
 	defer func() {
 		fs := cmd.Flags()
-		bind.HTTPServerConfig(fs, c.httpServerConfig, "")
-		bind.HTTPServerConfig(fs, c.apiServerConfig, "api")
+		bind.HTTPServerConfig(fs, c.httpServerConfig, "", true)
+		bind.HTTPServerConfig(fs, c.apiServerConfig, "api", true)
 		bind.LogConfig(fs, c.logConfig)
 		bind.MarkFlagFilename(cmd, "cert-file", "key-file", "log-file")
 	}()

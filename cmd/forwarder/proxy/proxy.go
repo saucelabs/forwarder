@@ -8,7 +8,9 @@ import (
 	"fmt"
 	"net"
 	"net/url"
+	"strings"
 
+	martianlog "github.com/google/martian/v3/log"
 	"github.com/mmatczuk/anyflag"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/saucelabs/forwarder"
@@ -21,15 +23,14 @@ import (
 )
 
 type command struct {
-	promReg               *prometheus.Registry
-	dnsConfig             *forwarder.DNSConfig
-	httpTransportConfig   *forwarder.HTTPTransportConfig
-	pac                   *url.URL
-	credentials           []*forwarder.HostPortUser
-	httpProxyConfig       *forwarder.HTTPProxyConfig
-	httpProxyServerConfig *forwarder.HTTPServerConfig
-	apiServerConfig       *forwarder.HTTPServerConfig
-	logConfig             *log.Config
+	promReg             *prometheus.Registry
+	dnsConfig           *forwarder.DNSConfig
+	httpTransportConfig *forwarder.HTTPTransportConfig
+	pac                 *url.URL
+	credentials         []*forwarder.HostPortUser
+	httpProxyConfig     *forwarder.HTTPProxyConfig
+	apiServerConfig     *forwarder.HTTPServerConfig
+	logConfig           *log.Config
 }
 
 func (c *command) RunE(cmd *cobra.Command, args []string) error {
@@ -72,20 +73,22 @@ func (c *command) RunE(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("credentials: %w", err)
 	}
+
+	// Google Martian uses a global logger package.
+	ml := logger.Named("proxy")
+	ml.Decorate = func(format string) string {
+		return strings.TrimPrefix(format, "martian: ")
+	}
+	martianlog.SetLogger(ml)
+
 	p, err := forwarder.NewHTTPProxy(c.httpProxyConfig, pr, cm, t, logger.Named("proxy"))
 	if err != nil {
 		return err
 	}
-
-	var f runctx.Funcs
-	s, err := forwarder.NewHTTPServer(c.httpProxyServerConfig, p, logger.Named("server"))
-	if err != nil {
-		return err
-	}
-	f = append(f, s.Run)
+	f := runctx.Funcs{p.Run}
 
 	if c.apiServerConfig.Addr != "" {
-		h := forwarder.NewAPIHandler(c.promReg, s, script)
+		h := forwarder.NewAPIHandler(c.promReg, p, script)
 		a, err := forwarder.NewHTTPServer(c.apiServerConfig, h, logger.Named("api"))
 		if err != nil {
 			return err
@@ -97,7 +100,7 @@ func (c *command) RunE(cmd *cobra.Command, args []string) error {
 }
 
 const long = `Start HTTP(S) proxy server.
-You can start HTTP, HTTPS or H2 (HTTPS) server.
+You can start HTTP or HTTPS server.
 The server may be protected by basic authentication.
 If you start an HTTPS server and you don't provide a certificate, the server will generate a self-signed certificate on startup.
 
@@ -107,7 +110,8 @@ To run on a random port, use --api-address=:0.
 It's recommended use basic authentication for the API server, especially if --proxy-localhost is enabled.
 
 The PAC file can be specified as a file path or URL with scheme "file", "http" or "https".
-All PAC util functions are supported (see below). 
+All PAC util functions are supported (see below).
+The supported upstream proxy types are "http", "https" and "socks5".
 You can specify custom DNS servers.
 They are used to resolve hostnames in PAC scripts and proxy server.
 
@@ -157,16 +161,14 @@ const apiEndpoints = `API endpoints:
 
 func Command() (cmd *cobra.Command) {
 	c := command{
-		promReg:               prometheus.NewRegistry(),
-		dnsConfig:             forwarder.DefaultDNSConfig(),
-		httpTransportConfig:   forwarder.DefaultHTTPTransportConfig(),
-		httpProxyConfig:       forwarder.DefaultHTTPProxyConfig(),
-		httpProxyServerConfig: forwarder.DefaultHTTPServerConfig(),
-		apiServerConfig:       forwarder.DefaultHTTPServerConfig(),
-		logConfig:             log.DefaultConfig(),
+		promReg:             prometheus.NewRegistry(),
+		dnsConfig:           forwarder.DefaultDNSConfig(),
+		httpTransportConfig: forwarder.DefaultHTTPTransportConfig(),
+		httpProxyConfig:     forwarder.DefaultHTTPProxyConfig(),
+		apiServerConfig:     forwarder.DefaultHTTPServerConfig(),
+		logConfig:           log.DefaultConfig(),
 	}
-	c.httpProxyServerConfig.Addr = ":3128"
-	c.httpProxyServerConfig.PromRegistry = c.promReg
+	c.httpProxyConfig.PromRegistry = c.promReg
 	c.apiServerConfig.Addr = ""
 
 	defer func() {
@@ -179,8 +181,7 @@ func Command() (cmd *cobra.Command) {
 			"site or upstream proxy basic authentication credentials in the form of `username:password@host:port`, "+
 				"host and port can be set to \"*\" to match all (can be specified multiple times)")
 		bind.HTTPProxyConfig(fs, c.httpProxyConfig)
-		bind.HTTPServerConfig(fs, c.httpProxyServerConfig, "")
-		bind.HTTPServerConfig(fs, c.apiServerConfig, "api")
+		bind.HTTPServerConfig(fs, c.apiServerConfig, "api", true)
 		bind.LogConfig(fs, c.logConfig)
 
 		bind.MarkFlagFilename(cmd, "cert-file", "key-file", "pac")
