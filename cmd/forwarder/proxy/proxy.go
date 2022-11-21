@@ -5,12 +5,9 @@
 package proxy
 
 import (
-	"context"
 	"fmt"
 	"net"
 	"net/url"
-	"os/signal"
-	"syscall"
 
 	"github.com/mmatczuk/anyflag"
 	"github.com/prometheus/client_golang/prometheus"
@@ -20,8 +17,8 @@ import (
 	"github.com/saucelabs/forwarder/log/stdlog"
 	"github.com/saucelabs/forwarder/middleware"
 	"github.com/saucelabs/forwarder/pac"
+	"github.com/saucelabs/forwarder/runctx"
 	"github.com/spf13/cobra"
-	"golang.org/x/sync/errgroup"
 )
 
 type command struct {
@@ -76,39 +73,28 @@ func (c *command) RunE(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("credentials: %w", err)
 	}
-
 	p, err := forwarder.NewHTTPProxy(c.httpProxyConfig, pr, cm, t, logger.Named("proxy"))
 	if err != nil {
 		return err
 	}
+
+	var f runctx.Funcs
 	s, err := forwarder.NewHTTPServer(c.httpProxyServerConfig, p, logger.Named("server"))
 	if err != nil {
 		return err
 	}
-	servers := []*forwarder.HTTPServer{s}
+	f = append(f, s.Run)
 
 	if c.apiServerConfig.Addr != "" {
 		h := forwarder.NewAPIHandler(c.promReg, s, script)
-		s, err := forwarder.NewHTTPServer(c.apiServerConfig, h, logger.Named("api"))
+		a, err := forwarder.NewHTTPServer(c.apiServerConfig, h, logger.Named("api"))
 		if err != nil {
 			return err
 		}
-		servers = append(servers, s)
+		f = append(f, a.Run)
 	}
 
-	return c.runHTTPServers(servers...)
-}
-
-func (c *command) runHTTPServers(servers ...*forwarder.HTTPServer) error {
-	var eg *errgroup.Group
-	ctx := context.Background()
-	ctx, _ = signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
-	eg, ctx = errgroup.WithContext(ctx)
-	for _, s := range servers {
-		s := s
-		eg.Go(func() error { return s.Run(ctx) })
-	}
-	return eg.Wait()
+	return f.Run()
 }
 
 const long = `Start HTTP(S) proxy server.
