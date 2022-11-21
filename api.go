@@ -11,19 +11,23 @@ import (
 	"github.com/saucelabs/forwarder/internal/version"
 )
 
+type server interface {
+	Addr() string
+}
+
 // APIHandler serves API endpoints.
 // It provides health and readiness endpoints prometheus metrics, and pprof debug endpoints.
 type APIHandler struct {
 	mux    *http.ServeMux
-	proxy  *HTTPServer
+	server server
 	script string
 }
 
-func NewAPIHandler(r prometheus.Gatherer, proxy *HTTPServer, pac string) *APIHandler {
+func NewAPIHandler(r prometheus.Gatherer, s server, pac string) *APIHandler {
 	m := http.NewServeMux()
 	a := &APIHandler{
 		mux:    m,
-		proxy: proxy,
+		server: s,
 		script: pac,
 	}
 	m.HandleFunc("/metrics", promhttp.HandlerFor(r, promhttp.HandlerOpts{}).ServeHTTP)
@@ -48,7 +52,7 @@ func (h *APIHandler) healthz(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *APIHandler) readyz(w http.ResponseWriter, r *http.Request) {
-	if h.proxy.Addr() != "" {
+	if h.server.Addr() != "" {
 		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "text/plain")
 		w.Write([]byte("OK"))
@@ -87,7 +91,7 @@ func (h *APIHandler) version(w http.ResponseWriter, r *http.Request) {
 		GOOS:      runtime.GOOS,
 		GoVersion: runtime.Version(),
 	}
-	json.NewEncoder(w).Encode(v) //nolint // ignore it
+	json.NewEncoder(w).Encode(v) //nolint // ignore error
 }
 
 func (h *APIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
