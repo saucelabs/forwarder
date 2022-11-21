@@ -31,6 +31,9 @@ type StdLogger struct {
 	log     *log.Logger
 	name    string
 	verbose bool
+
+	// Decorate allows to modify the log message before it is written.
+	Decorate func(string) string
 }
 
 func (sl StdLogger) Named(name string) StdLogger {
@@ -42,15 +45,25 @@ func (sl StdLogger) Named(name string) StdLogger {
 }
 
 func (sl StdLogger) Errorf(format string, args ...interface{}) {
+	if sl.Decorate != nil {
+		format = sl.Decorate(format)
+	}
 	sl.log.Printf(sl.name+"ERROR: "+format, args...)
 }
 
 func (sl StdLogger) Infof(format string, args ...interface{}) {
+	if sl.Decorate != nil {
+		format = sl.Decorate(format)
+	}
 	sl.log.Printf(sl.name+"INFO: "+format, args...)
 }
 
 func (sl StdLogger) Debugf(format string, args ...interface{}) {
-	if sl.verbose {
-		sl.log.Printf(sl.name+"DEBUG: "+format, args...)
+	if !sl.verbose {
+		return
 	}
+	if sl.Decorate != nil {
+		format = sl.Decorate(format)
+	}
+	sl.log.Printf(sl.name+"DEBUG: "+format, args...)
 }
