@@ -22,12 +22,12 @@ type BasicAuth struct {
 	header string
 }
 
-func NewBasicAuth(header string) *BasicAuth {
-	return &BasicAuth{header: header}
+func NewBasicAuth() *BasicAuth {
+	return &BasicAuth{header: AuthorizationHeader}
 }
 
 func NewProxyBasicAuth() *BasicAuth {
-	return NewBasicAuth(ProxyAuthorizationHeader)
+	return &BasicAuth{header: ProxyAuthorizationHeader}
 }
 
 // AuthenticatedRequest parses the provided HTTP request for Basic Authentication credentials

@@ -7,7 +7,7 @@ import (
 )
 
 func TestBasicAuth(t *testing.T) {
-	ba := NewBasicAuth(AuthorizationHeader)
+	ba := NewBasicAuth()
 	r := httptest.NewRequest("GET", "/", nil)
 	r.SetBasicAuth("user", "pass")
 
@@ -20,7 +20,7 @@ func TestBasicAuth(t *testing.T) {
 }
 
 func TestBasicAuthWrap(t *testing.T) {
-	ba := NewBasicAuth(AuthorizationHeader)
+	ba := NewBasicAuth()
 
 	h := ba.Wrap(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Foo") != "" {
