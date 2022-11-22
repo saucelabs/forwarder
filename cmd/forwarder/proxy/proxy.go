@@ -15,7 +15,6 @@ import (
 	"github.com/saucelabs/forwarder/bind"
 	"github.com/saucelabs/forwarder/log"
 	"github.com/saucelabs/forwarder/log/stdlog"
-	"github.com/saucelabs/forwarder/middleware"
 	"github.com/saucelabs/forwarder/pac"
 	"github.com/saucelabs/forwarder/runctx"
 	"github.com/spf13/cobra"
@@ -168,7 +167,6 @@ func Command() (cmd *cobra.Command) {
 	}
 	c.httpProxyServerConfig.Addr = ":3128"
 	c.httpProxyServerConfig.PromRegistry = c.promReg
-	c.httpProxyServerConfig.BasicAuthHeader = middleware.ProxyAuthorizationHeader
 	c.apiServerConfig.Addr = ""
 
 	defer func() {

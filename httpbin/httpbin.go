@@ -36,7 +36,7 @@ func basicAuthHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	mw := middleware.NewBasicAuth(middleware.AuthorizationHeader)
+	mw := middleware.NewBasicAuth()
 	if !mw.AuthenticatedRequest(r, user, pass) {
 		w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 		w.WriteHeader(http.StatusUnauthorized)

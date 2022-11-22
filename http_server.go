@@ -37,18 +37,16 @@ type HTTPServerConfig struct {
 	ReadTimeout     time.Duration `json:"read_timeout"`
 	LogHTTPRequests bool          `json:"log_http_requests"`
 
-	PromNamespace   string                `json:"prom_namespace"`
-	PromRegistry    prometheus.Registerer `json:"prom_registry"`
-	BasicAuthHeader string                `json:"basic_auth_header"`
-	BasicAuth       *url.Userinfo         `json:"basic_auth"`
+	PromNamespace string                `json:"prom_namespace"`
+	PromRegistry  prometheus.Registerer `json:"prom_registry"`
+	BasicAuth     *url.Userinfo         `json:"basic_auth"`
 }
 
 func DefaultHTTPServerConfig() *HTTPServerConfig {
 	return &HTTPServerConfig{
-		Protocol:        HTTPScheme,
-		Addr:            ":8080",
-		ReadTimeout:     5 * time.Second,
-		BasicAuthHeader: middleware.AuthorizationHeader,
+		Protocol:    HTTPScheme,
+		Addr:        ":8080",
+		ReadTimeout: 5 * time.Second,
 	}
 }
 
@@ -92,7 +90,7 @@ func withMiddleware(cfg *HTTPServerConfig, h http.Handler, log Logger) http.Hand
 	// Note that the order of execution is reversed.
 	if cfg.BasicAuth != nil {
 		p, _ := cfg.BasicAuth.Password()
-		h = middleware.NewBasicAuth(cfg.BasicAuthHeader).Wrap(h, cfg.BasicAuth.Username(), p)
+		h = middleware.NewBasicAuth().Wrap(h, cfg.BasicAuth.Username(), p)
 	}
 
 	// Logger middleware must immediately follow the Prometheus middleware because it uses the Prometheus delegator.
