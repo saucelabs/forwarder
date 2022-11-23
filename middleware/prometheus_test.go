@@ -34,7 +34,7 @@ func TestPrometheusWrap(t *testing.T) {
 		h.HandleFunc(p.path, func(w http.ResponseWriter, r *http.Request) {
 			time.Sleep(p.duration)
 			w.WriteHeader(p.status)
-			w.Write(make([]byte, int(p.responseSize))) //nolint:errcheck // ignore error
+			w.Write(make([]byte, int(p.responseSize)))
 		})
 	}
 

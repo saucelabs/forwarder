@@ -52,7 +52,7 @@ func (c *command) RunE(cmd *cobra.Command, args []string) error {
 func servePAC(script string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/x-ns-proxy-autoconfig")
-		w.Write([]byte(script)) //nolint:errcheck // ignore it
+		w.Write([]byte(script))
 	})
 }
 

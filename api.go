@@ -44,18 +44,18 @@ func NewAPIHandler(r prometheus.Gatherer, proxy *HTTPServer, pac string) *APIHan
 func (h *APIHandler) healthz(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "text/plain")
-	w.Write([]byte("OK")) //nolint:errcheck // ignore error
+	w.Write([]byte("OK"))
 }
 
 func (h *APIHandler) readyz(w http.ResponseWriter, r *http.Request) {
 	if h.proxy.Addr() != "" {
 		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "text/plain")
-		w.Write([]byte("OK")) //nolint:errcheck // ignore error
+		w.Write([]byte("OK"))
 	} else {
 		w.WriteHeader(http.StatusServiceUnavailable)
 		w.Header().Set("Content-Type", "text/plain")
-		w.Write([]byte("Service Unavailable")) //nolint:errcheck // ignore error
+		w.Write([]byte("Service Unavailable"))
 	}
 }
 
@@ -65,7 +65,7 @@ func (h *APIHandler) configz(w http.ResponseWriter, r *http.Request) {
 
 func (h *APIHandler) pac(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/x-ns-proxy-autoconfig")
-	w.Write([]byte(h.script)) //nolint:errcheck // ignore it
+	w.Write([]byte(h.script))
 }
 
 func (h *APIHandler) version(w http.ResponseWriter, r *http.Request) {
