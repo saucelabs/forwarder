@@ -22,8 +22,9 @@ type APIHandler struct {
 func NewAPIHandler(r prometheus.Gatherer, proxy *HTTPServer, pac string) *APIHandler {
 	m := http.NewServeMux()
 	a := &APIHandler{
-		mux:   m,
+		mux:    m,
 		proxy: proxy,
+		script: pac,
 	}
 	m.HandleFunc("/metrics", promhttp.HandlerFor(r, promhttp.HandlerOpts{}).ServeHTTP)
 	m.HandleFunc("/healthz", a.healthz)
