@@ -4,6 +4,7 @@ package e2e
 
 import (
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"testing"
@@ -21,54 +22,51 @@ func TestStatusCodes(t *testing.T) {
 		500, 501, 502, 503, 504, 505, 506, 507, 508, 510, 511, 599,
 	}
 
-	client := newHTTPClient(t)
-
+	e := expect(t, *httpbin)
 	for i := range validStatusCodes {
 		code := validStatusCodes[i]
 		t.Run(fmt.Sprint(code), func(t *testing.T) {
-			assertResponse(t, client, http.MethodGet, *httpbin+"/status/"+fmt.Sprint(code), nil, statusCodeIs(t, code))
+			t.Parallel()
+			e.GET(fmt.Sprintf("/status/%d", code)).Expect().Status(code)
 		})
 	}
 }
 
+// There is a difference in client behaviour between sending HTTP and HTTPS requests here
+// For HTTPS client issues a CONNECT request to the proxy and then sends the original request.
+// In case of error the client receives a 502 Bad Gateway and interprets it as URL error.
+// For HTTP client which receives a 502 Bad Gateway interprets it as a response.
 func TestBadGateway(t *testing.T) {
-	client := newHTTPClient(t)
-
-	tests := []struct {
-		name string
-		url  string
-	}{
-		{
-			name: "DNS error",
-			url:  "https://wronghost",
-		},
-		{
-			name: "connection refused",
-			url:  "https://httpbin" + ":1",
-		},
+	hosts := []string{
+		"wronghost",
+		"httpbin:1",
 	}
 
-	for i := range tests {
-		tc := tests[i]
-		t.Run(tc.name, func(t *testing.T) {
-			assertError(t, client, http.MethodGet, tc.url, nil, errorMatches(t, "Bad Gateway"))
-		})
-	}
+	t.Run("http", func(t *testing.T) {
+		for _, h := range hosts {
+			expect(t, "http://"+h).GET("/status/200").Expect().Status(http.StatusBadGateway)
+		}
+	})
+
+	t.Run("https", func(t *testing.T) {
+		c := newHTTPClient(t)
+		for _, h := range hosts {
+			expectError(t, c, http.MethodGet, "https://"+h+"/status/200", nil, errorMatches(t, "Bad Gateway"))
+		}
+	})
 }
 
 func TestProxyLocalhost(t *testing.T) {
-	code := http.StatusBadGateway
-	if os.Getenv("FORWARDER_PROXY_LOCALHOST") == "true" {
-		code = http.StatusOK
-	}
-
-	client := newHTTPClient(t)
-
 	hosts := []string{
 		"localhost",
 		"127.0.0.1",
 	}
+
 	for _, h := range hosts {
-		assertResponse(t, client, http.MethodGet, "http://"+h+":10000/version", nil, statusCodeIs(t, code))
+		if os.Getenv("FORWARDER_PROXY_LOCALHOST") == "true" {
+			expect(t, "http://"+net.JoinHostPort(h, "10000")).GET("/version").Expect().Status(http.StatusOK)
+		} else {
+			expect(t, "http://"+net.JoinHostPort(h, "10000")).GET("/version").Expect().Status(http.StatusBadGateway)
+		}
 	}
 }
