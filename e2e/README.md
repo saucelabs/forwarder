@@ -12,4 +12,4 @@ Once the test is complete you may also run curl from the proxy container ex. `do
 ## Test development
 
 1. Run ./dev.sh to start the test environment with proxy and httpbin running on HTTP
-1. Run test with `dev` build tag `go test -v -tags=e2e,dev -run TestStatusCodes/200 .`
+1. Export the `DEV=1` environment variable to run the tests against the dev environment

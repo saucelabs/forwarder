@@ -5,7 +5,10 @@ on_error() {
 }
 
 run_test() {
-  trap 'on_error' ERR
+  CI=${CI:-""}
+  if [[ -n "${CI}" ]]; then
+    trap 'on_error' ERR
+  fi
 
   HTTPBIN_SCHEME=$1
   PROXY_SCHEME=$2

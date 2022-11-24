@@ -2,65 +2,80 @@ package e2e
 
 import (
 	"context"
+	"crypto/tls"
+	"flag"
 	"io"
 	"net/http"
+	"net/url"
+	"os"
 	"strings"
 	"testing"
+
+	"github.com/gavv/httpexpect/v2"
 )
 
-func statusCodeIs(t *testing.T, code int) func(*http.Response) {
-	t.Helper()
-	return func(resp *http.Response) {
-		if resp.StatusCode != code {
-			t.Errorf("expected status code %d, got %d", code, resp.StatusCode)
-		}
+var (
+	proxy              = flag.String("proxy", "", "URL of the proxy to test against")
+	httpbin            = flag.String("httpbin", "", "URL of the httpbin server to test against")
+	insecureSkipVerify = flag.Bool("insecure-skip-verify", false, "Skip TLS certificate verification")
+)
+
+func init() {
+	if os.Getenv("DEV") != "" {
+		*proxy = "https://localhost:3128"
+		*httpbin = "https://httpbin"
+		*insecureSkipVerify = true
 	}
 }
 
-func errorMatches(t *testing.T, want string) func(err error) {
+func newHTTPClient(t *testing.T) *http.Client {
 	t.Helper()
-	return func(err error) {
-		if !strings.Contains(err.Error(), want) {
-			t.Errorf("expected error %q, got %q", want, err.Error())
+
+	if *proxy == "" {
+		t.Fatal("proxy URL not set")
+	}
+
+	tr := http.DefaultTransport.(*http.Transport).Clone()
+	tr.TLSClientConfig = &tls.Config{InsecureSkipVerify: *insecureSkipVerify}
+
+	if *proxy == "" {
+		t.Log("proxy not set, running without proxy")
+	} else {
+		proxyURL, err := url.Parse(*proxy)
+		if err != nil {
+			t.Fatal(err)
 		}
+		tr.Proxy = http.ProxyURL(proxyURL)
+	}
+
+	return &http.Client{
+		Transport: tr,
 	}
 }
 
-func assertResponse(t *testing.T, client *http.Client, method, url string, body io.Reader, cks ...func(*http.Response)) {
+func expect(t *testing.T, baseURL string, opts ...func(*httpexpect.Config)) *httpexpect.Expect {
+	cfg := httpexpect.Config{
+		BaseURL:  baseURL,
+		Client:   newHTTPClient(t),
+		Reporter: t,
+		Printers: []httpexpect.Printer{
+			httpexpect.NewDebugPrinter(t, true),
+		},
+	}
+	for _, opt := range opts {
+		opt(&cfg)
+	}
+	return httpexpect.WithConfig(cfg)
+}
+
+func expectError(t *testing.T, client *http.Client, method, url string, body io.Reader, ck func(err error)) {
 	t.Helper()
 
 	req, err := http.NewRequestWithContext(context.Background(), method, url, body)
 	if err != nil {
 		t.Fatal(err)
 	}
-	resp, err := client.Do(req)
-	if err != nil {
-		t.Fatalf("+%v", err)
-	}
-	defer resp.Body.Close()
 
-	respBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if t.Failed() {
-			t.Log("response body:", string(respBody))
-		}
-	}()
-
-	for _, f := range cks {
-		f(resp)
-	}
-}
-
-func assertError(t *testing.T, client *http.Client, method, url string, body io.Reader, ck func(err error)) {
-	t.Helper()
-
-	req, err := http.NewRequestWithContext(context.Background(), method, url, body)
-	if err != nil {
-		t.Fatal(err)
-	}
 	resp, err := client.Do(req)
 	defer func() {
 		if resp != nil {
@@ -71,4 +86,13 @@ func assertError(t *testing.T, client *http.Client, method, url string, body io.
 		t.Fatal("expected error")
 	}
 	ck(err)
+}
+
+func errorMatches(t *testing.T, want string) func(err error) {
+	t.Helper()
+	return func(err error) {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("expected error %q, got %q", want, err.Error())
+		}
+	}
 }
