@@ -3,11 +3,18 @@
 package e2e
 
 import (
+	"context"
 	"fmt"
+	"math/rand"
 	"net"
 	"net/http"
 	"os"
+	"runtime"
+	"strings"
+	"sync"
 	"testing"
+
+	"github.com/gavv/httpexpect/v2"
 )
 
 func TestStatusCodes(t *testing.T) {
@@ -22,7 +29,7 @@ func TestStatusCodes(t *testing.T) {
 		500, 501, 502, 503, 504, 505, 506, 507, 508, 510, 511, 599,
 	}
 
-	e := expect(t, *httpbin)
+	e := Expect(t, *httpbin)
 	for i := range validStatusCodes {
 		code := validStatusCodes[i]
 		t.Run(fmt.Sprint(code), func(t *testing.T) {
@@ -32,28 +39,122 @@ func TestStatusCodes(t *testing.T) {
 	}
 }
 
-// There is a difference in client behaviour between sending HTTP and HTTPS requests here
-// For HTTPS client issues a CONNECT request to the proxy and then sends the original request.
-// In case of error the client receives a 502 Bad Gateway and interprets it as URL error.
-// For HTTP client which receives a 502 Bad Gateway interprets it as a response.
-func TestBadGateway(t *testing.T) {
-	hosts := []string{
-		"wronghost",
-		"httpbin:1",
+func TestAuth(t *testing.T) {
+	e := Expect(t, *httpbin)
+	t.Run("ok", func(t *testing.T) {
+		e.GET("/basic-auth/user/passwd").WithTransformer(func(r *http.Request) {
+			r.SetBasicAuth("user", "passwd")
+		}).Expect().Status(http.StatusOK)
+	})
+	t.Run("nok", func(t *testing.T) {
+		e.GET("/basic-auth/user/passwd").Expect().Status(http.StatusUnauthorized)
+	})
+}
+
+func TestProxyAuth(t *testing.T) {
+	if os.Getenv("FORWARDER_BASIC_AUTH") == "" {
+		t.Skip("FORWARDER_BASIC_AUTH not set")
+	}
+	e := Expect(t, *httpbin, ProxyNoAuth)
+	e.GET("/status/200").Expect().Status(http.StatusProxyAuthRequired)
+}
+
+func TestStreamBytes(t *testing.T) {
+	var sizes []int
+	with := func(size, n int) {
+		for i := 0; i < n; i++ {
+			sizes = append(sizes, size)
+		}
 	}
 
-	t.Run("http", func(t *testing.T) {
-		for _, h := range hosts {
-			expect(t, "http://"+h).GET("/status/200").Expect().Status(http.StatusBadGateway)
-		}
-	})
+	const base = 100
+	with(5, 10*base)
+	with(100_000, base)
+	with(1_000_000, base/10)
 
-	t.Run("https", func(t *testing.T) {
-		c := newHTTPClient(t)
-		for _, h := range hosts {
-			expectError(t, c, http.MethodGet, "https://"+h+"/status/200", nil, errorMatches(t, "Bad Gateway"))
+	var (
+		workers = 2 * runtime.NumCPU()
+		wg      sync.WaitGroup
+	)
+
+	for i := 0; i < workers; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			e := Expect(t, *httpbin, func(config *httpexpect.Config) {
+				config.Printers = []httpexpect.Printer{}
+			})
+			for _, p := range rand.Perm(len(sizes)) {
+				size := sizes[p]
+				e.GET(fmt.Sprintf("/stream-bytes/%d", size)).Expect().Status(http.StatusOK).Body().Length().Equal(size)
+			}
+		}()
+	}
+
+	wg.Wait()
+}
+
+func TestServerSentEvents(t *testing.T) {
+	tr := newTransport(t)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, *httpbin+"/events/100", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp, err := tr.RoundTrip(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	var (
+		buf [1024]byte
+		i   int
+	)
+	for {
+		n, err := resp.Body.Read(buf[:])
+		if err != nil {
+			if err == context.Canceled {
+				break
+			}
+			t.Fatal(err)
 		}
-	})
+		t.Log(string(buf[:n]))
+		i++
+		if i == 10 {
+			cancel()
+		}
+	}
+
+	if i != 10 {
+		t.Fatalf("expected 10 events, got %d", i)
+	}
+}
+
+func TestWebSocketEcho(t *testing.T) {
+	if strings.HasPrefix(*proxy, "https://") {
+		t.Skip("proxy: unknown scheme: https")
+	}
+
+	e := Expect(t, *httpbin)
+
+	ws := e.GET("/ws/echo").WithWebsocketUpgrade().
+		Expect().
+		Status(http.StatusSwitchingProtocols).
+		Websocket()
+	defer ws.Disconnect()
+
+	ws.Subprotocol().Empty()
+	for i := 0; i < 100; i++ {
+		ws.WriteText(fmt.Sprintf("hello %d", i)).Expect().TextMessage().Body().Equal(fmt.Sprintf("hello %d", i))
+	}
+	ws.CloseWithText("bye").Expect().CloseMessage().NoContent()
 }
 
 func TestProxyLocalhost(t *testing.T) {
@@ -64,9 +165,32 @@ func TestProxyLocalhost(t *testing.T) {
 
 	for _, h := range hosts {
 		if os.Getenv("FORWARDER_PROXY_LOCALHOST") == "true" {
-			expect(t, "http://"+net.JoinHostPort(h, "10000")).GET("/version").Expect().Status(http.StatusOK)
+			Expect(t, "http://"+net.JoinHostPort(h, "10000")).GET("/version").Expect().Status(http.StatusOK)
 		} else {
-			expect(t, "http://"+net.JoinHostPort(h, "10000")).GET("/version").Expect().Status(http.StatusBadGateway)
+			Expect(t, "http://"+net.JoinHostPort(h, "10000")).GET("/version").Expect().Status(http.StatusBadGateway)
 		}
 	}
+}
+
+func TestBadGateway(t *testing.T) {
+	hosts := []string{
+		"wronghost",
+		"httpbin:1",
+	}
+
+	for _, scheme := range []string{"http", "https"} {
+		for _, h := range hosts {
+			Expect(t, scheme+"://"+h).GET("/status/200").Expect().Status(http.StatusBadGateway)
+		}
+	}
+}
+
+func TestSC2450(t *testing.T) {
+	if os.Getenv("TEST_SC") == "" {
+		t.Skip("TEST_SC not set")
+	}
+
+	e := Expect(t, "http://sc-2450")
+	e.HEAD("/").Expect().Status(http.StatusOK)
+	e.GET("/").Expect().Status(http.StatusOK).Body().Equal(`{"android":{"min_version":"4.0.0"},"ios":{"min_version":"4.0.0"}}`)
 }
