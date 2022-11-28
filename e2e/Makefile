@@ -19,6 +19,10 @@ up:
 down:
 	@$(COMPOSE) down -v --remove-orphans
 
+.PHONY: term
+term:
+	@docker kill -s TERM forwarder-e2e-proxy-1
+
 .PHONY: dump-logs
 dump-logs:
 	@$(COMPOSE) logs $(SRV)

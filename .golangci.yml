@@ -75,6 +75,7 @@ issues:
         - bodyclose
         - funlen
         - gocognit
+        - gomnd
         - gosec
         - noctx
         - paralleltest

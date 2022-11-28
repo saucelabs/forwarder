@@ -14,7 +14,6 @@ import (
 	"net/url"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/google/martian/v3"
 	"github.com/google/martian/v3/fifo"
@@ -36,7 +35,7 @@ func DefaultHTTPProxyConfig() *HTTPProxyConfig {
 		HTTPServerConfig: HTTPServerConfig{
 			Protocol:    HTTPScheme,
 			Addr:        ":3128",
-			ReadTimeout: 5 * time.Second,
+			ReadTimeout: 0, // TODO(mmatczuk): we need a more fine-grained timeouts see #129
 		},
 	}
 }
@@ -194,21 +193,22 @@ func (hp *HTTPProxy) pacProxy(r *http.Request) (*url.URL, error) {
 }
 
 func (hp *HTTPProxy) middlewareStack() martian.RequestResponseModifier {
-	// stack contains the request/response modifiers in the order they are applied.
-	// fg is the inner stack that is executed after the core request modifiers and before the core response modifiers.
-	stack, fg := httpspec.NewStack("forwarder")
-
 	// Wrap stack in a group so that we can run security checks before the httpspec modifiers.
 	topg := fifo.NewGroup()
 	if hp.config.BasicAuth != nil {
-		fg.AddRequestModifier(hp.basicAuth(hp.config.BasicAuth))
+		hp.log.Infof("Basic auth enabled")
+		topg.AddRequestModifier(hp.basicAuth(hp.config.BasicAuth))
 	}
 	if hp.config.ProxyLocalhost {
 		hp.log.Infof("Localhost proxying enabled")
 	} else {
 		hp.log.Infof("Localhost proxying disabled")
-		fg.AddRequestModifier(hp.denyLocalhost())
+		topg.AddRequestModifier(hp.denyLocalhost())
 	}
+
+	// stack contains the request/response modifiers in the order they are applied.
+	// fg is the inner stack that is executed after the core request modifiers and before the core response modifiers.
+	stack, fg := httpspec.NewStack("forwarder")
 	topg.AddRequestModifier(stack)
 	topg.AddResponseModifier(stack)
 
