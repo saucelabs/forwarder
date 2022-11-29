@@ -20,6 +20,7 @@ import (
 	"github.com/saucelabs/forwarder/pac"
 	"github.com/saucelabs/forwarder/runctx"
 	"github.com/spf13/cobra"
+	"go.uber.org/goleak"
 )
 
 type command struct {
@@ -31,6 +32,7 @@ type command struct {
 	httpProxyConfig     *forwarder.HTTPProxyConfig
 	apiServerConfig     *forwarder.HTTPServerConfig
 	logConfig           *log.Config
+	goleak              bool
 }
 
 func (c *command) RunE(cmd *cobra.Command, args []string) error {
@@ -94,6 +96,14 @@ func (c *command) RunE(cmd *cobra.Command, args []string) error {
 			return err
 		}
 		f = append(f, a.Run)
+	}
+
+	if c.goleak {
+		defer func() {
+			if err := goleak.Find(); err != nil {
+				fmt.Fprintf(cmd.ErrOrStderr(), "goleak: %s", err)
+			}
+		}()
 	}
 
 	return f.Run()
@@ -186,6 +196,9 @@ func Command() (cmd *cobra.Command) {
 
 		bind.MarkFlagFilename(cmd, "cert-file", "key-file", "pac")
 		cmd.MarkFlagsMutuallyExclusive("upstream-proxy", "pac")
+
+		fs.BoolVar(&c.goleak, "goleak", false, "enable goleak")
+		bind.MarkFlagHidden(cmd, "goleak")
 	}()
 	return &cobra.Command{
 		Use:     "proxy [--protocol <http|https|h2>] [--address <host:port>] [--upstream-proxy <url>] [--pac <file|url>] [--credentials <username:password@host:port>]... [flags]",
