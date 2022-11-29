@@ -53,9 +53,8 @@ func Command() (cmd *cobra.Command) {
 		bind.MarkFlagFilename(cmd, "cert-file", "key-file", "log-file")
 	}()
 	return &cobra.Command{
-		Use:    "httpbin [--protocol <http|https|h2>] [--address <host:port>] [flags]",
-		Short:  "Start HTTP(S) server that serves httpbin.org API",
-		RunE:   c.RunE,
-		Hidden: true,
+		Use:   "httpbin [--protocol <http|https|h2>] [--address <host:port>] [flags]",
+		Short: "Start HTTP(S) server that serves httpbin.org API",
+		RunE:  c.RunE,
 	}
 }

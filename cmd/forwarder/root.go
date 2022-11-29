@@ -5,7 +5,6 @@
 package main
 
 import (
-	"github.com/saucelabs/forwarder/cmd/forwarder/httpbin"
 	"github.com/saucelabs/forwarder/cmd/forwarder/paceval"
 	"github.com/saucelabs/forwarder/cmd/forwarder/pacserver"
 	"github.com/saucelabs/forwarder/cmd/forwarder/proxy"
@@ -26,14 +25,14 @@ func rootCommand() *cobra.Command {
 			return bindFlagsToEnv(cmd, envPrefix)
 		},
 	}
-
 	rootCmd.AddCommand(
-		httpbin.Command(),
 		withPACSupportedFunctions(paceval.Command()),
 		withPACSupportedFunctions(pacserver.Command()),
 		withPACSupportedFunctions(proxy.Command()),
 		version.Command(),
 	)
+	decorateRootCmd(rootCmd)
+
 	for _, cmd := range rootCmd.Commands() {
 		appendEnvToUsage(cmd, envPrefix)
 		wrapLongAt(cmd, maxCols)
