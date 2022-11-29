@@ -21,6 +21,7 @@ func Handler() http.Handler {
 	m.HandleFunc("/delay/", delayHandler)
 	m.HandleFunc("/status/", statusHandler)
 	m.HandleFunc("/stream-bytes/", streamBytesHandler)
+	m.HandleFunc("/ws/echo", wsEcho)
 	return m
 }
 

@@ -6,6 +6,7 @@ require (
 	github.com/dop251/goja v0.0.0-20221003171542-5ea1285e6c91
 	github.com/google/go-cmp v0.5.9
 	github.com/google/martian/v3 v3.1.0
+	github.com/gorilla/websocket v1.5.0
 	github.com/kevinburke/hostsfile v0.0.0-20220522040509-e5e984885321
 	github.com/mmatczuk/anyflag v0.0.0-20221011091730-9f8baeb6fd9c
 	github.com/prometheus/client_golang v1.13.0
