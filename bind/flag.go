@@ -100,6 +100,14 @@ func LogConfig(fs *pflag.FlagSet, cfg *log.Config) {
 	fs.BoolVar(&cfg.Verbose, "verbose", cfg.Verbose, "enable verbose logging")
 }
 
+func MarkFlagHidden(cmd *cobra.Command, names ...string) {
+	for _, name := range names {
+		if err := cmd.Flags().MarkHidden(name); err != nil {
+			panic(err)
+		}
+	}
+}
+
 func MarkFlagRequired(cmd *cobra.Command, names ...string) {
 	for _, name := range names {
 		if err := cmd.MarkFlagRequired(name); err != nil {
