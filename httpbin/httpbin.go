@@ -51,15 +51,12 @@ func basicAuthHandler(w http.ResponseWriter, r *http.Request) {
 func delayHandler(w http.ResponseWriter, r *http.Request) {
 	p := r.URL.Path[len("/delay/"):]
 
-	s, ok := atoi(w, p)
+	ms, ok := atoi(w, p)
 	if !ok {
 		return
 	}
-	if s > 10 {
-		s = 10
-	}
 
-	time.Sleep(time.Duration(s) * time.Second)
+	time.Sleep(time.Duration(ms) * time.Millisecond)
 	w.WriteHeader(http.StatusOK)
 }
 
