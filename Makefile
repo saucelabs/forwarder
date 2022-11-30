@@ -38,14 +38,6 @@ lint:
 test:
 	@go test -timeout 120s -short -race -cover -coverprofile=coverage.out ./...
 
-.PHONY: bench
-bench:
-	@go test -bench=. -run=XXX ./pkg/proxy # If you hit too many open files: ulimit -Sn 10000
-
-.PHONY: integration-test
-integration-test:
-	@FORWARDER_TEST_MODE=integration go test -timeout 120s -v -race -cover -coverprofile=coverage.out ./...
-
 .PHONY: coverage
 coverage:
 	@go tool cover -func=coverage.out
