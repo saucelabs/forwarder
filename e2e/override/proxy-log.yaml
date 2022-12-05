@@ -1,0 +1,7 @@
+version: "3.8"
+
+services:
+  proxy:
+    environment:
+      FORWARDER_LOG_HTTP_REQUESTS: "true"
+      FORWARDER_VERBOSE: "true"
