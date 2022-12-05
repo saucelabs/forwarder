@@ -27,7 +27,7 @@ func init() {
 	}
 }
 
-func newTransport(t *testing.T) *http.Transport {
+func newTransport(t testing.TB) *http.Transport {
 	t.Helper()
 
 	if *proxy == "" {
