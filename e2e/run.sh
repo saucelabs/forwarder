@@ -18,6 +18,10 @@ for HTTPBIN_SCHEME in "http" "https" "h2"; do
   run_test "${HTTPBIN_SCHEME}" "http" "http" "override/upstream-basic-auth.yaml"
 done
 
+# Runs tests with PAC
+run_test "http" "http" "" "override/proxy-pac-direct.yaml"
+run_test "http" "http" "http" "override/proxy-pac-upstream.yaml"
+
 RUN="Localhost" run_test "http" "http" "" "override/proxy-localhost.yaml"
 
 # Runs sc issue repro tests.

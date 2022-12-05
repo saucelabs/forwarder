@@ -1,0 +1,9 @@
+version: "3.8"
+
+services:
+  proxy:
+    environment:
+      FORWARDER_PAC: "/pac.js"
+      FORWARDER_UPSTREAM_PROXY: ""
+    volumes:
+      - ./pac/upstream.js:/pac.js

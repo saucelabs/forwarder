@@ -1,0 +1,8 @@
+version: "3.8"
+
+services:
+  proxy:
+    environment:
+      FORWARDER_PAC: "/pac.js"
+    volumes:
+      - ./pac/direct.js:/pac.js
