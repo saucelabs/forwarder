@@ -175,7 +175,7 @@ func (hp *HTTPProxy) pacProxy(r *http.Request) (*url.URL, error) {
 		proxyURL = nil
 	case pac.PROXY:
 		proxyURL = &url.URL{
-			Scheme: r.URL.Scheme,
+			Scheme: "http",
 			Host:   net.JoinHostPort(p.Host, p.Port),
 		}
 	case pac.HTTP, pac.HTTPS, pac.SOCKS, pac.SOCKS4, pac.SOCKS5:
