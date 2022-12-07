@@ -28,7 +28,7 @@ create a new one that you would like work on and discuss your ideas and use case
 
 It is always best to discuss your plans beforehand, to ensure that your contribution is in line with our goals.
 
-- Create a topic branch from where you want to base your work. This is usually master.
+- Create a topic branch from where you want to base your work. This is usually main.
 - Open a new pull request, label it `work in progress` and outline what you will be contributing
 - When creating a pull request, its description should reference the corresponding issue id.
 - Make commits of logical units.
@@ -62,14 +62,14 @@ The following guidelines aim to point to a direction that should drive the codeb
 1. once all test pass and PR is approved, merge
 1. make a new release by creating a tag that matches the new Sauce Connect version:
    ```sh
-   $ git checkout master
+   $ git checkout main
    # fetch latest code
-   $ git pull origin master
+   $ git pull origin main
    $ git tag -a "vX.X.X"
    ```
 1. push tag
    ```sh
-   $ git push origin master --tags
+   $ git push origin main --tags
    ```
 1. create a "GitHub release" from tag
 
