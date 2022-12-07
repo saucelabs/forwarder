@@ -45,6 +45,9 @@ nfpms:
     contents:
       - src: packaging/systemd/forwarder.service
         dst: /usr/lib/systemd/system/forwarder.service
+      - src: packaging/forwarder.env
+        dst: /etc/default/forwarder
+        type: "config|noreplace"
     rpm:
       group: Applications/Internet
       compression: xz
