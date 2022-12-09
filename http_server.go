@@ -66,12 +66,14 @@ func h2TLSConfigTemplate() *tls.Config {
 }
 
 type HTTPServerConfig struct {
-	Protocol        Scheme        `json:"protocol"`
-	Addr            string        `json:"addr"`
-	CertFile        string        `json:"cert_file"`
-	KeyFile         string        `json:"key_file"`
-	ReadTimeout     time.Duration `json:"read_timeout"`
-	LogHTTPRequests bool          `json:"log_http_requests"`
+	Protocol          Scheme        `json:"protocol"`
+	Addr              string        `json:"addr"`
+	CertFile          string        `json:"cert_file"`
+	KeyFile           string        `json:"key_file"`
+	ReadTimeout       time.Duration `json:"read_timeout"`
+	ReadHeaderTimeout time.Duration `json:"read_header_timeout"`
+	WriteTimeout      time.Duration `json:"write_timeout"`
+	LogHTTPRequests   bool          `json:"log_http_requests"`
 
 	PromNamespace string                `json:"prom_namespace"`
 	PromRegistry  prometheus.Registerer `json:"prom_registry"`
@@ -80,9 +82,9 @@ type HTTPServerConfig struct {
 
 func DefaultHTTPServerConfig() *HTTPServerConfig {
 	return &HTTPServerConfig{
-		Protocol:    HTTPScheme,
-		Addr:        ":8080",
-		ReadTimeout: 5 * time.Second,
+		Protocol:          HTTPScheme,
+		Addr:              ":8080",
+		ReadHeaderTimeout: 1 * time.Minute,
 	}
 }
 
@@ -129,9 +131,11 @@ func NewHTTPServer(cfg *HTTPServerConfig, h http.Handler, log Logger) (*HTTPServ
 		config: cfg,
 		log:    log,
 		srv: &http.Server{
-			Addr:        cfg.Addr,
-			Handler:     withMiddleware(cfg, h, log),
-			ReadTimeout: cfg.ReadTimeout,
+			Addr:              cfg.Addr,
+			Handler:           withMiddleware(cfg, h, log),
+			ReadTimeout:       cfg.ReadTimeout,
+			ReadHeaderTimeout: cfg.ReadHeaderTimeout,
+			WriteTimeout:      cfg.WriteTimeout,
 		},
 	}
 

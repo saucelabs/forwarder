@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"net/url"
 	"sync"
+	"time"
 
 	"github.com/google/martian/v3"
 	"github.com/google/martian/v3/fifo"
@@ -36,9 +37,9 @@ type HTTPProxyConfig struct {
 func DefaultHTTPProxyConfig() *HTTPProxyConfig {
 	return &HTTPProxyConfig{
 		HTTPServerConfig: HTTPServerConfig{
-			Protocol:    HTTPScheme,
-			Addr:        ":3128",
-			ReadTimeout: 0, // TODO(mmatczuk): we need a more fine-grained timeouts see #129
+			Protocol:          HTTPScheme,
+			Addr:              ":3128",
+			ReadHeaderTimeout: 1 * time.Minute,
 		},
 	}
 }
@@ -126,7 +127,9 @@ func (hp *HTTPProxy) configureProxy() {
 	hp.proxy.WithoutWarning = true
 	hp.proxy.ErrorResponse = errorResponse
 	hp.proxy.CloseAfterReply = hp.config.CloseAfterReply
-
+	hp.proxy.ReadTimeout = hp.config.ReadTimeout
+	hp.proxy.ReadHeaderTimeout = hp.config.ReadHeaderTimeout
+	hp.proxy.WriteTimeout = hp.config.WriteTimeout
 	// Martian has an intertwined logic for setting http.Transport and the dialer.
 	// The dialer is wrapped, so that additional syscalls are made to the dialed connections.
 	// As a result the dialer needs to be reset.

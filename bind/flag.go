@@ -83,6 +83,10 @@ func HTTPServerConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPServerConfig, prefix
 		namePrefix+"key-file", cfg.KeyFile, usagePrefix+"HTTP server TLS key file")
 	fs.DurationVar(&cfg.ReadTimeout,
 		namePrefix+"read-timeout", cfg.ReadTimeout, usagePrefix+"HTTP server read timeout")
+	fs.DurationVar(&cfg.ReadHeaderTimeout,
+		namePrefix+"read-header-timeout", cfg.ReadHeaderTimeout, usagePrefix+"HTTP server read header timeout")
+	fs.DurationVar(&cfg.WriteTimeout,
+		namePrefix+"write-timeout", cfg.WriteTimeout, usagePrefix+"HTTP server write timeout")
 	fs.BoolVar(&cfg.LogHTTPRequests,
 		namePrefix+"log-http-requests", cfg.LogHTTPRequests, usagePrefix+"log all HTTP requests, by default only responses with status code >= 500 are logged")
 	fs.VarP(anyflag.NewValue[*url.Userinfo](cfg.BasicAuth, &cfg.BasicAuth, forwarder.ParseUserInfo),
