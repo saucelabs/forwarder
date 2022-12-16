@@ -221,7 +221,7 @@ func (hp *HTTPProxy) middlewareStack() martian.RequestResponseModifier {
 	}
 	fg.AddRequestModifier(martian.RequestModifierFunc(hp.setBasicAuth))
 
-	return topg
+	return topg.ToImmutable()
 }
 
 func abortIf(condition func(r *http.Request) bool, response func(*http.Request) *http.Response, returnErr error) martian.RequestModifier {
