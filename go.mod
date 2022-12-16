@@ -3,7 +3,7 @@ module github.com/saucelabs/forwarder
 go 1.19
 
 require (
-	github.com/dop251/goja v0.0.0-20221003171542-5ea1285e6c91
+	github.com/dop251/goja v0.0.0-20221118162653-d4bf6fde1b86
 	github.com/google/go-cmp v0.5.9
 	github.com/google/martian/v3 v3.1.0
 	github.com/gorilla/websocket v1.5.0
@@ -43,7 +43,7 @@ require (
 	github.com/subosito/gotenv v1.2.0 // indirect
 	golang.org/x/net v0.2.0 // indirect
 	golang.org/x/sys v0.2.0 // indirect
-	golang.org/x/text v0.4.0 // indirect
+	golang.org/x/text v0.5.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/ini.v1 v1.66.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
