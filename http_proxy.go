@@ -25,8 +25,11 @@ import (
 
 type HTTPProxyConfig struct {
 	HTTPServerConfig
-	UpstreamProxy  *url.URL `json:"upstream_proxy_uri"`
 	ProxyLocalhost bool     `json:"proxy_localhost"`
+	UpstreamProxy  *url.URL `json:"upstream_proxy_uri"`
+	// UpstreamProxyFunc is a hack to allow for a custom upstream proxy function.
+	// If set, it will be used instead of the upstream proxy URL and PAC.
+	UpstreamProxyFunc func(*http.Request) (*url.URL, error)
 }
 
 func DefaultHTTPProxyConfig() *HTTPProxyConfig {
@@ -130,6 +133,9 @@ func (hp *HTTPProxy) configureProxy() {
 	hp.proxy.SetTimeout(hp.config.ReadTimeout)
 
 	switch {
+	case hp.config.UpstreamProxyFunc != nil:
+		hp.log.Infof("Using external proxy function")
+		hp.proxy.SetDownstreamProxyFunc(hp.config.UpstreamProxyFunc)
 	case hp.config.UpstreamProxy != nil:
 		u := hp.upstreamProxyURL()
 		hp.log.Infof("Using upstream proxy: %s", u.Redacted())
