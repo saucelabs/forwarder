@@ -3,6 +3,7 @@ package pac
 import (
 	"fmt"
 	"net"
+	"net/url"
 	"strings"
 )
 
@@ -42,6 +43,22 @@ type Proxy struct {
 	Mode Mode
 	Host string
 	Port string
+}
+
+// URL returns proxy URL as used in http.Transport.Proxy() (it returns nil if proxy is DIRECT).
+func (p Proxy) URL() *url.URL {
+	if p.Mode == DIRECT {
+		return nil
+	}
+
+	m := p.Mode
+	if m == PROXY {
+		m = HTTP
+	}
+	return &url.URL{
+		Scheme: strings.ToLower(m.String()),
+		Host:   net.JoinHostPort(p.Host, p.Port),
+	}
 }
 
 func (s Proxies) String() string {

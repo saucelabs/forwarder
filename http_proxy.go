@@ -12,7 +12,6 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"strings"
 	"sync"
 
 	"github.com/google/martian/v3"
@@ -169,22 +168,8 @@ func (hp *HTTPProxy) pacProxy(r *http.Request) (*url.URL, error) {
 	if err != nil {
 		return nil, err
 	}
-	var proxyURL *url.URL
-	switch p.Mode {
-	case pac.DIRECT:
-		proxyURL = nil
-	case pac.PROXY:
-		proxyURL = &url.URL{
-			Scheme: "http",
-			Host:   net.JoinHostPort(p.Host, p.Port),
-		}
-	case pac.HTTP, pac.HTTPS, pac.SOCKS, pac.SOCKS4, pac.SOCKS5:
-		proxyURL = &url.URL{
-			Scheme: strings.ToLower(p.Mode.String()),
-			Host:   net.JoinHostPort(p.Host, p.Port),
-		}
-	}
 
+	proxyURL := p.URL()
 	if u := hp.creds.MatchURL(proxyURL); u != nil {
 		proxyURL.User = u
 	}
