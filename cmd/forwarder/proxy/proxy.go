@@ -183,15 +183,15 @@ func Command() (cmd *cobra.Command) {
 
 	defer func() {
 		fs := cmd.Flags()
-		bind.DNSConfig(fs, c.dnsConfig)
-		bind.HTTPTransportConfig(fs, c.httpTransportConfig)
-		bind.PAC(fs, &c.pac)
+		bind.HTTPProxyConfig(fs, c.httpProxyConfig)
 		fs.VarP(anyflag.NewSliceValue[*forwarder.HostPortUser](c.credentials, &c.credentials, forwarder.ParseHostPortUser),
 			"credentials", "c",
 			"site or upstream proxy basic authentication credentials in the form of `username:password@host:port`, "+
 				"host and port can be set to \"*\" to match all (can be specified multiple times)")
-		bind.HTTPProxyConfig(fs, c.httpProxyConfig)
+		bind.PAC(fs, &c.pac)
+		bind.DNSConfig(fs, c.dnsConfig)
 		bind.HTTPServerConfig(fs, c.apiServerConfig, "api", true)
+		bind.HTTPTransportConfig(fs, c.httpTransportConfig)
 		bind.LogConfig(fs, c.logConfig)
 
 		bind.MarkFlagFilename(cmd, "cert-file", "key-file", "pac")
@@ -199,6 +199,8 @@ func Command() (cmd *cobra.Command) {
 
 		fs.BoolVar(&c.goleak, "goleak", false, "enable goleak")
 		bind.MarkFlagHidden(cmd, "goleak")
+
+		fs.SortFlags = false
 	}()
 	return &cobra.Command{
 		Use:     "proxy [--protocol <http|https|h2>] [--address <host:port>] [--upstream-proxy <url>] [--pac <file|url>] [--credentials <username:password@host:port>]... [flags]",
