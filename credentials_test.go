@@ -46,6 +46,12 @@ func TestUserInfoMatcherMatch(t *testing.T) {
 			hostport: "xxx:443",
 			expected: url.UserPassword("baz", "pass"),
 		},
+		{
+			name:     "Matches port '*'",
+			input:    []string{"user:pass@abc:*"},
+			hostport: "abc:80",
+			expected: url.UserPassword("user", "pass"),
+		},
 	}
 
 	for i := range tests {
