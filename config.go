@@ -43,10 +43,18 @@ func validatedUserInfo(ui *url.Userinfo) error {
 	return nil
 }
 
+func wildcardPortTo0(val string) string {
+	s := strings.Split(val, ":")
+	if s[len(s)-1] == "*" {
+		s[len(s)-1] = "0"
+	}
+	return strings.Join(s, ":")
+}
+
 // ParseHostPortUser parses a user:password@host:port string into HostUser.
 // User and password cannot be empty.
 func ParseHostPortUser(val string) (*HostPortUser, error) {
-	u, err := url.Parse("http://" + val)
+	u, err := url.Parse("http://" + wildcardPortTo0(val))
 	if err != nil {
 		return nil, err
 	}
