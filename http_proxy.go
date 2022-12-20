@@ -27,9 +27,18 @@ type HTTPProxyConfig struct {
 	HTTPServerConfig
 	ProxyLocalhost bool     `json:"proxy_localhost"`
 	UpstreamProxy  *url.URL `json:"upstream_proxy_uri"`
+
 	// UpstreamProxyFunc is a hack to allow for a custom upstream proxy function.
 	// If set, it will be used instead of the upstream proxy URL and PAC.
 	UpstreamProxyFunc func(*http.Request) (*url.URL, error)
+
+	// RequestModifiers specify extra user-defined modifiers.
+	// They are executed after the core request modifiers.
+	RequestModifiers []martian.RequestModifier
+
+	// ResponseModifiers specify extra user-defined modifiers.
+	// They are executed before the core response modifiers.
+	ResponseModifiers []martian.ResponseModifier
 }
 
 func DefaultHTTPProxyConfig() *HTTPProxyConfig {
@@ -202,6 +211,14 @@ func (hp *HTTPProxy) middlewareStack() martian.RequestResponseModifier {
 	stack, fg := httpspec.NewStack("forwarder")
 	topg.AddRequestModifier(stack)
 	topg.AddResponseModifier(stack)
+
+	for _, m := range hp.config.RequestModifiers {
+		fg.AddRequestModifier(m)
+	}
+
+	for _, m := range hp.config.ResponseModifiers {
+		fg.AddResponseModifier(m)
+	}
 
 	if hp.config.LogHTTPRequests {
 		logger := martianlog.NewLogger()
