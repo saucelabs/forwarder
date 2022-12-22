@@ -64,11 +64,13 @@ func Command() (cmd *cobra.Command) {
 		fs := cmd.Flags()
 
 		bind.PAC(fs, &c.pac)
-		bind.HTTPTransportConfig(fs, c.httpTransportConfig)
 		bind.HTTPServerConfig(fs, c.httpServerConfig, "", true)
+		bind.HTTPTransportConfig(fs, c.httpTransportConfig)
 		bind.LogConfig(fs, c.logConfig)
 
 		bind.MarkFlagFilename(cmd, "pac", "cert-file", "key-file", "log-file")
+
+		fs.SortFlags = false
 	}()
 	return &cobra.Command{
 		Use:     "pac-server --pac <file|url> [--protocol <http|https|h2>] [--address <host:port>] [flags]",
