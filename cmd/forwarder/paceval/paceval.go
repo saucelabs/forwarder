@@ -73,6 +73,8 @@ func Command() (cmd *cobra.Command) {
 		bind.HTTPTransportConfig(fs, c.httpTransportConfig)
 
 		bind.MarkFlagFilename(cmd, "pac")
+
+		fs.SortFlags = false
 	}()
 	return &cobra.Command{
 		Use:     "pac-eval --pac <file|url> [flags] <url>...",
