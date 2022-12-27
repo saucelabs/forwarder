@@ -89,7 +89,8 @@ func TestProxyResolverChromium(t *testing.T) { //nolint:maintidx // long table
 			want:     []Proxy{{Mode: PROXY, Host: "success", Port: "3"}},
 		},
 		// The "international_domain_names.js" test DOES NOT WORK.
-		// Fails with "expected xn--bcher-kva.ch, got Bücher.ch".
+		// It relays on particular side effects which we do not have.
+		// However, domains are properly resolved thanks to Golang's SDK.
 		{
 			fileName: "missing_close_brace.js",
 			err:      "Unexpected end of input",
