@@ -25,20 +25,12 @@ import (
 
 type HTTPProxyConfig struct {
 	HTTPServerConfig
-	ProxyLocalhost bool     `json:"proxy_localhost"`
-	UpstreamProxy  *url.URL `json:"upstream_proxy_uri"`
-
-	// UpstreamProxyFunc is a hack to allow for a custom upstream proxy function.
-	// If set, it will be used instead of the upstream proxy URL and PAC.
-	UpstreamProxyFunc func(*http.Request) (*url.URL, error)
-
-	// RequestModifiers specify extra user-defined modifiers.
-	// They are executed after the core request modifiers.
-	RequestModifiers []martian.RequestModifier
-
-	// ResponseModifiers specify extra user-defined modifiers.
-	// They are executed before the core response modifiers.
-	ResponseModifiers []martian.ResponseModifier
+	ProxyLocalhost    bool                                  `json:"proxy_localhost"`
+	UpstreamProxy     *url.URL                              `json:"upstream_proxy_uri"`
+	UpstreamProxyFunc func(*http.Request) (*url.URL, error) `json:"-"`
+	RequestModifiers  []martian.RequestModifier             `json:"-"`
+	ResponseModifiers []martian.ResponseModifier            `json:"-"`
+	CloseAfterReply   bool                                  `json:"close_after_reply"`
 }
 
 func DefaultHTTPProxyConfig() *HTTPProxyConfig {
@@ -133,28 +125,28 @@ func (hp *HTTPProxy) configureProxy() {
 	hp.proxy.AllowHTTP = true
 	hp.proxy.WithoutWarning = true
 	hp.proxy.ErrorResponse = errorResponse
+	hp.proxy.CloseAfterReply = hp.config.CloseAfterReply
 
 	// Martian has an intertwined logic for setting http.Transport and the dialer.
 	// The dialer is wrapped, so that additional syscalls are made to the dialed connections.
 	// As a result the dialer needs to be reset.
 	hp.proxy.SetRoundTripper(hp.transport)
 	hp.proxy.SetDial(hp.transport.Dial) //nolint:staticcheck // Martian does not use context
-	hp.proxy.SetTimeout(hp.config.ReadTimeout)
 
 	switch {
 	case hp.config.UpstreamProxyFunc != nil:
 		hp.log.Infof("Using external proxy function")
-		hp.proxy.SetDownstreamProxyFunc(hp.config.UpstreamProxyFunc)
+		hp.proxy.SetUpstreamProxyFunc(hp.config.UpstreamProxyFunc)
 	case hp.config.UpstreamProxy != nil:
 		u := hp.upstreamProxyURL()
 		hp.log.Infof("Using upstream proxy: %s", u.Redacted())
-		hp.proxy.SetDownstreamProxyFunc(http.ProxyURL(u))
+		hp.proxy.SetUpstreamProxyFunc(http.ProxyURL(u))
 	case hp.pac != nil:
 		hp.log.Infof("Using PAC proxy")
-		hp.proxy.SetDownstreamProxyFunc(hp.pacProxy)
+		hp.proxy.SetUpstreamProxyFunc(hp.pacProxy)
 	default:
 		hp.log.Infof("Using direct proxy")
-		hp.proxy.SetDownstreamProxyFunc(nil)
+		hp.proxy.SetUpstreamProxyFunc(nil)
 	}
 
 	mw := hp.middlewareStack()
