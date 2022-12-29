@@ -12,6 +12,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"strings"
 	"sync"
 	"time"
 
@@ -65,6 +66,7 @@ type HTTPProxyConfig struct {
 	RequestModifiers  []martian.RequestModifier  `json:"-"`
 	ResponseModifiers []martian.ResponseModifier `json:"-"`
 	CloseAfterReply   bool                       `json:"close_after_reply"`
+	RemoveHeaders     []string                   `json:"remove_headers"`
 }
 
 func DefaultHTTPProxyConfig() *HTTPProxyConfig {
@@ -239,6 +241,10 @@ func (hp *HTTPProxy) middlewareStack() martian.RequestResponseModifier {
 	topg.AddRequestModifier(stack)
 	topg.AddResponseModifier(stack)
 
+	for _, hr := range hp.config.RemoveHeaders {
+		fg.AddRequestModifier(newHeaderRemover(hr))
+	}
+
 	for _, m := range hp.config.RequestModifiers {
 		fg.AddRequestModifier(m)
 	}
@@ -402,4 +408,23 @@ func (hp *HTTPProxy) listener() (net.Listener, error) {
 // Addr returns the address the server is listening on or an empty string if the server is not running.
 func (hp *HTTPProxy) Addr() string {
 	return hp.addr.Load()
+}
+
+// headerRemover removes headers that match given prefix.
+type headerRemover struct {
+	prefix string
+}
+
+func newHeaderRemover(prefix string) martian.RequestModifier {
+	return &headerRemover{prefix: http.CanonicalHeaderKey(prefix)}
+}
+
+func (m *headerRemover) ModifyRequest(req *http.Request) error {
+	for k := range req.Header {
+		kk := http.CanonicalHeaderKey(k)
+		if strings.HasPrefix(kk, m.prefix) {
+			req.Header.Del(k)
+		}
+	}
+	return nil
 }
