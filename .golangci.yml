@@ -50,6 +50,8 @@ linters-settings:
     line-length: 180
   nestif:
     min-complexity: 6
+  goheader:
+    template-path: .go-header-template.yml
 
 issues:
   exclude:
