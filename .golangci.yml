@@ -51,6 +51,9 @@ linters-settings:
   nestif:
     min-complexity: 6
   goheader:
+    values:
+      regexp:
+        year: "2022|2023"
     template-path: .go-header-template.yml
 
 issues:
