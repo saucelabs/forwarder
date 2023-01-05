@@ -63,7 +63,6 @@ type HTTPProxy struct {
 	creds     *CredentialsMatcher
 	transport *http.Transport
 	log       Logger
-	hosts     map[string]net.IP
 	proxy     *martian.Proxy
 	addr      atomic.String
 
@@ -85,18 +84,11 @@ func NewHTTPProxy(cfg *HTTPProxyConfig, pr PACResolver, cm *CredentialsMatcher, 
 		t = http.DefaultTransport.(*http.Transport).Clone() //nolint:forcetypeassert // we know it's a *http.Transport
 	}
 
-	// Read /etc/hosts and store it in memory.
-	hosts, err := ReadHostsFile()
-	if err != nil {
-		return nil, err
-	}
-
 	hp := &HTTPProxy{
 		config:    *cfg,
 		pac:       pr,
 		creds:     cm,
 		transport: t,
-		hosts:     hosts,
 		log:       log,
 	}
 
@@ -266,9 +258,11 @@ func (hp *HTTPProxy) denyLocalhost() martian.RequestModifier {
 	}, errors.New("localhost access denied"))
 }
 
-// The goproxy.IsLocalHost is broken.
-// In addition, it doesn't work with hostnames that are not in /etc/hosts.
-// See https://github.com/elazarl/goproxy/issues/487
+// nopResolver is a dns resolver that does not ever dial.
+// It uses only the local resolver.
+// It will look for the address in the /etc/hosts file.
+var localhostResolver = nopResolver() //nolint:gochecknoglobals // This is a local resolver.
+
 func (hp *HTTPProxy) isLocalhost(req *http.Request) bool {
 	h := req.URL.Hostname()
 
@@ -276,17 +270,11 @@ func (hp *HTTPProxy) isLocalhost(req *http.Request) bool {
 	if h == "localhost" {
 		return true
 	}
-	// Hostname from /etc/hosts file.
-	if ip := hp.hosts[h]; ip != nil {
-		return ip.IsLoopback()
-	}
-	// IP addresses.
-	if ip := net.ParseIP(h); ip != nil {
-		return ip.IsLoopback()
-	}
-	// IPv6 without a port number - Hostname returns the invalid value.
-	if ip := net.ParseIP(req.URL.Host); ip != nil {
-		return ip.IsLoopback()
+
+	if addrs, err := localhostResolver.LookupHost(context.Background(), h); err == nil {
+		if ip := net.ParseIP(addrs[0]); ip != nil {
+			return ip.IsLoopback()
+		}
 	}
 
 	return false
