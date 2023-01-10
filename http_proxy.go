@@ -24,14 +24,47 @@ import (
 	"go.uber.org/atomic"
 )
 
+type ProxyLocalhostMode string
+
+const (
+	DenyProxyLocalhost   ProxyLocalhostMode = "deny"
+	AllowProxyLocalhost  ProxyLocalhostMode = "allow"
+	DirectProxyLocalhost ProxyLocalhostMode = "direct"
+)
+
+func (m *ProxyLocalhostMode) UnmarshalText(text []byte) error {
+	switch ProxyLocalhostMode(text) {
+	case DenyProxyLocalhost, AllowProxyLocalhost, DirectProxyLocalhost:
+		*m = ProxyLocalhostMode(text)
+		return nil
+	default:
+		return fmt.Errorf("invalid mode: %s", text)
+	}
+}
+
+func (m ProxyLocalhostMode) String() string {
+	return string(m)
+}
+
+func (m ProxyLocalhostMode) isValid() bool {
+	switch m {
+	case DenyProxyLocalhost, AllowProxyLocalhost, DirectProxyLocalhost:
+		return true
+	default:
+		return false
+	}
+}
+
+type ProxyFunc func(*http.Request) (*url.URL, error)
+
 type HTTPProxyConfig struct {
 	HTTPServerConfig
-	ProxyLocalhost    bool                                  `json:"proxy_localhost"`
-	UpstreamProxy     *url.URL                              `json:"upstream_proxy_uri"`
-	UpstreamProxyFunc func(*http.Request) (*url.URL, error) `json:"-"`
-	RequestModifiers  []martian.RequestModifier             `json:"-"`
-	ResponseModifiers []martian.ResponseModifier            `json:"-"`
-	CloseAfterReply   bool                                  `json:"close_after_reply"`
+	ProxyLocalhost    ProxyLocalhostMode         `json:"proxy_localhost"`
+	UpstreamProxy     *url.URL                   `json:"upstream_proxy_uri"`
+	UpstreamProxyFunc ProxyFunc                  `json:"-"`
+	RequestModifiers  []martian.RequestModifier  `json:"-"`
+	ResponseModifiers []martian.ResponseModifier `json:"-"`
+	CloseAfterReply   bool                       `json:"close_after_reply"`
 }
 
 func DefaultHTTPProxyConfig() *HTTPProxyConfig {
@@ -41,6 +74,7 @@ func DefaultHTTPProxyConfig() *HTTPProxyConfig {
 			Addr:              ":3128",
 			ReadHeaderTimeout: 1 * time.Minute,
 		},
+		ProxyLocalhost: DenyProxyLocalhost,
 	}
 }
 
@@ -50,6 +84,9 @@ func (c *HTTPProxyConfig) Validate() error {
 	}
 	if c.Protocol != HTTPScheme && c.Protocol != HTTPSScheme {
 		return fmt.Errorf("unsupported protocol: %s", c.Protocol)
+	}
+	if !c.ProxyLocalhost.isValid() {
+		return fmt.Errorf("unsupported proxy_localhost: %s", c.ProxyLocalhost)
 	}
 	if err := validateProxyURL(c.UpstreamProxy); err != nil {
 		return fmt.Errorf("upstream_proxy_uri: %w", err)
@@ -128,21 +165,27 @@ func (hp *HTTPProxy) configureProxy() {
 	hp.proxy.SetRoundTripper(hp.transport)
 	hp.proxy.SetDial(hp.transport.Dial) //nolint:staticcheck // Martian does not use context
 
+	var fn ProxyFunc
 	switch {
 	case hp.config.UpstreamProxyFunc != nil:
 		hp.log.Infof("Using external proxy function")
-		hp.proxy.SetUpstreamProxyFunc(hp.config.UpstreamProxyFunc)
+		fn = hp.config.UpstreamProxyFunc
 	case hp.config.UpstreamProxy != nil:
 		u := hp.upstreamProxyURL()
 		hp.log.Infof("Using upstream proxy: %s", u.Redacted())
-		hp.proxy.SetUpstreamProxyFunc(http.ProxyURL(u))
+		fn = http.ProxyURL(u)
 	case hp.pac != nil:
 		hp.log.Infof("Using PAC proxy")
-		hp.proxy.SetUpstreamProxyFunc(hp.pacProxy)
+		fn = hp.pacProxy
 	default:
 		hp.log.Infof("Using direct proxy")
-		hp.proxy.SetUpstreamProxyFunc(nil)
 	}
+
+	hp.log.Infof("Localhost proxying mode: %s", hp.config.ProxyLocalhost)
+	if hp.config.ProxyLocalhost == DirectProxyLocalhost {
+		fn = hp.directLocalhost(fn)
+	}
+	hp.proxy.SetUpstreamProxyFunc(fn)
 
 	mw := hp.middlewareStack()
 	hp.proxy.SetRequestModifier(mw)
@@ -186,10 +229,7 @@ func (hp *HTTPProxy) middlewareStack() martian.RequestResponseModifier {
 		hp.log.Infof("Basic auth enabled")
 		topg.AddRequestModifier(hp.basicAuth(hp.config.BasicAuth))
 	}
-	if hp.config.ProxyLocalhost {
-		hp.log.Infof("Localhost proxying enabled")
-	} else {
-		hp.log.Infof("Localhost proxying disabled")
+	if hp.config.ProxyLocalhost == DenyProxyLocalhost {
 		topg.AddRequestModifier(hp.denyLocalhost())
 	}
 
@@ -257,6 +297,19 @@ func (hp *HTTPProxy) denyLocalhost() martian.RequestModifier {
 	return abortIf(hp.isLocalhost, func(req *http.Request) *http.Response {
 		return errorResponse(req, ErrProxyLocalhost)
 	}, errors.New("localhost access denied"))
+}
+
+func (hp *HTTPProxy) directLocalhost(fn ProxyFunc) ProxyFunc {
+	if fn == nil {
+		return nil
+	}
+
+	return func(req *http.Request) (*url.URL, error) {
+		if hp.isLocalhost(req) {
+			return nil, nil
+		}
+		return fn(req)
+	}
 }
 
 // nopResolver is a dns resolver that does not ever dial.

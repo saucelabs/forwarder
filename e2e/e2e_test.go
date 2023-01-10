@@ -164,7 +164,7 @@ func TestProxyLocalhost(t *testing.T) {
 	}
 
 	for _, h := range hosts {
-		if os.Getenv("FORWARDER_PROXY_LOCALHOST") == "true" {
+		if os.Getenv("FORWARDER_PROXY_LOCALHOST") == "allow" {
 			Expect(t, "http://"+net.JoinHostPort(h, "10000")).GET("/version").Expect().Status(http.StatusOK)
 		} else {
 			Expect(t, "http://"+net.JoinHostPort(h, "10000")).GET("/version").Expect().Status(http.StatusBadGateway)

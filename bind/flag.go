@@ -32,8 +32,14 @@ func HTTPProxyConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPProxyConfig) {
 	HTTPServerConfig(fs, &cfg.HTTPServerConfig, "", false)
 	fs.VarP(anyflag.NewValue[*url.URL](cfg.UpstreamProxy, &cfg.UpstreamProxy, forwarder.ParseProxyURL),
 		"upstream-proxy", "u", "upstream proxy URL")
-	fs.BoolVarP(&cfg.ProxyLocalhost, "proxy-localhost", "t", cfg.ProxyLocalhost,
-		"proxy localhost requests to an upstream proxy")
+
+	proxyLocalhostValues := []forwarder.ProxyLocalhostMode{
+		forwarder.DenyProxyLocalhost,
+		forwarder.AllowProxyLocalhost,
+		forwarder.DirectProxyLocalhost,
+	}
+	fs.VarP(anyflag.NewValue[forwarder.ProxyLocalhostMode](cfg.ProxyLocalhost, &cfg.ProxyLocalhost, anyflag.EnumParser[forwarder.ProxyLocalhostMode](proxyLocalhostValues...)),
+		"proxy-localhost", "t", "accept or deny requests to localhost, one of deny, allow, direct; in direct mode localhost requests are not sent to upstream proxy if present")
 }
 
 func HTTPTransportConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPTransportConfig) {
