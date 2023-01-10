@@ -89,5 +89,5 @@ dockers:
 docker_manifests:
     - name_template: "saucelabs/{{ .ProjectName }}:{{ .Version }}"
       image_templates:
-        - "saucelabs/{{ .ProjectName }}:{{ .Tag }}-amd64"
-        - "saucelabs/{{ .ProjectName }}:{{ .Tag }}-arm64v8"
+        - "{{ if .IsSnapshot }}saucelabs/{{ .ProjectName }}:{{ .Tag }}-amd64{{ else }}saucelabs/{{ .ProjectName }}:{{ .Version }}-amd64{{ end }}"
+        - "{{ if .IsSnapshot }}saucelabs/{{ .ProjectName }}:{{ .Tag }}-arm64v8{{ else }}saucelabs/{{ .ProjectName }}:{{ .Version }}-arm64v8{{ end }}"
