@@ -3,4 +3,4 @@ version: "3.8"
 services:
   proxy:
     environment:
-      FORWARDER_PROXY_LOCALHOST: "true"
+      FORWARDER_PROXY_LOCALHOST: "allow"
