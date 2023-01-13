@@ -258,6 +258,12 @@ func (hp *HTTPProxy) middlewareStack() martian.RequestResponseModifier {
 	fg.AddRequestModifier(logHTTP)
 	fg.AddResponseModifier(logHTTP)
 
+	if hp.config.HTTPServerConfig.Addr != "" {
+		p := middleware.NewPrometheus(hp.config.PromRegistry, hp.config.PromNamespace)
+		stack.AddRequestModifier(p)
+		stack.AddResponseModifier(p)
+	}
+
 	fg.AddRequestModifier(martian.RequestModifierFunc(hp.setBasicAuth))
 
 	return topg.ToImmutable()

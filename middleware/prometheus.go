@@ -5,11 +5,13 @@
 package middleware
 
 import (
+	"fmt"
 	"net"
 	"net/http"
 	"strconv"
 	"time"
 
+	"github.com/google/martian/v3"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
@@ -118,4 +120,36 @@ func computeApproximateRequestSize(r *http.Request) int {
 		s += int(r.ContentLength)
 	}
 	return s
+}
+
+const durationKey = "sl-duration-key"
+
+func (p *Prometheus) ModifyRequest(req *http.Request) error {
+	ctx := martian.NewContext(req)
+	ctx.Set(durationKey, time.Now())
+	return nil
+}
+
+func (p *Prometheus) ModifyResponse(res *http.Response) error {
+	r := res.Request
+	ctx := martian.NewContext(r)
+
+	var elapsed float64
+	if t0, ok := ctx.Get(durationKey); ok {
+		start := t0.(time.Time) //nolint:forcetypeassert // we know it's time
+		elapsed = float64(time.Since(start)) / float64(time.Second)
+	} else {
+		return fmt.Errorf("prometheus duration key not found")
+	}
+
+	reqSize := computeApproximateRequestSize(r)
+
+	src, _, _ := net.SplitHostPort(r.RemoteAddr) //nolint:errcheck // ignore error
+	lv := [4]string{strconv.Itoa(res.StatusCode), r.Method, r.Host, src}
+
+	p.requestsTotal.WithLabelValues(lv[:]...).Inc()
+	p.requestDuration.WithLabelValues(lv[:]...).Observe(elapsed)
+	p.requestSize.WithLabelValues(lv[:]...).Observe(float64(reqSize))
+
+	return nil
 }
