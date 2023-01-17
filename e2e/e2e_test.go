@@ -185,6 +185,11 @@ func TestBadGateway(t *testing.T) {
 	}
 }
 
+func TestGoogleCom(t *testing.T) {
+	e := Expect(t, "https://www.google.com")
+	e.HEAD("/").Expect().Status(http.StatusOK)
+}
+
 func TestSC2450(t *testing.T) {
 	if os.Getenv("TEST_SC") == "" {
 		t.Skip("TEST_SC not set")

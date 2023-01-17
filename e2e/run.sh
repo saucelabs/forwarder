@@ -21,6 +21,7 @@ done
 # Runs tests with PAC
 run_test "http" "http" "" "override/proxy-pac-direct.yaml"
 run_test "http" "http" "http" "override/proxy-pac-upstream.yaml"
+RUN="GoogleCom" run_test "http" "http" "" "override/proxy-pac-issue-184.yaml"
 
 RUN="Localhost" run_test "http" "http" "" "override/proxy-localhost.yaml"
 

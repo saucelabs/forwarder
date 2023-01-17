@@ -7,6 +7,8 @@ package forwarder
 import "net/url"
 
 type PACResolver interface {
+	// FindProxyForURL calls FindProxyForURL or FindProxyForURLEx function in the PAC script.
+	// The hostname is optional, if empty it will be extracted from URL.
 	FindProxyForURL(url *url.URL, hostname string) (string, error)
 }
 
