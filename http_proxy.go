@@ -206,7 +206,7 @@ func (hp *HTTPProxy) upstreamProxyURL() *url.URL {
 }
 
 func (hp *HTTPProxy) pacProxy(r *http.Request) (*url.URL, error) {
-	s, err := hp.pac.FindProxyForURL(r.URL, r.Host)
+	s, err := hp.pac.FindProxyForURL(r.URL, "")
 	if err != nil {
 		return nil, err
 	}
