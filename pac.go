@@ -18,9 +18,9 @@ type LoggingPACResolver struct {
 func (r *LoggingPACResolver) FindProxyForURL(u *url.URL, hostname string) (string, error) {
 	s, err := r.Resolver.FindProxyForURL(u, hostname)
 	if err != nil {
-		r.Logger.Errorf("FindProxyForURL(%q, %q) failed: %s", u.Redacted(), err)
+		r.Logger.Errorf("FindProxyForURL(%q, %q) failed: %s", u.Redacted(), hostname, err)
 	} else {
-		r.Logger.Debugf("FindProxyForURL(%q, %q) -> %q", u.Redacted(), s)
+		r.Logger.Debugf("FindProxyForURL(%q, %q) -> %q", u.Redacted(), hostname, s)
 	}
 	return s, err
 }
