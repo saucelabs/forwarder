@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/saucelabs/forwarder/httplog"
 	"github.com/saucelabs/forwarder/middleware"
 	"go.uber.org/atomic"
 )
@@ -70,14 +71,14 @@ func h2TLSConfigTemplate() *tls.Config {
 }
 
 type HTTPServerConfig struct {
-	Protocol          Scheme        `json:"protocol"`
-	Addr              string        `json:"addr"`
-	CertFile          string        `json:"cert_file"`
-	KeyFile           string        `json:"key_file"`
-	ReadTimeout       time.Duration `json:"read_timeout"`
-	ReadHeaderTimeout time.Duration `json:"read_header_timeout"`
-	WriteTimeout      time.Duration `json:"write_timeout"`
-	LogHTTPRequests   bool          `json:"log_http_requests"`
+	Protocol          Scheme             `json:"protocol"`
+	Addr              string             `json:"addr"`
+	CertFile          string             `json:"cert_file"`
+	KeyFile           string             `json:"key_file"`
+	ReadTimeout       time.Duration      `json:"read_timeout"`
+	ReadHeaderTimeout time.Duration      `json:"read_header_timeout"`
+	WriteTimeout      time.Duration      `json:"write_timeout"`
+	LogHTTPMode       httplog.LoggerMode `json:"log_http_mode"`
 
 	PromNamespace string                `json:"prom_namespace"`
 	PromRegistry  prometheus.Registerer `json:"prom_registry"`
@@ -89,12 +90,16 @@ func DefaultHTTPServerConfig() *HTTPServerConfig {
 		Protocol:          HTTPScheme,
 		Addr:              ":8080",
 		ReadHeaderTimeout: 1 * time.Minute,
+		LogHTTPMode:       httplog.ErrOnlyLogMode,
 	}
 }
 
 func (c *HTTPServerConfig) Validate() error {
 	if err := validatedUserInfo(c.BasicAuth); err != nil {
 		return fmt.Errorf("basic_auth: %w", err)
+	}
+	if err := c.LogHTTPMode.Validate(); err != nil {
+		return fmt.Errorf("log_http_mode: %w", err)
 	}
 	return nil
 }
@@ -136,7 +141,7 @@ func NewHTTPServer(cfg *HTTPServerConfig, h http.Handler, log Logger) (*HTTPServ
 		log:    log,
 		srv: &http.Server{
 			Addr:              cfg.Addr,
-			Handler:           withMiddleware(cfg, h, log),
+			Handler:           withMiddleware(cfg, log, h),
 			ReadTimeout:       cfg.ReadTimeout,
 			ReadHeaderTimeout: cfg.ReadHeaderTimeout,
 			WriteTimeout:      cfg.WriteTimeout,
@@ -159,7 +164,7 @@ func NewHTTPServer(cfg *HTTPServerConfig, h http.Handler, log Logger) (*HTTPServ
 	return hs, nil
 }
 
-func withMiddleware(cfg *HTTPServerConfig, h http.Handler, log Logger) http.Handler {
+func withMiddleware(cfg *HTTPServerConfig, log Logger, h http.Handler) http.Handler {
 	// Note that the order of execution is reversed.
 	if cfg.BasicAuth != nil {
 		p, _ := cfg.BasicAuth.Password()
@@ -167,13 +172,7 @@ func withMiddleware(cfg *HTTPServerConfig, h http.Handler, log Logger) http.Hand
 	}
 
 	// Logger middleware must immediately follow the Prometheus middleware because it uses the Prometheus delegator.
-	h = middleware.Logger(func(e middleware.LogEntry) {
-		if e.Status >= http.StatusInternalServerError {
-			log.Errorf("%s %s %s status=%d duration=%s", e.RemoteAddr, e.Method, e.URL.Redacted(), e.Status, e.Duration)
-		} else if cfg.LogHTTPRequests {
-			log.Infof("%s %s %s status=%d duration=%s", e.RemoteAddr, e.Method, e.URL.Redacted(), e.Status, e.Duration)
-		}
-	}).Wrap(h)
+	h = httplog.NewLogger(log.Infof, cfg.LogHTTPMode).LogFunc().Wrap(h)
 
 	// Prometheus middleware must be the first one to be executed to collect metrics for all other middlewares.
 	h = middleware.NewPrometheus(cfg.PromRegistry, cfg.PromNamespace).Wrap(h)
