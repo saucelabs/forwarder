@@ -11,6 +11,7 @@ import (
 	"github.com/mmatczuk/anyflag"
 	"github.com/saucelabs/forwarder"
 	"github.com/saucelabs/forwarder/fileurl"
+	"github.com/saucelabs/forwarder/httplog"
 	"github.com/saucelabs/forwarder/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -99,8 +100,8 @@ func HTTPServerConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPServerConfig, prefix
 		namePrefix+"read-header-timeout", cfg.ReadHeaderTimeout, usagePrefix+"HTTP server read header timeout")
 	fs.DurationVar(&cfg.WriteTimeout,
 		namePrefix+"write-timeout", cfg.WriteTimeout, usagePrefix+"HTTP server write timeout")
-	fs.BoolVar(&cfg.LogHTTPRequests,
-		namePrefix+"log-http-requests", cfg.LogHTTPRequests, usagePrefix+"log all HTTP requests, by default only responses with status code >= 500 are logged")
+	fs.Var(anyflag.NewValue[httplog.LoggerMode](cfg.LogHTTPMode, &cfg.LogHTTPMode, httplog.ParseMode),
+		namePrefix+"log-http-requests", usagePrefix+"log http request, one of url, headers, body, error; error mode is default and logs requests with status code >= 500")
 	fs.VarP(anyflag.NewValue[*url.Userinfo](cfg.BasicAuth, &cfg.BasicAuth, forwarder.ParseUserInfo),
 		namePrefix+"basic-auth", "", usagePrefix+"HTTP server basic-auth in the form of `username:password`")
 }
