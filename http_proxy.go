@@ -19,7 +19,7 @@ import (
 	"github.com/google/martian/v3"
 	"github.com/google/martian/v3/fifo"
 	"github.com/google/martian/v3/httpspec"
-	"github.com/google/martian/v3/martianlog"
+	"github.com/saucelabs/forwarder/httplog"
 	"github.com/saucelabs/forwarder/middleware"
 	"github.com/saucelabs/forwarder/pac"
 	"go.uber.org/atomic"
@@ -75,6 +75,7 @@ func DefaultHTTPProxyConfig() *HTTPProxyConfig {
 			Protocol:          HTTPScheme,
 			Addr:              ":3128",
 			ReadHeaderTimeout: 1 * time.Minute,
+			LogHTTPMode:       httplog.ErrOnlyLogMode,
 		},
 		ProxyLocalhost: DenyProxyLocalhost,
 	}
@@ -253,23 +254,23 @@ func (hp *HTTPProxy) middlewareStack() martian.RequestResponseModifier {
 		fg.AddResponseModifier(m)
 	}
 
-	if hp.config.LogHTTPRequests {
-		logger := martianlog.NewLogger()
-		logger.SetHeadersOnly(true)
-		logger.SetDecode(false)
-		fg.AddRequestModifier(logger)
-		fg.AddResponseModifier(logger)
-	}
+	logHTTP := httplog.NewLogger(hp.log.Infof, hp.config.LogHTTPMode).LogFunc()
+	fg.AddRequestModifier(logHTTP)
+	fg.AddResponseModifier(logHTTP)
+
 	fg.AddRequestModifier(martian.RequestModifierFunc(hp.setBasicAuth))
 
 	return topg.ToImmutable()
 }
 
-func abortIf(condition func(r *http.Request) bool, response func(*http.Request) *http.Response, returnErr error) martian.RequestModifier {
+func (hp *HTTPProxy) abortIf(condition func(r *http.Request) bool, response func(*http.Request) *http.Response, returnErr error) martian.RequestModifier {
 	return martian.RequestModifierFunc(func(req *http.Request) error {
 		if !condition(req) {
 			return nil
 		}
+
+		logHTTP := httplog.NewLogger(hp.log.Infof, hp.config.LogHTTPMode).LogFunc()
+		logHTTP.ModifyRequest(req) //nolint:errcheck // This is only logging.
 
 		ctx := martian.NewContext(req)
 		_, brw, err := ctx.Session().Hijack()
@@ -285,6 +286,8 @@ func abortIf(condition func(r *http.Request) bool, response func(*http.Request) 
 			return fmt.Errorf("got error while flushing response back to client: %w", err)
 		}
 
+		logHTTP.ModifyResponse(resp) //nolint:errcheck // this is only logging
+
 		return returnErr
 	})
 }
@@ -294,13 +297,13 @@ func (hp *HTTPProxy) basicAuth(u *url.Userinfo) martian.RequestModifier {
 	pass, _ := u.Password()
 	ba := middleware.NewProxyBasicAuth()
 
-	return abortIf(func(req *http.Request) bool {
+	return hp.abortIf(func(req *http.Request) bool {
 		return !ba.AuthenticatedRequest(req, user, pass)
 	}, unauthorizedResponse, errors.New("basic auth required"))
 }
 
 func (hp *HTTPProxy) denyLocalhost() martian.RequestModifier {
-	return abortIf(hp.isLocalhost, func(req *http.Request) *http.Response {
+	return hp.abortIf(hp.isLocalhost, func(req *http.Request) *http.Response {
 		return errorResponse(req, ErrProxyLocalhost)
 	}, errors.New("localhost access denied"))
 }
