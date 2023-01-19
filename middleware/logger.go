@@ -7,6 +7,8 @@ package middleware
 import (
 	"net/http"
 	"time"
+
+	"github.com/google/martian/v3"
 )
 
 type LogEntry struct {
@@ -34,4 +36,33 @@ func (l Logger) Wrap(h http.Handler) http.Handler {
 			Duration: time.Since(start),
 		})
 	})
+}
+
+const startTimeKey = "start-time"
+
+func (l Logger) ModifyRequest(req *http.Request) error {
+	ctx := martian.NewContext(req)
+	ctx.Set(startTimeKey, time.Now())
+	return nil
+}
+
+func (l Logger) ModifyResponse(res *http.Response) error {
+	ctx := martian.NewContext(res.Request)
+
+	var d time.Duration
+	if s, ok := ctx.Get(startTimeKey); ok {
+		if ss, ok := s.(time.Time); ok {
+			d = time.Since(ss)
+		}
+	}
+
+	l(LogEntry{
+		Request:  res.Request,
+		Response: res,
+		Status:   res.StatusCode,
+		Written:  0, // There seem not to be an easy way of counting it.
+		Duration: d,
+	})
+
+	return nil
 }
