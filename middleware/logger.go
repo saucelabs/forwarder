@@ -10,7 +10,8 @@ import (
 )
 
 type LogEntry struct {
-	*http.Request
+	Request  *http.Request
+	Response *http.Response
 	Status   int
 	Written  int64
 	Duration time.Duration
