@@ -55,9 +55,17 @@ func wildcardPortTo0(val string) string {
 	return strings.Join(s, ":")
 }
 
+var lastUserHost string //nolint:gochecknoglobals // This is for multiple ports parsing.
+
 // ParseHostPortUser parses a user:password@host:port string into HostUser.
 // User and password cannot be empty.
 func ParseHostPortUser(val string) (*HostPortUser, error) {
+	// If a value is only a port, append it to UserHost that was set during the previous call.
+	// This supports multiple ports syntax for credentials.
+	if _, err := strconv.Atoi(val); err == nil {
+		val = lastUserHost + val
+	}
+
 	u, err := url.Parse("http://" + wildcardPortTo0(val))
 	if err != nil {
 		return nil, err
@@ -71,6 +79,8 @@ func ParseHostPortUser(val string) (*HostPortUser, error) {
 	if err := hpi.Validate(); err != nil {
 		return nil, err
 	}
+
+	lastUserHost = fmt.Sprintf("%s@%s:", u.User.String(), u.Hostname())
 
 	return hpi, nil
 }

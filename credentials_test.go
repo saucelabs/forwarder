@@ -6,6 +6,7 @@ package forwarder
 
 import (
 	"net/url"
+	"strings"
 	"testing"
 
 	"github.com/saucelabs/forwarder/log/stdlog"
@@ -52,19 +53,42 @@ func TestUserInfoMatcherMatch(t *testing.T) {
 			hostport: "abc:80",
 			expected: url.UserPassword("user", "pass"),
 		},
+		{
+			name:     "Multiple ports 1",
+			input:    []string{"user:pass@host:80,443"},
+			hostport: "host:80",
+			expected: url.UserPassword("user", "pass"),
+		},
+		{
+			name:     "Multiple ports 2",
+			input:    []string{"user:pass@host:80,443"},
+			hostport: "host:443",
+			expected: url.UserPassword("user", "pass"),
+		},
+		{
+			name:     "Multiple ports 3",
+			input:    []string{"user:pass@host:80,443", "user2:pass2@host:2000"},
+			hostport: "host:2000",
+			expected: url.UserPassword("user2", "pass2"),
+		},
 	}
 
 	for i := range tests {
 		tc := tests[i]
 		t.Run(tc.name, func(t *testing.T) {
 			var (
-				credentials = make([]*HostPortUser, len(tc.input))
+				credentials = make([]*HostPortUser, 0, len(tc.input))
+				credential  *HostPortUser
 				err         error
 			)
 			for i := range tc.input {
-				credentials[i], err = ParseHostPortUser(tc.input[i])
-				if err != nil {
-					t.Fatal(err)
+				portsSplit := strings.Split(tc.input[i], ",")
+				for _, hpu := range portsSplit {
+					credential, err = ParseHostPortUser(hpu)
+					if err != nil {
+						t.Fatal(err)
+					}
+					credentials = append(credentials, credential)
 				}
 			}
 
