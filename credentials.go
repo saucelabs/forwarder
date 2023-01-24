@@ -88,7 +88,7 @@ func NewCredentialsMatcher(credentials []*HostPortUser, log Logger) (*Credential
 
 // MatchURL adds standard http and https ports if they are missing in URL and calls Match function.
 func (m *CredentialsMatcher) MatchURL(u *url.URL) *url.Userinfo {
-	if m == nil {
+	if m == nil || u == nil {
 		return nil
 	}
 
