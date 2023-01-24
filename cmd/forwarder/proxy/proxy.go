@@ -156,7 +156,7 @@ const example = `  # Start a HTTP proxy server
   forwarder proxy --protocol https --address localhost:8443 --basic-auth user:password
 
   # Add basic authentication header to requests to example.com and example.org on ports 80 and 443
-  forwarder proxy --address localhost:3128 -c bob:bp@example.com:* -c alice:ap@example.org:80,443
+  forwarder proxy --address localhost:3128 -c bob:bp@example.com:* -c alice:ap@example.org:80,alice:ap@example.org:443
 `
 
 const apiEndpoints = `API endpoints:
