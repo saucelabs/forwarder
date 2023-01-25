@@ -123,7 +123,7 @@ func (c *HTTPServerConfig) loadCertificate(tlsCfg *tls.Config) error {
 }
 
 type HTTPServer struct {
-	config *HTTPServerConfig
+	config HTTPServerConfig
 	log    Logger
 	srv    *http.Server
 	addr   atomic.Pointer[string]
@@ -135,7 +135,7 @@ func NewHTTPServer(cfg *HTTPServerConfig, h http.Handler, log Logger) (*HTTPServ
 	}
 
 	hs := &HTTPServer{
-		config: cfg,
+		config: *cfg,
 		log:    log,
 		srv: &http.Server{
 			Addr:              cfg.Addr,
