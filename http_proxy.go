@@ -102,7 +102,7 @@ type HTTPProxy struct {
 	config    HTTPProxyConfig
 	pac       PACResolver
 	creds     *CredentialsMatcher
-	transport *http.Transport
+	transport http.RoundTripper
 	log       Logger
 	proxy     *martian.Proxy
 	addr      atomic.Pointer[string]
@@ -110,7 +110,7 @@ type HTTPProxy struct {
 	TLSConfig *tls.Config
 }
 
-func NewHTTPProxy(cfg *HTTPProxyConfig, pr PACResolver, cm *CredentialsMatcher, t *http.Transport, log Logger) (*HTTPProxy, error) {
+func NewHTTPProxy(cfg *HTTPProxyConfig, pr PACResolver, cm *CredentialsMatcher, rt http.RoundTripper, log Logger) (*HTTPProxy, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, err
 	}
@@ -119,16 +119,18 @@ func NewHTTPProxy(cfg *HTTPProxyConfig, pr PACResolver, cm *CredentialsMatcher, 
 	}
 
 	// If not set, use http.DefaultTransport.
-	if t == nil {
+	if rt == nil {
 		log.Infof("HTTP transport not configured, using standard library default")
-		t = http.DefaultTransport.(*http.Transport).Clone() //nolint:forcetypeassert // we know it's a *http.Transport
+		rt = http.DefaultTransport.(*http.Transport).Clone() //nolint:forcetypeassert // we know it's a *http.Transport
+	} else if _, ok := rt.(*http.Transport); !ok {
+		log.Debugf("Using custom HTTP transport %T", rt)
 	}
 
 	hp := &HTTPProxy{
 		config:    *cfg,
 		pac:       pr,
 		creds:     cm,
-		transport: t,
+		transport: rt,
 		log:       log,
 	}
 
@@ -164,8 +166,12 @@ func (hp *HTTPProxy) configureProxy() {
 	// Martian has an intertwined logic for setting http.Transport and the dialer.
 	// The dialer is wrapped, so that additional syscalls are made to the dialed connections.
 	// As a result the dialer needs to be reset.
-	hp.proxy.SetRoundTripper(hp.transport)
-	hp.proxy.SetDial(hp.transport.Dial) //nolint:staticcheck // Martian does not use context
+	if tr, ok := hp.transport.(*http.Transport); ok {
+		hp.proxy.SetRoundTripper(tr)
+		hp.proxy.SetDial(tr.Dial) //nolint:staticcheck // Martian does not use context
+	} else {
+		hp.proxy.SetRoundTripper(hp.transport)
+	}
 
 	var fn ProxyFunc
 	switch {
