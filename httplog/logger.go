@@ -60,10 +60,8 @@ func NewLogger(logFunc func(format string, args ...interface{}), mode LoggerMode
 
 var dash = strings.Repeat("-", 80) //nolint:gomnd,gochecknoglobals // 80 is good
 
-func logURL(w io.Writer, u *url.URL, status int, duration time.Duration) {
-	fmt.Fprintln(w, "")
-	fmt.Fprintln(w, dash)
-	fmt.Fprintf(w, "Request to %s, status: %v, duration: %s\n", u.Redacted(), status, duration)
+func logURL(w io.Writer, u *url.URL, method string, status int, duration time.Duration) {
+	fmt.Fprintf(w, "%s %s status=%v duration=%s\n", method, u.Redacted(), status, duration)
 	fmt.Fprintln(w, dash)
 }
 
@@ -110,14 +108,14 @@ func logResponse(w io.Writer, mv *messageview.MessageView, res *http.Response) e
 
 func (l *Logger) logURL(e middleware.LogEntry) {
 	b := &bytes.Buffer{}
-	logURL(b, e.Request.URL, e.Status, e.Duration)
+	logURL(b, e.Request.URL, e.Request.Method, e.Status, e.Duration)
 	l.log("%s", b.String())
 }
 
 func (l *Logger) logWithHeaders(e middleware.LogEntry) {
 	b := &bytes.Buffer{}
 
-	logURL(b, e.Request.URL, e.Status, e.Duration)
+	logURL(b, e.Request.URL, e.Request.Method, e.Status, e.Duration)
 
 	mv := messageview.New()
 	mv.SkipBody(true)
@@ -141,7 +139,7 @@ func (l *Logger) logWithHeaders(e middleware.LogEntry) {
 func (l *Logger) logWithBody(e middleware.LogEntry) {
 	b := &bytes.Buffer{}
 
-	logURL(b, e.Request.URL, e.Status, e.Duration)
+	logURL(b, e.Request.URL, e.Request.Method, e.Status, e.Duration)
 
 	mv := messageview.New()
 	mv.SkipBody(false)
