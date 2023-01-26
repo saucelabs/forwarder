@@ -43,6 +43,7 @@ func HTTPProxyConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPProxyConfig) {
 		"proxy-localhost", "t", "accept or deny requests to localhost, one of deny, allow, direct; in direct mode localhost requests are not sent to upstream proxy if present")
 
 	fs.StringSliceVar(&cfg.RemoveHeaders, "remove-headers", cfg.RemoveHeaders, "removes request headers if prefixes match (can be specified multiple times)")
+	fs.BoolVar(&cfg.ConnectPassthrough, "connect-passthrough", cfg.ConnectPassthrough, "round trip CONNECT requests")
 }
 
 func HTTPTransportConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPTransportConfig) {

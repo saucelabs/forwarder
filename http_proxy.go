@@ -60,13 +60,14 @@ type ProxyFunc func(*http.Request) (*url.URL, error)
 
 type HTTPProxyConfig struct {
 	HTTPServerConfig
-	ProxyLocalhost    ProxyLocalhostMode         `json:"proxy_localhost"`
-	UpstreamProxy     *url.URL                   `json:"upstream_proxy_uri"`
-	UpstreamProxyFunc ProxyFunc                  `json:"-"`
-	RequestModifiers  []martian.RequestModifier  `json:"-"`
-	ResponseModifiers []martian.ResponseModifier `json:"-"`
-	CloseAfterReply   bool                       `json:"close_after_reply"`
-	RemoveHeaders     []string                   `json:"remove_headers"`
+	ProxyLocalhost     ProxyLocalhostMode         `json:"proxy_localhost"`
+	UpstreamProxy      *url.URL                   `json:"upstream_proxy_uri"`
+	UpstreamProxyFunc  ProxyFunc                  `json:"-"`
+	RequestModifiers   []martian.RequestModifier  `json:"-"`
+	ResponseModifiers  []martian.ResponseModifier `json:"-"`
+	CloseAfterReply    bool                       `json:"close_after_reply"`
+	RemoveHeaders      []string                   `json:"remove_headers"`
+	ConnectPassthrough bool                       `json:"connect_passthrough"`
 }
 
 func DefaultHTTPProxyConfig() *HTTPProxyConfig {
@@ -162,6 +163,11 @@ func (hp *HTTPProxy) configureProxy() {
 	hp.proxy.ReadTimeout = hp.config.ReadTimeout
 	hp.proxy.ReadHeaderTimeout = hp.config.ReadHeaderTimeout
 	hp.proxy.WriteTimeout = hp.config.WriteTimeout
+	hp.proxy.ConnectPassthrough = hp.config.ConnectPassthrough
+	if hp.config.ConnectPassthrough {
+		hp.log.Infof("connect passthrough enabled")
+	}
+
 	// Martian has an intertwined logic for setting http.Transport and the dialer.
 	// The dialer is wrapped, so that additional syscalls are made to the dialed connections.
 	// As a result the dialer needs to be reset.
