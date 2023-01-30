@@ -15,6 +15,10 @@ install-dependencies:
 	go install golang.org/x/tools/cmd/godoc@latest
 	go install golang.org/x/tools/cmd/stringer@latest
 
+.PHONY: build
+build:
+	@goreleaser build --rm-dist --snapshot --single-target --skip-validate
+
 .PHONY: clean
 clean:
 	@rm -Rf bin dist *.coverprofile *.dev *.race *.test *.log
