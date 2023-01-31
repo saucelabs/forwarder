@@ -35,6 +35,12 @@ jobs:
         with:
           go-version: "${{env.GO_VERSION}}"
 
+      - name: Install dependencies
+        run: make install-dependencies
+
+      - name: Verify licenses
+        run: make verify-licenses
+
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v3
         with:
