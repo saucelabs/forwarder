@@ -68,7 +68,7 @@ func Command() (cmd *cobra.Command) {
 		fs := cmd.Flags()
 
 		bind.PAC(fs, &c.pac)
-		bind.HTTPServerConfig(fs, c.httpServerConfig, "", true)
+		bind.HTTPServerConfig(fs, c.httpServerConfig, "")
 		bind.LogConfig(fs, c.logConfig)
 		bind.HTTPTransportConfig(fs, c.httpTransportConfig)
 

@@ -7,6 +7,7 @@ package bind
 import (
 	"net/url"
 	"os"
+	"strings"
 
 	"github.com/mmatczuk/anyflag"
 	"github.com/saucelabs/forwarder"
@@ -30,7 +31,7 @@ func PAC(fs *pflag.FlagSet, pac **url.URL) {
 }
 
 func HTTPProxyConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPProxyConfig, lcfg *log.Config) {
-	HTTPServerConfig(fs, &cfg.HTTPServerConfig, "", false)
+	HTTPServerConfig(fs, &cfg.HTTPServerConfig, "", forwarder.HTTPScheme, forwarder.HTTPSScheme)
 	LogConfig(fs, lcfg)
 	fs.VarP(anyflag.NewValue[*url.URL](cfg.UpstreamProxy, &cfg.UpstreamProxy, forwarder.ParseProxyURL),
 		"upstream-proxy", "u", "upstream proxy URL")
@@ -69,7 +70,7 @@ func HTTPTransportConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPTransportConfig) 
 	TLSConfig(fs, &cfg.TLSConfig)
 }
 
-func HTTPServerConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPServerConfig, prefix string, http2 bool) {
+func HTTPServerConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPServerConfig, prefix string, schemes ...forwarder.Scheme) {
 	namePrefix := prefix
 	if namePrefix != "" {
 		namePrefix += "-"
@@ -80,15 +81,28 @@ func HTTPServerConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPServerConfig, prefix
 		usagePrefix += " "
 	}
 
-	if http2 {
-		fs.VarP(anyflag.NewValue[forwarder.Scheme](cfg.Protocol, &cfg.Protocol,
-			anyflag.EnumParser[forwarder.Scheme](forwarder.HTTPScheme, forwarder.HTTPSScheme, forwarder.HTTP2Scheme)),
-			namePrefix+"protocol", "", usagePrefix+"HTTP server protocol, one of http, https, h2")
-	} else {
-		fs.VarP(anyflag.NewValue[forwarder.Scheme](cfg.Protocol, &cfg.Protocol,
-			anyflag.EnumParser[forwarder.Scheme](forwarder.HTTPScheme, forwarder.HTTPSScheme)),
-			namePrefix+"protocol", "", usagePrefix+"HTTP server protocol, one of http, https")
+	if schemes == nil {
+		schemes = []forwarder.Scheme{
+			forwarder.HTTPScheme,
+			forwarder.HTTPSScheme,
+			forwarder.HTTP2Scheme,
+		}
 	}
+
+	supportedSchemesStr := func() string {
+		var sb strings.Builder
+		for _, s := range schemes {
+			if sb.Len() > 0 {
+				sb.WriteString(", ")
+			}
+			sb.WriteString(string(s))
+		}
+		return sb.String()
+	}
+
+	fs.VarP(anyflag.NewValue[forwarder.Scheme](cfg.Protocol, &cfg.Protocol,
+		anyflag.EnumParser[forwarder.Scheme](schemes...)),
+		namePrefix+"protocol", "", usagePrefix+"HTTP server protocol, one of "+supportedSchemesStr())
 	fs.StringVarP(&cfg.Addr,
 		namePrefix+"address", "", cfg.Addr, usagePrefix+"HTTP server listen address in the form of `host:port`")
 	fs.StringVar(&cfg.CertFile,

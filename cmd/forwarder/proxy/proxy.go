@@ -190,7 +190,7 @@ func Command() (cmd *cobra.Command) {
 				"host and port can be set to \"*\" to match all (can be specified multiple times)")
 		bind.PAC(fs, &c.pac)
 		bind.DNSConfig(fs, c.dnsConfig)
-		bind.HTTPServerConfig(fs, c.apiServerConfig, "api", true)
+		bind.HTTPServerConfig(fs, c.apiServerConfig, "api")
 		bind.HTTPTransportConfig(fs, c.httpTransportConfig)
 
 		bind.MarkFlagFilename(cmd, "cert-file", "key-file", "pac")
