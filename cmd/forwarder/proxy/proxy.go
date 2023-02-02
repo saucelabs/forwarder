@@ -179,7 +179,7 @@ func Command() (cmd *cobra.Command) {
 		logConfig:           log.DefaultConfig(),
 	}
 	c.httpProxyConfig.PromRegistry = c.promReg
-	c.apiServerConfig.Addr = ""
+	c.apiServerConfig.Addr = "localhost:10000"
 
 	defer func() {
 		fs := cmd.Flags()
