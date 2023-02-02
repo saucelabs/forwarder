@@ -183,7 +183,7 @@ func Command() (cmd *cobra.Command) {
 
 	defer func() {
 		fs := cmd.Flags()
-		bind.HTTPProxyConfig(fs, c.httpProxyConfig)
+		bind.HTTPProxyConfig(fs, c.httpProxyConfig, c.logConfig)
 		fs.VarP(anyflag.NewSliceValue[*forwarder.HostPortUser](c.credentials, &c.credentials, forwarder.ParseHostPortUser),
 			"credentials", "c",
 			"site or upstream proxy basic authentication credentials in the form of `username:password@host:port`, "+
@@ -192,7 +192,6 @@ func Command() (cmd *cobra.Command) {
 		bind.DNSConfig(fs, c.dnsConfig)
 		bind.HTTPServerConfig(fs, c.apiServerConfig, "api", true)
 		bind.HTTPTransportConfig(fs, c.httpTransportConfig)
-		bind.LogConfig(fs, c.logConfig)
 
 		bind.MarkFlagFilename(cmd, "cert-file", "key-file", "pac")
 		cmd.MarkFlagsMutuallyExclusive("upstream-proxy", "pac")

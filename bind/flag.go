@@ -29,8 +29,9 @@ func PAC(fs *pflag.FlagSet, pac **url.URL) {
 		"pac", "p", "local file `path or URL` to PAC content, use \"-\" to read from stdin")
 }
 
-func HTTPProxyConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPProxyConfig) {
+func HTTPProxyConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPProxyConfig, lcfg *log.Config) {
 	HTTPServerConfig(fs, &cfg.HTTPServerConfig, "", false)
+	LogConfig(fs, lcfg)
 	fs.VarP(anyflag.NewValue[*url.URL](cfg.UpstreamProxy, &cfg.UpstreamProxy, forwarder.ParseProxyURL),
 		"upstream-proxy", "u", "upstream proxy URL")
 
@@ -100,10 +101,10 @@ func HTTPServerConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPServerConfig, prefix
 		namePrefix+"read-header-timeout", cfg.ReadHeaderTimeout, usagePrefix+"HTTP server read header timeout")
 	fs.DurationVar(&cfg.WriteTimeout,
 		namePrefix+"write-timeout", cfg.WriteTimeout, usagePrefix+"HTTP server write timeout")
-	fs.Var(anyflag.NewValue[httplog.LoggerMode](cfg.LogHTTPMode, &cfg.LogHTTPMode, httplog.ParseMode),
-		namePrefix+"log-http-requests", usagePrefix+"log http request, one of url, headers, body, error; error mode is default and logs requests with status code >= 500")
 	fs.VarP(anyflag.NewValue[*url.Userinfo](cfg.BasicAuth, &cfg.BasicAuth, forwarder.ParseUserInfo),
 		namePrefix+"basic-auth", "", usagePrefix+"HTTP server basic-auth in the form of `username:password`")
+	fs.Var(anyflag.NewValue[httplog.LoggerMode](cfg.LogHTTPMode, &cfg.LogHTTPMode, httplog.ParseMode),
+		namePrefix+"log-http-requests", usagePrefix+"log http request, one of url, headers, body, error; error mode is default and logs requests with status code >= 500")
 }
 
 func TLSConfig(fs *pflag.FlagSet, cfg *forwarder.TLSConfig) {
