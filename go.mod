@@ -15,6 +15,7 @@ require (
 	github.com/spf13/viper v1.10.0
 	go.uber.org/goleak v1.2.0
 	golang.org/x/exp v0.0.0-20200224162631-6cc2880d07d6
+	golang.org/x/net v0.2.0
 	golang.org/x/sync v0.0.0-20220722155255-886fb9371eb4
 )
 
@@ -39,7 +40,6 @@ require (
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/stretchr/testify v1.8.1 // indirect
 	github.com/subosito/gotenv v1.2.0 // indirect
-	golang.org/x/net v0.2.0 // indirect
 	golang.org/x/sys v0.2.0 // indirect
 	golang.org/x/text v0.5.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
@@ -47,4 +47,4 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
 
-replace github.com/google/martian/v3 => github.com/saucelabs/martian/v3 v3.0.0-20221227135800-27a8c8fc6193
+replace github.com/google/martian/v3 => github.com/saucelabs/martian/v3 v3.0.0-20230127123942-1af3e05ac248
