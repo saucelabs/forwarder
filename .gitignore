@@ -10,6 +10,7 @@
 .direnv
 
 # Development binary
+forwarder
 *.dev
 *.race
 
