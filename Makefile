@@ -10,12 +10,12 @@ include .version
 .PHONY: install-dependencies
 install-dependencies:
 	@rm -Rf bin && mkdir -p $(GOBIN)
-	go install golang.org/x/tools/cmd/godoc@latest
-	go install golang.org/x/tools/cmd/stringer@latest
+	go install golang.org/x/tools/cmd/godoc@$(GODOC_VERSION)
+	go install golang.org/x/tools/cmd/stringer@$(STRINGER_VERSION)
 
 	go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
 	go install github.com/goreleaser/goreleaser@$(GORELEASER_VERSION)
-	go install github.com/google/go-licenses@latest
+	go install github.com/google/go-licenses@$(GO_LICENSES_VERSION)
 
 .PHONY: build
 build:
