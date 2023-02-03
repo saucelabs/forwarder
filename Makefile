@@ -21,6 +21,11 @@ install-dependencies:
 build:
 	@goreleaser build --rm-dist --snapshot --single-target --output .
 
+.PHONY: dist
+dist: GORELEASER_CURRENT_TAG=1.0.0-rc
+dist:
+	@goreleaser --rm-dist --snapshot
+
 .PHONY: gen-licenses
 gen-licenses:
 	@go-licenses report . --template third_party_license.tpl > third_party_licenses.txt
@@ -32,12 +37,17 @@ verify-licenses:
 	@diff third_party_licenses.txt $(TMPDIR)/third_party_licenses.txt || \
  	( echo 'third party licenses are outdated - please run "make gen-third-party-licenses"' && false )
 
+.PHONY: docs
+docs:
+	@echo "Open http://localhost:6060/pkg/github.com/saucelabs/forwarder/ in your browser\n"
+	@godoc -http :6060
+
 .PHONY: clean
 clean:
 	@rm -Rf bin dist *.coverprofile *.dev *.race *.test *.log
 	@go clean -cache -modcache -testcache ./... ||:
 
-### Testing
+### Development and testing
 
 .PHONY: .check-go-version
 .check-go-version:
@@ -59,8 +69,6 @@ test:
 coverage:
 	@go tool cover -func=coverage.out
 
-### Release
-
 .PHONY: update-devel-image
 update-devel-image: TAG=devel
 update-devel-image: TMPDIR:=$(shell mktemp -d)
@@ -70,11 +78,3 @@ update-devel-image:
 	@docker buildx build -t saucelabs/forwarder:$(TAG) $(TMPDIR)
 	@rm -rf $(TMPDIR)
 
-.PHONY: dist
-dist:
-	@GORELEASER_CURRENT_TAG=1.0.0-rc goreleaser --snapshot --rm-dist
-
-.PHONY: doc
-doc:
-	@echo "Open http://localhost:6060/pkg/github.com/saucelabs/forwarder/ in your browser\n"
-	@godoc -http :6060
