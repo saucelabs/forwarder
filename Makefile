@@ -19,7 +19,7 @@ install-dependencies:
 
 .PHONY: build
 build:
-	@goreleaser build --rm-dist --snapshot --single-target --skip-validate
+	@goreleaser build --rm-dist --snapshot --single-target --output .
 
 .PHONY: gen-licenses
 gen-licenses:
