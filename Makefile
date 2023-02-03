@@ -26,17 +26,6 @@ dist: GORELEASER_CURRENT_TAG=1.0.0-rc
 dist:
 	@goreleaser --rm-dist --snapshot
 
-.PHONY: gen-licenses
-gen-licenses:
-	@go-licenses report . --template third_party_license.tpl > third_party_licenses.txt
-
-.PHONY: verify-licenses
-verify-licenses: TMPDIR:=$(shell mktemp -d)
-verify-licenses:
-	@go-licenses report . --template third_party_license.tpl > $(TMPDIR)/third_party_licenses.txt
-	@diff third_party_licenses.txt $(TMPDIR)/third_party_licenses.txt || \
- 	( echo 'third party licenses are outdated - please run "make gen-third-party-licenses"' && false )
-
 .PHONY: docs
 docs:
 	@echo "Open http://localhost:6060/pkg/github.com/saucelabs/forwarder/ in your browser\n"
@@ -78,3 +67,15 @@ update-devel-image:
 	@docker buildx build -t saucelabs/forwarder:$(TAG) $(TMPDIR)
 	@rm -rf $(TMPDIR)
 
+### Licenses
+
+.PHONY: gen-licenses
+gen-licenses:
+	@go-licenses report . --template third_party_license.tpl > third_party_licenses.txt
+
+.PHONY: verify-licenses
+verify-licenses: TMPDIR:=$(shell mktemp -d)
+verify-licenses:
+	@go-licenses report . --template third_party_license.tpl > $(TMPDIR)/third_party_licenses.txt
+	@diff third_party_licenses.txt $(TMPDIR)/third_party_licenses.txt || \
+ 	( echo 'third party licenses are outdated - please run "make gen-third-party-licenses"' && false )
