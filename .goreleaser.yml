@@ -4,8 +4,14 @@ changelog:
   sort: asc
   filters:
     exclude:
+      - '^chore:'
+      - '^ci:'
       - '^docs:'
+      - '^fix:'
+      - '^goreleaser:'
       - '^makefile:'
+      - '^mk:'
+      - '^perf:'
       - '^testing:'
 
 builds:
