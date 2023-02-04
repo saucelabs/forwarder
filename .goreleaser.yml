@@ -30,6 +30,19 @@ builds:
 checksum:
   name_template: "checksums"
 
+archives:
+  - name_template: "{{ .ProjectName }}-{{ .Version }}_{{ .Os }}.{{ .Arch }}"
+    files:
+      - LICENSE
+      - LICENSE.3RD_PARTY
+    format: zip
+    format_overrides:
+      - goos: linux
+        format: tar.gz
+    replacements:
+      amd64: x86_64
+      arm64: aarch64
+
 nfpms:
   - package_name: "forwarder"
     file_name_template: "{{ .ProjectName }}-{{ .Version }}_{{ .Os }}.{{ .Arch }}"
@@ -48,6 +61,10 @@ nfpms:
       - src: packaging/forwarder.env
         dst: /etc/default/forwarder
         type: "config|noreplace"
+      - src: LICENSE
+        dst: /usr/share/doc/forwarder/LICENSE
+      - src: LICENSE.3RD_PARTY
+        dst: /usr/share/doc/forwarder/LICENSE.3RD_PARTY
     rpm:
       group: Applications/Internet
       compression: xz
@@ -77,6 +94,9 @@ dockers:
     goarch: amd64
     build_flag_templates:
       - "--platform=linux/amd64"
+    extra_files:
+      - LICENSE
+      - LICENSE.3RD_PARTY
   - image_templates:
       - "{{ if .IsSnapshot }}saucelabs/{{ .ProjectName }}:{{ .Tag }}-arm64v8{{ else }}saucelabs/{{ .ProjectName }}:{{ .Version }}-arm64v8{{ end }}"
     use: buildx
@@ -85,6 +105,9 @@ dockers:
     goarm: 8
     build_flag_templates:
       - "--platform=linux/arm64/v8"
+    extra_files:
+      - LICENSE
+      - LICENSE.3RD_PARTY
 
 docker_manifests:
     - name_template: "saucelabs/{{ .ProjectName }}:{{ .Version }}"
