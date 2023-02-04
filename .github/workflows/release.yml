@@ -39,7 +39,7 @@ jobs:
         run: make install-dependencies
 
       - name: Verify licenses
-        run: make verify-licenses
+        run: make LICENSE.3RD_PARTY
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v3
