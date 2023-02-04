@@ -1,5 +1,7 @@
 FROM gcr.io/distroless/static:nonroot
 
-COPY forwarder /usr/bin/forwarder
+COPY LICENSE /licenses/
+COPY LICENSE.3RD_PARTY /licenses/
+COPY forwarder /usr/bin
 ENTRYPOINT ["/usr/bin/forwarder"]
 CMD ["proxy"]
