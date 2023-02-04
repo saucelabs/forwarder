@@ -1,11 +1,5 @@
+This product includes github.com/beorn7/perks/quantile v1.0.1 licensed under MIT license.
 
-## github.com/beorn7/perks/quantile
-
-* Name: github.com/beorn7/perks/quantile
-* Version: v1.0.1
-* License: [MIT](https://github.com/beorn7/perks/blob/v1.0.1/LICENSE)
-
-```
 Copyright (C) 2013 Blake Mizerany
 
 Permission is hereby granted, free of charge, to any person obtaining
@@ -27,15 +21,9 @@ LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-```
 
-## github.com/cespare/xxhash/v2
+This product includes github.com/cespare/xxhash/v2 v2.1.2 licensed under MIT license.
 
-* Name: github.com/cespare/xxhash/v2
-* Version: v2.1.2
-* License: [MIT](https://github.com/cespare/xxhash/blob/v2.1.2/LICENSE.txt)
-
-```
 Copyright (c) 2016 Caleb Spare
 
 MIT License
@@ -59,15 +47,9 @@ LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-```
 
-## github.com/dlclark/regexp2
+This product includes github.com/dlclark/regexp2 v1.7.0 licensed under MIT license.
 
-* Name: github.com/dlclark/regexp2
-* Version: v1.7.0
-* License: [MIT](https://github.com/dlclark/regexp2/blob/v1.7.0/LICENSE)
-
-```
 The MIT License (MIT)
 
 Copyright (c) Doug Clark
@@ -90,15 +72,9 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-```
 
-## github.com/dop251/goja
+This product includes github.com/dop251/goja v0.0.0-20221118162653-d4bf6fde1b86 licensed under MIT license.
 
-* Name: github.com/dop251/goja
-* Version: v0.0.0-20221118162653-d4bf6fde1b86
-* License: [MIT](https://github.com/dop251/goja/blob/d4bf6fde1b86/LICENSE)
-
-```
 Copyright (c) 2016 Dmitry Panov
 
 Copyright (c) 2012 Robert Krimen
@@ -115,15 +91,9 @@ WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEM
 COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
 OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-```
 
-## github.com/dop251/goja/ftoa/internal/fast
+This product includes github.com/dop251/goja/ftoa/internal/fast v0.0.0-20221118162653-d4bf6fde1b86 licensed under BSD-3-Clause license.
 
-* Name: github.com/dop251/goja/ftoa/internal/fast
-* Version: v0.0.0-20221118162653-d4bf6fde1b86
-* License: [BSD-3-Clause](https://github.com/dop251/goja/blob/d4bf6fde1b86/ftoa/internal/fast/LICENSE_V8)
-
-```
 Copyright 2014, the V8 project authors. All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are
@@ -151,15 +121,9 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-```
 
-## github.com/go-sourcemap/sourcemap
+This product includes github.com/go-sourcemap/sourcemap v2.1.3 licensed under BSD-2-Clause license.
 
-* Name: github.com/go-sourcemap/sourcemap
-* Version: v2.1.3
-* License: [BSD-2-Clause](https://github.com/go-sourcemap/sourcemap/blob/v2.1.3/LICENSE)
-
-```
 Copyright (c) 2016 The github.com/go-sourcemap/sourcemap Contributors.
 All rights reserved.
 
@@ -186,15 +150,9 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-```
 
-## github.com/golang/protobuf
+This product includes github.com/golang/protobuf v1.5.2 licensed under BSD-3-Clause license.
 
-* Name: github.com/golang/protobuf
-* Version: v1.5.2
-* License: [BSD-3-Clause](https://github.com/golang/protobuf/blob/v1.5.2/LICENSE)
-
-```
 Copyright 2010 The Go Authors.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -224,15 +182,9 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-```
 
-## github.com/google/martian/v3
+This product includes github.com/google/martian/v3 v3.0.0-20221227135800-27a8c8fc6193 licensed under Apache-2.0 license.
 
-* Name: github.com/google/martian/v3
-* Version: v3.0.0-20221227135800-27a8c8fc6193
-* License: [Apache-2.0](https://github.com/saucelabs/martian/blob/27a8c8fc6193/LICENSE)
-
-```
 
                                  Apache License
                            Version 2.0, January 2004
@@ -436,15 +388,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    See the License for the specific language governing permissions and
    limitations under the License.
 
-```
 
-## github.com/matttproud/golang_protobuf_extensions/pbutil
+This product includes github.com/matttproud/golang_protobuf_extensions/pbutil v1.0.1 licensed under Apache-2.0 license.
 
-* Name: github.com/matttproud/golang_protobuf_extensions/pbutil
-* Version: v1.0.1
-* License: [Apache-2.0](https://github.com/matttproud/golang_protobuf_extensions/blob/v1.0.1/LICENSE)
-
-```
                                  Apache License
                            Version 2.0, January 2004
                         http://www.apache.org/licenses/
@@ -647,15 +593,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    See the License for the specific language governing permissions and
    limitations under the License.
 
-```
 
-## github.com/prometheus/client_golang/prometheus
+This product includes github.com/prometheus/client_golang/prometheus v1.13.0 licensed under Apache-2.0 license.
 
-* Name: github.com/prometheus/client_golang/prometheus
-* Version: v1.13.0
-* License: [Apache-2.0](https://github.com/prometheus/client_golang/blob/v1.13.0/LICENSE)
-
-```
                                  Apache License
                            Version 2.0, January 2004
                         http://www.apache.org/licenses/
@@ -858,15 +798,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    See the License for the specific language governing permissions and
    limitations under the License.
 
-```
 
-## github.com/prometheus/client_model/go
+This product includes github.com/prometheus/client_model/go v0.2.0 licensed under Apache-2.0 license.
 
-* Name: github.com/prometheus/client_model/go
-* Version: v0.2.0
-* License: [Apache-2.0](https://github.com/prometheus/client_model/blob/v0.2.0/LICENSE)
-
-```
                                  Apache License
                            Version 2.0, January 2004
                         http://www.apache.org/licenses/
@@ -1069,15 +1003,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    See the License for the specific language governing permissions and
    limitations under the License.
 
-```
 
-## github.com/prometheus/common
+This product includes github.com/prometheus/common v0.37.0 licensed under Apache-2.0 license.
 
-* Name: github.com/prometheus/common
-* Version: v0.37.0
-* License: [Apache-2.0](https://github.com/prometheus/common/blob/v0.37.0/LICENSE)
-
-```
                                  Apache License
                            Version 2.0, January 2004
                         http://www.apache.org/licenses/
@@ -1280,15 +1208,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
    See the License for the specific language governing permissions and
    limitations under the License.
 
-```
 
-## github.com/prometheus/common/internal/bitbucket.org/ww/goautoneg
+This product includes github.com/prometheus/common/internal/bitbucket.org/ww/goautoneg v0.37.0 licensed under BSD-3-Clause license.
 
-* Name: github.com/prometheus/common/internal/bitbucket.org/ww/goautoneg
-* Version: v0.37.0
-* License: [BSD-3-Clause](https://github.com/prometheus/common/blob/v0.37.0/internal/bitbucket.org/ww/goautoneg/README.txt)
-
-```
 PACKAGE
 
 package goautoneg
@@ -1357,15 +1279,9 @@ SUBDIRECTORIES
 
 	.hg
 
-```
 
-## github.com/prometheus/procfs
+This product includes github.com/prometheus/procfs v0.8.0 licensed under Apache-2.0 license.
 
-* Name: github.com/prometheus/procfs
-* Version: v0.8.0
-* License: [Apache-2.0](https://github.com/prometheus/procfs/blob/v0.8.0/LICENSE)
-
-```
                                  Apache License
                            Version 2.0, January 2004
                         http://www.apache.org/licenses/
@@ -1568,227 +1484,9 @@ SUBDIRECTORIES
    See the License for the specific language governing permissions and
    limitations under the License.
 
-```
 
-## github.com/saucelabs/forwarder
+This product includes google.golang.org/protobuf v1.28.1 licensed under BSD-3-Clause license.
 
-* Name: github.com/saucelabs/forwarder
-* Version: Unknown
-* License: [MIT](https://github.com/saucelabs/forwarder/blob/HEAD/LICENSE)
-
-```
-/* ***** BEGIN LICENSE BLOCK *****
- * This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/.
- */
-
-Copyright (c) 2022 Sauce Labs
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-
-```
-
-## go.uber.org/atomic
-
-* Name: go.uber.org/atomic
-* Version: v1.10.0
-* License: [MIT](https://github.com/uber-go/atomic/blob/v1.10.0/LICENSE.txt)
-
-```
-Copyright (c) 2016 Uber Technologies, Inc.
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
-
-```
-
-## golang.org/x/exp/utf8string
-
-* Name: golang.org/x/exp/utf8string
-* Version: v0.0.0-20200224162631-6cc2880d07d6
-* License: [BSD-3-Clause](https://cs.opensource.google/go/x/exp/+/6cc2880d:LICENSE)
-
-```
-Copyright (c) 2009 The Go Authors. All rights reserved.
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are
-met:
-
-   * Redistributions of source code must retain the above copyright
-notice, this list of conditions and the following disclaimer.
-   * Redistributions in binary form must reproduce the above
-copyright notice, this list of conditions and the following disclaimer
-in the documentation and/or other materials provided with the
-distribution.
-   * Neither the name of Google Inc. nor the names of its
-contributors may be used to endorse or promote products derived from
-this software without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-```
-
-## golang.org/x/net
-
-* Name: golang.org/x/net
-* Version: v0.2.0
-* License: [BSD-3-Clause](https://cs.opensource.google/go/x/net/+/v0.2.0:LICENSE)
-
-```
-Copyright (c) 2009 The Go Authors. All rights reserved.
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are
-met:
-
-   * Redistributions of source code must retain the above copyright
-notice, this list of conditions and the following disclaimer.
-   * Redistributions in binary form must reproduce the above
-copyright notice, this list of conditions and the following disclaimer
-in the documentation and/or other materials provided with the
-distribution.
-   * Neither the name of Google Inc. nor the names of its
-contributors may be used to endorse or promote products derived from
-this software without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-```
-
-## golang.org/x/sys/unix
-
-* Name: golang.org/x/sys/unix
-* Version: v0.2.0
-* License: [BSD-3-Clause](https://cs.opensource.google/go/x/sys/+/v0.2.0:LICENSE)
-
-```
-Copyright (c) 2009 The Go Authors. All rights reserved.
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are
-met:
-
-   * Redistributions of source code must retain the above copyright
-notice, this list of conditions and the following disclaimer.
-   * Redistributions in binary form must reproduce the above
-copyright notice, this list of conditions and the following disclaimer
-in the documentation and/or other materials provided with the
-distribution.
-   * Neither the name of Google Inc. nor the names of its
-contributors may be used to endorse or promote products derived from
-this software without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-```
-
-## golang.org/x/text
-
-* Name: golang.org/x/text
-* Version: v0.5.0
-* License: [BSD-3-Clause](https://cs.opensource.google/go/x/text/+/v0.5.0:LICENSE)
-
-```
-Copyright (c) 2009 The Go Authors. All rights reserved.
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are
-met:
-
-   * Redistributions of source code must retain the above copyright
-notice, this list of conditions and the following disclaimer.
-   * Redistributions in binary form must reproduce the above
-copyright notice, this list of conditions and the following disclaimer
-in the documentation and/or other materials provided with the
-distribution.
-   * Neither the name of Google Inc. nor the names of its
-contributors may be used to endorse or promote products derived from
-this software without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-```
-
-## google.golang.org/protobuf
-
-* Name: google.golang.org/protobuf
-* Version: v1.28.1
-* License: [BSD-3-Clause](https://github.com/protocolbuffers/protobuf-go/blob/v1.28.1/LICENSE)
-
-```
 Copyright (c) 2018 The Go Authors. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -1817,5 +1515,5 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-```
+
 

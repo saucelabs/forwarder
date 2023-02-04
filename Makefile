@@ -67,15 +67,5 @@ update-devel-image:
 	@docker buildx build -t saucelabs/forwarder:$(TAG) $(TMPDIR)
 	@rm -rf $(TMPDIR)
 
-### Licenses
-
-.PHONY: gen-licenses
-gen-licenses:
-	@go-licenses report . --template third_party_license.tpl > third_party_licenses.txt
-
-.PHONY: verify-licenses
-verify-licenses: TMPDIR:=$(shell mktemp -d)
-verify-licenses:
-	@go-licenses report . --template third_party_license.tpl > $(TMPDIR)/third_party_licenses.txt
-	@diff third_party_licenses.txt $(TMPDIR)/third_party_licenses.txt || \
- 	( echo 'third party licenses are outdated - please run "make gen-third-party-licenses"' && false )
+LICENSE.3RD_PARTY: LICENSE.3RD_PARTY.tpl go.mod go.sum
+	@go-licenses report . --template LICENSE.3RD_PARTY.tpl --ignore $(shell go list .) --ignore golang.org > LICENSE.3RD_PARTY
