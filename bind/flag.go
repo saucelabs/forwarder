@@ -5,6 +5,7 @@
 package bind
 
 import (
+	"fmt"
 	"net/url"
 	"os"
 	"strings"
@@ -17,6 +18,20 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
+
+func redactURL(u *url.URL) string {
+	return u.Redacted()
+}
+
+func redactUserinfo(ui *url.Userinfo) string {
+	if ui == nil {
+		return ""
+	}
+	if _, has := ui.Password(); has {
+		return fmt.Sprintf("%s:xxxxx", ui.Username())
+	}
+	return ui.Username()
+}
 
 func DNSConfig(fs *pflag.FlagSet, cfg *forwarder.DNSConfig) {
 	fs.VarP(anyflag.NewSliceValue[*url.URL](nil, &cfg.Servers, forwarder.ParseDNSAddress),
@@ -33,7 +48,7 @@ func PAC(fs *pflag.FlagSet, pac **url.URL) {
 func HTTPProxyConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPProxyConfig, lcfg *log.Config) {
 	HTTPServerConfig(fs, &cfg.HTTPServerConfig, "", forwarder.HTTPScheme, forwarder.HTTPSScheme)
 	LogConfig(fs, lcfg)
-	fs.VarP(anyflag.NewValue[*url.URL](cfg.UpstreamProxy, &cfg.UpstreamProxy, forwarder.ParseProxyURL),
+	fs.VarP(anyflag.NewValueWithRedact[*url.URL](cfg.UpstreamProxy, &cfg.UpstreamProxy, forwarder.ParseProxyURL, redactURL),
 		"upstream-proxy", "u", "upstream proxy URL")
 
 	proxyLocalhostValues := []forwarder.ProxyLocalhostMode{
@@ -115,7 +130,7 @@ func HTTPServerConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPServerConfig, prefix
 		namePrefix+"read-header-timeout", cfg.ReadHeaderTimeout, usagePrefix+"HTTP server read header timeout")
 	fs.DurationVar(&cfg.WriteTimeout,
 		namePrefix+"write-timeout", cfg.WriteTimeout, usagePrefix+"HTTP server write timeout")
-	fs.VarP(anyflag.NewValue[*url.Userinfo](cfg.BasicAuth, &cfg.BasicAuth, forwarder.ParseUserInfo),
+	fs.VarP(anyflag.NewValueWithRedact[*url.Userinfo](cfg.BasicAuth, &cfg.BasicAuth, forwarder.ParseUserInfo, redactUserinfo),
 		namePrefix+"basic-auth", "", usagePrefix+"HTTP server basic-auth in the form of `username:password`")
 	fs.Var(anyflag.NewValue[httplog.LoggerMode](cfg.LogHTTPMode, &cfg.LogHTTPMode, httplog.ParseMode),
 		namePrefix+"log-http", usagePrefix+"log http, one of url, headers, body, error; error mode is default and logs requests with status code >= 500")

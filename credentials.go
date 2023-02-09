@@ -31,6 +31,16 @@ func (hpu *HostPortUser) Validate() error {
 	return validatedUserInfo(hpu.Userinfo)
 }
 
+func RedactHostPortUser(hpu *HostPortUser) string {
+	if hpu == nil {
+		return ""
+	}
+	if _, has := hpu.Password(); has {
+		return fmt.Sprintf("%s:xxxxx@%s:%s", hpu.Username(), hpu.Host, hpu.Port)
+	}
+	return fmt.Sprintf("%s@%s:%s", hpu.Username(), hpu.Host, hpu.Port)
+}
+
 type CredentialsMatcher struct {
 	hostport map[string]*url.Userinfo
 	host     map[string]*url.Userinfo
