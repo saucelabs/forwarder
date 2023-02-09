@@ -24,14 +24,16 @@ type server interface {
 type APIHandler struct {
 	mux    *http.ServeMux
 	server server
+	config string
 	script string
 }
 
-func NewAPIHandler(r prometheus.Gatherer, s server, pac string) *APIHandler {
+func NewAPIHandler(r prometheus.Gatherer, s server, config, pac string) *APIHandler {
 	m := http.NewServeMux()
 	a := &APIHandler{
 		mux:    m,
 		server: s,
+		config: config,
 		script: pac,
 	}
 	m.HandleFunc("/metrics", promhttp.HandlerFor(r, promhttp.HandlerOpts{}).ServeHTTP)
@@ -68,7 +70,9 @@ func (h *APIHandler) readyz(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *APIHandler) configz(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusNotImplemented)
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "text/plain")
+	w.Write([]byte(h.config))
 }
 
 func (h *APIHandler) pac(w http.ResponseWriter, r *http.Request) {
