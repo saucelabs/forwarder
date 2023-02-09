@@ -93,7 +93,7 @@ func (c *command) RunE(cmd *cobra.Command, args []string) error {
 	f := runctx.Funcs{p.Run}
 
 	if c.apiServerConfig.Addr != "" {
-		h := forwarder.NewAPIHandler(c.promReg, p, script)
+		h := forwarder.NewAPIHandler(c.promReg, p, config, script)
 		a, err := forwarder.NewHTTPServer(c.apiServerConfig, h, logger.Named("api"))
 		if err != nil {
 			return err

@@ -32,7 +32,7 @@ func (c *command) RunE(cmd *cobra.Command, args []string) error {
 	}
 
 	r := prometheus.NewRegistry()
-	a, err := forwarder.NewHTTPServer(c.apiServerConfig, forwarder.NewAPIHandler(r, s, ""), logger.Named("api"))
+	a, err := forwarder.NewHTTPServer(c.apiServerConfig, forwarder.NewAPIHandler(r, s, config, ""), logger.Named("api"))
 	if err != nil {
 		return err
 	}
