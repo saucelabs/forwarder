@@ -66,6 +66,7 @@ issues:
     - "`nop.+` is unused"
     - "can be `expvar.Var`"
     - "can be `fmt.Stringer`"
+    - "missing cases in switch of type Scheme: TunnelScheme"
     - "returns interface \\(github.com/dop251/goja\\.Value\\)"
     - "returns interface \\(github.com/google/martian/v3\\.(Request|Response)+Modifier\\)"
     - "string `https?` has \\d+ occurrences"

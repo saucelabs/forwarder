@@ -85,7 +85,7 @@ func (c *HTTPProxyConfig) Validate() error {
 	if err := c.HTTPServerConfig.Validate(); err != nil {
 		return err
 	}
-	if c.Protocol != HTTPScheme && c.Protocol != HTTPSScheme {
+	if c.Protocol != HTTPScheme && c.Protocol != HTTPSScheme && c.Protocol != TunnelScheme {
 		return fmt.Errorf("unsupported protocol: %s", c.Protocol)
 	}
 	if !c.ProxyLocalhost.isValid() {
@@ -157,6 +157,7 @@ func (hp *HTTPProxy) configureHTTPS() error {
 func (hp *HTTPProxy) configureProxy() {
 	hp.proxy = martian.NewProxy()
 	hp.proxy.AllowHTTP = true
+	hp.proxy.ConnectPassthrough = hp.config.Protocol == TunnelScheme
 	hp.proxy.WithoutWarning = true
 	hp.proxy.ErrorResponse = errorResponse
 	hp.proxy.CloseAfterReply = hp.config.CloseAfterReply
