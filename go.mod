@@ -7,7 +7,7 @@ require (
 	github.com/google/go-cmp v0.5.9
 	github.com/google/martian/v3 v3.1.0
 	github.com/gorilla/websocket v1.5.0
-	github.com/mmatczuk/anyflag v0.0.0-20221011091730-9f8baeb6fd9c
+	github.com/mmatczuk/anyflag v0.0.0-20230209112147-9567d4cab866
 	github.com/prometheus/client_golang v1.13.0
 	github.com/prometheus/common v0.37.0
 	github.com/spf13/cobra v1.5.0
