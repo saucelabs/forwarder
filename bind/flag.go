@@ -118,7 +118,7 @@ func HTTPServerConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPServerConfig, prefix
 	fs.VarP(anyflag.NewValue[*url.Userinfo](cfg.BasicAuth, &cfg.BasicAuth, forwarder.ParseUserInfo),
 		namePrefix+"basic-auth", "", usagePrefix+"HTTP server basic-auth in the form of `username:password`")
 	fs.Var(anyflag.NewValue[httplog.LoggerMode](cfg.LogHTTPMode, &cfg.LogHTTPMode, httplog.ParseMode),
-		namePrefix+"log-http-requests", usagePrefix+"log http request, one of url, headers, body, error; error mode is default and logs requests with status code >= 500")
+		namePrefix+"log-http", usagePrefix+"log http, one of url, headers, body, error; error mode is default and logs requests with status code >= 500")
 }
 
 func TLSConfig(fs *pflag.FlagSet, cfg *forwarder.TLSConfig) {
