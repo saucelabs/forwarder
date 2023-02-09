@@ -184,7 +184,7 @@ func Command() (cmd *cobra.Command) {
 	defer func() {
 		fs := cmd.Flags()
 		bind.HTTPProxyConfig(fs, c.httpProxyConfig, c.logConfig)
-		fs.VarP(anyflag.NewSliceValue[*forwarder.HostPortUser](c.credentials, &c.credentials, forwarder.ParseHostPortUser),
+		fs.VarP(anyflag.NewSliceValueWithRedact[*forwarder.HostPortUser](c.credentials, &c.credentials, forwarder.ParseHostPortUser, forwarder.RedactHostPortUser),
 			"credentials", "c",
 			"site or upstream proxy basic authentication credentials in the form of `username:password@host:port`, "+
 				"host and port can be set to \"*\" to match all (can be specified multiple times)")
