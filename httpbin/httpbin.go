@@ -72,6 +72,11 @@ func statusHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(c)
+
+	q := r.URL.Query()
+	if b := q.Get("body"); b == "true" {
+		w.Write([]byte(http.StatusText(c)))
+	}
 }
 
 var rnd = rand.NewSource(time.Now().Unix())
