@@ -21,6 +21,7 @@ import (
 	"github.com/google/martian/v3/fifo"
 	"github.com/google/martian/v3/httpspec"
 	"github.com/saucelabs/forwarder/httplog"
+	"github.com/saucelabs/forwarder/log"
 	"github.com/saucelabs/forwarder/middleware"
 	"github.com/saucelabs/forwarder/pac"
 )
@@ -103,14 +104,14 @@ type HTTPProxy struct {
 	pac       PACResolver
 	creds     *CredentialsMatcher
 	transport http.RoundTripper
-	log       Logger
+	log       log.Logger
 	proxy     *martian.Proxy
 	addr      atomic.Pointer[string]
 
 	TLSConfig *tls.Config
 }
 
-func NewHTTPProxy(cfg *HTTPProxyConfig, pr PACResolver, cm *CredentialsMatcher, rt http.RoundTripper, log Logger) (*HTTPProxy, error) {
+func NewHTTPProxy(cfg *HTTPProxyConfig, pr PACResolver, cm *CredentialsMatcher, rt http.RoundTripper, log log.Logger) (*HTTPProxy, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, err
 	}
