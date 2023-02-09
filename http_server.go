@@ -13,12 +13,12 @@ import (
 	"net/http"
 	"net/url"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/saucelabs/forwarder/httplog"
 	"github.com/saucelabs/forwarder/middleware"
-	"go.uber.org/atomic"
 )
 
 type Scheme string
@@ -126,7 +126,7 @@ type HTTPServer struct {
 	config *HTTPServerConfig
 	log    Logger
 	srv    *http.Server
-	addr   atomic.String
+	addr   atomic.Pointer[string]
 
 	Listener net.Listener
 }
@@ -208,8 +208,9 @@ func (hs *HTTPServer) Run(ctx context.Context) error {
 	}
 	defer listener.Close()
 
-	hs.addr.Store(listener.Addr().String())
-	hs.log.Infof("HTTP server listen address=%s protocol=%s", listener.Addr(), hs.config.Protocol)
+	addr := listener.Addr().String()
+	hs.addr.Store(&addr)
+	hs.log.Infof("HTTP server listen address=%s protocol=%s", addr, hs.config.Protocol)
 
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -263,5 +264,9 @@ func (hs *HTTPServer) listener() (net.Listener, error) {
 
 // Addr returns the address the server is listening on or an empty string if the server is not running.
 func (hs *HTTPServer) Addr() string {
-	return hs.addr.Load()
+	addr := hs.addr.Load()
+	if addr == nil {
+		return ""
+	}
+	return *addr
 }

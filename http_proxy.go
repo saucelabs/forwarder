@@ -14,6 +14,7 @@ import (
 	"net/url"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/google/martian/v3"
@@ -22,7 +23,6 @@ import (
 	"github.com/saucelabs/forwarder/httplog"
 	"github.com/saucelabs/forwarder/middleware"
 	"github.com/saucelabs/forwarder/pac"
-	"go.uber.org/atomic"
 )
 
 type ProxyLocalhostMode string
@@ -105,7 +105,7 @@ type HTTPProxy struct {
 	transport *http.Transport
 	log       Logger
 	proxy     *martian.Proxy
-	addr      atomic.String
+	addr      atomic.Pointer[string]
 
 	TLSConfig *tls.Config
 	Listener  net.Listener
@@ -367,8 +367,9 @@ func (hp *HTTPProxy) Run(ctx context.Context) error {
 	}
 	defer listener.Close()
 
-	hp.addr.Store(listener.Addr().String())
-	hp.log.Infof("PROXY server listen address=%s protocol=%s", listener.Addr(), hp.config.Protocol)
+	addr := listener.Addr().String()
+	hp.addr.Store(&addr)
+	hp.log.Infof("PROXY server listen address=%s protocol=%s", addr, hp.config.Protocol)
 
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -416,7 +417,11 @@ func (hp *HTTPProxy) listener() (net.Listener, error) {
 
 // Addr returns the address the server is listening on or an empty string if the server is not running.
 func (hp *HTTPProxy) Addr() string {
-	return hp.addr.Load()
+	addr := hp.addr.Load()
+	if addr == nil {
+		return ""
+	}
+	return *addr
 }
 
 // headerRemover removes headers that match given prefix.
