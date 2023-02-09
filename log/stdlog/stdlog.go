@@ -71,3 +71,8 @@ func (sl StdLogger) Debugf(format string, args ...interface{}) {
 	}
 	sl.log.Printf(sl.name+"DEBUG: "+format, args...)
 }
+
+// Unwrap returns the underlying log.Logger pointer.
+func (sl StdLogger) Unwrap() *log.Logger {
+	return sl.log
+}
