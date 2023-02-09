@@ -18,10 +18,13 @@ type command struct {
 }
 
 func (c *command) RunE(cmd *cobra.Command, args []string) error {
+	config := bind.DescribeFlags(cmd.Flags())
+
 	if f := c.logConfig.File; f != nil {
 		defer f.Close()
 	}
 	logger := stdlog.New(c.logConfig)
+	logger.Debugf("Configuration\n%s", config)
 
 	s, err := forwarder.NewHTTPServer(c.httpServerConfig, httpbin.Handler(), logger.Named("server"))
 	if err != nil {

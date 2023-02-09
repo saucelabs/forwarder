@@ -170,3 +170,14 @@ func MarkFlagFilename(cmd *cobra.Command, names ...string) {
 		}
 	}
 }
+
+func DescribeFlags(flags *pflag.FlagSet) string {
+	b := strings.Builder{}
+	flags.VisitAll(func(flag *pflag.Flag) {
+		if flag.Hidden || flag.Name == "help" {
+			return
+		}
+		b.WriteString(fmt.Sprintf("%s: %q\n", flag.Name, flag.Value))
+	})
+	return b.String()
+}

@@ -26,6 +26,14 @@ type command struct {
 }
 
 func (c *command) RunE(cmd *cobra.Command, args []string) error {
+	config := bind.DescribeFlags(cmd.Flags())
+
+	if f := c.logConfig.File; f != nil {
+		defer f.Close()
+	}
+	logger := stdlog.New(c.logConfig)
+	logger.Debugf("Configuration\n%s", config)
+
 	t := forwarder.NewHTTPTransport(c.httpTransportConfig, nil)
 
 	script, err := forwarder.ReadURL(c.pac, t)
@@ -35,11 +43,6 @@ func (c *command) RunE(cmd *cobra.Command, args []string) error {
 	if _, err := pac.NewProxyResolver(&pac.ProxyResolverConfig{Script: script}, nil); err != nil {
 		return err
 	}
-
-	if f := c.logConfig.File; f != nil {
-		defer f.Close()
-	}
-	logger := stdlog.New(c.logConfig)
 
 	s, err := forwarder.NewHTTPServer(c.httpServerConfig, servePAC(script), logger.Named("server"))
 	if err != nil {
