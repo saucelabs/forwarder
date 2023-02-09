@@ -12,6 +12,7 @@ import (
 
 	"github.com/saucelabs/forwarder"
 	"github.com/saucelabs/forwarder/bind"
+	"github.com/saucelabs/forwarder/log"
 	"github.com/saucelabs/forwarder/pac"
 	"github.com/spf13/cobra"
 )
@@ -25,7 +26,7 @@ type command struct {
 func (c *command) RunE(cmd *cobra.Command, args []string) error {
 	var resolver *net.Resolver
 	if len(c.dnsConfig.Servers) > 0 {
-		r, err := forwarder.NewResolver(c.dnsConfig, forwarder.NopLogger)
+		r, err := forwarder.NewResolver(c.dnsConfig, log.NopLogger)
 		if err != nil {
 			return err
 		}

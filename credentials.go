@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"net"
 	"net/url"
+
+	"github.com/saucelabs/forwarder/log"
 )
 
 type HostPortUser struct {
@@ -34,10 +36,10 @@ type CredentialsMatcher struct {
 	host     map[string]*url.Userinfo
 	port     map[string]*url.Userinfo
 	global   *url.Userinfo
-	log      Logger
+	log      log.Logger
 }
 
-func NewCredentialsMatcher(credentials []*HostPortUser, log Logger) (*CredentialsMatcher, error) {
+func NewCredentialsMatcher(credentials []*HostPortUser, log log.Logger) (*CredentialsMatcher, error) {
 	if len(credentials) == 0 {
 		return nil, nil //nolint:nilnil // nil is a valid value
 	}

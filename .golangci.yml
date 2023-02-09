@@ -68,6 +68,7 @@ issues:
     - "can be `fmt.Stringer`"
     - "returns interface \\(github.com/dop251/goja\\.Value\\)"
     - "returns interface \\(github.com/google/martian/v3\\.(Request|Response)+Modifier\\)"
+    - "shadow of imported from 'github.com/saucelabs/forwarder/log' package 'log'"
     - "string `https?` has \\d+ occurrences"
 
   exclude-rules:

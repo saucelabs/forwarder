@@ -4,7 +4,11 @@
 
 package forwarder
 
-import "net/url"
+import (
+	"net/url"
+
+	"github.com/saucelabs/forwarder/log"
+)
 
 type PACResolver interface {
 	// FindProxyForURL calls FindProxyForURL or FindProxyForURLEx function in the PAC script.
@@ -14,7 +18,7 @@ type PACResolver interface {
 
 type LoggingPACResolver struct {
 	Resolver PACResolver
-	Logger   Logger
+	Logger   log.Logger
 }
 
 func (r *LoggingPACResolver) FindProxyForURL(u *url.URL, hostname string) (string, error) {

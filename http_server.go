@@ -18,6 +18,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/saucelabs/forwarder/httplog"
+	"github.com/saucelabs/forwarder/log"
 	"github.com/saucelabs/forwarder/middleware"
 )
 
@@ -124,12 +125,12 @@ func (c *HTTPServerConfig) loadCertificate(tlsCfg *tls.Config) error {
 
 type HTTPServer struct {
 	config HTTPServerConfig
-	log    Logger
+	log    log.Logger
 	srv    *http.Server
 	addr   atomic.Pointer[string]
 }
 
-func NewHTTPServer(cfg *HTTPServerConfig, h http.Handler, log Logger) (*HTTPServer, error) {
+func NewHTTPServer(cfg *HTTPServerConfig, h http.Handler, log log.Logger) (*HTTPServer, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, err
 	}
@@ -162,7 +163,7 @@ func NewHTTPServer(cfg *HTTPServerConfig, h http.Handler, log Logger) (*HTTPServ
 	return hs, nil
 }
 
-func withMiddleware(cfg *HTTPServerConfig, log Logger, h http.Handler) http.Handler {
+func withMiddleware(cfg *HTTPServerConfig, log log.Logger, h http.Handler) http.Handler {
 	// Note that the order of execution is reversed.
 	if cfg.BasicAuth != nil {
 		p, _ := cfg.BasicAuth.Password()

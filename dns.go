@@ -10,6 +10,8 @@ import (
 	"net"
 	"net/url"
 	"time"
+
+	"github.com/saucelabs/forwarder/log"
 )
 
 type DNSConfig struct {
@@ -45,10 +47,10 @@ type resolver struct {
 	resolver net.Resolver
 	dialer   net.Dialer
 	servers  []*url.URL
-	log      Logger
+	log      log.Logger
 }
 
-func NewResolver(cfg *DNSConfig, log Logger) (*net.Resolver, error) {
+func NewResolver(cfg *DNSConfig, log log.Logger) (*net.Resolver, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, err
 	}
