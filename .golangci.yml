@@ -35,6 +35,8 @@ linters:
 linters-settings:
   errcheck:
     check-blank: true
+  funlen:
+    lines: 100
   gocognit:
     min-complexity: 40
   gocyclo:
