@@ -47,7 +47,7 @@ type Prometheus struct {
 
 func NewPrometheus(r prometheus.Registerer, namespace string) *Prometheus {
 	if r == nil {
-		prometheus.NewRegistry() // This registry will be discarded.
+		r = prometheus.NewRegistry() // This registry will be discarded.
 	}
 	f := promauto.With(r)
 	l := []string{"code", "method", "host", "source"}
