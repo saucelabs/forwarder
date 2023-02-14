@@ -8,14 +8,12 @@ import (
 	"bytes"
 	"net/http"
 	"net/http/httptest"
-	"os"
-	"regexp"
 	"testing"
 	"time"
 
-	"github.com/google/go-cmp/cmp"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/common/expfmt"
+	dto "github.com/prometheus/client_model/go"
+	"github.com/saucelabs/forwarder/utlils/golden"
 )
 
 func TestPrometheusWrap(t *testing.T) {
@@ -54,36 +52,12 @@ func TestPrometheusWrap(t *testing.T) {
 		s.ServeHTTP(w, r)
 	}
 
-	golden, err := os.ReadFile("testdata/TestPrometheusWrap.golden.txt")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	got := dumpPrometheusMetrics(t, r)
-	// Remove *_seconds_sum from the output, as it's not deterministic
-	got = regexp.MustCompile(`(?m)^.*_seconds_sum.*$`).ReplaceAllString(got, "")
-
-	if diff := cmp.Diff(string(golden), got); diff != "" {
-		t.Errorf("unexpected metrics (-want +got):\n%s", diff)
-		if err := os.WriteFile("testdata/TestPrometheusWrap.golden.txt", []byte(got), 0o644); err != nil {
-			t.Fatal(err)
+	golden.DiffPrometheusMetrics(t, r, func(mf *dto.MetricFamily) bool {
+		if int(*mf.Type) == 4 {
+			for _, m := range mf.Metric {
+				m.Histogram.SampleSum = nil
+			}
 		}
-	}
-}
-
-func dumpPrometheusMetrics(t *testing.T, r prometheus.Gatherer) string {
-	t.Helper()
-
-	got, err := r.Gather()
-	if err != nil {
-		t.Fatal(err)
-	}
-	var gotBuf bytes.Buffer
-	enc := expfmt.NewEncoder(&gotBuf, expfmt.FmtText)
-	for _, mf := range got {
-		if err := enc.Encode(mf); err != nil {
-			t.Fatal(err)
-		}
-	}
-	return gotBuf.String()
+		return true
+	})
 }

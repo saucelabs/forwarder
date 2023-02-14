@@ -12,7 +12,7 @@ test_http_request_duration_seconds_bucket{code="200",host="example.com",method="
 test_http_request_duration_seconds_bucket{code="200",host="example.com",method="GET",source="localhost",le="5"} 4
 test_http_request_duration_seconds_bucket{code="200",host="example.com",method="GET",source="localhost",le="10"} 4
 test_http_request_duration_seconds_bucket{code="200",host="example.com",method="GET",source="localhost",le="+Inf"} 4
-
+test_http_request_duration_seconds_sum{code="200",host="example.com",method="GET",source="localhost"} 0
 test_http_request_duration_seconds_count{code="200",host="example.com",method="GET",source="localhost"} 4
 # HELP test_http_request_size_bytes The HTTP request sizes in bytes.
 # TYPE test_http_request_size_bytes histogram
@@ -27,7 +27,7 @@ test_http_request_size_bytes_bucket{code="200",host="example.com",method="GET",s
 test_http_request_size_bytes_bucket{code="200",host="example.com",method="GET",source="localhost",le="5.24288e+06"} 4
 test_http_request_size_bytes_bucket{code="200",host="example.com",method="GET",source="localhost",le="1.048576e+07"} 4
 test_http_request_size_bytes_bucket{code="200",host="example.com",method="GET",source="localhost",le="+Inf"} 4
-test_http_request_size_bytes_sum{code="200",host="example.com",method="GET",source="localhost"} 119084
+test_http_request_size_bytes_sum{code="200",host="example.com",method="GET",source="localhost"} 0
 test_http_request_size_bytes_count{code="200",host="example.com",method="GET",source="localhost"} 4
 # HELP test_http_requests_total Total number of HTTP requests processed.
 # TYPE test_http_requests_total counter
@@ -45,5 +45,5 @@ test_http_response_size_bytes_bucket{code="200",host="example.com",method="GET",
 test_http_response_size_bytes_bucket{code="200",host="example.com",method="GET",source="localhost",le="5.24288e+06"} 4
 test_http_response_size_bytes_bucket{code="200",host="example.com",method="GET",source="localhost",le="1.048576e+07"} 4
 test_http_response_size_bytes_bucket{code="200",host="example.com",method="GET",source="localhost",le="+Inf"} 4
-test_http_response_size_bytes_sum{code="200",host="example.com",method="GET",source="localhost"} 118988
+test_http_response_size_bytes_sum{code="200",host="example.com",method="GET",source="localhost"} 0
 test_http_response_size_bytes_count{code="200",host="example.com",method="GET",source="localhost"} 4
