@@ -17,6 +17,7 @@ linters:
   disable:
     - contextcheck
     - cyclop
+    - exhaustive
     - exhaustivestruct
     - exhaustruct
     - godox
@@ -47,7 +48,7 @@ linters-settings:
       - performance
       - style
   gomnd:
-    ignored-numbers: [0, 1, 5, 10, 30, 50, 90, 100, 128, 2048]
+    ignored-numbers: [0, 1, 2, 5, 10, 15, 30, 50, 60, 90, 100, 128, 2048]
   lll:
     line-length: 180
   nestif:
@@ -65,6 +66,7 @@ issues:
     - "Function 'RunE' has too many statements"
     - "Function 'RunE' is too long"
     - "Magic number: 0o"
+    - "Temporary has been deprecated since Go 1.18 because it shouldn't be used"
     - "`nop.+` is unused"
     - "can be `expvar.Var`"
     - "can be `fmt.Stringer`"
@@ -73,7 +75,6 @@ issues:
     - "returns interface \\(github.com/google/martian/v3\\.(Request|Response)+Modifier\\)"
     - "shadow of imported from 'github.com/saucelabs/forwarder/log' package 'log'"
     - "string `https?` has \\d+ occurrences"
-
   exclude-rules:
     - path: cmd/forwarder/version/version.go
       linters:
@@ -113,6 +114,10 @@ issues:
     - linters:
         - golint
       source: 'import _ "embed"'
+
+    - linters:
+        - errorlint
+      source: ".(net.Error)"
 
     - linters:
         - lll
