@@ -7,6 +7,7 @@ package proxy
 import (
 	"fmt"
 	"net"
+	"net/http"
 	"net/url"
 	"strings"
 
@@ -44,23 +45,34 @@ func (c *command) RunE(cmd *cobra.Command, args []string) error {
 	logger := stdlog.New(c.logConfig)
 	logger.Debugf("Configuration\n%s", config)
 
-	var resolver *net.Resolver
-	if len(c.dnsConfig.Servers) > 0 {
-		r, err := forwarder.NewResolver(c.dnsConfig, logger.Named("dns"))
-		if err != nil {
-			return err
-		}
-		resolver = r
+	// Google Martian uses a global logger package.
+	ml := logger.Named("proxy")
+	ml.Decorate = func(format string) string {
+		return strings.TrimPrefix(format, "martian: ")
 	}
-	t := forwarder.NewHTTPTransport(c.httpTransportConfig, resolver)
+	martianlog.SetLogger(ml)
 
 	var (
 		script string
 		pr     forwarder.PACResolver
+		rt     http.RoundTripper
 	)
+
+	{
+		var resolver *net.Resolver
+		if len(c.dnsConfig.Servers) > 0 {
+			r, err := forwarder.NewResolver(c.dnsConfig, logger.Named("dns"))
+			if err != nil {
+				return err
+			}
+			resolver = r
+		}
+		rt = forwarder.NewHTTPTransport(c.httpTransportConfig, resolver)
+	}
+
 	if c.pac != nil {
 		var err error
-		script, err = forwarder.ReadURL(c.pac, t)
+		script, err = forwarder.ReadURL(c.pac, rt)
 		if err != nil {
 			return fmt.Errorf("read PAC file: %w", err)
 		}
@@ -79,18 +91,12 @@ func (c *command) RunE(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("credentials: %w", err)
 	}
 
-	// Google Martian uses a global logger package.
-	ml := logger.Named("proxy")
-	ml.Decorate = func(format string) string {
-		return strings.TrimPrefix(format, "martian: ")
-	}
-	martianlog.SetLogger(ml)
-
-	p, err := forwarder.NewHTTPProxy(c.httpProxyConfig, pr, cm, t, logger.Named("proxy"))
+	var f runctx.Funcs
+	p, err := forwarder.NewHTTPProxy(c.httpProxyConfig, pr, cm, rt, logger.Named("proxy"))
 	if err != nil {
 		return err
 	}
-	f := runctx.Funcs{p.Run}
+	f = append(f, p.Run)
 
 	if c.apiServerConfig.Addr != "" {
 		h := forwarder.NewAPIHandler(c.promReg, p, config, script)
