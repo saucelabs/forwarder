@@ -20,6 +20,7 @@ import (
 	"github.com/saucelabs/forwarder/httplog"
 	"github.com/saucelabs/forwarder/log"
 	"github.com/saucelabs/forwarder/middleware"
+	"github.com/saucelabs/forwarder/utlils/certutil"
 )
 
 type Scheme string
@@ -113,7 +114,7 @@ func (c *HTTPServerConfig) loadCertificate(tlsCfg *tls.Config) error {
 	)
 
 	if c.CertFile == "" && c.KeyFile == "" {
-		cert, err = RSASelfSignedCert().Gen()
+		cert, err = certutil.RSASelfSignedCert().Gen()
 	} else {
 		cert, err = tls.LoadX509KeyPair(c.CertFile, c.KeyFile)
 	}

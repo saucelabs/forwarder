@@ -2,7 +2,7 @@
 // Use of this source code is governed by a MPL
 // license that can be found in the LICENSE file.
 
-package forwarder
+package certutil
 
 import (
 	"crypto/ecdsa"
