@@ -58,8 +58,13 @@ func delayHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	time.Sleep(time.Duration(ms) * time.Millisecond)
-	w.WriteHeader(http.StatusOK)
+	t := time.NewTimer(time.Duration(ms) * time.Millisecond)
+	select {
+	case <-r.Context().Done():
+		t.Stop()
+	case <-t.C:
+		w.WriteHeader(http.StatusOK)
+	}
 }
 
 // statusHandler implements the /status/{code} endpoint.
