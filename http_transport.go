@@ -19,7 +19,7 @@ type HTTPTransportConfig struct {
 	// With or without a timeout, the operating system may impose
 	// its own earlier timeout. For instance, TCP timeouts are
 	// often around 3 minutes.
-	DialTimeout time.Duration `json:"dial_timeout"`
+	DialTimeout time.Duration
 
 	// KeepAlive specifies the interval between keep-alive
 	// probes for an active network connection.
@@ -28,39 +28,39 @@ type HTTPTransportConfig struct {
 	// system. Network protocols or operating systems that do
 	// not support keep-alives ignore this field.
 	// If negative, keep-alive probes are disabled.
-	KeepAlive time.Duration `json:"keep_alive"`
+	KeepAlive time.Duration
 
 	// TLSHandshakeTimeout specifies the maximum amount of time waiting to
 	// wait for a TLS handshake. Zero means no timeout.
-	TLSHandshakeTimeout time.Duration `json:"tls_handshake_timeout"`
+	TLSHandshakeTimeout time.Duration
 
 	// MaxIdleConns controls the maximum number of idle (keep-alive)
 	// connections across all hosts. Zero means no limit.
-	MaxIdleConns int `json:"max_idle_conns"`
+	MaxIdleConns int
 
 	// MaxIdleConnsPerHost, if non-zero, controls the maximum idle
 	// (keep-alive) connections to keep per-host. If zero,
 	// DefaultMaxIdleConnsPerHost is used.
-	MaxIdleConnsPerHost int `json:"max_idle_conns_per_host"`
+	MaxIdleConnsPerHost int
 
 	// MaxConnsPerHost optionally limits the total number of
 	// connections per host, including connections in the dialing,
 	// active, and idle states. On limit violation, dials will block.
 	//
 	// Zero means no limit.
-	MaxConnsPerHost int `json:"max_conns_per_host"`
+	MaxConnsPerHost int
 
 	// IdleConnTimeout is the maximum amount of time an idle
 	// (keep-alive) connection will remain idle before closing
 	// itself.
 	// Zero means no limit.
-	IdleConnTimeout time.Duration `json:"idle_conn_timeout"`
+	IdleConnTimeout time.Duration
 
 	// ResponseHeaderTimeout, if non-zero, specifies the amount of
 	// time to wait for a server's response headers after fully
 	// writing the request (including its body, if any). This
 	// time does not include the time to read the response body.
-	ResponseHeaderTimeout time.Duration `json:"response_header_timeout"`
+	ResponseHeaderTimeout time.Duration
 
 	// ExpectContinueTimeout, if non-zero, specifies the amount of
 	// time to wait for a server's first response headers after fully
@@ -69,7 +69,7 @@ type HTTPTransportConfig struct {
 	// causes the body to be sent immediately, without
 	// waiting for the server to approve.
 	// This time does not include the time to send the request header.
-	ExpectContinueTimeout time.Duration `json:"expect_continue_timeout"`
+	ExpectContinueTimeout time.Duration
 
 	TLSConfig
 }

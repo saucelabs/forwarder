@@ -61,13 +61,13 @@ type ProxyFunc func(*http.Request) (*url.URL, error)
 
 type HTTPProxyConfig struct {
 	HTTPServerConfig
-	ProxyLocalhost    ProxyLocalhostMode         `json:"proxy_localhost"`
-	UpstreamProxy     *url.URL                   `json:"upstream_proxy_uri"`
-	UpstreamProxyFunc ProxyFunc                  `json:"-"`
-	RequestModifiers  []martian.RequestModifier  `json:"-"`
-	ResponseModifiers []martian.ResponseModifier `json:"-"`
-	CloseAfterReply   bool                       `json:"close_after_reply"`
-	RemoveHeaders     []string                   `json:"remove_headers"`
+	ProxyLocalhost    ProxyLocalhostMode
+	UpstreamProxy     *url.URL
+	UpstreamProxyFunc ProxyFunc
+	RequestModifiers  []martian.RequestModifier
+	ResponseModifiers []martian.ResponseModifier
+	CloseAfterReply   bool
+	RemoveHeaders     []string
 }
 
 func DefaultHTTPProxyConfig() *HTTPProxyConfig {

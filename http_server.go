@@ -74,18 +74,18 @@ func h2TLSConfigTemplate() *tls.Config {
 }
 
 type HTTPServerConfig struct {
-	Protocol          Scheme             `json:"protocol"`
-	Addr              string             `json:"addr"`
-	CertFile          string             `json:"cert_file"`
-	KeyFile           string             `json:"key_file"`
-	ReadTimeout       time.Duration      `json:"read_timeout"`
-	ReadHeaderTimeout time.Duration      `json:"read_header_timeout"`
-	WriteTimeout      time.Duration      `json:"write_timeout"`
-	LogHTTPMode       httplog.LoggerMode `json:"log_http_mode"`
+	Protocol          Scheme
+	Addr              string
+	CertFile          string
+	KeyFile           string
+	ReadTimeout       time.Duration
+	ReadHeaderTimeout time.Duration
+	WriteTimeout      time.Duration
+	LogHTTPMode       httplog.LoggerMode
 
-	PromNamespace string                `json:"prom_namespace"`
-	PromRegistry  prometheus.Registerer `json:"prom_registry"`
-	BasicAuth     *url.Userinfo         `json:"basic_auth"`
+	PromNamespace string
+	PromRegistry  prometheus.Registerer
+	BasicAuth     *url.Userinfo
 }
 
 func DefaultHTTPServerConfig() *HTTPServerConfig {

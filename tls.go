@@ -11,5 +11,5 @@ type TLSConfig struct {
 	// certificate. In this mode, TLS is susceptible to machine-in-the-middle
 	// attacks unless custom verification is used. This should be used only for
 	// testing or in combination with VerifyConnection or VerifyPeerCertificate.
-	InsecureSkipVerify bool `json:"insecure_skip_verify"`
+	InsecureSkipVerify bool
 }
