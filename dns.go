@@ -55,7 +55,7 @@ func NewResolver(cfg *DNSConfig, log log.Logger) (*net.Resolver, error) {
 		return nil, err
 	}
 
-	log.Infof("Using DNS servers: %s", cfg.Servers)
+	log.Infof("using DNS servers: %s", cfg.Servers)
 
 	r := new(resolver)
 	*r = resolver{
@@ -85,10 +85,10 @@ func nopResolver() *net.Resolver {
 
 func (r *resolver) dialDNS(ctx context.Context, network, address string) (net.Conn, error) {
 	for _, u := range r.servers {
-		r.log.Debugf("Dial DNS server %s instead of %s://%s", u.Redacted(), network, address)
+		r.log.Debugf("dial DNS server %s instead of %s://%s", u.Redacted(), network, address)
 		conn, err := r.dialer.DialContext(ctx, u.Scheme, u.Host)
 		if err != nil {
-			r.log.Errorf("Failed to dial DNS server %s: %v", u, err)
+			r.log.Errorf("failed to dial DNS server %s: %v", u, err)
 			continue
 		}
 		return conn, nil

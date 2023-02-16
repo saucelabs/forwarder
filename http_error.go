@@ -48,7 +48,7 @@ func errorResponse(req *http.Request, err error) *http.Response {
 		}
 	} else if _, ok := err.(denyError); ok { //nolint:errorlint // makes no sense here
 		code = http.StatusBadGateway
-		msg = fmt.Sprintf("Proxying is denied to host %q", req.Host)
+		msg = fmt.Sprintf("proxying is denied to host %q", req.Host)
 	} else {
 		code = http.StatusInternalServerError
 		msg = "An unexpected error occurred"

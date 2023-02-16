@@ -32,7 +32,7 @@ func (c *command) RunE(cmd *cobra.Command, args []string) error {
 		defer f.Close()
 	}
 	logger := stdlog.New(c.logConfig)
-	logger.Debugf("Configuration\n%s", config)
+	logger.Debugf("configuration\n%s", config)
 
 	t := forwarder.NewHTTPTransport(c.httpTransportConfig, nil)
 

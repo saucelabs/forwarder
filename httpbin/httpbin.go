@@ -34,7 +34,7 @@ func basicAuthHandler(w http.ResponseWriter, r *http.Request) {
 
 	user, pass, ok := strings.Cut(p, "/")
 	if !ok {
-		msg := fmt.Sprintf("Invalid path %q, expected ≤user>/<password>", p)
+		msg := fmt.Sprintf("invalid path %q, expected ≤user>/<password>", p)
 		http.Error(w, msg, http.StatusBadRequest)
 		return
 	}
@@ -113,7 +113,7 @@ func streamBytesHandler(w http.ResponseWriter, r *http.Request) {
 func atoi(w http.ResponseWriter, s string) (int, bool) {
 	v, err := strconv.Atoi(s)
 	if err != nil {
-		msg := fmt.Sprintf("Invalid argument %q: %s", s, err)
+		msg := fmt.Sprintf("invalid argument %q: %s", s, err)
 		http.Error(w, msg, http.StatusBadRequest)
 	}
 	return v, err == nil

@@ -124,7 +124,7 @@ func NewHTTPProxy(cfg *HTTPProxyConfig, pr PACResolver, cm *CredentialsMatcher, 
 		log.Infof("HTTP transport not configured, using standard library default")
 		rt = http.DefaultTransport.(*http.Transport).Clone() //nolint:forcetypeassert // we know it's a *http.Transport
 	} else if _, ok := rt.(*http.Transport); !ok {
-		log.Debugf("Using custom HTTP transport %T", rt)
+		log.Debugf("using custom HTTP transport %T", rt)
 	}
 
 	hp := &HTTPProxy{
@@ -147,7 +147,7 @@ func NewHTTPProxy(cfg *HTTPProxyConfig, pr PACResolver, cm *CredentialsMatcher, 
 
 func (hp *HTTPProxy) configureHTTPS() error {
 	if hp.config.CertFile == "" && hp.config.KeyFile == "" {
-		hp.log.Infof("No SSL certificate provided, using self-signed certificate")
+		hp.log.Infof("no SSL certificate provided, using self-signed certificate")
 	}
 	tlsCfg := httpsTLSConfigTemplate()
 	err := hp.config.loadCertificate(tlsCfg)
@@ -178,20 +178,20 @@ func (hp *HTTPProxy) configureProxy() {
 	var fn ProxyFunc
 	switch {
 	case hp.config.UpstreamProxyFunc != nil:
-		hp.log.Infof("Using external proxy function")
+		hp.log.Infof("using external proxy function")
 		fn = hp.config.UpstreamProxyFunc
 	case hp.config.UpstreamProxy != nil:
 		u := hp.upstreamProxyURL()
-		hp.log.Infof("Using upstream proxy: %s", u.Redacted())
+		hp.log.Infof("using upstream proxy: %s", u.Redacted())
 		fn = http.ProxyURL(u)
 	case hp.pac != nil:
-		hp.log.Infof("Using PAC proxy")
+		hp.log.Infof("using PAC proxy")
 		fn = hp.pacProxy
 	default:
-		hp.log.Infof("Using direct proxy")
+		hp.log.Infof("using direct proxy")
 	}
 
-	hp.log.Infof("Localhost proxying mode: %s", hp.config.ProxyLocalhost)
+	hp.log.Infof("localhost proxying mode: %s", hp.config.ProxyLocalhost)
 	if hp.config.ProxyLocalhost == DirectProxyLocalhost {
 		fn = hp.directLocalhost(fn)
 	}
@@ -236,7 +236,7 @@ func (hp *HTTPProxy) middlewareStack() martian.RequestResponseModifier {
 	// Wrap stack in a group so that we can run security checks before the httpspec modifiers.
 	topg := fifo.NewGroup()
 	if hp.config.BasicAuth != nil {
-		hp.log.Infof("Basic auth enabled")
+		hp.log.Infof("basic auth enabled")
 		topg.AddRequestModifier(hp.basicAuth(hp.config.BasicAuth))
 	}
 	if hp.config.ProxyLocalhost == DenyProxyLocalhost {
@@ -376,7 +376,7 @@ func (hp *HTTPProxy) Run(ctx context.Context) error {
 
 	addr := listener.Addr().String()
 	hp.addr.Store(&addr)
-	hp.log.Infof("PROXY server listen address=%s protocol=%s", addr, hp.config.Protocol)
+	hp.log.Infof("server listen address=%s protocol=%s", addr, hp.config.Protocol)
 
 	var wg sync.WaitGroup
 	wg.Add(1)

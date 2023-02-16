@@ -292,7 +292,7 @@ func TestProxyResolverLibpac(t *testing.T) {
 
 			for _, c := range calls {
 				if c.hostname != "" {
-					t.Logf("Using custom host name %q for %q", c.hostname, c.url)
+					t.Logf("using custom host name %q for %q", c.hostname, c.url)
 				}
 
 				p, err := pr.FindProxyForURL(c.url, c.hostname)
@@ -312,7 +312,7 @@ func TestProxyResolverLibpac(t *testing.T) {
 					}
 					t.Log("FindProxyForURL error:", err)
 				default:
-					t.Errorf("Unknown call message: %q", c.msg)
+					t.Errorf("unknown call message: %q", c.msg)
 				}
 			}
 		})
