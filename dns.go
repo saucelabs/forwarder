@@ -20,9 +20,9 @@ type DNSConfig struct {
 	// - Known schemes: udp, tcp
 	// - IP ONLY.
 	// - Port in a valid range: 1 - 65535.
-	Servers []*url.URL `json:"servers"`
+	Servers []*url.URL
 	// Timeout is the timeout for DNS queries.
-	Timeout time.Duration `json:"timeout"`
+	Timeout time.Duration
 }
 
 func DefaultDNSConfig() *DNSConfig {
