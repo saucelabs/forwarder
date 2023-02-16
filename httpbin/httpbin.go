@@ -1,9 +1,12 @@
+// Copyright 2022 The forwarder Authors. All rights reserved.
+// Use of this source code is governed by a MPL
+// license that can be found in the LICENSE file.
+
 package httpbin
 
 import (
 	"fmt"
 	"io"
-	"math/rand"
 	"net/http"
 	"strconv"
 	"strings"
@@ -84,8 +87,6 @@ func statusHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-var rnd = rand.NewSource(time.Now().Unix())
-
 // streamBytesHandler implements the /stream-bytes/{bytes} endpoint.
 // See https://httpbin.org/#/Dynamic_data/get_stream_bytes__n_
 func streamBytesHandler(w http.ResponseWriter, r *http.Request) {
@@ -107,7 +108,11 @@ func streamBytesHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/octet-stream")
 	w.WriteHeader(http.StatusOK)
-	io.CopyBuffer(w, io.LimitReader(rand.New(rnd), int64(n)), make([]byte, chunkSize))
+
+	io.CopyBuffer(w, &patternReader{
+		Pattern: []byte("SauceLabs"),
+		N:       int64(n),
+	}, make([]byte, chunkSize))
 }
 
 func atoi(w http.ResponseWriter, s string) (int, bool) {
