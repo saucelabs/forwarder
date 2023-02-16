@@ -28,7 +28,7 @@ func TestBasicAuthWrap(t *testing.T) {
 
 	h := ba.Wrap(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Foo") != "" {
-			t.Errorf("Auth header should not be forwarded")
+			t.Errorf("auth header should not be forwarded")
 		}
 		w.WriteHeader(http.StatusOK)
 	}), "user", "pass")
@@ -40,7 +40,7 @@ func TestBasicAuthWrap(t *testing.T) {
 
 		h.ServeHTTP(w, r)
 		if w.Result().StatusCode != http.StatusOK {
-			t.Errorf("Authenticated failed, got %v", w.Result().StatusCode)
+			t.Errorf("got %v", w.Result().StatusCode)
 		}
 	})
 
@@ -50,7 +50,7 @@ func TestBasicAuthWrap(t *testing.T) {
 
 		h.ServeHTTP(w, r)
 		if w.Result().StatusCode != http.StatusUnauthorized {
-			t.Errorf("Authenticated failed, got %v", w.Result().StatusCode)
+			t.Errorf("got %v", w.Result().StatusCode)
 		}
 	})
 }

@@ -117,7 +117,7 @@ func (m *CredentialsMatcher) MatchURL(u *url.URL) *url.Userinfo {
 		case "https":
 			hostport = fmt.Sprintf("%s:%d", u.Host, httpsPort)
 		default:
-			m.log.Errorf("Cannot to determine port for %s", u.Redacted())
+			m.log.Errorf("cannot to determine port for %s", u.Redacted())
 			return nil
 		}
 	}

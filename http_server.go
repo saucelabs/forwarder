@@ -183,7 +183,7 @@ func withMiddleware(cfg *HTTPServerConfig, log log.Logger, h http.Handler) http.
 
 func (hs *HTTPServer) configureHTTPS() error {
 	if hs.config.CertFile == "" && hs.config.KeyFile == "" {
-		hs.log.Infof("No SSL certificate provided, using self-signed certificate")
+		hs.log.Infof("no SSL certificate provided, using self-signed certificate")
 	}
 	tlsCfg := httpsTLSConfigTemplate()
 	err := hs.config.loadCertificate(tlsCfg)
@@ -194,7 +194,7 @@ func (hs *HTTPServer) configureHTTPS() error {
 
 func (hs *HTTPServer) configureHTTP2() error {
 	if hs.config.CertFile == "" && hs.config.KeyFile == "" {
-		hs.log.Infof("No SSL certificate provided, using self-signed certificate")
+		hs.log.Infof("no SSL certificate provided, using self-signed certificate")
 	}
 	tlsCfg := h2TLSConfigTemplate()
 	err := hs.config.loadCertificate(tlsCfg)
@@ -221,7 +221,7 @@ func (hs *HTTPServer) Run(ctx context.Context) error {
 
 		<-ctx.Done()
 		if err := hs.srv.Shutdown(context.Background()); err != nil {
-			hs.log.Errorf("Failed to shutdown server error=%s", err)
+			hs.log.Errorf("failed to shutdown server error=%s", err)
 		}
 	}()
 
@@ -236,7 +236,7 @@ func (hs *HTTPServer) Run(ctx context.Context) error {
 	}
 	if srvErr != nil {
 		if errors.Is(srvErr, http.ErrServerClosed) {
-			hs.log.Debugf("Server was shutdown gracefully")
+			hs.log.Debugf("server was shutdown gracefully")
 			srvErr = nil
 		}
 		return srvErr

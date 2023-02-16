@@ -35,7 +35,7 @@ func events(w http.ResponseWriter, r *http.Request) {
 	var i int
 	for {
 		if err := r.Context().Err(); err != nil {
-			log.Printf("Client disconnected (%s)", err)
+			log.Printf("client disconnected (%s)", err)
 			return
 		}
 
