@@ -12,7 +12,7 @@ import (
 
 func TestBasicAuth(t *testing.T) {
 	ba := NewBasicAuth()
-	r := httptest.NewRequest("GET", "/", nil)
+	r := httptest.NewRequest(http.MethodGet, "/", nil)
 	r.SetBasicAuth("user", "pass")
 
 	if user, pass, ok := ba.BasicAuth(r); !ok || user != "user" || pass != "pass" {
