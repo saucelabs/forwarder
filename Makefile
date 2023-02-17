@@ -24,7 +24,7 @@ build:
 .PHONY: dist
 dist: GORELEASER_CURRENT_TAG=1.0.0-rc
 dist:
-	@goreleaser --clean --snapshot
+	@goreleaser --clean --snapshot --skip-docker --skip-publish
 
 .PHONY: docs
 docs:
