@@ -93,16 +93,13 @@ func DefaultHTTPServerConfig() *HTTPServerConfig {
 		Protocol:          HTTPScheme,
 		Addr:              ":8080",
 		ReadHeaderTimeout: 1 * time.Minute,
-		LogHTTPMode:       httplog.ErrOnlyLogMode,
+		LogHTTPMode:       httplog.Errors,
 	}
 }
 
 func (c *HTTPServerConfig) Validate() error {
 	if err := validatedUserInfo(c.BasicAuth); err != nil {
 		return fmt.Errorf("basic_auth: %w", err)
-	}
-	if err := c.LogHTTPMode.Validate(); err != nil {
-		return fmt.Errorf("log_http_mode: %w", err)
 	}
 	return nil
 }
@@ -175,7 +172,9 @@ func withMiddleware(cfg *HTTPServerConfig, log log.Logger, h http.Handler) http.
 	}
 
 	// Logger middleware must immediately follow the Prometheus middleware because it uses the Prometheus delegator.
-	h = httplog.NewLogger(log.Infof, cfg.LogHTTPMode).LogFunc().Wrap(h)
+	if cfg.LogHTTPMode != httplog.None {
+		h = httplog.NewLogger(log.Infof, cfg.LogHTTPMode).LogFunc().Wrap(h)
+	}
 
 	// Prometheus middleware must be the first one to be executed to collect metrics for all other middlewares.
 	h = middleware.NewPrometheus(cfg.PromRegistry, cfg.PromNamespace).Wrap(h)

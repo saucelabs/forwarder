@@ -76,7 +76,7 @@ func DefaultHTTPProxyConfig() *HTTPProxyConfig {
 			Protocol:          HTTPScheme,
 			Addr:              ":3128",
 			ReadHeaderTimeout: 1 * time.Minute,
-			LogHTTPMode:       httplog.ErrOnlyLogMode,
+			LogHTTPMode:       httplog.Errors,
 		},
 		ProxyLocalhost: DenyProxyLocalhost,
 	}
@@ -262,9 +262,11 @@ func (hp *HTTPProxy) middlewareStack() martian.RequestResponseModifier {
 		fg.AddResponseModifier(m)
 	}
 
-	logHTTP := httplog.NewLogger(hp.log.Infof, hp.config.LogHTTPMode).LogFunc()
-	fg.AddRequestModifier(logHTTP)
-	fg.AddResponseModifier(logHTTP)
+	if hp.config.LogHTTPMode != httplog.None {
+		lf := httplog.NewLogger(hp.log.Infof, hp.config.LogHTTPMode).LogFunc()
+		fg.AddRequestModifier(lf)
+		fg.AddResponseModifier(lf)
+	}
 
 	if hp.config.HTTPServerConfig.Addr != "" {
 		p := middleware.NewPrometheus(hp.config.PromRegistry, hp.config.PromNamespace)
@@ -283,8 +285,8 @@ func (hp *HTTPProxy) abortIf(condition func(r *http.Request) bool, response func
 			return nil
 		}
 
-		logHTTP := httplog.NewLogger(hp.log.Infof, hp.config.LogHTTPMode).LogFunc()
-		logHTTP.ModifyRequest(req) //nolint:errcheck // This is only logging.
+		lf := httplog.NewLogger(hp.log.Infof, hp.config.LogHTTPMode).LogFunc()
+		lf.ModifyRequest(req) //nolint:errcheck // just logging
 
 		ctx := martian.NewContext(req)
 		_, brw, err := ctx.Session().Hijack()
@@ -300,7 +302,7 @@ func (hp *HTTPProxy) abortIf(condition func(r *http.Request) bool, response func
 			return fmt.Errorf("got error while flushing response back to client: %w", err)
 		}
 
-		logHTTP.ModifyResponse(resp) //nolint:errcheck // this is only logging
+		lf.ModifyResponse(resp) //nolint:errcheck // just logging
 
 		return returnErr
 	})

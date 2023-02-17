@@ -57,7 +57,7 @@ func HTTPProxyConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPProxyConfig, lcfg *lo
 		forwarder.DirectProxyLocalhost,
 	}
 	fs.VarP(anyflag.NewValue[forwarder.ProxyLocalhostMode](cfg.ProxyLocalhost, &cfg.ProxyLocalhost, anyflag.EnumParser[forwarder.ProxyLocalhostMode](proxyLocalhostValues...)),
-		"proxy-localhost", "t", "accept or deny requests to localhost, one of deny, allow, direct; in direct mode localhost requests are not sent to upstream proxy if present")
+		"proxy-localhost", "t", "accept or deny requests to localhost, one of: deny, allow, direct; in direct mode localhost requests are not sent to upstream proxy if present")
 
 	fs.StringSliceVar(&cfg.RemoveHeaders, "remove-headers", cfg.RemoveHeaders, "removes request headers if prefixes match (can be specified multiple times)")
 }
@@ -117,7 +117,7 @@ func HTTPServerConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPServerConfig, prefix
 
 	fs.VarP(anyflag.NewValue[forwarder.Scheme](cfg.Protocol, &cfg.Protocol,
 		anyflag.EnumParser[forwarder.Scheme](schemes...)),
-		namePrefix+"protocol", "", usagePrefix+"HTTP server protocol, one of "+supportedSchemesStr())
+		namePrefix+"protocol", "", usagePrefix+"HTTP server protocol, one of: "+supportedSchemesStr())
 	fs.StringVarP(&cfg.Addr,
 		namePrefix+"address", "", cfg.Addr, usagePrefix+"HTTP server listen address in the form of `host:port`")
 	fs.StringVar(&cfg.CertFile,
@@ -132,8 +132,16 @@ func HTTPServerConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPServerConfig, prefix
 		namePrefix+"write-timeout", cfg.WriteTimeout, usagePrefix+"HTTP server write timeout")
 	fs.VarP(anyflag.NewValueWithRedact[*url.Userinfo](cfg.BasicAuth, &cfg.BasicAuth, forwarder.ParseUserInfo, redactUserinfo),
 		namePrefix+"basic-auth", "", usagePrefix+"HTTP server basic-auth in the form of `username:password`")
-	fs.Var(anyflag.NewValue[httplog.Mode](cfg.LogHTTPMode, &cfg.LogHTTPMode, httplog.ParseMode),
-		namePrefix+"log-http", usagePrefix+"log http, one of url, headers, body, error; error mode is default and logs requests with status code >= 500")
+
+	httpLogModes := []httplog.Mode{
+		httplog.None,
+		httplog.URL,
+		httplog.Headers,
+		httplog.Body,
+		httplog.Errors,
+	}
+	fs.Var(anyflag.NewValue[httplog.Mode](cfg.LogHTTPMode, &cfg.LogHTTPMode, anyflag.EnumParser[httplog.Mode](httpLogModes...)),
+		namePrefix+"log-http", usagePrefix+"HTTP request and response logging, one of: none, url, headers, body, errors")
 }
 
 func TLSConfig(fs *pflag.FlagSet, cfg *forwarder.TLSConfig) {
