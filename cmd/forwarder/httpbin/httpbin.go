@@ -4,10 +4,10 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/saucelabs/forwarder"
 	"github.com/saucelabs/forwarder/bind"
-	"github.com/saucelabs/forwarder/httpbin"
 	"github.com/saucelabs/forwarder/log"
 	"github.com/saucelabs/forwarder/log/stdlog"
 	"github.com/saucelabs/forwarder/runctx"
+	"github.com/saucelabs/forwarder/utlils/httpbin"
 	"github.com/spf13/cobra"
 )
 
