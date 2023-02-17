@@ -130,6 +130,8 @@ type HTTPServer struct {
 	log    log.Logger
 	srv    *http.Server
 	addr   atomic.Pointer[string]
+
+	Listener net.Listener
 }
 
 func NewHTTPServer(cfg *HTTPServerConfig, h http.Handler, log log.Logger) (*HTTPServer, error) {
@@ -247,6 +249,10 @@ func (hs *HTTPServer) Run(ctx context.Context) error {
 }
 
 func (hs *HTTPServer) listener() (net.Listener, error) {
+	if hs.Listener != nil {
+		return hs.Listener, nil
+	}
+
 	switch hs.config.Protocol {
 	case HTTPScheme, HTTPSScheme, HTTP2Scheme:
 		listener, err := net.Listen("tcp", hs.srv.Addr)

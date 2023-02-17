@@ -109,6 +109,7 @@ type HTTPProxy struct {
 	addr      atomic.Pointer[string]
 
 	TLSConfig *tls.Config
+	Listener  net.Listener
 }
 
 func NewHTTPProxy(cfg *HTTPProxyConfig, pr PACResolver, cm *CredentialsMatcher, rt http.RoundTripper, log log.Logger) (*HTTPProxy, error) {
@@ -402,6 +403,10 @@ func (hp *HTTPProxy) Run(ctx context.Context) error {
 }
 
 func (hp *HTTPProxy) listener() (net.Listener, error) {
+	if hp.Listener != nil {
+		return hp.Listener, nil
+	}
+
 	listener, err := net.Listen("tcp", hp.config.Addr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open listener on address %s: %w", hp.config.Addr, err)
