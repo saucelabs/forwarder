@@ -68,4 +68,4 @@ update-devel-image:
 	@rm -rf $(TMPDIR)
 
 LICENSE.3RD_PARTY: LICENSE.3RD_PARTY.tpl go.mod go.sum
-	@go-licenses report . --template LICENSE.3RD_PARTY.tpl --ignore $(shell go list .) --ignore golang.org > LICENSE.3RD_PARTY
+	@go-licenses report ./cmd/forwarder --template LICENSE.3RD_PARTY.tpl --ignore $(shell go list .) --ignore golang.org > LICENSE.3RD_PARTY
