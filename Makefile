@@ -24,7 +24,7 @@ build:
 .PHONY: dist
 dist: GORELEASER_CURRENT_TAG=1.0.0-rc
 dist:
-	@goreleaser --rm-dist --snapshot
+	@goreleaser --clean --snapshot
 
 .PHONY: docs
 docs:
