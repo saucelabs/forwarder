@@ -8,6 +8,8 @@ changelog:
       - '^ci:'
       - '^docs:'
       - '^fix:'
+      - '^gh:'
+      - '^golangci:'
       - '^goreleaser:'
       - '^makefile:'
       - '^mk:'
