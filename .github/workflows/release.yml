@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 jobs:
-  goreleaser:
+  release:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -35,13 +35,7 @@ jobs:
         with:
           go-version: "${{env.GO_VERSION}}"
 
-      - name: Install dependencies
-        run: make install-dependencies
-
-      - name: Verify licenses
-        run: make LICENSE.3RD_PARTY
-
-      - name: Run GoReleaser
+      - name: Release
         uses: goreleaser/goreleaser-action@v3
         with:
           distribution: goreleaser
