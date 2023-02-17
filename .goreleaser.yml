@@ -37,7 +37,10 @@ checksum:
   name_template: "checksums"
 
 archives:
-  - name_template: "{{ .ProjectName }}-{{ .Version }}_{{ .Os }}.{{ .Arch }}"
+  - name_template: >-
+      {{ .ProjectName }}-{{ .Version }}_{{ .Os }}.
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "arm64" }}aarch64{{ end }}
     files:
       - LICENSE
       - LICENSE.3RD_PARTY
@@ -45,9 +48,6 @@ archives:
     format_overrides:
       - goos: linux
         format: tar.gz
-    replacements:
-      amd64: x86_64
-      arm64: aarch64
 
 nfpms:
   - package_name: "forwarder"
