@@ -132,7 +132,7 @@ func HTTPServerConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPServerConfig, prefix
 		namePrefix+"write-timeout", cfg.WriteTimeout, usagePrefix+"HTTP server write timeout")
 	fs.VarP(anyflag.NewValueWithRedact[*url.Userinfo](cfg.BasicAuth, &cfg.BasicAuth, forwarder.ParseUserInfo, redactUserinfo),
 		namePrefix+"basic-auth", "", usagePrefix+"HTTP server basic-auth in the form of `username:password`")
-	fs.Var(anyflag.NewValue[httplog.LoggerMode](cfg.LogHTTPMode, &cfg.LogHTTPMode, httplog.ParseMode),
+	fs.Var(anyflag.NewValue[httplog.Mode](cfg.LogHTTPMode, &cfg.LogHTTPMode, httplog.ParseMode),
 		namePrefix+"log-http", usagePrefix+"log http, one of url, headers, body, error; error mode is default and logs requests with status code >= 500")
 }
 

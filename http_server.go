@@ -81,7 +81,7 @@ type HTTPServerConfig struct {
 	ReadTimeout       time.Duration
 	ReadHeaderTimeout time.Duration
 	WriteTimeout      time.Duration
-	LogHTTPMode       httplog.LoggerMode
+	LogHTTPMode       httplog.Mode
 
 	PromNamespace string
 	PromRegistry  prometheus.Registerer

@@ -17,16 +17,16 @@ import (
 	"github.com/saucelabs/forwarder/middleware"
 )
 
-type LoggerMode string
+type Mode string
 
 const (
-	URLLogMode     LoggerMode = "url"
-	HeadersLogMode LoggerMode = "headers"
-	BodyLogMode    LoggerMode = "body"
-	ErrOnlyLogMode LoggerMode = "error"
+	URLLogMode     Mode = "url"
+	HeadersLogMode Mode = "headers"
+	BodyLogMode    Mode = "body"
+	ErrOnlyLogMode Mode = "error"
 )
 
-func (m LoggerMode) Validate() error {
+func (m Mode) Validate() error {
 	switch m {
 	case URLLogMode, HeadersLogMode, BodyLogMode, ErrOnlyLogMode:
 		return nil
@@ -35,8 +35,8 @@ func (m LoggerMode) Validate() error {
 	return fmt.Errorf("log mode %s not found", m)
 }
 
-func ParseMode(val string) (LoggerMode, error) {
-	mode := LoggerMode(val)
+func ParseMode(val string) (Mode, error) {
+	mode := Mode(val)
 	switch mode {
 	case URLLogMode, HeadersLogMode, BodyLogMode, ErrOnlyLogMode:
 		return mode, nil
@@ -47,11 +47,11 @@ func ParseMode(val string) (LoggerMode, error) {
 
 type Logger struct {
 	log  func(format string, args ...interface{})
-	mode LoggerMode
+	mode Mode
 }
 
 // NewLogger returns a logger that logs HTTP requests and responses.
-func NewLogger(logFunc func(format string, args ...interface{}), mode LoggerMode) *Logger {
+func NewLogger(logFunc func(format string, args ...interface{}), mode Mode) *Logger {
 	return &Logger{
 		log:  logFunc,
 		mode: mode,
