@@ -40,7 +40,7 @@ func (c *command) RunE(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("read PAC file: %w", err)
 	}
-	if _, err := pac.NewProxyResolver(&pac.ProxyResolverConfig{Script: script}, nil); err != nil {
+	if err := validatePACScript(script); err != nil {
 		return err
 	}
 
@@ -50,6 +50,15 @@ func (c *command) RunE(cmd *cobra.Command, args []string) error {
 	}
 
 	return runctx.Run(s.Run)
+}
+
+func validatePACScript(script string) error {
+	pr, err := pac.NewProxyResolver(&pac.ProxyResolverConfig{Script: script}, nil)
+	if err != nil {
+		return err
+	}
+	_, err = pr.FindProxyForURL(&url.URL{Scheme: "https", Host: "saucelabs.com"}, "")
+	return err
 }
 
 func servePAC(script string) http.Handler {

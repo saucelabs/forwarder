@@ -80,6 +80,9 @@ func (c *command) RunE(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return err
 		}
+		if _, err := pr.FindProxyForURL(&url.URL{Scheme: "https", Host: "saucelabs.com"}, ""); err != nil {
+			return err
+		}
 		pr = &forwarder.LoggingPACResolver{
 			Resolver: pr,
 			Logger:   logger.Named("pac"),
