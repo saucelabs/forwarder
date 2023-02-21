@@ -7,7 +7,7 @@ import (
 	"github.com/saucelabs/forwarder/log"
 	"github.com/saucelabs/forwarder/log/stdlog"
 	"github.com/saucelabs/forwarder/runctx"
-	"github.com/saucelabs/forwarder/utlils/httpbin"
+	"github.com/saucelabs/forwarder/utils/httpbin"
 	"github.com/spf13/cobra"
 )
 

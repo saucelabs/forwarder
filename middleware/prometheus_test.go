@@ -13,7 +13,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
-	"github.com/saucelabs/forwarder/utlils/golden"
+	"github.com/saucelabs/forwarder/utils/golden"
 )
 
 func TestPrometheusWrap(t *testing.T) {

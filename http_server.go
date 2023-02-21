@@ -20,7 +20,7 @@ import (
 	"github.com/saucelabs/forwarder/httplog"
 	"github.com/saucelabs/forwarder/log"
 	"github.com/saucelabs/forwarder/middleware"
-	"github.com/saucelabs/forwarder/utlils/certutil"
+	"github.com/saucelabs/forwarder/utils/certutil"
 )
 
 type Scheme string
