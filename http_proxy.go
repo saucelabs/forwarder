@@ -63,13 +63,14 @@ type ProxyFunc func(*http.Request) (*url.URL, error)
 
 type HTTPProxyConfig struct {
 	HTTPServerConfig
-	ProxyLocalhost    ProxyLocalhostMode
-	UpstreamProxy     *url.URL
-	UpstreamProxyFunc ProxyFunc
-	RequestModifiers  []martian.RequestModifier
-	ResponseModifiers []martian.ResponseModifier
-	CloseAfterReply   bool
-	RemoveHeaders     []string
+	ProxyLocalhost     ProxyLocalhostMode
+	UpstreamProxy      *url.URL
+	UpstreamProxyFunc  ProxyFunc
+	RequestModifiers   []martian.RequestModifier
+	ResponseModifiers  []martian.ResponseModifier
+	ConnectPassthrough bool
+	CloseAfterReply    bool
+	RemoveHeaders      []string
 }
 
 func DefaultHTTPProxyConfig() *HTTPProxyConfig {
@@ -161,7 +162,7 @@ func (hp *HTTPProxy) configureHTTPS() error {
 func (hp *HTTPProxy) configureProxy() {
 	hp.proxy = martian.NewProxy()
 	hp.proxy.AllowHTTP = true
-	hp.proxy.ConnectPassthrough = hp.config.Protocol == TunnelScheme
+	hp.proxy.ConnectPassthrough = hp.config.ConnectPassthrough
 	hp.proxy.WithoutWarning = true
 	hp.proxy.ErrorResponse = errorResponse
 	hp.proxy.CloseAfterReply = hp.config.CloseAfterReply
