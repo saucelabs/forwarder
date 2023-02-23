@@ -36,3 +36,30 @@ func wsEcho(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 }
+
+func wsHTML(w http.ResponseWriter, r *http.Request) {
+	const html = `<!DOCTYPE html>
+<html>
+<body>
+<h1>You should get a new message every second</h1>
+<script type="text/javascript">
+    const ws = new WebSocket('ws://' + location.host + '/ws/echo');
+    ws.onopen = function(e) {
+        document.body.innerHTML += 'WS opened<br>';
+    };
+    ws.onmessage = function(e) {
+        document.body.innerHTML += e.data + '<br>';
+    };
+    function send() {
+        ws.send(document.getElementById('message').value);
+    }
+</script>
+<button onclick="ws.close()">Close Source</button>
+<br/>
+<input type="text" id="message" value="" /><button onclick="send()">Send</button>
+<br/>
+</body>
+</html>
+`
+	w.Write([]byte(html))
+}

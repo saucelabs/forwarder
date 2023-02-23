@@ -29,6 +29,7 @@ func Handler() http.Handler {
 	m.HandleFunc("/events/", events)
 	m.HandleFunc("/events.html", eventsHTML)
 	m.HandleFunc("/ws/echo", wsEcho)
+	m.HandleFunc("/ws.html", wsHTML)
 	return m
 }
 
