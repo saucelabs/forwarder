@@ -1,8 +1,11 @@
 module github.com/saucelabs/forwarder/e2e
 
-go 1.19
+go 1.20
 
-require github.com/gavv/httpexpect/v2 v2.6.1
+require (
+	github.com/gavv/httpexpect/v2 v2.6.1
+	github.com/gorilla/websocket v1.4.2
+)
 
 require (
 	github.com/ajg/form v1.5.1 // indirect
@@ -11,7 +14,6 @@ require (
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/google/go-cmp v0.5.6 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
-	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/imkira/go-interpol v1.1.0 // indirect
 	github.com/klauspost/compress v1.15.0 // indirect
 	github.com/kr/pretty v0.3.0 // indirect
