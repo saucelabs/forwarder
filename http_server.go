@@ -274,3 +274,8 @@ func (hs *HTTPServer) Addr() string {
 	}
 	return *addr
 }
+
+// Ready returns true if the server is running and ready to accept requests.
+func (hs *HTTPServer) Ready() bool {
+	return hs.Addr() != ""
+}
