@@ -46,7 +46,7 @@ func Command() (cmd *cobra.Command) {
 		apiServerConfig:  forwarder.DefaultHTTPServerConfig(),
 		logConfig:        log.DefaultConfig(),
 	}
-	c.apiServerConfig.Addr = ":10000"
+	c.apiServerConfig.Addr = "localhost:10000"
 
 	defer func() {
 		fs := cmd.Flags()

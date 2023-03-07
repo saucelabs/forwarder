@@ -4,6 +4,7 @@ package e2e
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"math/rand"
 	"net"
@@ -15,7 +16,28 @@ import (
 	"testing"
 
 	"github.com/gavv/httpexpect/v2"
+	"golang.org/x/sync/errgroup"
 )
+
+func TestMain(m *testing.M) {
+	if !flag.Parsed() {
+		flag.Parse()
+	}
+
+	var eg errgroup.Group
+	eg.Go(func() error {
+		return waitForServerReady(*proxy)
+	})
+	eg.Go(func() error {
+		return waitForServerReady(*httpbin)
+	})
+	if err := eg.Wait(); err != nil {
+		fmt.Fprintf(os.Stderr, err.Error()+"\n")
+		os.Exit(1)
+	}
+
+	os.Exit(m.Run())
+}
 
 func TestStatusCodes(t *testing.T) {
 	// List of all valid status codes plus some non-standard ones.

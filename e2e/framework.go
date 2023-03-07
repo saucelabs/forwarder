@@ -1,13 +1,16 @@
 package e2e
 
 import (
+	"context"
 	"crypto/tls"
 	"flag"
+	"fmt"
 	"net/http"
 	"net/url"
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/gavv/httpexpect/v2"
 	"github.com/gorilla/websocket"
@@ -16,6 +19,7 @@ import (
 var (
 	proxy              = flag.String("proxy", "", "URL of the proxy to test against")
 	httpbin            = flag.String("httpbin", "", "URL of the httpbin server to test against")
+	maxWait            = flag.Duration("max-wait", 5*time.Second, "Maximum time to wait for the containers to become ready")
 	insecureSkipVerify = flag.Bool("insecure-skip-verify", false, "Skip TLS certificate verification")
 )
 
@@ -25,6 +29,44 @@ func init() {
 		*httpbin = "http://httpbin"
 		*insecureSkipVerify = true
 	}
+}
+
+// waitForServerReady checks the API server /readyz endpoint until it returns 200.
+// It assumes that the server is running on port 10000.
+func waitForServerReady(baseURL string) error {
+	var client http.Client
+
+	u, err := url.Parse(baseURL)
+	if err != nil {
+		return err
+	}
+	readyz := fmt.Sprintf("http://%s:10000/readyz", u.Hostname())
+
+	req, err := http.NewRequest(http.MethodGet, readyz, http.NoBody)
+	if err != nil {
+		return err
+	}
+
+	const backoff = 200 * time.Millisecond
+
+	var (
+		resp *http.Response
+		rerr error
+	)
+	for i := 0; i < int(*maxWait/backoff); i++ {
+		resp, rerr = client.Do(req.Clone(context.Background()))
+
+		if resp != nil && resp.StatusCode == http.StatusOK {
+			return nil
+		}
+
+		time.Sleep(backoff)
+	}
+	if rerr != nil {
+		return fmt.Errorf("%s not ready: %w", u.Hostname(), rerr)
+	}
+
+	return fmt.Errorf("%s not ready", u.Hostname())
 }
 
 func newTransport(t testing.TB) *http.Transport {
