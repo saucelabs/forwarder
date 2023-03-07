@@ -437,6 +437,11 @@ func (hp *HTTPProxy) Addr() string {
 	return *addr
 }
 
+// Ready returns true if the server is running and ready to accept requests.
+func (hp *HTTPProxy) Ready() bool {
+	return hp.Addr() != ""
+}
+
 // headerRemover removes headers that match given prefix.
 type headerRemover struct {
 	prefix string
