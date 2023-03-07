@@ -5,3 +5,8 @@ services:
     environment:
       FORWARDER_LOG_HTTP: "headers"
       FORWARDER_VERBOSE: "true"
+
+  upstream-proxy:
+    environment:
+      FORWARDER_LOG_HTTP: "headers"
+      FORWARDER_VERBOSE: "true"
