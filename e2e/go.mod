@@ -5,6 +5,7 @@ go 1.20
 require (
 	github.com/gavv/httpexpect/v2 v2.6.1
 	github.com/gorilla/websocket v1.4.2
+	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
 )
 
 require (

@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/gavv/httpexpect/v2"
 	"github.com/gorilla/websocket"
@@ -25,6 +26,34 @@ func init() {
 		*httpbin = "http://httpbin"
 		*insecureSkipVerify = true
 	}
+}
+
+// waitForServerReady checks the API server /readyz endpoint until it returns 200.
+// It assumes that the server is running on port 10000.
+func waitForServerReady(baseURL string) error {
+	var client http.Client
+
+	u, err := url.Parse(baseURL)
+	if err != nil {
+		return err
+	}
+	u.Host = u.Hostname() + ":10000"
+	u.Path = "/readyz"
+
+	for i := 0; i < 20; i++ {
+		r, err := http.NewRequest(http.MethodGet, u.String(), http.NoBody)
+		if err != nil {
+			return err
+		}
+		resp, err := client.Do(r)
+		if resp != nil && resp.StatusCode == http.StatusOK {
+			break
+		}
+
+		time.Sleep(200 * time.Millisecond)
+	}
+
+	return nil
 }
 
 func newTransport(t testing.TB) *http.Transport {

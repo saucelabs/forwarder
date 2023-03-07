@@ -15,7 +15,24 @@ import (
 	"testing"
 
 	"github.com/gavv/httpexpect/v2"
+	"golang.org/x/sync/errgroup"
 )
+
+func TestMain(m *testing.M) {
+	var eg errgroup.Group
+	eg.Go(func() error {
+		return waitForServerReady(*proxy)
+	})
+	eg.Go(func() error {
+		return waitForServerReady(*httpbin)
+	})
+	if err := eg.Wait(); err != nil {
+		fmt.Fprintf(os.Stderr, "containers are not ready: %v", err)
+		os.Exit(1)
+	}
+
+	os.Exit(m.Run())
+}
 
 func TestStatusCodes(t *testing.T) {
 	// List of all valid status codes plus some non-standard ones.
