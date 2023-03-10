@@ -284,6 +284,7 @@ func (hp *HTTPProxy) middlewareStack() martian.RequestResponseModifier {
 	}
 
 	fg.AddRequestModifier(martian.RequestModifierFunc(hp.setBasicAuth))
+	fg.AddRequestModifier(martian.RequestModifierFunc(setEmptyUserAgent))
 
 	return topg.ToImmutable()
 }
@@ -413,6 +414,15 @@ func (hp *HTTPProxy) setBasicAuth(req *http.Request) error {
 		}
 	}
 
+	return nil
+}
+
+func setEmptyUserAgent(req *http.Request) error {
+	if _, ok := req.Header["User-Agent"]; !ok {
+		// If the outbound request doesn't have a User-Agent header set,
+		// don't send the default Go HTTP client User-Agent.
+		req.Header.Set("User-Agent", "")
+	}
 	return nil
 }
 
