@@ -7,10 +7,12 @@
 package forwarder
 
 import (
+	"bufio"
 	"context"
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"net/url"
@@ -71,6 +73,10 @@ type HTTPProxyConfig struct {
 	ConnectPassthrough bool
 	CloseAfterReply    bool
 	RemoveHeaders      []string
+
+	// TestingHTTPHandler uses Martian's [http.Handler] implementation
+	// over [http.Server] instead of the default TCP server.
+	TestingHTTPHandler bool
 }
 
 func DefaultHTTPProxyConfig() *HTTPProxyConfig {
@@ -289,26 +295,63 @@ func (hp *HTTPProxy) abortIf(condition func(r *http.Request) bool, response func
 		}
 
 		lf := httplog.NewLogger(hp.log.Infof, hp.config.LogHTTPMode).LogFunc()
-		lf.ModifyRequest(req) //nolint:errcheck // just logging
+		if err := lf.ModifyRequest(req); err != nil {
+			hp.log.Errorf("got error while logging request: %s", err)
+		}
 
-		ctx := martian.NewContext(req)
-		_, brw, err := ctx.Session().Hijack()
+		res := response(req)
+		defer res.Body.Close()
+		res.Close = true // hijacked connection is closed by Martian in handleLoop()
+
+		if err := lf.ModifyResponse(res); err != nil {
+			hp.log.Errorf("got error while logging response: %s", err)
+		}
+
+		session := martian.NewContext(req).Session()
+		var (
+			brw *bufio.ReadWriter
+			rw  http.ResponseWriter
+			err error
+		)
+		_, brw, err = session.Hijack()
+		if err == nil {
+			hp.writeErrorResponseToBuffer(res, brw)
+		} else if errors.Is(err, http.ErrNotSupported) {
+			rw, err = session.HijackResponseWriter()
+			if err == nil {
+				hp.writeErrorResponseToResponseWriter(res, rw)
+			}
+		}
 		if err != nil {
-			return err
+			panic(err)
 		}
-
-		resp := response(req)
-		defer resp.Body.Close()
-		resp.Close = true // hijacked connection is closed by Martian in handleLoop()
-		resp.Write(brw)   //nolint:errcheck // it's a buffer
-		if err := brw.Flush(); err != nil {
-			return fmt.Errorf("got error while flushing response back to client: %w", err)
-		}
-
-		lf.ModifyResponse(resp) //nolint:errcheck // just logging
 
 		return returnErr
 	})
+}
+
+func (hp *HTTPProxy) writeErrorResponseToBuffer(res *http.Response, brw *bufio.ReadWriter) {
+	res.Write(brw) //nolint:errcheck // it's a buffer
+	if err := brw.Flush(); err != nil {
+		hp.log.Errorf("got error while flushing error response: %s", err)
+	}
+}
+
+func (hp *HTTPProxy) writeErrorResponseToResponseWriter(res *http.Response, rw http.ResponseWriter) {
+	header := rw.Header()
+	for k, vv := range res.Header {
+		for _, v := range vv {
+			header.Add(k, v)
+		}
+	}
+	if res.Close {
+		header.Set("Connection", "close")
+	}
+	rw.WriteHeader(res.StatusCode)
+
+	if _, err := io.Copy(rw, res.Body); err != nil {
+		hp.log.Errorf("got error while writing error response: %s", err)
+	}
 }
 
 func (hp *HTTPProxy) basicAuth(u *url.Userinfo) martian.RequestModifier {
@@ -373,6 +416,10 @@ func (hp *HTTPProxy) setBasicAuth(req *http.Request) error {
 	return nil
 }
 
+func (hp *HTTPProxy) Handler() http.Handler {
+	return hp.proxy.Handler()
+}
+
 func (hp *HTTPProxy) Run(ctx context.Context) error {
 	listener, err := hp.listener()
 	if err != nil {
@@ -395,7 +442,19 @@ func (hp *HTTPProxy) Run(ctx context.Context) error {
 		listener.Close()
 	}()
 
-	srvErr := hp.proxy.Serve(listener)
+	var srvErr error
+	if hp.config.TestingHTTPHandler {
+		hp.log.Infof("using http handler")
+		s := http.Server{
+			Handler:           hp.Handler(),
+			ReadTimeout:       hp.config.ReadTimeout,
+			ReadHeaderTimeout: hp.config.ReadHeaderTimeout,
+			WriteTimeout:      hp.config.WriteTimeout,
+		}
+		srvErr = s.Serve(listener)
+	} else {
+		srvErr = hp.proxy.Serve(listener)
+	}
 	if srvErr != nil {
 		if errors.Is(srvErr, net.ErrClosed) {
 			srvErr = nil
