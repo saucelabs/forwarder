@@ -271,7 +271,7 @@ func (hp *HTTPProxy) middlewareStack() martian.RequestResponseModifier {
 		fg.AddResponseModifier(lf)
 	}
 
-	if hp.config.HTTPServerConfig.Addr != "" {
+	if hp.config.PromRegistry != nil {
 		p := middleware.NewPrometheus(hp.config.PromRegistry, hp.config.PromNamespace)
 		stack.AddRequestModifier(p)
 		stack.AddResponseModifier(p)
