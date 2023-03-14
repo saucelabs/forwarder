@@ -7,10 +7,13 @@
 package forwarder
 
 import (
+	"bytes"
 	"encoding/json"
 	"net/http"
 	"net/http/pprof"
 	"runtime"
+	"sort"
+	"text/template"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -24,6 +27,8 @@ type APIHandler struct {
 	ready  func() bool
 	config string
 	script string
+
+	patterns []string
 }
 
 func NewAPIHandler(r prometheus.Gatherer, ready func() bool, config, pac string) *APIHandler {
@@ -34,17 +39,28 @@ func NewAPIHandler(r prometheus.Gatherer, ready func() bool, config, pac string)
 		config: config,
 		script: pac,
 	}
-	m.HandleFunc("/metrics", promhttp.HandlerFor(r, promhttp.HandlerOpts{}).ServeHTTP)
-	m.HandleFunc("/healthz", a.healthz)
-	m.HandleFunc("/readyz", a.readyz)
-	m.HandleFunc("/configz", a.configz)
-	m.HandleFunc("/pac", a.pac)
-	m.HandleFunc("/version", a.version)
 
-	m.HandleFunc("/debug/pprof/", pprof.Index)
+	var indexPatterns []string
+	handleFunc := func(pattern string, handler func(http.ResponseWriter, *http.Request)) {
+		indexPatterns = append(indexPatterns, pattern)
+		m.HandleFunc(pattern, handler)
+	}
+
+	handleFunc("/metrics", promhttp.HandlerFor(r, promhttp.HandlerOpts{}).ServeHTTP)
+	handleFunc("/healthz", a.healthz)
+	handleFunc("/readyz", a.readyz)
+	handleFunc("/configz", a.configz)
+	handleFunc("/pac", a.pac)
+	handleFunc("/version", a.version)
+
+	handleFunc("/debug/pprof/", pprof.Index)
 	m.HandleFunc("/debug/pprof/profile", pprof.Profile)
 	m.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
 	m.HandleFunc("/debug/pprof/trace", pprof.Trace)
+
+	sort.Strings(indexPatterns)
+	a.patterns = indexPatterns
+	m.HandleFunc("/", a.index)
 
 	return a
 }
@@ -98,6 +114,46 @@ func (h *APIHandler) version(w http.ResponseWriter, r *http.Request) {
 		GoVersion: runtime.Version(),
 	}
 	json.NewEncoder(w).Encode(v) //nolint // ignore error
+}
+
+const indexTemplate = `<!DOCTYPE html>
+<html>
+<head>
+<title>Forwarder {{.Version}}</title>
+</head>
+<body>
+<h1>Forwarder {{.Version}}</h1>
+<ul>
+{{range .Patterns}}
+<li><a href="{{.}}">{{.}}</a></li>
+{{end}}
+</ul>
+</body>
+</html>
+`
+
+func (h *APIHandler) index(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "text/html")
+
+	t, err := template.New("index").Parse(indexTemplate)
+	if err != nil {
+		w.Write([]byte(err.Error()))
+		return
+	}
+
+	var buf bytes.Buffer
+	if err := t.Execute(&buf, struct {
+		Version  string
+		Patterns []string
+	}{
+		Version:  version.Version,
+		Patterns: h.patterns,
+	}); err != nil {
+		w.Write([]byte(err.Error()))
+	}
+
+	buf.WriteTo(w) //nolint:errcheck // ignore error
 }
 
 func (h *APIHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
