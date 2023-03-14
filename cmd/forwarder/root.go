@@ -38,6 +38,7 @@ func rootCommand() *cobra.Command {
 	for _, cmd := range rootCmd.Commands() {
 		appendEnvToUsage(cmd, envPrefix)
 		wrapLongAt(cmd, maxCols)
+		sortFlags(cmd)
 	}
 
 	return rootCmd

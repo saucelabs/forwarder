@@ -58,3 +58,7 @@ func wrapTextAt(s string, width int) string {
 
 	return "\n" + sb.String()
 }
+
+func sortFlags(cmd *cobra.Command) {
+	cmd.Flags().SortFlags = true
+}
