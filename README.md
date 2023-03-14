@@ -14,3 +14,31 @@ Forwarder also implements [Microsoft's PAC extensions for IPv6](https://learn.mi
 So you can use `FindProxyForURL` and `FindProxyForURLEx` functions to implement IPv6-aware proxy rules.
 
 Forwarder can be used as a PAC file server (see `pac-server` command), or as a PAC file test util (see `pac-eval` command).
+
+### Available functions
+
+The following functions are available in PAC files:
+
+- alert
+- convert_addr
+- dateRange
+- dnsDomainIs
+- dnsDomainLevels
+- dnsResolve
+- dnsResolveEx
+- getClientVersion
+- getDay
+- getMonth
+- isInNet
+- isInNetEx
+- isPlainHostName
+- isResolvable
+- isResolvableEx
+- isValidIpAddress
+- localHostOrDomainIs
+- myIpAddress
+- myIpAddressEx
+- shExpMatch
+- sortIpAddressList
+- timeRange
+- weekdayRange
