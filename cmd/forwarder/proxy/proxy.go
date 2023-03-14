@@ -173,16 +173,6 @@ const example = `  # Start a HTTP proxy server
   forwarder proxy --address localhost:3128 -c bob:bp@example.com:* -c alice:ap@example.org:80,alice:ap@example.org:443
 `
 
-const apiEndpoints = `API endpoints:
-  /metrics - Prometheus metrics
-  /healthz - health check
-  /readyz - readiness check
-  /configz - proxy configuration
-  /pac - PAC file
-  /version - version information
-  /debug/pprof/ - pprof endpoints
-`
-
 func Command() (cmd *cobra.Command) {
 	c := command{
 		promReg:             prometheus.NewRegistry(),
@@ -219,7 +209,7 @@ func Command() (cmd *cobra.Command) {
 		Use:     "proxy [--protocol <http|https|h2>] [--address <host:port>] [--upstream-proxy <url>] [--pac <file|url>] [--credentials <username:password@host:port>]... [flags]",
 		Short:   "Start HTTP(S) proxy",
 		Long:    long,
-		Example: example + "\n" + apiEndpoints,
+		Example: example,
 		RunE:    c.RunE,
 	}
 }
