@@ -22,7 +22,7 @@ func Command() *cobra.Command {
 			w := cmd.OutOrStdout()
 
 			fmt.Fprintln(w, "Version:\t", version.Version)
-			fmt.Fprintln(w, "Built time:\t", version.Time)
+			fmt.Fprintln(w, "Build time:\t", version.Time)
 			fmt.Fprintln(w, "Git commit:\t", version.Commit)
 
 			fmt.Fprintln(w, "Go Arch:\t", runtime.GOARCH)
