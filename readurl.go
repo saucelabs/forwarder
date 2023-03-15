@@ -22,7 +22,7 @@ func ReadURL(u *url.URL, rt http.RoundTripper) (string, error) {
 	case "http", "https":
 		return readHTTP(u, rt)
 	default:
-		return "", fmt.Errorf("unsupported scheme %q, supported schemes are file, http and https", u.Scheme)
+		return "", fmt.Errorf("unsupported scheme %q, supported schemes are: file, http and https", u.Scheme)
 	}
 }
 
