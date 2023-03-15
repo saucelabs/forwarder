@@ -10,19 +10,16 @@ import (
 	"context"
 	"fmt"
 	"net"
-	"net/url"
+	"net/netip"
 	"time"
 
 	"github.com/saucelabs/forwarder/log"
 )
 
 type DNSConfig struct {
-	// Servers is a list of DNS servers to use, ex. udp://1.1.1.1:53.
-	// Requirements:
-	// - Known schemes: udp, tcp
-	// - IP ONLY.
-	// - Port in a valid range: 1 - 65535.
-	Servers []*url.URL
+	// Servers is a list of DNS servers to use.
+	// If provided with multiple servers, the first one is used as primary server, the rest are used as a fallback.
+	Servers []netip.AddrPort
 	// Timeout is the timeout for DNS queries.
 	Timeout time.Duration
 }
@@ -38,7 +35,7 @@ func (c *DNSConfig) Validate() error {
 		return fmt.Errorf("no DNS server configured")
 	}
 	for i, u := range c.Servers {
-		if err := validateDNSURL(u); err != nil {
+		if err := validateDNSAddress(u); err != nil {
 			return fmt.Errorf("servers[%d]: %w", i, err)
 		}
 	}
@@ -48,7 +45,7 @@ func (c *DNSConfig) Validate() error {
 type resolver struct {
 	resolver net.Resolver
 	dialer   net.Dialer
-	servers  []*url.URL
+	servers  []netip.AddrPort
 	log      log.Logger
 }
 
@@ -87,8 +84,8 @@ func nopResolver() *net.Resolver {
 
 func (r *resolver) dialDNS(ctx context.Context, network, address string) (net.Conn, error) {
 	for _, u := range r.servers {
-		r.log.Debugf("dial DNS server %s instead of %s://%s", u.Redacted(), network, address)
-		conn, err := r.dialer.DialContext(ctx, u.Scheme, u.Host)
+		r.log.Debugf("dial DNS server %s instead of %s", u, address)
+		conn, err := r.dialer.DialContext(ctx, network, u.String())
 		if err != nil {
 			r.log.Errorf("failed to dial DNS server %s: %v", u, err)
 			continue

@@ -8,6 +8,7 @@ package bind
 
 import (
 	"fmt"
+	"net/netip"
 	"net/url"
 	"os"
 	"strings"
@@ -36,10 +37,12 @@ func redactUserinfo(ui *url.Userinfo) string {
 }
 
 func DNSConfig(fs *pflag.FlagSet, cfg *forwarder.DNSConfig) {
-	fs.VarP(anyflag.NewSliceValue[*url.URL](nil, &cfg.Servers, forwarder.ParseDNSAddress),
-		"dns-server", "n", "DNS server IP or URL ex. 1.1.1.1 or udp://1.1.1.1:53 (can be specified multiple times)")
+	fs.VarP(anyflag.NewSliceValue[netip.AddrPort](nil, &cfg.Servers, forwarder.ParseDNSAddress),
+		"dns-server", "n",
+		"DNS server(s) to use instead of system default, format: <ip>[:<port>] (default port is 53). "+
+			"If specified multiple times, the first one is used as primary server, the rest are used as a fallback.")
 	fs.DurationVar(&cfg.Timeout,
-		"dns-timeout", cfg.Timeout, "timeout for DNS queries if DNS server is specified")
+		"dns-timeout", cfg.Timeout, "Timeout for dialing DNS servers.")
 }
 
 func PAC(fs *pflag.FlagSet, pac **url.URL) {
