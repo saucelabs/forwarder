@@ -51,10 +51,17 @@ func TestParseUserInfo(t *testing.T) {
 				if tc.err == "" {
 					t.Fatalf("expected success, got %q", err)
 				}
+
+				t.Logf("got error: %s", err)
+
 				if !strings.Contains(err.Error(), tc.err) {
 					t.Fatalf("expected error to contain %q, got %q", tc.err, err)
 				}
 				return
+			}
+
+			if tc.err != "" {
+				t.Fatalf("expected error %q, got success", tc.err)
 			}
 
 			if ui.String() != tc.input {
@@ -104,10 +111,17 @@ func TestParseProxyURL(t *testing.T) {
 				if tc.err == "" {
 					t.Fatalf("expected success, got %q", err)
 				}
+
+				t.Logf("got error: %s", err)
+
 				if !strings.Contains(err.Error(), tc.err) {
 					t.Fatalf("expected error to contain %q, got %q", tc.err, err)
 				}
 				return
+			}
+
+			if tc.err != "" {
+				t.Fatalf("expected error %q, got success", tc.err)
 			}
 		})
 	}
@@ -237,10 +251,17 @@ func TestParseFilePath(t *testing.T) {
 				if tc.err == "" {
 					t.Fatalf("expected success, got %q", err)
 				}
+
+				t.Logf("got error: %s", err)
+
 				if !strings.Contains(err.Error(), tc.err) {
 					t.Fatalf("expected error to contain %q, got %q", tc.err, err)
 				}
 				return
+			}
+
+			if tc.err != "" {
+				t.Fatalf("expected error %q, got success", tc.err)
 			}
 		})
 	}
