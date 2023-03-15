@@ -79,27 +79,50 @@ func TestParseProxyURL(t *testing.T) {
 	}{
 		{
 			name:  "normal",
-			input: "http://192.188.1.100:8080",
+			input: "192.188.1.100:1080",
 		},
 		{
-			name:  "invalid scheme",
-			input: "tcp://192.188.1.100:8080",
-			err:   "invalid scheme",
+			name:  "https",
+			input: "https://192.188.1.100:1080",
+		},
+		{
+			name:  "unsupported scheme",
+			input: "tcp://192.188.1.100:1080",
+			err:   "unsupported scheme",
 		},
 		{
 			name:  "no port",
-			input: "http://192.188.1.100",
+			input: "192.188.1.100",
 			err:   "port is required",
 		},
 		{
 			name:  "port 0",
-			input: "http://192.188.1.100:0",
-			err:   "invalid port: 0",
+			input: "192.188.1.100:0",
+			err:   "port cannot be 0",
 		},
 		{
-			name:  "host too short",
-			input: "http://foo:8080",
-			err:   "invalid host",
+			name:  "hostname",
+			input: "saucelabs.com:1080",
+		},
+		{
+			name:  "invalid host name",
+			input: "foo-:1080",
+			err:   "unable to parse IP",
+		},
+		{
+			name:  "invalid IP",
+			input: "1.2.3.400:1080",
+			err:   "field has value >255",
+		},
+		{
+			name:  "path",
+			input: "192.188.1.100:1080/path",
+			err:   "unsupported URL elements",
+		},
+		{
+			name:  "user info",
+			input: "http://user:pass@1.2.3.400:1080",
+			err:   "unsupported URL elements",
 		},
 	}
 

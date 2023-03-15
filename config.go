@@ -15,6 +15,9 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	_ "unsafe" // for go:linkname
+
+	"golang.org/x/exp/slices"
 )
 
 // ParseUserInfo parses a user:password string into *url.Userinfo.
@@ -78,18 +81,17 @@ func ParseHostPortUser(val string) (*HostPortUser, error) {
 	return hpi, nil
 }
 
-// ParseProxyURL parser a Proxy URL
-//
-// Requirements:
-// - Protocol: http, https, socks5, socks, quic.
-// - Hostname min 4 chars.
-// - Port in a valid range: 1 - 65535.
-// - (Optional) username and password.
 func ParseProxyURL(val string) (*url.URL, error) {
-	u, err := url.Parse(val)
-	if err != nil {
-		return nil, err
+	scheme, hostport, ok := strings.Cut(val, "://")
+	if !ok {
+		scheme = "http"
+		hostport = val
 	}
+	u := &url.URL{
+		Scheme: scheme,
+		Host:   hostport,
+	}
+
 	if err := validateProxyURL(u); err != nil {
 		return nil, err
 	}
@@ -97,26 +99,58 @@ func ParseProxyURL(val string) (*url.URL, error) {
 	return u, nil
 }
 
-const minHostLength = 4
-
 func validateProxyURL(u *url.URL) error {
 	if u == nil {
 		return nil
 	}
-	if u.Scheme != "http" && u.Scheme != "https" && u.Scheme != "socks5" && u.Scheme != "socks" && u.Scheme != "quic" {
-		return fmt.Errorf("invalid scheme %q", u.Scheme)
+
+	{
+		supportedSchemes := []string{
+			"http",
+			"https",
+			"socks",
+			"socks5",
+		}
+		if !slices.Contains[string](supportedSchemes, u.Scheme) {
+			return fmt.Errorf("unsupported scheme %q, supported schemes are: %s", u.Scheme, strings.Join(supportedSchemes, ", "))
+		}
 	}
-	if len(u.Hostname()) < minHostLength {
-		return fmt.Errorf("invalid hostname: %s is too short", u.Hostname())
+
+	{
+		c, err := url.Parse(fmt.Sprintf("%s://%s", u.Scheme, u.Host))
+		if err != nil {
+			return err
+		}
+		if *u != *c {
+			return fmt.Errorf("unsupported URL elements, format: [<protocol>://]<host>:<port>")
+		}
 	}
-	if u.Port() == "" {
-		return fmt.Errorf("port is required")
+
+	{
+		h := u.Hostname()
+
+		if !isDomainName(h) {
+			ip, err := netip.ParseAddr(h)
+			if err != nil {
+				return fmt.Errorf("IP: %w", err)
+			}
+			if !ip.IsValid() {
+				return fmt.Errorf("IP: %s", ip)
+			}
+		}
 	}
-	if !isPortStr(u.Port()) {
-		return fmt.Errorf("invalid port: %s", u.Port())
-	}
-	if err := validatedUserInfo(u.User); err != nil {
-		return err
+
+	{
+		if u.Port() == "" {
+			return fmt.Errorf("port is required")
+		}
+		p, err := strconv.ParseUint(u.Port(), 10, 16)
+		if err != nil {
+			return fmt.Errorf("port: %w", err)
+		}
+		if p == 0 {
+			return fmt.Errorf("port cannot be 0")
+		}
 	}
 
 	return nil
@@ -164,17 +198,8 @@ func validateDNSAddress(p netip.AddrPort) error {
 	return nil
 }
 
-func isPortStr(port string) bool {
-	p, err := strconv.ParseUint(port, 10, 16)
-	if err != nil {
-		return false
-	}
-	return isPort(uint16(p))
-}
-
-func isPort(p uint16) bool {
-	return p != 0
-}
+//go:linkname isDomainName net.isDomainName
+func isDomainName(s string) bool
 
 // OpenFileParser returns a parser that calls os.OpenFile.
 // If dirPerm is set it will create the directory if it does not exist.

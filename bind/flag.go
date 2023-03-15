@@ -54,7 +54,10 @@ func HTTPProxyConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPProxyConfig, lcfg *lo
 	HTTPServerConfig(fs, &cfg.HTTPServerConfig, "", forwarder.HTTPScheme, forwarder.HTTPSScheme)
 	LogConfig(fs, lcfg)
 	fs.VarP(anyflag.NewValueWithRedact[*url.URL](cfg.UpstreamProxy, &cfg.UpstreamProxy, forwarder.ParseProxyURL, redactURL),
-		"upstream-proxy", "u", "upstream proxy URL")
+		"upstream-proxy", "u",
+		"Upstream proxy to use, format: `[<protocol>://]<host>:<port>` (default protocol is http). "+
+			"The supported protocols are: http, https, socks, socks5. "+
+			"Credentials can be specified with the -c, --credentials flag. ")
 
 	proxyLocalhostValues := []forwarder.ProxyLocalhostMode{
 		forwarder.DenyProxyLocalhost,
