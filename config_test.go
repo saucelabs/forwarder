@@ -113,16 +113,6 @@ func TestParseProxyURL(t *testing.T) {
 	}
 }
 
-func TestParseDNSAddressDefaults(t *testing.T) {
-	u, err := ParseDNSAddress("1.1.1.1")
-	if err != nil {
-		t.Fatalf("expected success, got %q", err)
-	}
-	if expected := "udp://1.1.1.1:53"; u.String() != expected {
-		t.Errorf("expected %q, got %q", expected, u.String())
-	}
-}
-
 func TestParseDNSAddress(t *testing.T) {
 	tests := []struct {
 		name  string
@@ -131,44 +121,35 @@ func TestParseDNSAddress(t *testing.T) {
 	}{
 		{
 			name:  "normal",
-			input: "udp://1.1.1.1:53",
+			input: "1.1.1.1:53",
 		},
 		{
-			name:  "custom scheme",
-			input: "tcp://1.1.1.1:53",
+			name:  "no port",
+			input: "1.1.1.1",
 		},
 		{
-			name:  "custom port",
-			input: "udp://1.1.1.1:153",
+			name:  "ipv6",
+			input: "[2606:4700:4700::1111]:53",
 		},
 		{
-			name:  "custom host",
-			input: "udp://8.8.8.8:53",
+			name:  "invalid ip",
+			input: "300.300.300.300:53",
+			err:   "IPv4 field has value >255",
+		},
+		{
+			name:  "invalid port",
+			input: "1.1.1.1:abc",
+			err:   "invalid syntax",
+		},
+		{
+			name:  "invalid port",
+			input: "1.1.1.1:9999999",
+			err:   "value out of range",
 		},
 		{
 			name:  "hostname",
-			input: "udp://saucelabs.com:53",
-			err:   "invalid hostname",
-		},
-		{
-			name:  "unsupported scheme",
-			input: "https://1.1.1.1:53",
-			err:   "invalid protocol: https",
-		},
-		{
-			name:  "port 0",
-			input: "udp://1.1.1.1:0",
-			err:   "invalid port: 0",
-		},
-		{
-			name:  "URL path",
-			input: "udp://1.1.1.1:53/path",
-			err:   "path, query, and fragment are not allowed in DNS URI",
-		},
-		{
-			name:  "URL query",
-			input: "udp://1.1.1.1:53/?query=1",
-			err:   "path, query, and fragment are not allowed in DNS URI",
+			input: "saucelabs.com:53",
+			err:   "unexpected character",
 		},
 	}
 
@@ -180,10 +161,21 @@ func TestParseDNSAddress(t *testing.T) {
 				if tc.err == "" {
 					t.Fatalf("expected success, got %q", err)
 				}
+
+				t.Logf("got error: %s", err)
+
 				if !strings.Contains(err.Error(), tc.err) {
 					t.Fatalf("expected error to contain %q, got %q", tc.err, err)
 				}
 				return
+			}
+
+			if tc.err != "" {
+				t.Fatalf("expected error %q, got success", tc.err)
+			}
+
+			if tc.name == "no port" {
+				tc.input += ":53"
 			}
 
 			if u.String() != tc.input {

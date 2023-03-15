@@ -8,7 +8,7 @@ package forwarder
 
 import (
 	"context"
-	"net/url"
+	"net/netip"
 	"os"
 	"testing"
 	"time"
@@ -21,8 +21,13 @@ func TestResolverLookupHost(t *testing.T) {
 		t.Skip("skipping test in CI environment")
 	}
 
+	dnsAddr, err := netip.ParseAddrPort("1.1.1.1:53")
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	c := &DNSConfig{
-		Servers: []*url.URL{{Scheme: "udp", Host: "1.1.1.1:53"}},
+		Servers: []netip.AddrPort{dnsAddr},
 		Timeout: 5 * time.Second,
 	}
 	r, err := NewResolver(c, stdlog.Default())

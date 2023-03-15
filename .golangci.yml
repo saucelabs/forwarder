@@ -62,6 +62,7 @@ linters-settings:
 issues:
   exclude:
     - "Error return value of `cmd.MarkFlag.+` is not checked"
+    - "Error return value of `net.SplitHostPort` is not checked"
     - "Error return value of `w.Write` is not checked"
     - "Function 'RunE' has too many statements"
     - "Function 'RunE' is too long"
