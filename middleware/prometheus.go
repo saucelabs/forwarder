@@ -90,7 +90,7 @@ func (p *Prometheus) Wrap(h http.Handler) http.Handler {
 		h.ServeHTTP(d, r)
 		elapsed := float64(time.Since(start)) / float64(time.Second)
 
-		src, _, _ := net.SplitHostPort(r.RemoteAddr) //nolint:errcheck // ignore error
+		src, _, _ := net.SplitHostPort(r.RemoteAddr)
 		lv := [4]string{strconv.Itoa(d.Status()), r.Method, r.Host, src}
 
 		p.requestsTotal.WithLabelValues(lv[:]...).Inc()
@@ -146,7 +146,7 @@ func (p *Prometheus) ModifyResponse(res *http.Response) error {
 
 	reqSize := computeApproximateRequestSize(r)
 
-	src, _, _ := net.SplitHostPort(r.RemoteAddr) //nolint:errcheck // ignore error
+	src, _, _ := net.SplitHostPort(r.RemoteAddr)
 	lv := [4]string{strconv.Itoa(res.StatusCode), r.Method, r.Host, src}
 
 	p.requestsTotal.WithLabelValues(lv[:]...).Inc()
