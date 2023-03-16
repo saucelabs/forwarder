@@ -4,7 +4,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package paceval
+package eval
 
 import (
 	"fmt"
@@ -80,35 +80,23 @@ func Command() (cmd *cobra.Command) {
 		bind.HTTPTransportConfig(fs, c.httpTransportConfig)
 
 		bind.MarkFlagFilename(cmd, "pac")
-
-		fs.SortFlags = false
 	}()
 	return &cobra.Command{
-		Use:     "pac-eval --pac <file|url> [flags] <url>...",
-		Short:   "Evaluate a PAC file for given URLs",
+		Use:     "eval --pac <file|url> [flags] <url>...",
+		Short:   "Evaluate a PAC file for given URL (or URLs)",
 		Long:    long,
 		RunE:    c.RunE,
 		Example: example,
 	}
 }
 
-const long = `Evaluate a PAC file for given URLs.
+const long = `The output is a list of proxy strings, one per URL.
+
 The PAC file can be specified as a file path or URL with scheme "file", "http" or "https".
-The URLs to evaluate are passed as arguments. The output is a list of proxy strings, one per URL.
 The PAC file must contain FindProxyForURL or FindProxyForURLEx and must be valid.
-All PAC util functions are supported (see below).
 Alerts are written to stderr.
 `
 
-const example = `  # Evaluate a PAC file for a URL
-  forwarder pac-eval --pac pac.js https://www.google.com
-
-  # Evaluate a PAC file for multiple URLs
-  forwarder pac-eval --pac pac.js https://www.google.com https://www.facebook.com
-
-  # Evaluate a PAC file for multiple URLs using a PAC file from stdin
-  cat pac.js | forwarder pac-eval --pac - https://www.google.com https://www.facebook.com
-
-  # Evaluate a PAC file for multiple URLs using a PAC file from a URL
-  forwarder pac-eval --pac https://example.com/pac.js https://www.google.com https://www.facebook.com
+const example = `  # Evaluate PAC file for multiple URLs
+  forwarder pac eval --pac pac.js https://www.google.com https://www.facebook.com
 `

@@ -4,7 +4,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package main
+package cobrautil
 
 import (
 	"fmt"
@@ -15,22 +15,22 @@ import (
 	"github.com/spf13/viper"
 )
 
-// appendEnvToUsage appends the environment variable name to the usage string of each Cobra flag.
-func appendEnvToUsage(cmd *cobra.Command, envPrefix string) {
+// AppendEnvToUsage appends the environment variable name to the usage string of each Cobra flag.
+func AppendEnvToUsage(cmd *cobra.Command, envPrefix string) {
 	cmd.Flags().VisitAll(func(f *pflag.Flag) {
-		f.Usage += fmt.Sprintf(" (env %s)", envName(envPrefix, f.Name))
+		f.Usage += fmt.Sprintf(" (env %s)", EnvName(envPrefix, f.Name))
 	})
 }
 
-// bindFlagsToEnv binds each Cobra flag to its associated Viper configuration (config file and environment variable).
-func bindFlagsToEnv(cmd *cobra.Command, envPrefix string) error {
+// BindFlagsToEnv binds each Cobra flag to its associated Viper configuration (config file and environment variable).
+func BindFlagsToEnv(cmd *cobra.Command, envPrefix string) error {
 	v := viper.New()
 
 	var bindErr error
 	fs := cmd.Flags()
 	fs.VisitAll(func(f *pflag.Flag) {
 		// Bind environment variable to flag
-		if err := v.BindEnv(f.Name, envName(envPrefix, f.Name)); err != nil {
+		if err := v.BindEnv(f.Name, EnvName(envPrefix, f.Name)); err != nil {
 			bindErr = err
 			return
 		}
@@ -46,7 +46,7 @@ func bindFlagsToEnv(cmd *cobra.Command, envPrefix string) error {
 	return bindErr
 }
 
-func envName(envPrefix, flagName string) string {
+func EnvName(envPrefix, flagName string) string {
 	name := flagName
 	name = strings.ReplaceAll(name, "-", "_")
 	name = strings.ToUpper(name)

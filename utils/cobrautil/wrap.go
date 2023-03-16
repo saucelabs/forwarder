@@ -4,7 +4,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package main
+package cobrautil
 
 import (
 	"regexp"
@@ -13,7 +13,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func wrapLongAt(cmd *cobra.Command, width int) {
+func WrapLong(cmd *cobra.Command, width int) {
 	cmd.Long = wrapTextAt(cmd.Long, width)
 }
 
@@ -40,9 +40,5 @@ func wrapTextAt(s string, width int) string {
 		lw += len(w) + 1
 	}
 
-	return "\n" + sb.String()
-}
-
-func sortFlags(cmd *cobra.Command) {
-	cmd.Flags().SortFlags = true
+	return sb.String()
 }

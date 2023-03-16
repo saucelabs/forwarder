@@ -13,7 +13,7 @@ It can be used to implement complex proxy rules.
 Forwarder also implements [Microsoft's PAC extensions for IPv6](https://learn.microsoft.com/en-us/windows/win32/winhttp/ipv6-aware-proxy-helper-api-definitions).
 So you can use `FindProxyForURL` and `FindProxyForURLEx` functions to implement IPv6-aware proxy rules.
 
-Forwarder can be used as a PAC file server (see `pac-server` command), or as a PAC file test util (see `pac-eval` command).
+Forwarder can be used as a PAC file server (see `forwarder pac server` command), or as a PAC file test util (see `forwarder pac eval` command).
 
 ### Available functions
 
