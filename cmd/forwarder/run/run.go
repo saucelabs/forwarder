@@ -4,7 +4,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package proxy
+package run
 
 import (
 	"fmt"
@@ -123,56 +123,6 @@ func (c *command) RunE(cmd *cobra.Command, args []string) error {
 	return f.Run()
 }
 
-const long = `Start HTTP(S) proxy server.
-You can start HTTP or HTTPS server.
-The server may be protected by basic authentication.
-If you start an HTTPS server and you don't provide a certificate, the server will generate a self-signed certificate on startup.
-
-You can start an API server that exposes metrics, health checks and other information about the proxy server.
-You need to explicitly enable it by providing --api-address. 
-To run on a random port, use --api-address=:0. 
-It's recommended use basic authentication for the API server, especially if --proxy-localhost is enabled.
-
-The PAC file can be specified as a file path or URL with scheme "file", "http" or "https".
-All PAC util functions are supported (see below).
-The supported upstream proxy types are "http", "https" and "socks5".
-You can specify custom DNS servers.
-They are used to resolve hostnames in PAC scripts and proxy server.
-
-Basic authentication credentials for the upstream proxies and backend servers can be specified with --credentials flag.
-`
-
-const example = `  # Start a HTTP proxy server
-  forwarder proxy --address localhost:3128
-
-  # Start HTTP proxy with upstream proxy
-  forwarder proxy --address localhost:3128 --upstream-proxy http://localhost:8081
-
-  # Start HTTP proxy with local PAC script
-  forwarder proxy --address localhost:3128 --pac ./pac.js 
-  
-  # Start HTTP proxy with remote PAC script
-  forwarder proxy --address localhost:3128 --pac https://example.com/pac.js
-
-  # Start HTTP proxy with custom DNS servers
-  forwarder proxy --address localhost:3128 --dns-server 4.4.4.4 --dns-server 8.8.8.8
-
-  # Start HTTP proxy and API server 
-  forwarder proxy --address localhost:3128 --api-address localhost:8081 --api-basic-auth user:password
-
-  # Start a HTTPS proxy server
-  forwarder proxy --protocol https --address localhost:8443
-
-  # Start a HTTPS server with custom certificate
-  forwarder proxy --protocol https --address localhost:8443 --cert-file ./cert.pem --key-file ./cert.key
-
-  # Start a HTTPS proxy server and require basic authentication
-  forwarder proxy --protocol https --address localhost:8443 --basic-auth user:password
-
-  # Add basic authentication header to requests to example.com and example.org on ports 80 and 443
-  forwarder proxy --address localhost:3128 -c bob:bp@example.com:* -c alice:ap@example.org:80,alice:ap@example.org:443
-`
-
 func Command() (cmd *cobra.Command) {
 	c := command{
 		promReg:             prometheus.NewRegistry(),
@@ -202,14 +152,28 @@ func Command() (cmd *cobra.Command) {
 
 		fs.BoolVar(&c.goleak, "goleak", false, "enable goleak")
 		bind.MarkFlagHidden(cmd, "goleak")
-
-		fs.SortFlags = false
 	}()
+
 	return &cobra.Command{
-		Use:     "proxy [--protocol <http|https|h2>] [--address <host:port>] [--upstream-proxy <url>] [--pac <file|url>] [--credentials <username:password@host:port>]... [flags]",
-		Short:   "Start HTTP(S) proxy",
+		Use:     "run [--protocol <http|https>] [--address <host:port>] [--upstream-proxy <url>] [--pac <file|url>] [--credentials <username:password@host:port>]... [flags]",
+		Short:   "Start HTTP (forward) proxy server",
 		Long:    long,
 		Example: example,
 		RunE:    c.RunE,
 	}
 }
+
+const long = `You can start HTTP or HTTPS server.
+The server may be protected by basic authentication.
+If you start an HTTPS server and you don't provide a certificate, the server will generate a self-signed certificate on startup.
+`
+
+const example = `  # HTTP proxy with upstream proxy
+  forwarder run --upstream-proxy http://localhost:8081
+
+  # Start HTTP proxy with PAC script
+  forwarder run --address localhost:3128 --pac https://example.com/pac.js
+
+  # HTTPS proxy server with basic authentication
+  forwarder run --protocol https --address localhost:8443 --basic-auth user:password
+`

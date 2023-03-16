@@ -4,7 +4,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package pacserver
+package server
 
 import (
 	"fmt"
@@ -87,38 +87,32 @@ func Command() (cmd *cobra.Command) {
 		bind.HTTPTransportConfig(fs, c.httpTransportConfig)
 
 		bind.MarkFlagFilename(cmd, "pac", "cert-file", "key-file", "log-file")
-
-		fs.SortFlags = false
 	}()
 	return &cobra.Command{
-		Use:     "pac-server --pac <file|url> [--protocol <http|https|h2>] [--address <host:port>] [flags]",
-		Short:   "Start HTTP(S) server that serves a PAC file",
+		Use:     "server --pac <file|url> [--protocol <http|https|h2>] [--address <host:port>] [flags]",
+		Short:   "Start HTTP server that serves a PAC file",
 		Long:    long,
 		RunE:    c.RunE,
 		Example: example,
 	}
 }
 
-const long = `Start HTTP(S) server that serves a PAC file.
+const long = `You can start HTTP, HTTPS or H2 (HTTPS) server.
+The server may be protected by basic authentication.
+If you start an HTTPS server and you don't provide a certificate,
+the server will generate a self-signed certificate on startup.
+
 The PAC file can be specified as a file path or URL with scheme "file", "http" or "https".
 The PAC file must contain FindProxyForURL or FindProxyForURLEx and must be valid.
-All PAC util functions are supported (see below).
 Alerts are ignored.
-
-You can start HTTP, HTTPS or H2 (HTTPS) server.
-The server may be protected by basic authentication.
-If you start an HTTPS server and you don't provide a certificate, the server will generate a self-signed certificate on startup.
 `
 
-const example = `  # Start a HTTP server serving a PAC file
-  forwarder pac-server --pac pac.js --protocol http --address localhost:8080
+const example = `  # HTTP server with basic authentication
+  forwarder pac server --pac pac.js --basic-auth user:pass
 
-  # Start a HTTPS server serving a PAC file
-  forwarder pac-server --pac pac.js --protocol https --address localhost:80443
+  # HTTPS server with self-signed certificate
+  forwarder pac server --pac pac.js --protocol https --address localhost:80443
 
-  # Start a HTTPS server serving a PAC file with custom certificate
-  forwarder pac-server --pac pac.js --protocol https --address localhost:80443 --cert-file cert.pem --key-file key.pem
-
-  # Start a HTTPS server serving a PAC file with basic authentication
-  forwarder pac-server --pac pac.js --protocol https --address localhost:80443 --basic-auth user:pass
+  # HTTPS server with custom certificate
+  forwarder pac server --pac pac.js --protocol https --address localhost:80443 --cert-file cert.pem --key-file key.pem
 `
