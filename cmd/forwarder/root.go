@@ -7,6 +7,7 @@
 package main
 
 import (
+	"github.com/saucelabs/forwarder/cmd/forwarder/httpbin"
 	"github.com/saucelabs/forwarder/cmd/forwarder/pac"
 	"github.com/saucelabs/forwarder/cmd/forwarder/run"
 	"github.com/saucelabs/forwarder/cmd/forwarder/version"
@@ -29,11 +30,11 @@ func rootCommand() *cobra.Command {
 	}
 
 	rootCmd.AddCommand(
+		httpbin.Command(),
 		pac.Command(),
 		run.Command(),
 		version.Command(),
 	)
-	decorateRootCmd(rootCmd)
 	applyDefaults(rootCmd)
 
 	return rootCmd
