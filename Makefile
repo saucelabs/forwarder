@@ -63,7 +63,7 @@ coverage:
 update-devel-image: TAG=devel
 update-devel-image: TMPDIR:=$(shell mktemp -d)
 update-devel-image:
-	@CGO_ENABLED=0 GOOS=linux go build -tags e2e -o $(TMPDIR)/forwarder ./cmd/forwarder
+	@CGO_ENABLED=0 GOOS=linux go build -o $(TMPDIR)/forwarder ./cmd/forwarder
 	@ln Dockerfile LICENSE LICENSE.3RD_PARTY $(TMPDIR)
 	@docker buildx build -t saucelabs/forwarder:$(TAG) $(TMPDIR)
 	@rm -rf $(TMPDIR)
