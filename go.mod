@@ -7,11 +7,12 @@ require (
 	github.com/google/go-cmp v0.5.9
 	github.com/google/martian/v3 v3.2.1
 	github.com/gorilla/websocket v1.5.0
+	github.com/mitchellh/go-wordwrap v1.0.0
 	github.com/mmatczuk/anyflag v0.0.0-20230209112147-9567d4cab866
 	github.com/prometheus/client_golang v1.13.0
 	github.com/prometheus/client_model v0.2.0
 	github.com/prometheus/common v0.37.0
-	github.com/spf13/cobra v1.5.0
+	github.com/spf13/cobra v1.6.0
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.10.0
 	go.uber.org/goleak v1.2.0
@@ -28,7 +29,7 @@ require (
 	github.com/go-sourcemap/sourcemap v2.1.3+incompatible // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
-	github.com/inconshreveable/mousetrap v1.0.0 // indirect
+	github.com/inconshreveable/mousetrap v1.0.1 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
 	github.com/mitchellh/mapstructure v1.4.3 // indirect
