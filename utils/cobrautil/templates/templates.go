@@ -85,7 +85,7 @@ func MainUsageTemplate() string {
 		SectionFlags,
 		SectionUsage,
 		SectionTipsHelp,
-		SectionTipsGlobalOptions,
+		//SectionTipsGlobalOptions,
 	}
 	return strings.TrimRightFunc(strings.Join(sections, ""), unicode.IsSpace)
 }
