@@ -45,15 +45,5 @@ func rootCommand() *cobra.Command {
 		version.Command(),
 	)
 
-	decorate(cmd)
-
 	return cmd
-}
-
-func decorate(cmd *cobra.Command) {
-	cobrautil.AppendEnvToUsage(cmd, envPrefix)
-
-	for _, cmd := range cmd.Commands() {
-		decorate(cmd)
-	}
 }
