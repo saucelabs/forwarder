@@ -32,14 +32,16 @@ const offset = 10
 // processes the help flag and print
 // it to i/o writer
 type HelpFlagPrinter struct {
+	envPrefix string
 	wrapLimit uint
 	out       io.Writer
 }
 
 // NewHelpFlagPrinter will initialize a HelpFlagPrinter given the
 // i/o writer
-func NewHelpFlagPrinter(out io.Writer, wrapLimit uint) *HelpFlagPrinter {
+func NewHelpFlagPrinter(out io.Writer, envPrefix string, wrapLimit uint) *HelpFlagPrinter {
 	return &HelpFlagPrinter{
+		envPrefix: envPrefix,
 		wrapLimit: wrapLimit,
 		out:       out,
 	}
@@ -48,7 +50,7 @@ func NewHelpFlagPrinter(out io.Writer, wrapLimit uint) *HelpFlagPrinter {
 // PrintHelpFlag will beautify the help flags and print it out to p.out
 func (p *HelpFlagPrinter) PrintHelpFlag(flag *flag.Flag) {
 	formatBuf := new(bytes.Buffer)
-	writeFlag(formatBuf, flag)
+	writeFlag(formatBuf, flag, p.envPrefix)
 
 	wrappedStr := formatBuf.String()
 	flagAndUsage := strings.Split(formatBuf.String(), "\n")
@@ -67,10 +69,40 @@ func (p *HelpFlagPrinter) PrintHelpFlag(flag *flag.Flag) {
 
 // writeFlag will output the help flag based
 // on the format provided by getFlagFormat to i/o writer
-func writeFlag(out io.Writer, f *flag.Flag) {
+func writeFlag(out io.Writer, f *flag.Flag, envPrefix string) {
+	val, usage := flag.UnquoteUsage(f)
+	if val == "string" {
+		val = ""
+	}
+	if val != "" {
+		val = " " + val
+	}
+
+	def := f.DefValue
+	if def == "[]" {
+		def = ""
+	}
+	if def != "" {
+		if f.Value.Type() == "string" {
+			def = fmt.Sprintf(" (default '%s')", f.DefValue)
+		} else {
+			def = fmt.Sprintf(" (default %s)", f.DefValue)
+		}
+	}
+
 	deprecated := ""
 	if f.Deprecated != "" {
 		deprecated = fmt.Sprintf(" (DEPRECATED: %s)", f.Deprecated)
 	}
-	fmt.Fprintf(out, getFlagFormat(f), f.Shorthand, f.Name, f.DefValue, f.Usage, deprecated)
+
+	env := fmt.Sprintf(" (env %s)", envName(envPrefix, f.Name))
+
+	fmt.Fprintf(out, getFlagFormat(f), f.Shorthand, f.Name, val, def, env, usage, deprecated)
+}
+
+func envName(envPrefix, flagName string) string {
+	name := flagName
+	name = strings.ReplaceAll(name, "-", "_")
+	name = fmt.Sprintf("%s_%s", envPrefix, name)
+	return strings.ToUpper(name)
 }

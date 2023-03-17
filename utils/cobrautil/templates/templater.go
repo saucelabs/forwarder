@@ -125,7 +125,7 @@ func (templater *templater) templateFuncs(exposedFlags ...string) template.FuncM
 		"appendIfNotPresent":  appendIfNotPresent,
 		"flagsNotIntersected": flagsNotIntersected,
 		"visibleFlags":        visibleFlags,
-		"flagsUsages":         flagsUsages,
+		"flagsUsages":         templater.flagsUsages,
 		"cmdGroups":           templater.cmdGroups,
 		"cmdGroupsString":     templater.cmdGroupsString,
 		"rootCmd":             templater.rootCmdName,
@@ -225,9 +225,9 @@ func (t *templater) usageLine(c *cobra.Command) string {
 }
 
 // flagsUsages will print out the kubectl help flags
-func flagsUsages(f *flag.FlagSet) (string, error) {
+func (t *templater) flagsUsages(f *flag.FlagSet) (string, error) {
 	flagBuf := new(bytes.Buffer)
-	printer := NewHelpFlagPrinter(flagBuf, DefaultWrapLimit)
+	printer := NewHelpFlagPrinter(flagBuf, t.RootCmd.Name(), DefaultWrapLimit)
 
 	f.VisitAll(func(flag *flag.Flag) {
 		if flag.Hidden {
@@ -241,12 +241,7 @@ func flagsUsages(f *flag.FlagSet) (string, error) {
 
 // getFlagFormat will output the flag format
 func getFlagFormat(f *flag.Flag) string {
-	var format string
-	format = "--%s=%s:\n%s%s"
-	if f.Value.Type() == "string" {
-		format = "--%s='%s':\n%s%s"
-	}
-
+	format := "--%s%s%s%s\n%s%s"
 	if len(f.Shorthand) > 0 {
 		format = "    -%s, " + format
 	} else {
