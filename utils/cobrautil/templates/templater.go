@@ -19,6 +19,7 @@ package templates
 import (
 	"bytes"
 	"fmt"
+	"regexp"
 	"strings"
 	"text/template"
 	"unicode"
@@ -28,7 +29,7 @@ import (
 	flag "github.com/spf13/pflag"
 )
 
-var DefaultWrapLimit uint = 80
+var DefaultWrapLimit uint = 120
 
 type FlagExposer interface {
 	ExposeFlags(cmd *cobra.Command, flags ...string) FlagExposer
@@ -111,7 +112,11 @@ func (templater *templater) UsageFunc(exposedFlags ...string) func(*cobra.Comman
 
 func (templater *templater) templateFuncs(exposedFlags ...string) template.FuncMap {
 	return template.FuncMap{
-		"trim":                strings.TrimSpace,
+		"trim": func(s string) string {
+			s = regexp.MustCompile(`\s+`).ReplaceAllString(s, " ")
+			s = strings.TrimSpace(s)
+			return s
+		},
 		"trimRight":           func(s string) string { return strings.TrimRightFunc(s, unicode.IsSpace) },
 		"trimLeft":            func(s string) string { return strings.TrimLeftFunc(s, unicode.IsSpace) },
 		"gt":                  cobra.Gt,

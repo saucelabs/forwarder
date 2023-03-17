@@ -163,7 +163,8 @@ func Command() (cmd *cobra.Command) {
 	}
 }
 
-const long = `You can start HTTP or HTTPS server.
+const long = `Start HTTP (forward) proxy server.
+You can start HTTP or HTTPS server.
 The server may be protected by basic authentication.
 If you start an HTTPS server and you don't provide a certificate, the server will generate a self-signed certificate on startup.
 `

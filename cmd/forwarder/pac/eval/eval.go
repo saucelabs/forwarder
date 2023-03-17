@@ -90,8 +90,8 @@ func Command() (cmd *cobra.Command) {
 	}
 }
 
-const long = `The output is a list of proxy strings, one per URL.
-
+const long = `Evaluate a PAC file for given URL (or URLs).
+The output is a list of proxy strings, one per URL.
 The PAC file can be specified as a file path or URL with scheme "file", "http" or "https".
 The PAC file must contain FindProxyForURL or FindProxyForURLEx and must be valid.
 Alerts are written to stderr.

@@ -12,16 +12,14 @@ import (
 	"github.com/saucelabs/forwarder/cmd/forwarder/run"
 	"github.com/saucelabs/forwarder/cmd/forwarder/version"
 	"github.com/saucelabs/forwarder/utils/cobrautil"
+	"github.com/saucelabs/forwarder/utils/cobrautil/templates"
 	"github.com/spf13/cobra"
 )
 
-const (
-	envPrefix = "FORWARDER"
-	maxCols   = 80
-)
+const envPrefix = "FORWARDER"
 
 func rootCommand() *cobra.Command {
-	rootCmd := &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "forwarder",
 		Short: "HTTP (forward) proxy server with PAC support and PAC testing tools",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
@@ -29,24 +27,33 @@ func rootCommand() *cobra.Command {
 		},
 	}
 
-	rootCmd.AddCommand(
-		httpbin.Command(),
-		pac.Command(),
-		run.Command(),
+	commandGroups := templates.CommandGroups{
+		{
+			Message: "Commands:",
+			Commands: []*cobra.Command{
+				run.Command(),
+				pac.Command(),
+			},
+		},
+	}
+	commandGroups.Add(cmd)
+	templates.ActsAsRootCommand(cmd, nil, commandGroups...)
+
+	// Add other commands
+	cmd.AddCommand(
+		httpbin.Command(), // hidden
 		version.Command(),
 	)
-	applyDefaults(rootCmd)
 
-	return rootCmd
+	decorate(cmd)
+
+	return cmd
 }
 
-func applyDefaults(cmd *cobra.Command) {
+func decorate(cmd *cobra.Command) {
 	cobrautil.AppendEnvToUsage(cmd, envPrefix)
-	cobrautil.DefaultLong(cmd)
-	cobrautil.NoHelpSubcommand(cmd)
-	cobrautil.WrapLong(cmd, maxCols)
 
 	for _, cmd := range cmd.Commands() {
-		applyDefaults(cmd)
+		decorate(cmd)
 	}
 }

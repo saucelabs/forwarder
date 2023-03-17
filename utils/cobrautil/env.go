@@ -18,7 +18,7 @@ import (
 // AppendEnvToUsage appends the environment variable name to the usage string of each Cobra flag.
 func AppendEnvToUsage(cmd *cobra.Command, envPrefix string) {
 	cmd.Flags().VisitAll(func(f *pflag.Flag) {
-		f.Usage += fmt.Sprintf(" (env %s)", EnvName(envPrefix, f.Name))
+		f.Usage += fmt.Sprintf(" env: %s", EnvName(envPrefix, f.Name))
 	})
 }
 

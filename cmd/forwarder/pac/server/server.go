@@ -97,7 +97,8 @@ func Command() (cmd *cobra.Command) {
 	}
 }
 
-const long = `You can start HTTP, HTTPS or H2 (HTTPS) server.
+const long = `Start HTTP server that serves a PAC file.
+You can start HTTP, HTTPS or H2 (HTTPS) server.
 The server may be protected by basic authentication.
 If you start an HTTPS server and you don't provide a certificate,
 the server will generate a self-signed certificate on startup.
