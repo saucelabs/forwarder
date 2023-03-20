@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"fmt"
 	"regexp"
+	"sort"
 	"strings"
 	"text/template"
 	"unicode"
@@ -35,15 +36,17 @@ type FlagExposer interface {
 	ExposeFlags(cmd *cobra.Command, flags ...string) FlagExposer
 }
 
-func ActsAsRootCommand(cmd *cobra.Command, filters []string, groups ...CommandGroup) FlagExposer {
+func ActsAsRootCommand(cmd *cobra.Command, filters []string, cg CommandGroups, fg FlagGroups) FlagExposer {
 	if cmd == nil {
 		panic("nil root command")
 	}
+
 	templater := &templater{
 		RootCmd:       cmd,
 		UsageTemplate: MainUsageTemplate(),
 		HelpTemplate:  MainHelpTemplate(),
-		CommandGroups: groups,
+		CommandGroups: cg,
+		FlagGroups:    processedFlagGroups(fg),
 		Filtered:      filters,
 	}
 	cmd.SetFlagErrorFunc(templater.FlagErrorFunc())
@@ -67,6 +70,7 @@ type templater struct {
 	HelpTemplate  string
 	RootCmd       *cobra.Command
 	CommandGroups
+	FlagGroups
 	Filtered []string
 }
 
@@ -229,12 +233,51 @@ func (t *templater) flagsUsages(f *flag.FlagSet) (string, error) {
 	flagBuf := new(bytes.Buffer)
 	printer := NewHelpFlagPrinter(flagBuf, t.RootCmd.Name(), DefaultWrapLimit)
 
-	f.VisitAll(func(flag *flag.Flag) {
-		if flag.Hidden {
-			return
-		}
-		printer.PrintHelpFlag(flag)
+	printFs := func() {
+		f.VisitAll(func(flag *flag.Flag) {
+			if flag.Hidden {
+				return
+			}
+			printer.PrintHelpFlag(flag)
+		})
+	}
+
+	g := t.FlagGroups
+
+	if len(g) == 0 {
+		fmt.Fprintf(flagBuf, "Flags:\n")
+		printFs()
+		return flagBuf.String(), nil
+	}
+
+	// Split flags into groups.
+	flagSet := g.splitFlagSet(f)
+
+	// Get permutation of groups sorted by priority.
+	perm := make([]int, len(g))
+	for i := range perm {
+		perm[i] = i
+	}
+	sort.Slice(perm, func(i, j int) bool {
+		return g[perm[i]].priority < g[perm[j]].priority
 	})
+
+	for _, i := range perm {
+		fs := flagSet[i]
+		if !fs.HasAvailableFlags() {
+			continue
+		}
+
+		if len(g[i].Name) > 0 {
+			fmt.Fprintf(flagBuf, "%s:\n", g[i].Name)
+		}
+		fs.VisitAll(func(flag *flag.Flag) {
+			if flag.Hidden {
+				return
+			}
+			printer.PrintHelpFlag(flag)
+		})
+	}
 
 	return flagBuf.String(), nil
 }

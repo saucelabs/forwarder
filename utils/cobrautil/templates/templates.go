@@ -48,8 +48,7 @@ const (
 {{end}}`
 
 	// SectionFlags is the help template section that displays the command's flags.
-	SectionFlags = `{{ if or $visibleFlags.HasFlags $explicitlyExposedFlags.HasFlags}}Options:
-{{ if $visibleFlags.HasFlags}}{{trimRight (flagsUsages $visibleFlags)}}{{end}}{{ if $explicitlyExposedFlags.HasFlags}}{{ if $visibleFlags.HasFlags}}
+	SectionFlags = `{{ if or $visibleFlags.HasFlags $explicitlyExposedFlags.HasFlags}}{{ if $visibleFlags.HasFlags}}{{trimRight (flagsUsages $visibleFlags)}}{{end}}{{ if $explicitlyExposedFlags.HasFlags}}{{ if $visibleFlags.HasFlags}}
 {{end}}{{trimRight (flagsUsages $explicitlyExposedFlags)}}{{end}}
 
 {{end}}`
@@ -85,7 +84,7 @@ func MainUsageTemplate() string {
 		SectionFlags,
 		SectionUsage,
 		SectionTipsHelp,
-		//SectionTipsGlobalOptions,
+		// SectionTipsGlobalOptions,
 	}
 	return strings.TrimRightFunc(strings.Join(sections, ""), unicode.IsSpace)
 }

@@ -133,3 +133,7 @@ issues:
     - linters:
         - nosnakecase
       source: "func Example"
+
+    - linters:
+        - gomnd
+      source: "Priority:"
