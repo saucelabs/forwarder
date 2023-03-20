@@ -37,7 +37,31 @@ func rootCommand() *cobra.Command {
 		},
 	}
 	commandGroups.Add(cmd)
-	templates.ActsAsRootCommand(cmd, nil, commandGroups...)
+
+	flagGroups := templates.FlagGroups{
+		{
+			Name:   "Flags",
+			Prefix: "",
+		},
+		{
+			Name:   "API server flags",
+			Prefix: "api",
+		},
+		{
+			Name:   "DNS flags",
+			Prefix: "dns",
+		},
+		{
+			Name:   "HTTP client flags",
+			Prefix: "http",
+		},
+		{
+			Name:   "Logging flags",
+			Prefix: "log",
+		},
+	}
+
+	templates.ActsAsRootCommand(cmd, nil, commandGroups, flagGroups)
 
 	// Add other commands
 	cmd.AddCommand(
