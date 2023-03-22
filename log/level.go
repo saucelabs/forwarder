@@ -6,19 +6,14 @@
 
 package log
 
-import (
-	"os"
+type Level int32
+
+const (
+	ErrorLevel Level = iota
+	InfoLevel
+	DebugLevel
 )
 
-// Config is a configuration for the loggers.
-type Config struct {
-	File  *os.File
-	Level Level
-}
-
-func DefaultConfig() *Config {
-	return &Config{
-		File:  nil,
-		Level: InfoLevel,
-	}
+func (l Level) String() string {
+	return [3]string{"error", "info", "debug"}[l]
 }
