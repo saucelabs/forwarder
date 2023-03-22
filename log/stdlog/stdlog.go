@@ -16,8 +16,8 @@ import (
 
 func Default() StdLogger {
 	return StdLogger{
-		log:     log.Default(),
-		verbose: true,
+		log:   log.Default(),
+		level: flog.InfoLevel,
 	}
 }
 
@@ -27,16 +27,16 @@ func New(cfg *flog.Config) StdLogger {
 		w = cfg.File
 	}
 	return StdLogger{
-		log:     log.New(w, "", log.Ldate|log.Ltime|log.LUTC),
-		verbose: cfg.Verbose,
+		log:   log.New(w, "", log.Ldate|log.Ltime|log.LUTC),
+		level: cfg.Level,
 	}
 }
 
 // StdLogger implements the forwarder.Logger interface using the standard log package.
 type StdLogger struct {
-	log     *log.Logger
-	name    string
-	verbose bool
+	log   *log.Logger
+	name  string
+	level flog.Level
 
 	// Decorate allows to modify the log message before it is written.
 	Decorate func(string) string
@@ -51,6 +51,9 @@ func (sl StdLogger) Named(name string) StdLogger {
 }
 
 func (sl StdLogger) Errorf(format string, args ...interface{}) {
+	if sl.level < flog.ErrorLevel {
+		return
+	}
 	if sl.Decorate != nil {
 		format = sl.Decorate(format)
 	}
@@ -58,6 +61,9 @@ func (sl StdLogger) Errorf(format string, args ...interface{}) {
 }
 
 func (sl StdLogger) Infof(format string, args ...interface{}) {
+	if sl.level < flog.InfoLevel {
+		return
+	}
 	if sl.Decorate != nil {
 		format = sl.Decorate(format)
 	}
@@ -65,7 +71,7 @@ func (sl StdLogger) Infof(format string, args ...interface{}) {
 }
 
 func (sl StdLogger) Debugf(format string, args ...interface{}) {
-	if !sl.verbose {
+	if sl.level < flog.DebugLevel {
 		return
 	}
 	if sl.Decorate != nil {

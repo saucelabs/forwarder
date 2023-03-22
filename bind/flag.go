@@ -160,7 +160,13 @@ func LogConfig(fs *pflag.FlagSet, cfg *log.Config) {
 	fs.VarP(anyflag.NewValue[*os.File](nil, &cfg.File,
 		forwarder.OpenFileParser(os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600, 0o700)),
 		"log-file", "", "log file path (default: stdout)")
-	fs.BoolVar(&cfg.Verbose, "verbose", cfg.Verbose, "enable verbose logging")
+
+	logLevel := []log.Level{
+		log.ErrorLevel,
+		log.InfoLevel,
+		log.DebugLevel,
+	}
+	fs.Var(anyflag.NewValue[log.Level](cfg.Level, &cfg.Level, anyflag.EnumParser[log.Level](logLevel...)), "log-level", "one of: error, info, debug")
 }
 
 func MarkFlagHidden(cmd *cobra.Command, names ...string) {
