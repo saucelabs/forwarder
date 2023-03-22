@@ -7,6 +7,7 @@
 package main
 
 import (
+	"github.com/saucelabs/forwarder/bind"
 	"github.com/saucelabs/forwarder/cmd/forwarder/httpbin"
 	"github.com/saucelabs/forwarder/cmd/forwarder/pac"
 	"github.com/saucelabs/forwarder/cmd/forwarder/run"
@@ -23,9 +24,10 @@ func rootCommand() *cobra.Command {
 		Use:   "forwarder",
 		Short: "HTTP (forward) proxy server with PAC support and PAC testing tools",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			return cobrautil.BindFlagsToEnv(cmd, envPrefix)
+			return cobrautil.BindAll(cmd, envPrefix, "config-file")
 		},
 	}
+	bind.ConfigFile(cmd.PersistentFlags(), new(string))
 
 	commandGroups := templates.CommandGroups{
 		{
