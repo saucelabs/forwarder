@@ -201,7 +201,7 @@ func DescribeFlags(flags *pflag.FlagSet) string {
 		if flag.Hidden || flag.Name == "help" {
 			return
 		}
-		b.WriteString(fmt.Sprintf("%s: %q\n", flag.Name, flag.Value))
+		b.WriteString(fmt.Sprintf("%s=%s\n", flag.Name, strings.Trim(flag.Value.String(), "[]")))
 	})
 	return b.String()
 }
