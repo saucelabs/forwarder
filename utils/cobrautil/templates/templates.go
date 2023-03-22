@@ -53,6 +53,13 @@ const (
 
 {{end}}`
 
+	// SectionPersistentFlags is the help template section that displays the command's persistent flags.
+	SectionPersistentFlags = `{{ if .HasAvailablePersistentFlags}}The following options can be passed to any subcommand:
+
+{{trimRight (flagsUsages .PersistentFlags)}}
+
+{{end}}`
+
 	// SectionUsage is the help template section that displays the command's usage.
 	SectionUsage = `{{if and .Runnable (ne .UseLine "") (ne .UseLine $rootCmd)}}Usage:
   {{$usageLine}}
@@ -82,6 +89,7 @@ func MainUsageTemplate() string {
 		SectionExamples,
 		SectionSubcommands,
 		SectionFlags,
+		SectionPersistentFlags,
 		SectionUsage,
 		SectionTipsHelp,
 		// SectionTipsGlobalOptions,
