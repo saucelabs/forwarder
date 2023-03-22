@@ -245,7 +245,7 @@ func (t *templater) flagsUsages(f *flag.FlagSet) (string, error) {
 	g := t.FlagGroups
 
 	if len(g) == 0 {
-		fmt.Fprintf(flagBuf, "Flags:\n")
+		fmt.Fprintf(flagBuf, "Options:\n")
 		printFs()
 		return flagBuf.String(), nil
 	}

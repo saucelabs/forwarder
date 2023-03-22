@@ -40,23 +40,23 @@ func rootCommand() *cobra.Command {
 
 	flagGroups := templates.FlagGroups{
 		{
-			Name:   "Flags",
+			Name:   "Options",
 			Prefix: "",
 		},
 		{
-			Name:   "API server flags",
+			Name:   "API server options",
 			Prefix: "api",
 		},
 		{
-			Name:   "DNS flags",
+			Name:   "DNS options",
 			Prefix: "dns",
 		},
 		{
-			Name:   "HTTP client flags",
+			Name:   "HTTP client options",
 			Prefix: "http",
 		},
 		{
-			Name:   "Logging flags",
+			Name:   "Logging options",
 			Prefix: "log",
 		},
 	}
