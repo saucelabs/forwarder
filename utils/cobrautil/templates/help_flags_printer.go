@@ -100,9 +100,8 @@ func writeFlag(out io.Writer, f *flag.Flag, envPrefix string) {
 	fmt.Fprintf(out, getFlagFormat(f), f.Shorthand, f.Name, val, def, env, usage, deprecated)
 }
 
+var envReplacer = strings.NewReplacer(".", "_", "-", "_")
+
 func envName(envPrefix, flagName string) string {
-	name := flagName
-	name = strings.ReplaceAll(name, "-", "_")
-	name = fmt.Sprintf("%s_%s", envPrefix, name)
-	return strings.ToUpper(name)
+	return strings.ToUpper(fmt.Sprintf("%s_%s", envPrefix, envReplacer.Replace(flagName)))
 }
