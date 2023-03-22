@@ -36,6 +36,14 @@ func redactUserinfo(ui *url.Userinfo) string {
 	return ui.Username()
 }
 
+func ConfigFile(fs *pflag.FlagSet, configFile *string) {
+	fs.StringVar(configFile,
+		"config-file", *configFile, "Configuration file to load options from. "+
+			"The supported formats are: JSON, YAML, TOML, HCL, and Java properties. "+
+			"The file format is determined by the file extension, if not specified the default format is YAML. "+
+			"The following precedence order of configuration sources is used: command flags, environment variables, config file, default values. ")
+}
+
 func DNSConfig(fs *pflag.FlagSet, cfg *forwarder.DNSConfig) {
 	fs.VarP(anyflag.NewSliceValue[netip.AddrPort](nil, &cfg.Servers, forwarder.ParseDNSAddress),
 		"dns-server", "n",
