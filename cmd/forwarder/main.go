@@ -12,6 +12,7 @@ import (
 
 func main() {
 	if err := rootCommand().Execute(); err != nil {
+		os.WriteFile("/dev/termination-log", []byte(err.Error()), 0o644) //nolint // best effort
 		os.Exit(1)
 	}
 }
