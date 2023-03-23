@@ -92,6 +92,16 @@ func ParseProxyURL(val string) (*url.URL, error) {
 		Host:   hostport,
 	}
 
+	creds, hostport, ok := strings.Cut(hostport, "@")
+	if ok {
+		ui, err := ParseUserInfo(creds)
+		if err != nil {
+			return nil, err
+		}
+		u.User = ui
+		u.Host = hostport
+	}
+
 	if err := validateProxyURL(u); err != nil {
 		return nil, err
 	}
@@ -117,11 +127,18 @@ func validateProxyURL(u *url.URL) error {
 	}
 
 	{
-		c, err := url.Parse(fmt.Sprintf("%s://%s", u.Scheme, u.Host))
+		if err := validatedUserInfo(u.User); err != nil {
+			return err
+		}
+		host := u.Host
+		if u.User != nil {
+			host = u.User.String() + "@" + host
+		}
+		c, err := url.Parse(fmt.Sprintf("%s://%s", u.Scheme, host))
 		if err != nil {
 			return err
 		}
-		if *u != *c {
+		if u.String() != c.String() {
 			return fmt.Errorf("unsupported URL elements, format: [<protocol>://]<host>:<port>")
 		}
 	}
