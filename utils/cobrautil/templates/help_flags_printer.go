@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"regexp"
 	"strings"
 
 	"github.com/mitchellh/go-wordwrap"
@@ -70,13 +71,7 @@ func (p *HelpFlagPrinter) PrintHelpFlag(flag *flag.Flag) {
 // writeFlag will output the help flag based
 // on the format provided by getFlagFormat to i/o writer
 func writeFlag(out io.Writer, f *flag.Flag, envPrefix string) {
-	val, usage := flag.UnquoteUsage(f)
-	if val == "string" {
-		val = ""
-	}
-	if val != "" {
-		val = " " + val
-	}
+	name, usage := flagNameAndUsage(f)
 
 	def := f.DefValue
 	if def == "[]" {
@@ -97,7 +92,27 @@ func writeFlag(out io.Writer, f *flag.Flag, envPrefix string) {
 
 	env := fmt.Sprintf(" (env %s)", envName(envPrefix, f.Name))
 
-	fmt.Fprintf(out, getFlagFormat(f), f.Shorthand, f.Name, val, def, env, usage, deprecated)
+	fmt.Fprintf(out, getFlagFormat(f), f.Shorthand, f.Name, name, def, env, usage, deprecated)
+}
+
+var valueTypeRegex = regexp.MustCompile(`^[<|\[].+[>|\]]`)
+
+func flagNameAndUsage(f *flag.Flag) (string, string) {
+	name, usage := flag.UnquoteUsage(f)
+	if vt := valueTypeRegex.FindString(usage); vt != "" {
+		name = vt
+		usage = strings.TrimSpace(usage[len(vt):])
+	} else {
+		if name == "" || name == "string" {
+			name = "value"
+		}
+		name = fmt.Sprintf("<%s>", name)
+	}
+	if name != "" {
+		name = " " + name
+	}
+
+	return name, usage
 }
 
 var envReplacer = strings.NewReplacer(".", "_", "-", "_")
