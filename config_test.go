@@ -121,8 +121,7 @@ func TestParseProxyURL(t *testing.T) {
 		},
 		{
 			name:  "user info",
-			input: "http://user:pass@1.2.3.400:1080",
-			err:   "unsupported URL elements",
+			input: "http://user:pass@1.2.3.4:1080",
 		},
 	}
 
