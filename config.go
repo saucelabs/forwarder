@@ -31,6 +31,17 @@ func ParseUserInfo(val string) (*url.Userinfo, error) {
 	if !ok {
 		return nil, fmt.Errorf("expected username:password")
 	}
+
+	// URL decode the username and password
+	u, err := url.QueryUnescape(u)
+	if err != nil {
+		return nil, err
+	}
+	p, err = url.QueryUnescape(p)
+	if err != nil {
+		return nil, err
+	}
+
 	ui := url.UserPassword(u, p)
 	if err := validatedUserInfo(ui); err != nil {
 		return nil, err
