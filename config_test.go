@@ -23,6 +23,10 @@ func TestParseUserInfo(t *testing.T) {
 			input: "user:pass",
 		},
 		{
+			name:  "URL encoded",
+			input: "%40:%3A",
+		},
+		{
 			name:  "no password",
 			input: "user",
 			err:   "expected username:password",
