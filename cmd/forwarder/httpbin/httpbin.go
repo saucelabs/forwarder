@@ -51,9 +51,9 @@ func Command() (cmd *cobra.Command) {
 	defer func() {
 		fs := cmd.Flags()
 		bind.HTTPServerConfig(fs, c.httpServerConfig, "")
-		bind.HTTPServerConfig(fs, c.apiServerConfig, "api")
+		bind.HTTPServerConfig(fs, c.apiServerConfig, "api", forwarder.HTTPScheme)
 		bind.LogConfig(fs, c.logConfig)
-		bind.MarkFlagFilename(cmd, "cert-file", "key-file", "log-file")
+		bind.MarkFlagFilename(cmd, "tls-cert-file", "tls-key-file", "log-file")
 	}()
 	return &cobra.Command{
 		Use:    "httpbin [--protocol <http|https|h2>] [--address <host:port>] [flags]",

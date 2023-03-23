@@ -86,7 +86,7 @@ func Command() (cmd *cobra.Command) {
 		bind.LogConfig(fs, c.logConfig)
 		bind.HTTPTransportConfig(fs, c.httpTransportConfig)
 
-		bind.MarkFlagFilename(cmd, "pac", "cert-file", "key-file", "log-file")
+		bind.MarkFlagFilename(cmd, "pac", "tls-cert-file", "tls-key-file", "log-file")
 	}()
 	return &cobra.Command{
 		Use:     "server --pac <file|url> [--protocol <http|https|h2>] [--address <host:port>] [flags]",
@@ -115,5 +115,5 @@ const example = `  # HTTP server with basic authentication
   forwarder pac server --pac pac.js --protocol https --address localhost:80443
 
   # HTTPS server with custom certificate
-  forwarder pac server --pac pac.js --protocol https --address localhost:80443 --cert-file cert.pem --key-file key.pem
+  forwarder pac server --pac pac.js --protocol https --address localhost:80443 --tls-cert-file cert.pem --tls-key-file key.pem
 `

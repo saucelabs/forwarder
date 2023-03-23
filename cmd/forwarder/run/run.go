@@ -14,7 +14,6 @@ import (
 	"strings"
 
 	martianlog "github.com/google/martian/v3/log"
-	"github.com/mmatczuk/anyflag"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/saucelabs/forwarder"
 	"github.com/saucelabs/forwarder/bind"
@@ -138,24 +137,21 @@ func Command() (cmd *cobra.Command) {
 	defer func() {
 		fs := cmd.Flags()
 		bind.HTTPProxyConfig(fs, c.httpProxyConfig, c.logConfig)
-		fs.VarP(anyflag.NewSliceValueWithRedact[*forwarder.HostPortUser](c.credentials, &c.credentials, forwarder.ParseHostPortUser, forwarder.RedactHostPortUser),
-			"credentials", "c",
-			"site or upstream proxy basic authentication credentials in the form of `username:password@host:port`, "+
-				"host and port can be set to \"*\" to match all (can be specified multiple times)")
+		bind.Credentials(fs, &c.credentials)
 		bind.PAC(fs, &c.pac)
 		bind.DNSConfig(fs, c.dnsConfig)
-		bind.HTTPServerConfig(fs, c.apiServerConfig, "api")
+		bind.HTTPServerConfig(fs, c.apiServerConfig, "api", forwarder.HTTPScheme)
 		bind.HTTPTransportConfig(fs, c.httpTransportConfig)
 
-		bind.MarkFlagFilename(cmd, "cert-file", "key-file", "pac")
-		cmd.MarkFlagsMutuallyExclusive("upstream-proxy", "pac")
+		bind.MarkFlagFilename(cmd, "tls-cert-file", "tls-key-file", "pac")
+		cmd.MarkFlagsMutuallyExclusive("proxy", "pac")
 
 		fs.BoolVar(&c.goleak, "goleak", false, "enable goleak")
 		bind.MarkFlagHidden(cmd, "goleak")
 	}()
 
 	return &cobra.Command{
-		Use:     "run [--protocol <http|https>] [--address <host:port>] [--upstream-proxy <url>] [--pac <file|url>] [--credentials <username:password@host:port>]... [flags]",
+		Use:     "run [--address <host:port>] [--pac <path or url>] [--credentials <username:password@host:port>]...",
 		Short:   "Start HTTP (forward) proxy server",
 		Long:    long,
 		Example: example,
@@ -165,8 +161,11 @@ func Command() (cmd *cobra.Command) {
 
 const long = `Start HTTP (forward) proxy server.
 You can start HTTP or HTTPS server.
-The server may be protected by basic authentication.
 If you start an HTTPS server and you don't provide a certificate, the server will generate a self-signed certificate on startup.
+
+The server may be protected by basic authentication.
+Whenever applicable, username and password are URL decoded.
+This allows you to pass in special characters such as @ by using %%40 or pass in a colon with %%3a.
 `
 
 const example = `  # HTTP proxy with upstream proxy

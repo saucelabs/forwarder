@@ -38,7 +38,8 @@ func redactUserinfo(ui *url.Userinfo) string {
 
 func ConfigFile(fs *pflag.FlagSet, configFile *string) {
 	fs.StringVar(configFile,
-		"config-file", *configFile, "Configuration file to load options from. "+
+		"config-file", *configFile, "<path>"+
+			"Configuration file to load options from. "+
 			"The supported formats are: JSON, YAML, TOML, HCL, and Java properties. "+
 			"The file format is determined by the file extension, if not specified the default format is YAML. "+
 			"The following precedence order of configuration sources is used: command flags, environment variables, config file, default values. ")
@@ -46,26 +47,33 @@ func ConfigFile(fs *pflag.FlagSet, configFile *string) {
 
 func DNSConfig(fs *pflag.FlagSet, cfg *forwarder.DNSConfig) {
 	fs.VarP(anyflag.NewSliceValue[netip.AddrPort](nil, &cfg.Servers, forwarder.ParseDNSAddress),
-		"dns-server", "n",
-		"DNS server(s) to use instead of system default, format: <ip>[:<port>] (default port is 53). "+
-			"If specified multiple times, the first one is used as primary server, the rest are used as a fallback.")
+		"dns-server", "n", "<ip>[:<port>]"+
+			"DNS server(s) to use instead of system default. "+
+			"If specified multiple times, the first one is used as primary server, the rest are used as fallbacks. "+
+			"The port is optional, if not specified the default port is 53. ")
 	fs.DurationVar(&cfg.Timeout,
 		"dns-timeout", cfg.Timeout, "Timeout for dialing DNS servers.")
 }
 
 func PAC(fs *pflag.FlagSet, pac **url.URL) {
 	fs.VarP(anyflag.NewValue[*url.URL](*pac, pac, fileurl.ParseFilePathOrURL),
-		"pac", "p", "local file `path or URL` to PAC content, use \"-\" to read from stdin")
+		"pac", "p", "<path or URL>"+
+			"Proxy Auto-Configuration file to use for upstream proxy selection. "+
+			"It can be a local file or a URL, you can also use '-' to read from stdin. ")
 }
 
 func HTTPProxyConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPProxyConfig, lcfg *log.Config) {
 	HTTPServerConfig(fs, &cfg.HTTPServerConfig, "", forwarder.HTTPScheme, forwarder.HTTPSScheme)
 	LogConfig(fs, lcfg)
+
 	fs.VarP(anyflag.NewValueWithRedact[*url.URL](cfg.UpstreamProxy, &cfg.UpstreamProxy, forwarder.ParseProxyURL, redactURL),
-		"upstream-proxy", "u",
-		"Upstream proxy to use, format: `[<protocol>://]<host>:<port>` (default protocol is http). "+
+		"proxy", "x", "[protocol://]host[:port]"+
+			"Upstream proxy to use. "+
 			"The supported protocols are: http, https, socks, socks5. "+
-			"Credentials can be specified with the -c, --credentials flag. ")
+			"No protocol specified will be treated as HTTP proxy. "+
+			"If the port number is not specified, it is assumed to be 1080. "+
+			"The basic authentication username and password can be specified in the host string e.g. user:pass@host:port. "+
+			"Alternatively, you can use the -c, --credentials flag to specify the credentials. ")
 
 	proxyLocalhostValues := []forwarder.ProxyLocalhostMode{
 		forwarder.DenyProxyLocalhost,
@@ -73,32 +81,46 @@ func HTTPProxyConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPProxyConfig, lcfg *lo
 		forwarder.DirectProxyLocalhost,
 	}
 	fs.VarP(anyflag.NewValue[forwarder.ProxyLocalhostMode](cfg.ProxyLocalhost, &cfg.ProxyLocalhost, anyflag.EnumParser[forwarder.ProxyLocalhostMode](proxyLocalhostValues...)),
-		"proxy-localhost", "t", "accept or deny requests to localhost, one of: deny, allow, direct; in direct mode localhost requests are not sent to upstream proxy if present")
+		"proxy-localhost", "", "<allow|deny|direct>"+
+			"Setting this to allow enables sending requests to localhost through the upstream proxy. "+
+			"Setting this to direct sends requests to localhost directly without using the upstream proxy. "+
+			"By default, requests to localhost are denied. ")
 
 	fs.StringSliceVar(&cfg.RemoveHeaders, "remove-headers", cfg.RemoveHeaders, "removes request headers if prefixes match (can be specified multiple times)")
 }
 
+func Credentials(fs *pflag.FlagSet, credentials *[]*forwarder.HostPortUser) {
+	fs.VarP(anyflag.NewSliceValueWithRedact[*forwarder.HostPortUser](*credentials, credentials, forwarder.ParseHostPortUser, forwarder.RedactHostPortUser),
+		"credentials", "c", "<username:password@host:port>"+
+			"Site or upstream proxy basic authentication credentials. "+
+			"The host and port can be set to \"*\" to match all hosts and ports respectively. "+
+			"The flag can be specified multiple times to add multiple credentials. ")
+}
+
 func HTTPTransportConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPTransportConfig) {
 	fs.DurationVar(&cfg.DialTimeout,
-		"http-dial-timeout", cfg.DialTimeout, "dial timeout for HTTP connections")
-	fs.DurationVar(&cfg.KeepAlive,
-		"http-keep-alive", cfg.KeepAlive, "keep alive interval for HTTP connections")
-	fs.DurationVar(&cfg.TLSHandshakeTimeout,
-		"http-tls-handshake-timeout", cfg.TLSHandshakeTimeout, "TLS handshake timeout for HTTP connections")
-	fs.IntVar(&cfg.MaxIdleConns,
-		"http-max-idle-conns", cfg.MaxIdleConns, "maximum number of idle connections for HTTP connections")
-	fs.IntVar(&cfg.MaxIdleConnsPerHost,
-		"http-max-idle-conns-per-host", cfg.MaxIdleConnsPerHost, "maximum number of idle connections per host for HTTP connections")
-	fs.IntVar(&cfg.MaxConnsPerHost,
-		"http-max-conns-per-host", cfg.MaxConnsPerHost, "maximum number of connections per host for HTTP connections")
-	fs.DurationVar(&cfg.IdleConnTimeout,
-		"http-idle-conn-timeout", cfg.IdleConnTimeout, "idle connection timeout for HTTP connections")
-	fs.DurationVar(&cfg.ResponseHeaderTimeout,
-		"http-response-header-timeout", cfg.ResponseHeaderTimeout, "response header timeout for HTTP connections")
-	fs.DurationVar(&cfg.ExpectContinueTimeout,
-		"http-expect-continue-timeout", cfg.ExpectContinueTimeout, "expect continue timeout for HTTP connections")
+		"http-dial-timeout", cfg.DialTimeout,
+		"The maximum amount of time a dial will wait for a connect to complete. "+
+			"With or without a timeout, the operating system may impose its own earlier timeout. For instance, TCP timeouts are often around 3 minutes. ")
 
-	TLSConfig(fs, &cfg.TLSConfig)
+	fs.DurationVar(&cfg.TLSHandshakeTimeout,
+		"http-tls-handshake-timeout", cfg.TLSHandshakeTimeout,
+		"The maximum amount of time waiting to wait for a TLS handshake. Zero means no limit.")
+
+	fs.DurationVar(&cfg.IdleConnTimeout,
+		"http-idle-conn-timeout", cfg.IdleConnTimeout,
+		"The maximum amount of time an idle (keep-alive) connection will remain idle before closing itself. "+
+			"Zero means no limit. ")
+
+	fs.DurationVar(&cfg.ResponseHeaderTimeout,
+		"http-response-header-timeout", cfg.ResponseHeaderTimeout,
+		"The amount of time to wait for a server's response headers after fully writing the request (including its body, if any)."+
+			"This time does not include the time to read the response body. "+
+			"Zero means no limit. ")
+
+	fs.BoolVar(&cfg.TLSConfig.InsecureSkipVerify, "http-insecure", cfg.TLSConfig.InsecureSkipVerify,
+		"Don't verify the server's certificate chain and host name. "+
+			"Enable to work with self-signed certificates. ")
 }
 
 func HTTPServerConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPServerConfig, prefix string, schemes ...forwarder.Scheme) {
@@ -107,10 +129,10 @@ func HTTPServerConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPServerConfig, prefix
 		namePrefix += "-"
 	}
 
-	usagePrefix := prefix
-	if usagePrefix != "" {
-		usagePrefix += " "
-	}
+	fs.StringVarP(&cfg.Addr,
+		namePrefix+"address", "", cfg.Addr, "<host:port>"+
+			"The server address to listen on. "+
+			"If the host is empty, the server will listen on all available interfaces. ")
 
 	if schemes == nil {
 		schemes = []forwarder.Scheme{
@@ -120,34 +142,43 @@ func HTTPServerConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPServerConfig, prefix
 		}
 	}
 
-	supportedSchemesStr := func() string {
-		var sb strings.Builder
-		for _, s := range schemes {
-			if sb.Len() > 0 {
-				sb.WriteString(", ")
+	if len(schemes) > 1 {
+		supportedSchemesStr := func(delim string) string {
+			var sb strings.Builder
+			for _, s := range schemes {
+				if sb.Len() > 0 {
+					sb.WriteString(delim)
+				}
+				sb.WriteString(string(s))
 			}
-			sb.WriteString(string(s))
+			return sb.String()
 		}
-		return sb.String()
+
+		fs.VarP(anyflag.NewValue[forwarder.Scheme](cfg.Protocol, &cfg.Protocol,
+			anyflag.EnumParser[forwarder.Scheme](schemes...)),
+			namePrefix+"protocol", "", "<"+supportedSchemesStr("|")+">"+
+				"The server protocol. "+
+				"For https and h2 protocols, if TLS certificate is not specified, "+
+				"the server will use a self-signed certificate. ")
+
+		fs.StringVar(&cfg.TLSCertFile,
+			namePrefix+"tls-cert-file", cfg.TLSCertFile, "<path>"+
+				"TLS certificate to use if the server protocol is https or h2. ")
+
+		fs.StringVar(&cfg.TLSKeyFile,
+			namePrefix+"tls-key-file", cfg.TLSKeyFile, "<path>"+
+				"TLS private key to use if the server protocol is https or h2. ")
 	}
 
-	fs.VarP(anyflag.NewValue[forwarder.Scheme](cfg.Protocol, &cfg.Protocol,
-		anyflag.EnumParser[forwarder.Scheme](schemes...)),
-		namePrefix+"protocol", "", usagePrefix+"HTTP server protocol, one of: "+supportedSchemesStr())
-	fs.StringVarP(&cfg.Addr,
-		namePrefix+"address", "", cfg.Addr, usagePrefix+"HTTP server listen address in the form of `host:port`")
-	fs.StringVar(&cfg.CertFile,
-		namePrefix+"cert-file", cfg.CertFile, usagePrefix+"HTTP server TLS certificate file")
-	fs.StringVar(&cfg.KeyFile,
-		namePrefix+"key-file", cfg.KeyFile, usagePrefix+"HTTP server TLS key file")
-	fs.DurationVar(&cfg.ReadTimeout,
-		namePrefix+"read-timeout", cfg.ReadTimeout, usagePrefix+"HTTP server read timeout")
 	fs.DurationVar(&cfg.ReadHeaderTimeout,
-		namePrefix+"read-header-timeout", cfg.ReadHeaderTimeout, usagePrefix+"HTTP server read header timeout")
-	fs.DurationVar(&cfg.WriteTimeout,
-		namePrefix+"write-timeout", cfg.WriteTimeout, usagePrefix+"HTTP server write timeout")
+		namePrefix+"read-header-timeout", cfg.ReadHeaderTimeout,
+		"The amount of time allowed to read request headers.")
+
 	fs.VarP(anyflag.NewValueWithRedact[*url.Userinfo](cfg.BasicAuth, &cfg.BasicAuth, forwarder.ParseUserInfo, redactUserinfo),
-		namePrefix+"basic-auth", "", usagePrefix+"HTTP server basic-auth in the form of `username:password`")
+		namePrefix+"basic-auth", "", "<username:password>"+
+			"Basic authentication credentials to protect the server. "+
+			"Username and password are URL decoded. "+
+			"This allows you to pass in special characters such as @ by using %%40 or pass in a colon with %%3a. ")
 
 	httpLogModes := []httplog.Mode{
 		httplog.None,
@@ -157,24 +188,26 @@ func HTTPServerConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPServerConfig, prefix
 		httplog.Errors,
 	}
 	fs.Var(anyflag.NewValue[httplog.Mode](cfg.LogHTTPMode, &cfg.LogHTTPMode, anyflag.EnumParser[httplog.Mode](httpLogModes...)),
-		namePrefix+"log-http", usagePrefix+"HTTP request and response logging, one of: none, url, headers, body, errors")
-}
-
-func TLSConfig(fs *pflag.FlagSet, cfg *forwarder.TLSConfig) {
-	fs.BoolVar(&cfg.InsecureSkipVerify, "insecure-skip-verify", cfg.InsecureSkipVerify, "skip TLS verification")
+		namePrefix+"log-http", "<none|url|headers|body|errors>"+
+			"HTTP request and response logging mode. "+
+			"By default, request line and headers are logged if response status code is greater than or equal to 500. "+
+			"Setting this to none disables logging. ")
 }
 
 func LogConfig(fs *pflag.FlagSet, cfg *log.Config) {
 	fs.VarP(anyflag.NewValue[*os.File](nil, &cfg.File,
 		forwarder.OpenFileParser(os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600, 0o700)),
-		"log-file", "", "log file path (default: stdout)")
+		"log-file", "", "<path>"+
+			"Path to the log file, if empty, logs to stdout. ")
 
 	logLevel := []log.Level{
 		log.ErrorLevel,
 		log.InfoLevel,
 		log.DebugLevel,
 	}
-	fs.Var(anyflag.NewValue[log.Level](cfg.Level, &cfg.Level, anyflag.EnumParser[log.Level](logLevel...)), "log-level", "one of: error, info, debug")
+	fs.Var(anyflag.NewValue[log.Level](cfg.Level, &cfg.Level, anyflag.EnumParser[log.Level](logLevel...)),
+		"log-level", "<error|info|debug>"+
+			"Log level. ")
 }
 
 func MarkFlagHidden(cmd *cobra.Command, names ...string) {
@@ -201,9 +234,9 @@ func MarkFlagFilename(cmd *cobra.Command, names ...string) {
 	}
 }
 
-func DescribeFlags(flags *pflag.FlagSet) string {
-	b := strings.Builder{}
-	flags.VisitAll(func(flag *pflag.Flag) {
+func DescribeFlags(fs *pflag.FlagSet) string {
+	var b strings.Builder
+	fs.VisitAll(func(flag *pflag.Flag) {
 		if flag.Hidden || flag.Name == "help" {
 			return
 		}

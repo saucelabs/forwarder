@@ -156,8 +156,8 @@ func NewHTTPProxy(cfg *HTTPProxyConfig, pr PACResolver, cm *CredentialsMatcher, 
 }
 
 func (hp *HTTPProxy) configureHTTPS() error {
-	if hp.config.CertFile == "" && hp.config.KeyFile == "" {
-		hp.log.Infof("no SSL certificate provided, using self-signed certificate")
+	if hp.config.TLSCertFile == "" && hp.config.TLSKeyFile == "" {
+		hp.log.Infof("no TLS certificate provided, using self-signed certificate")
 	}
 	tlsCfg := httpsTLSConfigTemplate()
 	err := hp.config.loadCertificate(tlsCfg)

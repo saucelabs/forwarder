@@ -78,8 +78,8 @@ func h2TLSConfigTemplate() *tls.Config {
 type HTTPServerConfig struct {
 	Protocol          Scheme
 	Addr              string
-	CertFile          string
-	KeyFile           string
+	TLSCertFile       string
+	TLSKeyFile        string
 	ReadTimeout       time.Duration
 	ReadHeaderTimeout time.Duration
 	WriteTimeout      time.Duration
@@ -112,10 +112,10 @@ func (c *HTTPServerConfig) loadCertificate(tlsCfg *tls.Config) error {
 		err  error
 	)
 
-	if c.CertFile == "" && c.KeyFile == "" {
+	if c.TLSCertFile == "" && c.TLSKeyFile == "" {
 		cert, err = certutil.RSASelfSignedCert().Gen()
 	} else {
-		cert, err = tls.LoadX509KeyPair(c.CertFile, c.KeyFile)
+		cert, err = tls.LoadX509KeyPair(c.TLSCertFile, c.TLSKeyFile)
 	}
 
 	if err == nil {
@@ -185,8 +185,8 @@ func withMiddleware(cfg *HTTPServerConfig, log log.Logger, h http.Handler) http.
 }
 
 func (hs *HTTPServer) configureHTTPS() error {
-	if hs.config.CertFile == "" && hs.config.KeyFile == "" {
-		hs.log.Infof("no SSL certificate provided, using self-signed certificate")
+	if hs.config.TLSCertFile == "" && hs.config.TLSKeyFile == "" {
+		hs.log.Infof("no TLS certificate provided, using self-signed certificate")
 	}
 	tlsCfg := httpsTLSConfigTemplate()
 	err := hs.config.loadCertificate(tlsCfg)
@@ -196,8 +196,8 @@ func (hs *HTTPServer) configureHTTPS() error {
 }
 
 func (hs *HTTPServer) configureHTTP2() error {
-	if hs.config.CertFile == "" && hs.config.KeyFile == "" {
-		hs.log.Infof("no SSL certificate provided, using self-signed certificate")
+	if hs.config.TLSCertFile == "" && hs.config.TLSKeyFile == "" {
+		hs.log.Infof("no TLS certificate provided, using self-signed certificate")
 	}
 	tlsCfg := h2TLSConfigTemplate()
 	err := hs.config.loadCertificate(tlsCfg)

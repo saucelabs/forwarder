@@ -4,6 +4,6 @@ services:
   proxy:
     environment:
       FORWARDER_PAC: "/pac.js"
-      FORWARDER_UPSTREAM_PROXY: ""
+      FORWARDER_PROXY: ""
     volumes:
       - ./pac/upstream.js:/pac.js
