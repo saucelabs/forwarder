@@ -2,7 +2,7 @@
 ifdef CI
 COMPOSE := docker compose -f docker-compose.yaml $(foreach f,$(CONF),-f $(f))
 else
-COMPOSE := docker compose -f docker-compose.yaml -f override/cpuset.yaml -f override/proxy-expose-ports.yaml $(foreach f,$(CONF),-f $(f))
+COMPOSE := docker compose -f docker-compose.yaml -f override/cpuset.yaml -f override/debug.yaml -f override/proxy-expose-ports.yaml $(foreach f,$(CONF),-f $(f))
 endif
 
 # Docker tag to be tested.
