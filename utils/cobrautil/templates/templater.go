@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"fmt"
 	"regexp"
-	"sort"
 	"strings"
 	"text/template"
 	"unicode"
@@ -46,7 +45,7 @@ func ActsAsRootCommand(cmd *cobra.Command, filters []string, cg CommandGroups, f
 		UsageTemplate: MainUsageTemplate(),
 		HelpTemplate:  MainHelpTemplate(),
 		CommandGroups: cg,
-		FlagGroups:    processedFlagGroups(fg),
+		FlagGroups:    fg,
 		Filtered:      filters,
 	}
 	cmd.SetFlagErrorFunc(templater.FlagErrorFunc())
@@ -250,20 +249,7 @@ func (t *templater) flagsUsages(f *flag.FlagSet) (string, error) {
 		return flagBuf.String(), nil
 	}
 
-	// Split flags into groups.
-	flagSet := g.splitFlagSet(f)
-
-	// Get permutation of groups sorted by priority.
-	perm := make([]int, len(g))
-	for i := range perm {
-		perm[i] = i
-	}
-	sort.Slice(perm, func(i, j int) bool {
-		return g[perm[i]].priority < g[perm[j]].priority
-	})
-
-	for _, i := range perm {
-		fs := flagSet[i]
+	for i, fs := range g.splitFlagSet(f) {
 		if !fs.HasAvailableFlags() {
 			continue
 		}

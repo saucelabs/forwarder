@@ -7,36 +7,22 @@
 package templates
 
 import (
-	"sort"
 	"strings"
 
 	"github.com/spf13/pflag"
+	"golang.org/x/exp/slices"
 )
 
 type FlagGroup struct {
 	Name   string
-	Prefix string
-
-	priority int
+	Prefix []string
 }
 
 type FlagGroups []FlagGroup
 
-// processedFlagGroups returns a copy of the flag groups with the priority field set to the index of the group.
-// The returned groups are sorted by the length of the prefix in descending order.
-func processedFlagGroups(g FlagGroups) FlagGroups {
-	c := make(FlagGroups, len(g))
-	copy(c, g)
-
-	for i := range c {
-		c[i].priority = i
-	}
-
-	sort.Slice(c, func(i, j int) bool {
-		return len(c[i].Prefix) > len(c[j].Prefix)
-	})
-
-	return c
+type prefixFlagSet struct {
+	value string
+	fs    *pflag.FlagSet
 }
 
 // splitFlagSet splits a flag set into multiple flag sets based on the prefix of the flag names.
@@ -48,13 +34,25 @@ func (g FlagGroups) splitFlagSet(f *pflag.FlagSet) []*pflag.FlagSet {
 		result = append(result, pflag.NewFlagSet(p.Name, pflag.ExitOnError))
 	}
 
+	// Sort the groups by the length of the prefix, so that longer prefixes are matched first.
+	prefix := make([]prefixFlagSet, 0, len(g))
+	for i := range g {
+		for _, p := range g[i].Prefix {
+			prefix = append(prefix, prefixFlagSet{p, result[i]})
+		}
+	}
+	slices.SortFunc[prefixFlagSet](prefix, func(a, b prefixFlagSet) bool {
+		return len(a.value) > len(b.value)
+	})
+
 	f.VisitAll(func(f *pflag.Flag) {
-		for i := range g {
-			if strings.HasPrefix(f.Name, g[i].Prefix) {
-				result[i].AddFlag(f)
+		for i := range prefix {
+			if strings.HasPrefix(f.Name, prefix[i].value) {
+				prefix[i].fs.AddFlag(f)
 				break
 			}
 		}
 	})
+
 	return result
 }
