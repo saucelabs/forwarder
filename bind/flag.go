@@ -118,7 +118,7 @@ func HTTPTransportConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPTransportConfig) 
 			"This time does not include the time to read the response body. "+
 			"Zero means no limit. ")
 
-	fs.BoolVar(&cfg.TLSConfig.InsecureSkipVerify, "http-insecure", cfg.TLSConfig.InsecureSkipVerify,
+	fs.BoolVarP(&cfg.TLSConfig.InsecureSkipVerify, "insecure", "k", cfg.TLSConfig.InsecureSkipVerify,
 		"Don't verify the server's certificate chain and host name. "+
 			"Enable to work with self-signed certificates. ")
 }
