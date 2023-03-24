@@ -4,7 +4,7 @@ services:
   proxy:
     environment:
       FORWARDER_PROXY: "https://upstream-proxy:3128"
-      FORWARDER_HTTP_INSECURE: "true"
+      FORWARDER_INSECURE: "true"
   upstream-proxy:
     environment:
       FORWARDER_PROTOCOL: "HTTPS"

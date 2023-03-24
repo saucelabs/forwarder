@@ -55,7 +55,7 @@ func rootCommand() *cobra.Command {
 		},
 		{
 			Name:   "HTTP client options",
-			Prefix: []string{"http"},
+			Prefix: []string{"http", "insecure"},
 		},
 		{
 			Name:   "Logging options",
