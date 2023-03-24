@@ -143,7 +143,7 @@ func Command() (cmd *cobra.Command) {
 		bind.HTTPServerConfig(fs, c.apiServerConfig, "api", forwarder.HTTPScheme)
 		bind.HTTPTransportConfig(fs, c.httpTransportConfig)
 
-		bind.MarkFlagFilename(cmd, "tls-cert-file", "tls-key-file", "pac")
+		bind.AutoMarkFlagFilename(cmd)
 		cmd.MarkFlagsMutuallyExclusive("proxy", "pac")
 
 		fs.BoolVar(&c.goleak, "goleak", false, "enable goleak")
