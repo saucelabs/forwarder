@@ -79,7 +79,7 @@ func Command() (cmd *cobra.Command) {
 		bind.DNSConfig(fs, c.dnsConfig)
 		bind.HTTPTransportConfig(fs, c.httpTransportConfig)
 
-		bind.MarkFlagFilename(cmd, "pac")
+		bind.AutoMarkFlagFilename(cmd)
 	}()
 	return &cobra.Command{
 		Use:     "eval --pac <file|url> [flags] <url>...",

@@ -226,6 +226,16 @@ func MarkFlagRequired(cmd *cobra.Command, names ...string) {
 	}
 }
 
+func AutoMarkFlagFilename(cmd *cobra.Command) {
+	cmd.Flags().VisitAll(func(f *pflag.Flag) {
+		if strings.HasPrefix(f.Usage, "<path") ||
+			strings.HasSuffix(f.Name, "-file") ||
+			strings.HasSuffix(f.Name, "-dir") {
+			MarkFlagFilename(cmd, f.Name)
+		}
+	})
+}
+
 func MarkFlagFilename(cmd *cobra.Command, names ...string) {
 	for _, name := range names {
 		if err := cmd.MarkFlagFilename(name); err != nil {

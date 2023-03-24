@@ -86,7 +86,7 @@ func Command() (cmd *cobra.Command) {
 		bind.LogConfig(fs, c.logConfig)
 		bind.HTTPTransportConfig(fs, c.httpTransportConfig)
 
-		bind.MarkFlagFilename(cmd, "pac", "tls-cert-file", "tls-key-file", "log-file")
+		bind.AutoMarkFlagFilename(cmd)
 	}()
 	return &cobra.Command{
 		Use:     "server --pac <file|url> [--protocol <http|https|h2>] [--address <host:port>] [flags]",
