@@ -17,6 +17,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/saucelabs/forwarder"
 	"github.com/saucelabs/forwarder/bind"
+	"github.com/saucelabs/forwarder/header"
 	"github.com/saucelabs/forwarder/log"
 	"github.com/saucelabs/forwarder/log/stdlog"
 	"github.com/saucelabs/forwarder/pac"
@@ -31,6 +32,8 @@ type command struct {
 	httpTransportConfig *forwarder.HTTPTransportConfig
 	pac                 *url.URL
 	credentials         []*forwarder.HostPortUser
+	requestHeaders      []header.Header
+	responseHeaders     []header.Header
 	httpProxyConfig     *forwarder.HTTPProxyConfig
 	apiServerConfig     *forwarder.HTTPServerConfig
 	logConfig           *log.Config
@@ -95,6 +98,13 @@ func (c *command) RunE(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("credentials: %w", err)
 	}
 
+	if len(c.requestHeaders) > 0 {
+		c.httpProxyConfig.RequestModifiers = append(c.httpProxyConfig.RequestModifiers, header.Headers(c.requestHeaders))
+	}
+	if len(c.responseHeaders) > 0 {
+		c.httpProxyConfig.ResponseModifiers = append(c.httpProxyConfig.ResponseModifiers, header.Headers(c.responseHeaders))
+	}
+
 	var f runctx.Funcs
 	p, err := forwarder.NewHTTPProxy(c.httpProxyConfig, pr, cm, rt, logger.Named("proxy"))
 	if err != nil {
@@ -136,8 +146,10 @@ func Command() (cmd *cobra.Command) {
 
 	defer func() {
 		fs := cmd.Flags()
-		bind.HTTPProxyConfig(fs, c.httpProxyConfig, c.logConfig)
 		bind.Credentials(fs, &c.credentials)
+		bind.RequestHeaders(fs, &c.requestHeaders)
+		bind.ResponseHeaders(fs, &c.responseHeaders)
+		bind.HTTPProxyConfig(fs, c.httpProxyConfig, c.logConfig)
 		bind.PAC(fs, &c.pac)
 		bind.DNSConfig(fs, c.dnsConfig)
 		bind.HTTPServerConfig(fs, c.apiServerConfig, "api", forwarder.HTTPScheme)

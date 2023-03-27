@@ -16,6 +16,7 @@ import (
 	"github.com/mmatczuk/anyflag"
 	"github.com/saucelabs/forwarder"
 	"github.com/saucelabs/forwarder/fileurl"
+	"github.com/saucelabs/forwarder/header"
 	"github.com/saucelabs/forwarder/httplog"
 	"github.com/saucelabs/forwarder/log"
 	"github.com/spf13/cobra"
@@ -60,6 +61,27 @@ func PAC(fs *pflag.FlagSet, pac **url.URL) {
 		"pac", "p", "<path or URL>"+
 			"Proxy Auto-Configuration file to use for upstream proxy selection. "+
 			"It can be a local file or a URL, you can also use '-' to read from stdin. ")
+}
+
+func RequestHeaders(fs *pflag.FlagSet, headers *[]header.Header) {
+	fs.VarP(anyflag.NewSliceValue[header.Header](*headers, headers, header.ParseHeader),
+		"header", "H", "<header>"+
+			"Add or remove HTTP request headers. "+
+			"Use the format \"name: value\" to add a header, "+
+			"\"name;\" to set the header to empty value, "+
+			"\"-name\" to remove the header, "+
+			"\"-name*\" to remove headers by prefix. "+
+			"The header name will be normalized to canonical form. "+
+			"The header value should not contain any newlines or carriage returns. "+
+			"The flag can be specified multiple times. "+
+			"Example: -H \"Host: example.com\" -H \"-User-Agent\" -H \"-X-*\". ")
+}
+
+func ResponseHeaders(fs *pflag.FlagSet, headers *[]header.Header) {
+	fs.VarP(anyflag.NewSliceValue[header.Header](*headers, headers, header.ParseHeader),
+		"response-header", "R", "<header>"+
+			"Add or remove HTTP headers on the received response before sending it to the client. "+
+			"See the documentation for the -H, --header flag for more details on the format. ")
 }
 
 func HTTPProxyConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPProxyConfig, lcfg *log.Config) {
