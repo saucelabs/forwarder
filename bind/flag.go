@@ -85,8 +85,6 @@ func HTTPProxyConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPProxyConfig, lcfg *lo
 			"Setting this to allow enables sending requests to localhost through the upstream proxy. "+
 			"Setting this to direct sends requests to localhost directly without using the upstream proxy. "+
 			"By default, requests to localhost are denied. ")
-
-	fs.StringSliceVar(&cfg.RemoveHeaders, "remove-headers", cfg.RemoveHeaders, "removes request headers if prefixes match (can be specified multiple times)")
 }
 
 func Credentials(fs *pflag.FlagSet, credentials *[]*forwarder.HostPortUser) {

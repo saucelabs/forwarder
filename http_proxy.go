@@ -16,7 +16,6 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -72,7 +71,6 @@ type HTTPProxyConfig struct {
 	ResponseModifiers  []martian.ResponseModifier
 	ConnectPassthrough bool
 	CloseAfterReply    bool
-	RemoveHeaders      []string
 
 	// TestingHTTPHandler uses Martian's [http.Handler] implementation
 	// over [http.Server] instead of the default TCP server.
@@ -258,10 +256,6 @@ func (hp *HTTPProxy) middlewareStack() martian.RequestResponseModifier {
 	stack, fg := httpspec.NewStack("forwarder")
 	topg.AddRequestModifier(stack)
 	topg.AddResponseModifier(stack)
-
-	for _, hr := range hp.config.RemoveHeaders {
-		fg.AddRequestModifier(newHeaderRemover(hr))
-	}
 
 	for _, m := range hp.config.RequestModifiers {
 		fg.AddRequestModifier(m)
@@ -509,23 +503,4 @@ func (hp *HTTPProxy) Addr() string {
 // Ready returns true if the server is running and ready to accept requests.
 func (hp *HTTPProxy) Ready() bool {
 	return hp.Addr() != ""
-}
-
-// headerRemover removes headers that match given prefix.
-type headerRemover struct {
-	prefix string
-}
-
-func newHeaderRemover(prefix string) martian.RequestModifier {
-	return &headerRemover{prefix: http.CanonicalHeaderKey(prefix)}
-}
-
-func (m *headerRemover) ModifyRequest(req *http.Request) error {
-	for k := range req.Header {
-		kk := http.CanonicalHeaderKey(k)
-		if strings.HasPrefix(kk, m.prefix) {
-			req.Header.Del(k)
-		}
-	}
-	return nil
 }
