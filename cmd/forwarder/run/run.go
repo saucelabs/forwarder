@@ -181,7 +181,7 @@ This allows you to pass in special characters such as @ by using %%40 or pass in
 `
 
 const example = `  # HTTP proxy with upstream proxy
-  forwarder run --upstream-proxy http://localhost:8081
+  forwarder run --proxy http://localhost:8081
 
   # Start HTTP proxy with PAC script
   forwarder run --address localhost:3128 --pac https://example.com/pac.js
