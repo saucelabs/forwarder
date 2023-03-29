@@ -23,20 +23,6 @@ import (
 	"github.com/spf13/pflag"
 )
 
-func redactURL(u *url.URL) string {
-	return u.Redacted()
-}
-
-func redactUserinfo(ui *url.Userinfo) string {
-	if ui == nil {
-		return ""
-	}
-	if _, has := ui.Password(); has {
-		return fmt.Sprintf("%s:xxxxx", ui.Username())
-	}
-	return ui.Username()
-}
-
 func ConfigFile(fs *pflag.FlagSet, configFile *string) {
 	fs.StringVar(configFile,
 		"config-file", *configFile, "<path>"+
@@ -88,7 +74,7 @@ func HTTPProxyConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPProxyConfig, lcfg *lo
 	HTTPServerConfig(fs, &cfg.HTTPServerConfig, "", forwarder.HTTPScheme, forwarder.HTTPSScheme)
 	LogConfig(fs, lcfg)
 
-	fs.VarP(anyflag.NewValueWithRedact[*url.URL](cfg.UpstreamProxy, &cfg.UpstreamProxy, forwarder.ParseProxyURL, redactURL),
+	fs.VarP(anyflag.NewValueWithRedact[*url.URL](cfg.UpstreamProxy, &cfg.UpstreamProxy, forwarder.ParseProxyURL, RedactURL),
 		"proxy", "x", "[protocol://]host[:port]"+
 			"Upstream proxy to use. "+
 			"The supported protocols are: http, https, socks, socks5. "+
@@ -194,7 +180,7 @@ func HTTPServerConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPServerConfig, prefix
 		namePrefix+"read-header-timeout", cfg.ReadHeaderTimeout,
 		"The amount of time allowed to read request headers.")
 
-	fs.VarP(anyflag.NewValueWithRedact[*url.Userinfo](cfg.BasicAuth, &cfg.BasicAuth, forwarder.ParseUserInfo, redactUserinfo),
+	fs.VarP(anyflag.NewValueWithRedact[*url.Userinfo](cfg.BasicAuth, &cfg.BasicAuth, forwarder.ParseUserInfo, RedactUserinfo),
 		namePrefix+"basic-auth", "", "<username:password>"+
 			"Basic authentication credentials to protect the server. "+
 			"Username and password are URL decoded. "+
