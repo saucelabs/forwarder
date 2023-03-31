@@ -118,5 +118,8 @@ func flagNameAndUsage(f *flag.Flag) (string, string) {
 var envReplacer = strings.NewReplacer(".", "_", "-", "_")
 
 func envName(envPrefix, flagName string) string {
-	return strings.ToUpper(fmt.Sprintf("%s_%s", envPrefix, envReplacer.Replace(flagName)))
+	s := fmt.Sprintf("%s_%s", envPrefix, flagName)
+	s = strings.ToUpper(s)
+	s = envReplacer.Replace(s)
+	return s
 }

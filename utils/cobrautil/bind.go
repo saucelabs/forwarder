@@ -15,6 +15,8 @@ import (
 	"github.com/spf13/viper"
 )
 
+var envReplacer = strings.NewReplacer(".", "_", "-", "_") //nolint:gochecknoglobals // false positive
+
 // BindAll updates the given command flags with values from the environment variables and config file.
 // The supported formats are: JSON, YAML, TOML, HCL, and Java properties.
 // The file format is determined by the file extension, if not specified the default format is YAML.
@@ -31,7 +33,9 @@ func BindAll(cmd *cobra.Command, envPrefix, configFileFlagName string) error {
 	}
 
 	// Environment variables
-	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_", "-", "_"))
+	v.SetEnvKeyReplacer(envReplacer)
+	envPrefix = strings.ToUpper(envPrefix)
+	envPrefix = envReplacer.Replace(envPrefix)
 	v.SetEnvPrefix(envPrefix)
 	v.AutomaticEnv()
 
