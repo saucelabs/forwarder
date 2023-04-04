@@ -6,6 +6,12 @@
 
 package forwarder
 
+import (
+	"crypto/tls"
+
+	"github.com/saucelabs/forwarder/utils/certutil"
+)
+
 type TLSConfig struct {
 	// InsecureSkipVerify controls whether a client verifies the server's
 	// certificate chain and host name. If InsecureSkipVerify is true, crypto/tls
@@ -14,4 +20,28 @@ type TLSConfig struct {
 	// attacks unless custom verification is used. This should be used only for
 	// testing or in combination with VerifyConnection or VerifyPeerCertificate.
 	InsecureSkipVerify bool
+
+	// CertFile is the path to the TLS certificate.
+	CertFile string
+
+	// KeyFile is the path to the TLS private key of the certificate.
+	KeyFile string
+}
+
+func LoadCertificateFromTLSConfig(dst *tls.Config, src *TLSConfig) error {
+	var (
+		cert tls.Certificate
+		err  error
+	)
+
+	if src.CertFile == "" && src.KeyFile == "" {
+		cert, err = certutil.RSASelfSignedCert().Gen()
+	} else {
+		cert, err = tls.LoadX509KeyPair(src.CertFile, src.KeyFile)
+	}
+
+	if err == nil {
+		dst.Certificates = append(dst.Certificates, cert)
+	}
+	return err
 }

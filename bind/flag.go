@@ -167,12 +167,12 @@ func HTTPServerConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPServerConfig, prefix
 				"For https and h2 protocols, if TLS certificate is not specified, "+
 				"the server will use a self-signed certificate. ")
 
-		fs.StringVar(&cfg.TLSCertFile,
-			namePrefix+"tls-cert-file", cfg.TLSCertFile, "<path>"+
+		fs.StringVar(&cfg.CertFile,
+			namePrefix+"tls-cert-file", cfg.CertFile, "<path>"+
 				"TLS certificate to use if the server protocol is https or h2. ")
 
-		fs.StringVar(&cfg.TLSKeyFile,
-			namePrefix+"tls-key-file", cfg.TLSKeyFile, "<path>"+
+		fs.StringVar(&cfg.KeyFile,
+			namePrefix+"tls-key-file", cfg.KeyFile, "<path>"+
 				"TLS private key to use if the server protocol is https or h2. ")
 	}
 

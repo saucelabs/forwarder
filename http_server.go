@@ -22,7 +22,6 @@ import (
 	"github.com/saucelabs/forwarder/httplog"
 	"github.com/saucelabs/forwarder/log"
 	"github.com/saucelabs/forwarder/middleware"
-	"github.com/saucelabs/forwarder/utils/certutil"
 )
 
 type Scheme string
@@ -76,10 +75,9 @@ func h2TLSConfigTemplate() *tls.Config {
 }
 
 type HTTPServerConfig struct {
-	Protocol          Scheme
-	Addr              string
-	TLSCertFile       string
-	TLSKeyFile        string
+	Protocol Scheme
+	Addr     string
+	TLSConfig
 	ReadTimeout       time.Duration
 	ReadHeaderTimeout time.Duration
 	WriteTimeout      time.Duration
@@ -104,24 +102,6 @@ func (c *HTTPServerConfig) Validate() error {
 		return fmt.Errorf("basic_auth: %w", err)
 	}
 	return nil
-}
-
-func (c *HTTPServerConfig) loadCertificate(tlsCfg *tls.Config) error {
-	var (
-		cert tls.Certificate
-		err  error
-	)
-
-	if c.TLSCertFile == "" && c.TLSKeyFile == "" {
-		cert, err = certutil.RSASelfSignedCert().Gen()
-	} else {
-		cert, err = tls.LoadX509KeyPair(c.TLSCertFile, c.TLSKeyFile)
-	}
-
-	if err == nil {
-		tlsCfg.Certificates = []tls.Certificate{cert}
-	}
-	return err
 }
 
 type HTTPServer struct {
@@ -185,22 +165,22 @@ func withMiddleware(cfg *HTTPServerConfig, log log.Logger, h http.Handler) http.
 }
 
 func (hs *HTTPServer) configureHTTPS() error {
-	if hs.config.TLSCertFile == "" && hs.config.TLSKeyFile == "" {
+	if hs.config.CertFile == "" && hs.config.KeyFile == "" {
 		hs.log.Infof("no TLS certificate provided, using self-signed certificate")
 	}
 	tlsCfg := httpsTLSConfigTemplate()
-	err := hs.config.loadCertificate(tlsCfg)
+	err := LoadCertificateFromTLSConfig(tlsCfg, &hs.config.TLSConfig)
 	hs.srv.TLSConfig = tlsCfg
 	hs.srv.TLSNextProto = make(map[string]func(*http.Server, *tls.Conn, http.Handler))
 	return err
 }
 
 func (hs *HTTPServer) configureHTTP2() error {
-	if hs.config.TLSCertFile == "" && hs.config.TLSKeyFile == "" {
+	if hs.config.CertFile == "" && hs.config.KeyFile == "" {
 		hs.log.Infof("no TLS certificate provided, using self-signed certificate")
 	}
 	tlsCfg := h2TLSConfigTemplate()
-	err := hs.config.loadCertificate(tlsCfg)
+	err := LoadCertificateFromTLSConfig(tlsCfg, &hs.config.TLSConfig)
 	hs.srv.TLSConfig = tlsCfg
 	return err
 }
