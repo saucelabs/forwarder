@@ -50,7 +50,7 @@ linters-settings:
       - performance
       - style
   gomnd:
-    ignored-numbers: [0, 1, 2, 5, 10, 15, 30, 50, 60, 90, 100, 128, 2048]
+    ignored-numbers: [0, 1, 2, 3, 5, 10, 15, 30, 50, 60, 90, 100, 128, 2048]
   lll:
     line-length: 180
   nestif:
@@ -94,9 +94,11 @@ issues:
         - paralleltest
         - testpackage
 
-    - path: e2e/args.go
+    - path: e2e/
       linters:
         - gochecknoglobals
+        - prealloc
+        - nosprintfhostport
 
     - path: internal/version/version.go
       linters:
