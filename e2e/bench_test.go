@@ -1,3 +1,9 @@
+// Copyright 2023 Sauce Labs Inc. All rights reserved.
+//
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 //go:build e2e
 
 package e2e
@@ -35,6 +41,7 @@ func BenchmarkRespBody100k(b *testing.B) {
 }
 
 func benchmarkStreamDataN(b *testing.B, n int64) {
+	b.Helper()
 	req, err := http.NewRequest(http.MethodGet, *httpbin+"/stream-bytes/"+fmt.Sprint(n), http.NoBody)
 	if err != nil {
 		b.Fatal(err)
@@ -47,7 +54,9 @@ func benchmarkStreamDataN(b *testing.B, n int64) {
 		if err != nil {
 			b.Fatal(err)
 		}
-		io.Copy(io.Discard, resp.Body)
+		if _, err := io.Copy(io.Discard, resp.Body); err != nil {
+			b.Fatal(err)
+		}
 		resp.Body.Close()
 	}
 }
