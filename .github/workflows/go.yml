@@ -65,8 +65,15 @@ jobs:
         with:
           go-version: "${{env.GO_VERSION}}"
 
-      - name: Build Docker image
-        run: make update-devel-image
+      - name: Build Forwarder
+        run: go build -o forwarder ./cmd/forwarder
 
       - name: Run e2e test
-        run: cd e2e && ./run.sh
+        run: cd e2e && make test
+
+      - name: Archive test outputs
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-outputs
+          path: e2e/test-outputs
