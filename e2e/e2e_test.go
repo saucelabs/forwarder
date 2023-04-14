@@ -110,7 +110,7 @@ func TestStreamBytes(t *testing.T) {
 	with(1_000_000, base/10)
 
 	var (
-		workers = 2 * runtime.NumCPU()
+		workers = runtime.NumCPU()
 		wg      sync.WaitGroup
 	)
 
