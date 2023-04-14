@@ -52,10 +52,10 @@ archives:
         format: tar.gz
 
 nfpms:
-  - package_name: "forwarder"
+  - package_name: "{{ .ProjectName }}"
     file_name_template: "{{ .ProjectName }}-{{ .Version }}_{{ .Os }}.{{ .Arch }}"
     vendor: Sauce Labs
-    maintainer: "Sauce Labs Connect Team"
+    maintainer: "Sauce Connect Team"
     description: "Sauce Labs Forwarder"
     license: Mozilla Public License 2.0
     formats:
