@@ -25,7 +25,7 @@ install-dependencies:
 .PHONY: build
 build:
 	@rm -f forwarder
-	@goreleaser build --rm-dist --snapshot --single-target --output .
+	@goreleaser build --clean --snapshot --single-target --output .
 
 .PHONY: dist
 dist: GORELEASER_CURRENT_TAG=1.0.0-rc
