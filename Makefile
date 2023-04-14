@@ -24,6 +24,7 @@ install-dependencies:
 
 .PHONY: build
 build:
+	@rm -f forwarder
 	@goreleaser build --rm-dist --snapshot --single-target --output .
 
 .PHONY: dist
