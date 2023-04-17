@@ -51,3 +51,7 @@ tags
 
 # scratch repo to hack
 /scratch
+
+# e2e test outputs
+e2e/test-outputs
+e2e/test-data
