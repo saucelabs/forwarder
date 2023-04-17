@@ -4,6 +4,7 @@
 
 export GOBIN ?= $(PWD)/bin
 export PATH  := $(GOBIN):$(PATH)
+export SHELL := env PATH=$(PATH) $(SHELL)
 
 include .version
 
