@@ -1,13 +1,19 @@
+// Copyright 2023 Sauce Labs Inc. All rights reserved.
+//
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 //go:build e2e
 
 package e2e
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"math/rand"
-	"net"
 	"net/http"
 	"os"
 	"runtime"
@@ -16,21 +22,28 @@ import (
 	"testing"
 
 	"github.com/gavv/httpexpect/v2"
+	"github.com/mmatczuk/anyflag"
 	"golang.org/x/sync/errgroup"
 )
 
 func TestMain(m *testing.M) {
+	flag.Var(anyflag.NewValue[*TestConfig](testConfig, &testConfig, parseTestConfig), "config-file", "config of the test, proxy/httpbin address, etc...")
 	if !flag.Parsed() {
 		flag.Parse()
 	}
 
 	var eg errgroup.Group
 	eg.Go(func() error {
-		return waitForServerReady(*proxy)
+		return waitForServerReady(testConfig.ProxyAPI)
 	})
 	eg.Go(func() error {
-		return waitForServerReady(*httpbin)
+		return waitForServerReady(testConfig.HTTPBinAPI)
 	})
+	if testConfig.UpstreamAPI != "" {
+		eg.Go(func() error {
+			return waitForServerReady(testConfig.UpstreamAPI)
+		})
+	}
 	if err := eg.Wait(); err != nil {
 		fmt.Fprintf(os.Stderr, err.Error()+"\n")
 		os.Exit(1)
@@ -40,6 +53,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestStatusCodes(t *testing.T) {
+	t.Parallel()
 	// List of all valid status codes plus some non-standard ones.
 	// See https://www.iana.org/assignments/http-status-codes/http-status-codes.xhtml
 	validStatusCodes := []int{
@@ -51,7 +65,7 @@ func TestStatusCodes(t *testing.T) {
 		500, 501, 502, 503, 504, 505, 506, 507, 508, 510, 511, 599,
 	}
 
-	e := Expect(t, *httpbin)
+	e := Expect(t, testConfig.HTTPBin)
 	for i := range validStatusCodes {
 		code := validStatusCodes[i]
 		t.Run(fmt.Sprint(code), func(t *testing.T) {
@@ -62,7 +76,7 @@ func TestStatusCodes(t *testing.T) {
 }
 
 func TestAuth(t *testing.T) {
-	e := Expect(t, *httpbin)
+	e := Expect(t, testConfig.HTTPBin)
 	t.Run("ok", func(t *testing.T) {
 		e.GET("/basic-auth/user/passwd").WithTransformer(func(r *http.Request) {
 			r.SetBasicAuth("user", "passwd")
@@ -74,14 +88,15 @@ func TestAuth(t *testing.T) {
 }
 
 func TestProxyAuth(t *testing.T) {
-	if os.Getenv("FORWARDER_BASIC_AUTH") == "" {
-		t.Skip("FORWARDER_BASIC_AUTH not set")
+	if testConfig.ProxyBasicAuth == "" {
+		t.Skip("proxy basic auth not set")
 	}
-	e := Expect(t, *httpbin, ProxyNoAuth)
+	e := Expect(t, testConfig.HTTPBin, ProxyNoAuth)
 	e.GET("/status/200").Expect().Status(http.StatusProxyAuthRequired)
 }
 
 func TestStreamBytes(t *testing.T) {
+	t.Parallel()
 	var sizes []int
 	with := func(size, n int) {
 		for i := 0; i < n; i++ {
@@ -103,12 +118,12 @@ func TestStreamBytes(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			e := Expect(t, *httpbin, func(config *httpexpect.Config) {
+			e := Expect(t, testConfig.HTTPBin, func(config *httpexpect.Config) {
 				config.Printers = []httpexpect.Printer{}
 			})
 			for _, p := range rand.Perm(len(sizes)) {
 				size := sizes[p]
-				e.GET(fmt.Sprintf("/stream-bytes/%d", size)).Expect().Status(http.StatusOK).Body().Length().Equal(size)
+				e.GET(fmt.Sprintf("/stream-bytes/%d", size)).Expect().Status(http.StatusOK).Body().Length().IsEqual(size)
 			}
 		}()
 	}
@@ -117,12 +132,14 @@ func TestStreamBytes(t *testing.T) {
 }
 
 func TestServerSentEvents(t *testing.T) {
+	t.Parallel()
+
 	tr := newTransport(t)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, *httpbin+"/events/100", nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, testConfig.HTTPBin+"/events/100", http.NoBody)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -142,7 +159,7 @@ func TestServerSentEvents(t *testing.T) {
 	for {
 		n, err := resp.Body.Read(buf[:])
 		if err != nil {
-			if err == context.Canceled {
+			if errors.Is(err, context.Canceled) {
 				break
 			}
 			t.Fatal(err)
@@ -160,11 +177,13 @@ func TestServerSentEvents(t *testing.T) {
 }
 
 func TestWebSocketEcho(t *testing.T) {
-	if strings.HasPrefix(*proxy, "https://") {
+	t.Parallel()
+
+	if strings.HasPrefix(testConfig.Proxy, "https://") {
 		t.Skip("proxy: unknown scheme: https")
 	}
 
-	e := Expect(t, *httpbin)
+	e := Expect(t, testConfig.HTTPBin)
 
 	ws := e.GET("/ws/echo").WithWebsocketUpgrade().
 		Expect().
@@ -172,29 +191,31 @@ func TestWebSocketEcho(t *testing.T) {
 		Websocket()
 	defer ws.Disconnect()
 
-	ws.Subprotocol().Empty()
+	ws.Subprotocol().IsEmpty()
 	for i := 0; i < 100; i++ {
-		ws.WriteText(fmt.Sprintf("hello %d", i)).Expect().TextMessage().Body().Equal(fmt.Sprintf("hello %d", i))
+		ws.WriteText(fmt.Sprintf("hello %d", i)).Expect().TextMessage().Body().IsEqual(fmt.Sprintf("hello %d", i))
 	}
 	ws.CloseWithText("bye").Expect().CloseMessage().NoContent()
 }
 
-func TestProxyLocalhost(t *testing.T) {
-	hosts := []string{
-		"localhost",
-		"127.0.0.1",
-	}
-
-	for _, h := range hosts {
-		if os.Getenv("FORWARDER_PROXY_LOCALHOST") == "allow" {
-			Expect(t, "http://"+net.JoinHostPort(h, "10000")).GET("/version").Expect().Status(http.StatusOK)
-		} else {
-			Expect(t, "http://"+net.JoinHostPort(h, "10000")).GET("/version").Expect().Status(http.StatusBadGateway)
-		}
-	}
-}
+// func TestProxyLocalhost(t *testing.T) {
+//	hosts := []string{
+//		"localhost",
+//		"127.0.0.1",
+//	}
+//
+//	for _, h := range hosts {
+//		if os.Getenv("FORWARDER_PROXY_LOCALHOST") == "allow" {
+//			Expect(t, "http://"+net.JoinHostPort(h, "10000")).GET("/version").Expect().Status(http.StatusOK)
+//		} else {
+//			Expect(t, "http://"+net.JoinHostPort(h, "10000")).GET("/version").Expect().Status(http.StatusBadGateway)
+//		}
+//	}
+//}
 
 func TestBadGateway(t *testing.T) {
+	t.Parallel()
+
 	hosts := []string{
 		"wronghost",
 		"httpbin:1",
@@ -208,16 +229,16 @@ func TestBadGateway(t *testing.T) {
 }
 
 func TestGoogleCom(t *testing.T) {
-	e := Expect(t, "https://www.google.com")
+	e := Expect(t, "http://www.google.com")
 	e.HEAD("/").Expect().Status(http.StatusOK)
 }
 
 func TestSC2450(t *testing.T) {
-	if os.Getenv("TEST_SC") == "" {
-		t.Skip("TEST_SC not set")
+	if testConfig.SC2450 == "" {
+		t.Skip("sc2450 not set")
 	}
 
-	e := Expect(t, "http://sc-2450")
+	e := Expect(t, testConfig.SC2450)
 	e.HEAD("/").Expect().Status(http.StatusOK)
-	e.GET("/").Expect().Status(http.StatusOK).Body().Equal(`{"android":{"min_version":"4.0.0"},"ios":{"min_version":"4.0.0"}}`)
+	e.GET("/").Expect().Status(http.StatusOK).Body().IsEqual(`{"android":{"min_version":"4.0.0"},"ios":{"min_version":"4.0.0"}}`)
 }

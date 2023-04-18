@@ -1,3 +1,3 @@
 function FindProxyForURL(url, host) {
-  return "PROXY upstream-proxy:3128";
+  return "PROXY localhost:3128";
 }

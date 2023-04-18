@@ -1,3 +1,9 @@
+// Copyright 2023 Sauce Labs Inc. All rights reserved.
+//
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 package e2e
 
 import (
@@ -7,7 +13,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 	"testing"
 	"time"
@@ -17,32 +22,20 @@ import (
 )
 
 var (
-	proxy              = flag.String("proxy", "", "URL of the proxy to test against")
-	httpbin            = flag.String("httpbin", "", "URL of the httpbin server to test against")
-	maxWait            = flag.Duration("max-wait", 5*time.Second, "Maximum time to wait for the containers to become ready")
-	insecureSkipVerify = flag.Bool("insecure-skip-verify", false, "Skip TLS certificate verification")
+	testConfig *TestConfig
+	maxWait    = flag.Duration("max-wait", 5*time.Second, "Maximum time to wait for the containers to become ready")
 )
-
-func init() {
-	if os.Getenv("DEV") != "" {
-		*proxy = "http://localhost:3128"
-		*httpbin = "http://httpbin"
-		*insecureSkipVerify = true
-	}
-}
 
 // waitForServerReady checks the API server /readyz endpoint until it returns 200.
 // It assumes that the server is running on port 10000.
-func waitForServerReady(baseURL string) error {
+func waitForServerReady(addr string) error {
 	var client http.Client
-
-	u, err := url.Parse(baseURL)
+	u, err := url.Parse("http://" + addr + "/readyz")
 	if err != nil {
 		return err
 	}
-	readyz := fmt.Sprintf("http://%s:10000/readyz", u.Hostname())
 
-	req, err := http.NewRequest(http.MethodGet, readyz, http.NoBody)
+	req, err := http.NewRequest(http.MethodGet, u.String(), http.NoBody)
 	if err != nil {
 		return err
 	}
@@ -57,6 +50,7 @@ func waitForServerReady(baseURL string) error {
 		resp, rerr = client.Do(req.Clone(context.Background()))
 
 		if resp != nil && resp.StatusCode == http.StatusOK {
+			resp.Body.Close() //noline:errcheck // we don't care about the body
 			return nil
 		}
 
@@ -69,29 +63,29 @@ func waitForServerReady(baseURL string) error {
 	return fmt.Errorf("%s not ready", u.Hostname())
 }
 
-func newTransport(t testing.TB) *http.Transport {
-	t.Helper()
+func newTransport(tb testing.TB) *http.Transport {
+	tb.Helper()
 
-	if *proxy == "" {
-		t.Fatal("proxy URL not set")
+	if testConfig.Proxy == "" {
+		tb.Fatal("proxy URL not set")
 	}
 
-	tr := http.DefaultTransport.(*http.Transport).Clone()
+	tr := http.DefaultTransport.(*http.Transport).Clone() //nolint:forcetypeassert // we know it's a *http.Transport
 	tr.TLSClientConfig = &tls.Config{
-		InsecureSkipVerify: *insecureSkipVerify,
+		InsecureSkipVerify: testConfig.Insecure == "true", //nolint:gosec // we know what we're doing
 	}
 
-	if *proxy == "" {
-		t.Log("proxy not set, running without proxy")
+	if testConfig.Proxy == "" {
+		tb.Log("proxy not set, running without proxy")
 	} else {
-		proxyURL, err := url.Parse(*proxy)
+		proxyURL, err := url.Parse(testConfig.Proxy)
 		if err != nil {
-			t.Fatal(err)
+			tb.Fatal(err)
 		}
-		if ba := os.Getenv("FORWARDER_BASIC_AUTH"); ba != "" {
+		if ba := testConfig.ProxyBasicAuth; ba != "" {
 			u, p, _ := strings.Cut(ba, ":")
 			proxyURL.User = url.UserPassword(u, p)
-			t.Log("using basic auth for proxy", proxyURL)
+			tb.Log("using basic auth for proxy", proxyURL)
 		}
 		tr.Proxy = http.ProxyURL(proxyURL)
 	}
@@ -131,6 +125,7 @@ func (c client) Do(req *http.Request) (*http.Response, error) {
 }
 
 func Expect(t *testing.T, baseURL string, opts ...func(*httpexpect.Config)) *httpexpect.Expect {
+	t.Helper()
 	tr := newTransport(t)
 	cfg := httpexpect.Config{
 		BaseURL:  baseURL,
@@ -151,7 +146,7 @@ func Expect(t *testing.T, baseURL string, opts ...func(*httpexpect.Config)) *htt
 }
 
 func ProxyNoAuth(config *httpexpect.Config) {
-	tr := config.Client.(client).tr
+	tr := config.Client.(client).tr //nolint:forcetypeassert // we know it's a client
 	p := tr.Proxy
 	tr.Proxy = func(req *http.Request) (u *url.URL, err error) {
 		u, err = p(req)
