@@ -16,7 +16,7 @@ import (
 )
 
 func BenchmarkRespNoBody(b *testing.B) {
-	req, err := http.NewRequest(http.MethodGet, *httpbin+"/status/200", http.NoBody)
+	req, err := http.NewRequest(http.MethodGet, httpbin+"/status/200", http.NoBody)
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -42,7 +42,7 @@ func BenchmarkRespBody100k(b *testing.B) {
 
 func benchmarkStreamDataN(b *testing.B, n int64) {
 	b.Helper()
-	req, err := http.NewRequest(http.MethodGet, *httpbin+"/stream-bytes/"+fmt.Sprint(n), http.NoBody)
+	req, err := http.NewRequest(http.MethodGet, httpbin+"/stream-bytes/"+fmt.Sprint(n), http.NoBody)
 	if err != nil {
 		b.Fatal(err)
 	}
