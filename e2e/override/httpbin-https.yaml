@@ -1,7 +1,0 @@
-version: "3.8"
-
-services:
-  httpbin:
-    environment:
-      FORWARDER_PROTOCOL: "HTTPS"
-      FORWARDER_ADDRESS: ":443"

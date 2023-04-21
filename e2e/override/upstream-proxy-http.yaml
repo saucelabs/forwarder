@@ -1,9 +1,0 @@
-version: "3.8"
-
-services:
-  proxy:
-    environment:
-      FORWARDER_PROXY: "http://upstream-proxy:3128"
-  upstream-proxy:
-    environment:
-      FORWARDER_PROTOCOL: "HTTP"
