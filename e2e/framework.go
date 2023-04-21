@@ -1,97 +1,63 @@
+// Copyright 2023 Sauce Labs Inc. All rights reserved.
+//
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 package e2e
 
 import (
-	"context"
 	"crypto/tls"
-	"flag"
-	"fmt"
 	"net/http"
 	"net/url"
 	"os"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/gavv/httpexpect/v2"
 	"github.com/gorilla/websocket"
 )
 
+func serviceScheme(envVar string) string {
+	s := os.Getenv(envVar)
+	if s == "h2" {
+		return "https"
+	}
+	if s == "" {
+		return "http"
+	}
+	return s
+}
+
 var (
-	proxy              = flag.String("proxy", "", "URL of the proxy to test against")
-	httpbin            = flag.String("httpbin", "", "URL of the httpbin server to test against")
-	maxWait            = flag.Duration("max-wait", 5*time.Second, "Maximum time to wait for the containers to become ready")
-	insecureSkipVerify = flag.Bool("insecure-skip-verify", false, "Skip TLS certificate verification")
+	proxy              = serviceScheme("FORWARDER_PROTOCOL") + "://proxy:3128"
+	httpbin            = serviceScheme("HTTPBIN_PROTOCOL") + "://httpbin:8080"
+	insecureSkipVerify = os.Getenv("INSECURE") != "false"
 )
 
-func init() {
-	if os.Getenv("DEV") != "" {
-		*proxy = "http://localhost:3128"
-		*httpbin = "http://httpbin"
-		*insecureSkipVerify = true
-	}
-}
+func newTransport(tb testing.TB) *http.Transport {
+	tb.Helper()
 
-// waitForServerReady checks the API server /readyz endpoint until it returns 200.
-// It assumes that the server is running on port 10000.
-func waitForServerReady(baseURL string) error {
-	var client http.Client
-
-	u, err := url.Parse(baseURL)
-	if err != nil {
-		return err
-	}
-	readyz := fmt.Sprintf("http://%s:10000/readyz", u.Hostname())
-
-	req, err := http.NewRequest(http.MethodGet, readyz, http.NoBody)
-	if err != nil {
-		return err
+	if proxy == "" {
+		tb.Fatal("proxy URL not set")
 	}
 
-	const backoff = 200 * time.Millisecond
-
-	var (
-		resp *http.Response
-		rerr error
-	)
-	for i := 0; i < int(*maxWait/backoff); i++ {
-		resp, rerr = client.Do(req.Clone(context.Background()))
-
-		if resp != nil && resp.StatusCode == http.StatusOK {
-			return nil
-		}
-
-		time.Sleep(backoff)
-	}
-	if rerr != nil {
-		return fmt.Errorf("%s not ready: %w", u.Hostname(), rerr)
-	}
-
-	return fmt.Errorf("%s not ready", u.Hostname())
-}
-
-func newTransport(t testing.TB) *http.Transport {
-	t.Helper()
-
-	if *proxy == "" {
-		t.Fatal("proxy URL not set")
-	}
-
-	tr := http.DefaultTransport.(*http.Transport).Clone()
+	tr := http.DefaultTransport.(*http.Transport).Clone() //nolint:forcetypeassert // we know it's a *http.Transport
 	tr.TLSClientConfig = &tls.Config{
-		InsecureSkipVerify: *insecureSkipVerify,
+		InsecureSkipVerify: insecureSkipVerify, //nolint:gosec // This is for testing only.
 	}
 
-	if *proxy == "" {
-		t.Log("proxy not set, running without proxy")
+	if proxy == "" {
+		tb.Log("proxy not set, running without proxy")
 	} else {
-		proxyURL, err := url.Parse(*proxy)
+		proxyURL, err := url.Parse(proxy)
 		if err != nil {
-			t.Fatal(err)
+			tb.Fatal(err)
 		}
 		if ba := os.Getenv("FORWARDER_BASIC_AUTH"); ba != "" {
 			u, p, _ := strings.Cut(ba, ":")
 			proxyURL.User = url.UserPassword(u, p)
-			t.Log("using basic auth for proxy", proxyURL)
+			tb.Log("using basic auth for proxy", proxyURL)
 		}
 		tr.Proxy = http.ProxyURL(proxyURL)
 	}
@@ -131,6 +97,7 @@ func (c client) Do(req *http.Request) (*http.Response, error) {
 }
 
 func Expect(t *testing.T, baseURL string, opts ...func(*httpexpect.Config)) *httpexpect.Expect {
+	t.Helper()
 	tr := newTransport(t)
 	cfg := httpexpect.Config{
 		BaseURL:  baseURL,
@@ -151,7 +118,7 @@ func Expect(t *testing.T, baseURL string, opts ...func(*httpexpect.Config)) *htt
 }
 
 func ProxyNoAuth(config *httpexpect.Config) {
-	tr := config.Client.(client).tr
+	tr := config.Client.(client).tr //nolint:forcetypeassert // we know it's a client
 	p := tr.Proxy
 	tr.Proxy = func(req *http.Request) (u *url.URL, err error) {
 		u, err = p(req)
