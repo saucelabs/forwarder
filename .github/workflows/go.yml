@@ -69,4 +69,8 @@ jobs:
         run: make update-devel-image
 
       - name: Run e2e test
-        run: cd e2e && ./run.sh
+        run: cd e2e && make run-e2e
+
+      - name: Dump Logs
+        if: failure()
+        run: cd e2e && make dump-logs
