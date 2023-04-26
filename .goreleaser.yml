@@ -35,6 +35,9 @@ builds:
       - amd64
       - arm64
 
+universal_binaries:
+  - replace: true
+
 checksum:
   name_template: "checksums"
 
@@ -42,7 +45,9 @@ archives:
   - name_template: >-
       {{ .ProjectName }}-{{ .Version }}_{{ .Os }}.
       {{- if eq .Arch "amd64" }}x86_64
-      {{- else if eq .Arch "arm64" }}aarch64{{ end }}
+      {{- else if eq .Arch "arm64" }}aarch64
+      {{- else }}{{ .Arch }}{{ end }}
+
     files:
       - LICENSE
       - LICENSE.3RD_PARTY
