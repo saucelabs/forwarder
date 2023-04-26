@@ -7,15 +7,15 @@
 package e2e
 
 import (
+	"context"
 	"crypto/tls"
+	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
 	"strings"
 	"testing"
-
-	"github.com/gavv/httpexpect/v2"
-	"github.com/gorilla/websocket"
 )
 
 func serviceScheme(envVar string) string {
@@ -35,41 +35,58 @@ var (
 	insecureSkipVerify = os.Getenv("INSECURE") != "false"
 )
 
+func newProxyURL(tb testing.TB) *url.URL {
+	tb.Helper()
+
+	proxyURL, err := url.Parse(proxy)
+	if err != nil {
+		tb.Fatal(err)
+	}
+
+	if ba := os.Getenv("FORWARDER_BASIC_AUTH"); ba != "" {
+		u, p, _ := strings.Cut(ba, ":")
+		proxyURL.User = url.UserPassword(u, p)
+		tb.Log("using basic auth for proxy", proxyURL)
+	}
+
+	return proxyURL
+}
+
 func newTransport(tb testing.TB) *http.Transport {
 	tb.Helper()
 
-	if proxy == "" {
-		tb.Fatal("proxy URL not set")
-	}
-
+	proxyURL := newProxyURL(tb)
 	tr := http.DefaultTransport.(*http.Transport).Clone() //nolint:forcetypeassert // we know it's a *http.Transport
 	tr.TLSClientConfig = &tls.Config{
 		InsecureSkipVerify: insecureSkipVerify, //nolint:gosec // This is for testing only.
 	}
-
-	if proxy == "" {
-		tb.Log("proxy not set, running without proxy")
-	} else {
-		proxyURL, err := url.Parse(proxy)
-		if err != nil {
-			tb.Fatal(err)
-		}
-		if ba := os.Getenv("FORWARDER_BASIC_AUTH"); ba != "" {
-			u, p, _ := strings.Cut(ba, ":")
-			proxyURL.User = url.UserPassword(u, p)
-			tb.Log("using basic auth for proxy", proxyURL)
-		}
-		tr.Proxy = http.ProxyURL(proxyURL)
-	}
+	tr.Proxy = http.ProxyURL(proxyURL)
 
 	return tr
 }
 
-type client struct {
-	tr *http.Transport
+type Client struct {
+	t       *testing.T
+	tr      *http.Transport
+	baseURL string
 }
 
-func (c client) Do(req *http.Request) (*http.Response, error) {
+func NewClient(t *testing.T, baseURL string, opts ...func(tr *http.Transport)) *Client {
+	t.Helper()
+
+	tr := newTransport(t)
+	for _, opt := range opts {
+		opt(tr)
+	}
+
+	return &Client{
+		t:       t,
+		tr:      tr,
+		baseURL: baseURL,
+	}
+}
+
+func (c *Client) do(req *http.Request) (*http.Response, error) {
 	resp, err := c.tr.RoundTrip(req)
 
 	// There is a difference between sending HTTP and HTTPS requests.
@@ -96,35 +113,57 @@ func (c client) Do(req *http.Request) (*http.Response, error) {
 	return resp, err
 }
 
-func Expect(t *testing.T, baseURL string, opts ...func(*httpexpect.Config)) *httpexpect.Expect {
-	t.Helper()
-	tr := newTransport(t)
-	cfg := httpexpect.Config{
-		BaseURL:  baseURL,
-		Client:   client{tr: tr},
-		Reporter: httpexpect.NewRequireReporter(t),
-		Printers: []httpexpect.Printer{
-			httpexpect.NewDebugPrinter(t, true),
-		},
-		WebsocketDialer: &websocket.Dialer{
-			Proxy:           tr.Proxy,
-			TLSClientConfig: tr.TLSClientConfig,
-		},
-	}
-	for _, opt := range opts {
-		opt(&cfg)
-	}
-	return httpexpect.WithConfig(cfg)
+func (c *Client) GET(path string, opts ...func(*http.Request)) *Response {
+	return c.request("GET", path, opts...)
 }
 
-func ProxyNoAuth(config *httpexpect.Config) {
-	tr := config.Client.(client).tr //nolint:forcetypeassert // we know it's a client
-	p := tr.Proxy
-	tr.Proxy = func(req *http.Request) (u *url.URL, err error) {
-		u, err = p(req)
-		if u != nil {
-			u.User = nil
-		}
-		return
+func (c *Client) HEAD(path string, opts ...func(*http.Request)) *Response {
+	return c.request("HEAD", path, opts...)
+}
+
+func (c *Client) request(method, path string, opts ...func(*http.Request)) *Response {
+	req, err := http.NewRequestWithContext(context.Background(), method, fmt.Sprintf("%s%s", c.baseURL, path), http.NoBody)
+	if err != nil {
+		c.t.Fatalf("Failed to create request: %v", err)
 	}
+	for _, opt := range opts {
+		opt(req)
+	}
+	resp, err := c.do(req)
+	if err != nil {
+		c.t.Fatalf("Failed to execute request: %v", err)
+	}
+	defer resp.Body.Close()
+	b, err := io.ReadAll(resp.Body)
+	if err != nil {
+		c.t.Fatalf("Failed to read response body: %v", err)
+	}
+	return &Response{Response: resp, body: b, t: c.t}
+}
+
+type Response struct {
+	*http.Response
+	body []byte
+	t    *testing.T
+}
+
+func (r *Response) ExpectStatus(status int) *Response {
+	if r.StatusCode != status {
+		r.t.Errorf("Expected status %d, got %d", status, r.StatusCode)
+	}
+	return r
+}
+
+func (r *Response) ExpectBodySize(expectedSize int) *Response {
+	if bodySize := len(r.body); bodySize != expectedSize {
+		r.t.Errorf("Expected body size %d, got %d", expectedSize, bodySize)
+	}
+	return r
+}
+
+func (r *Response) ExpectBodyContent(content string) *Response {
+	if b := string(r.body); b != content {
+		r.t.Errorf("Expected body to equal '%s', got: '%s'", content, b)
+	}
+	return r
 }

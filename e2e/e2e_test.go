@@ -10,18 +10,20 @@ package e2e
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"math/rand"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"runtime"
 	"strings"
 	"sync"
 	"testing"
 
-	"github.com/gavv/httpexpect/v2"
+	"github.com/gorilla/websocket"
 )
 
 func TestStatusCodes(t *testing.T) {
@@ -37,25 +39,25 @@ func TestStatusCodes(t *testing.T) {
 		500, 501, 502, 503, 504, 505, 506, 507, 508, 510, 511, 599,
 	}
 
-	e := Expect(t, httpbin)
+	c := NewClient(t, httpbin)
 	for i := range validStatusCodes {
 		code := validStatusCodes[i]
 		t.Run(fmt.Sprint(code), func(t *testing.T) {
 			t.Parallel()
-			e.GET(fmt.Sprintf("/status/%d", code)).Expect().Status(code)
+			c.GET(fmt.Sprintf("/status/%d", code)).ExpectStatus(code)
 		})
 	}
 }
 
 func TestAuth(t *testing.T) {
-	e := Expect(t, httpbin)
+	c := NewClient(t, httpbin)
 	t.Run("ok", func(t *testing.T) {
-		e.GET("/basic-auth/user/passwd").WithTransformer(func(r *http.Request) {
+		c.GET("/basic-auth/user/passwd", func(r *http.Request) {
 			r.SetBasicAuth("user", "passwd")
-		}).Expect().Status(http.StatusOK)
+		}).ExpectStatus(http.StatusOK)
 	})
 	t.Run("nok", func(t *testing.T) {
-		e.GET("/basic-auth/user/passwd").Expect().Status(http.StatusUnauthorized)
+		c.GET("/basic-auth/user/passwd").ExpectStatus(http.StatusUnauthorized)
 	})
 }
 
@@ -63,8 +65,16 @@ func TestProxyAuth(t *testing.T) {
 	if os.Getenv("FORWARDER_BASIC_AUTH") == "" {
 		t.Skip("FORWARDER_BASIC_AUTH not set")
 	}
-	e := Expect(t, httpbin, ProxyNoAuth)
-	e.GET("/status/200").Expect().Status(http.StatusProxyAuthRequired)
+	NewClient(t, httpbin, func(tr *http.Transport) {
+		p := tr.Proxy
+		tr.Proxy = func(req *http.Request) (u *url.URL, err error) {
+			u, err = p(req)
+			if u != nil {
+				u.User = nil
+			}
+			return
+		}
+	}).GET("/status/200").ExpectStatus(http.StatusProxyAuthRequired)
 }
 
 func TestStreamBytes(t *testing.T) {
@@ -89,12 +99,10 @@ func TestStreamBytes(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			e := Expect(t, httpbin, func(config *httpexpect.Config) {
-				config.Printers = []httpexpect.Printer{}
-			})
+			c := NewClient(t, httpbin)
 			for _, p := range rand.Perm(len(sizes)) {
 				size := sizes[p]
-				e.GET(fmt.Sprintf("/stream-bytes/%d", size)).Expect().Status(http.StatusOK).Body().Length().IsEqual(size)
+				c.GET(fmt.Sprintf("/stream-bytes/%d", size)).ExpectStatus(http.StatusOK).ExpectBodySize(size)
 			}
 		}()
 	}
@@ -150,19 +158,64 @@ func TestWebSocketEcho(t *testing.T) {
 		t.Skip("proxy: unknown scheme: https")
 	}
 
-	e := Expect(t, httpbin)
-
-	ws := e.GET("/ws/echo").WithWebsocketUpgrade().
-		Expect().
-		Status(http.StatusSwitchingProtocols).
-		Websocket()
-	defer ws.Disconnect()
-
-	ws.Subprotocol().IsEmpty()
-	for i := 0; i < 100; i++ {
-		ws.WriteText(fmt.Sprintf("hello %d", i)).Expect().TextMessage().Body().IsEqual(fmt.Sprintf("hello %d", i))
+	proxyURL := newProxyURL(t)
+	d := *websocket.DefaultDialer
+	d.Proxy = http.ProxyURL(proxyURL)
+	d.TLSClientConfig = &tls.Config{
+		InsecureSkipVerify: insecureSkipVerify,
 	}
-	ws.CloseWithText("bye").Expect().CloseMessage().NoContent()
+
+	var u string
+	if p, _, _ := strings.Cut(httpbin, ":"); p == "https" {
+		u = "wss://httpbin:8080/ws/echo"
+	} else {
+		u = "ws://httpbin:8080/ws/echo"
+	}
+	conn, resp, err := d.Dial(u, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer conn.Close()
+
+	if resp.StatusCode != http.StatusSwitchingProtocols {
+		t.Errorf("Expected status %d, got %d", http.StatusSwitchingProtocols, resp.StatusCode)
+	}
+
+	subprotocol := resp.Header.Get("Sec-WebSocket-Protocol")
+	if subprotocol != "" {
+		t.Errorf("Subprotocol: %s\n", subprotocol)
+	}
+
+	for i := 0; i < 100; i++ {
+		message := fmt.Sprintf("hello %d", i)
+		err := conn.WriteMessage(websocket.TextMessage, []byte(message))
+		if err != nil {
+			t.Fatalf("Failed to write WebSocket message: %v", err)
+		}
+
+		messageType, receivedMessage, err := conn.ReadMessage()
+		if err != nil {
+			t.Fatalf("Failed to read WebSocket message: %v", err)
+		}
+
+		if messageType != websocket.TextMessage {
+			t.Errorf("Expected text message, got message type %d", messageType)
+		}
+
+		if string(receivedMessage) != message {
+			t.Errorf("Expected message '%s', got '%s'", message, string(receivedMessage))
+		}
+	}
+
+	err = conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, "bye"))
+	if err != nil {
+		t.Fatalf("Failed to close WebSocket: %v", err)
+	}
+
+	_, _, err = conn.ReadMessage()
+	if !websocket.IsCloseError(err, websocket.CloseNormalClosure) {
+		t.Errorf("WebSocket closed unexpectedly: %v", err)
+	}
 }
 
 func TestProxyLocalhost(t *testing.T) {
@@ -173,9 +226,9 @@ func TestProxyLocalhost(t *testing.T) {
 
 	for _, h := range hosts {
 		if os.Getenv("FORWARDER_PROXY_LOCALHOST") == "allow" {
-			Expect(t, "http://"+net.JoinHostPort(h, "10000")).GET("/version").Expect().Status(http.StatusOK)
+			NewClient(t, "http://"+net.JoinHostPort(h, "10000")).GET("/version").ExpectStatus(http.StatusOK)
 		} else {
-			Expect(t, "http://"+net.JoinHostPort(h, "10000")).GET("/version").Expect().Status(http.StatusBadGateway)
+			NewClient(t, "http://"+net.JoinHostPort(h, "10000")).GET("/version").ExpectStatus(http.StatusBadGateway)
 		}
 	}
 }
@@ -188,14 +241,13 @@ func TestBadGateway(t *testing.T) {
 
 	for _, scheme := range []string{"http", "https"} {
 		for _, h := range hosts {
-			Expect(t, scheme+"://"+h).GET("/status/200").Expect().Status(http.StatusBadGateway)
+			NewClient(t, scheme+"://"+h).GET("/status/200").ExpectStatus(http.StatusBadGateway)
 		}
 	}
 }
 
 func TestGoogleCom(t *testing.T) {
-	e := Expect(t, "https://www.google.com")
-	e.HEAD("/").Expect().Status(http.StatusOK)
+	NewClient(t, "https://www.google.com").HEAD("/").ExpectStatus(http.StatusOK)
 }
 
 func TestSC2450(t *testing.T) {
@@ -203,7 +255,7 @@ func TestSC2450(t *testing.T) {
 		t.Skip("FORWARDER_SC2450 not set")
 	}
 
-	e := Expect(t, "http://sc-2450:8307")
-	e.HEAD("/").Expect().Status(http.StatusOK)
-	e.GET("/").Expect().Status(http.StatusOK).Body().IsEqual(`{"android":{"min_version":"4.0.0"},"ios":{"min_version":"4.0.0"}}`)
+	c := NewClient(t, "http://sc-2450:8307")
+	c.HEAD("/").ExpectStatus(http.StatusOK)
+	c.GET("/").ExpectStatus(http.StatusOK).ExpectBodyContent(`{"android":{"min_version":"4.0.0"},"ios":{"min_version":"4.0.0"}}`)
 }
