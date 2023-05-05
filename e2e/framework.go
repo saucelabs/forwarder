@@ -154,6 +154,13 @@ func (r *Response) ExpectStatus(status int) *Response {
 	return r
 }
 
+func (r *Response) ExpectHeader(key, value string) *Response {
+	if v := r.Header.Get(key); v != value {
+		r.t.Fatalf("%s, %s: expected header %s to equal '%s', got '%s'", r.Request.Method, r.Request.URL, key, value, v)
+	}
+	return r
+}
+
 func (r *Response) ExpectBodySize(expectedSize int) *Response {
 	if bodySize := len(r.body); bodySize != expectedSize {
 		r.t.Fatalf("%s, %s: expected body size %d, got %d", r.Request.Method, r.Request.URL, expectedSize, bodySize)

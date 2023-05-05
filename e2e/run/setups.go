@@ -35,6 +35,7 @@ func AllSetups() []*compose.Compose {
 	all = append(all, upstreamAuth()...)
 	all = append(all, pacs()...)
 	all = append(all, localhostAllow(), sc2450())
+	all = append(all, headerModifiers()...)
 	return all
 }
 
@@ -299,6 +300,27 @@ func sc2450() *compose.Compose {
 		},
 		withOnStart("SC2450"),
 	)
+}
+
+func headerModifiers() []*compose.Compose {
+	return []*compose.Compose{
+		newCompose("header-mods",
+			withProxyService(func(s *compose.Service) {
+				s.Environment["FORWARDER_TEST_HEADERS"] = "test"
+				s.Environment["FORWARDER_HEADER"] = "test-add:test-value,-test-rm,-rm-pref*,test-empty;"
+			}),
+			withHttpbinService(),
+			withOnStart("HeaderMods"),
+		),
+		newCompose("response-header-mods",
+			withProxyService(func(s *compose.Service) {
+				s.Environment["FORWARDER_TEST_RESPONSE_HEADERS"] = "test"
+				s.Environment["FORWARDER_RESPONSE_HEADER"] = "test-resp-add:test-resp-value,-test-resp-rm,-resp-rm-pref*,test-resp-empty;"
+			}),
+			withHttpbinService(),
+			withOnStart("HeaderRespMods"),
+		),
+	}
 }
 
 // waitForServerReady checks the API server /readyz endpoint until it returns 200.
