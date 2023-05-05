@@ -95,6 +95,21 @@ func removeHeadersByPrefix(h http.Header, prefix string) {
 	}
 }
 
+func (h *Header) String() string {
+	switch h.Action {
+	case Remove:
+		return "-" + h.Name
+	case RemoveByPrefix:
+		return "-" + h.Name + "*"
+	case Empty:
+		return h.Name + ";"
+	case Add:
+		return h.Name + ":" + *h.Value
+	default:
+		return ""
+	}
+}
+
 type Headers []Header
 
 func (s Headers) ModifyRequest(req *http.Request) error {
