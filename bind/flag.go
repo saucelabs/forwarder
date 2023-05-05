@@ -50,7 +50,7 @@ func PAC(fs *pflag.FlagSet, pac **url.URL) {
 }
 
 func RequestHeaders(fs *pflag.FlagSet, headers *[]header.Header) {
-	fs.VarP(anyflag.NewSliceValue[header.Header](*headers, headers, header.ParseHeader),
+	fs.VarP(anyflag.NewSliceValueWithRedact[header.Header](*headers, headers, header.ParseHeader, RedactHeader),
 		"header", "H", "<header>"+
 			"Add or remove HTTP request headers. "+
 			"Use the format \"name: value\" to add a header, "+
@@ -64,7 +64,7 @@ func RequestHeaders(fs *pflag.FlagSet, headers *[]header.Header) {
 }
 
 func ResponseHeaders(fs *pflag.FlagSet, headers *[]header.Header) {
-	fs.VarP(anyflag.NewSliceValue[header.Header](*headers, headers, header.ParseHeader),
+	fs.VarP(anyflag.NewSliceValueWithRedact[header.Header](*headers, headers, header.ParseHeader, RedactHeader),
 		"response-header", "R", "<header>"+
 			"Add or remove HTTP headers on the received response before sending it to the client. "+
 			"See the documentation for the -H, --header flag for more details on the format. ")

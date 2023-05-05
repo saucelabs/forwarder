@@ -9,6 +9,8 @@ package bind
 import (
 	"fmt"
 	"net/url"
+
+	"github.com/saucelabs/forwarder/header"
 )
 
 func RedactURL(u *url.URL) string {
@@ -23,4 +25,8 @@ func RedactUserinfo(ui *url.Userinfo) string {
 		return fmt.Sprintf("%s:xxxxx", ui.Username())
 	}
 	return ui.Username()
+}
+
+func RedactHeader(h header.Header) string {
+	return fmt.Sprintf("%q", h.String())
 }
