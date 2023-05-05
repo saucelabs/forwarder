@@ -124,19 +124,19 @@ func (c *Client) HEAD(path string, opts ...func(*http.Request)) *Response {
 func (c *Client) request(method, path string, opts ...func(*http.Request)) *Response {
 	req, err := http.NewRequestWithContext(context.Background(), method, fmt.Sprintf("%s%s", c.baseURL, path), http.NoBody)
 	if err != nil {
-		c.t.Fatalf("Failed to create request: %v", err)
+		c.t.Fatalf("Failed to create request %s, %s: %v", method, path, err)
 	}
 	for _, opt := range opts {
 		opt(req)
 	}
 	resp, err := c.do(req)
 	if err != nil {
-		c.t.Fatalf("Failed to execute request: %v", err)
+		c.t.Fatalf("Failed to execute request %s, %s: %v", method, path, err)
 	}
 	defer resp.Body.Close()
 	b, err := io.ReadAll(resp.Body)
 	if err != nil {
-		c.t.Fatalf("Failed to read response body: %v", err)
+		c.t.Fatalf("Failed to read body from %s, %s: %v", method, path, err)
 	}
 	return &Response{Response: resp, body: b, t: c.t}
 }
@@ -149,21 +149,21 @@ type Response struct {
 
 func (r *Response) ExpectStatus(status int) *Response {
 	if r.StatusCode != status {
-		r.t.Errorf("Expected status %d, got %d", status, r.StatusCode)
+		r.t.Fatalf("%s, %s: expected status %d, got %d", r.Request.Method, r.Request.URL, status, r.StatusCode)
 	}
 	return r
 }
 
 func (r *Response) ExpectBodySize(expectedSize int) *Response {
 	if bodySize := len(r.body); bodySize != expectedSize {
-		r.t.Errorf("Expected body size %d, got %d", expectedSize, bodySize)
+		r.t.Fatalf("%s, %s: expected body size %d, got %d", r.Request.Method, r.Request.URL, expectedSize, bodySize)
 	}
 	return r
 }
 
 func (r *Response) ExpectBodyContent(content string) *Response {
 	if b := string(r.body); b != content {
-		r.t.Errorf("Expected body to equal '%s', got: '%s'", content, b)
+		r.t.Fatalf("%s, %s: expected body to equal '%s', got '%s'", r.Request.Method, r.Request.URL, content, b)
 	}
 	return r
 }
