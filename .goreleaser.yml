@@ -60,6 +60,23 @@ archives:
       - goos: linux
         format: tar.gz
 
+brews:
+  - tap:
+      owner: saucelabs
+      name: homebrew-tap
+    folder: Formula
+    goarm: "7"
+    homepage: https://github.com/saucelabs/forwarder
+    description: Fast HTTP(S) proxy with PAC support
+    license: MPL-2.0
+    test: |
+      system "#{bin}/forwarder version"
+    install: |-
+      bin.install "forwarder"
+      bash_completion.install "completions/forwarder.bash" => "forwarder"
+      zsh_completion.install "completions/forwarder.zsh" => "_forwarder"
+      fish_completion.install "completions/forwarder.fish"
+
 nfpms:
   - package_name: "{{ .ProjectName }}"
     file_name_template: "{{ .ProjectName }}-{{ .Version }}_{{ .Os }}.{{ .Arch }}"
