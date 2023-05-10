@@ -23,6 +23,7 @@ coverage.*
 
 # Generated bin
 bin/
+completions/
 dist/
 
 # Temporary bin

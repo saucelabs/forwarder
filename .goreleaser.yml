@@ -1,5 +1,9 @@
 project_name: forwarder
 
+before:
+  hooks:
+    - ./packaging/completions.sh
+
 changelog:
   sort: asc
   filters:
@@ -74,6 +78,18 @@ nfpms:
       - src: packaging/forwarder.env
         dst: /etc/default/forwarder
         type: "config|noreplace"
+      - src: completions/forwarder.bash
+        dst: /usr/share/bash-completion/completions/forwarder
+        file_info:
+          mode: 0644
+      - src: completions/forwarder.fish
+        dst: /usr/share/fish/vendor_completions.d/forwarder.fish
+        file_info:
+          mode: 0644
+      - src: completions/forwarder.zsh
+        dst:  /usr/share/zsh/vendor-completions/_forwarder
+        file_info:
+          mode: 0644
       - src: LICENSE
         dst: /usr/share/doc/forwarder/LICENSE
       - src: LICENSE.3RD_PARTY
