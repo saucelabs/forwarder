@@ -167,7 +167,12 @@ dockers:
       - LICENSE.3RD_PARTY
 
 docker_manifests:
-    - name_template: "saucelabs/{{ .ProjectName }}:{{ .Version }}"
+    - name_template: "saucelabs/{{ .ProjectName }}:v{{ .Major }}.{{ .Minor }}"
       image_templates:
         - "saucelabs/{{ .ProjectName }}:{{ if .IsSnapshot }}{{ .Tag }}{{ else }}{{ .Version }}{{ end }}-amd64"
         - "saucelabs/{{ .ProjectName }}:{{ if .IsSnapshot }}{{ .Tag }}{{ else }}{{ .Version }}{{ end }}-arm64v8"
+    - name_template: "saucelabs/{{ .ProjectName }}:latest"
+      image_templates:
+        - "saucelabs/{{ .ProjectName }}:{{ if .IsSnapshot }}{{ .Tag }}{{ else }}{{ .Version }}{{ end }}-amd64"
+        - "saucelabs/{{ .ProjectName }}:{{ if .IsSnapshot }}{{ .Tag }}{{ else }}{{ .Version }}{{ end }}-arm64v8"
+
