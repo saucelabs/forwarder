@@ -39,7 +39,7 @@ func TestStatusCodes(t *testing.T) {
 		500, 501, 502, 503, 504, 505, 506, 507, 508, 510, 511, 599,
 	}
 
-	c := NewClient(t, httpbin)
+	c := newClient(t, httpbin)
 	for i := range validStatusCodes {
 		code := validStatusCodes[i]
 		t.Run(fmt.Sprint(code), func(t *testing.T) {
@@ -50,7 +50,7 @@ func TestStatusCodes(t *testing.T) {
 }
 
 func TestAuth(t *testing.T) {
-	c := NewClient(t, httpbin)
+	c := newClient(t, httpbin)
 	t.Run("ok", func(t *testing.T) {
 		c.GET("/basic-auth/user/passwd", func(r *http.Request) {
 			r.SetBasicAuth("user", "passwd")
@@ -65,7 +65,7 @@ func TestProxyAuth(t *testing.T) {
 	if os.Getenv("FORWARDER_BASIC_AUTH") == "" {
 		t.Skip("FORWARDER_BASIC_AUTH not set")
 	}
-	NewClient(t, httpbin, func(tr *http.Transport) {
+	newClient(t, httpbin, func(tr *http.Transport) {
 		p := tr.Proxy
 		tr.Proxy = func(req *http.Request) (u *url.URL, err error) {
 			u, err = p(req)
@@ -99,7 +99,7 @@ func TestStreamBytes(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			c := NewClient(t, httpbin)
+			c := newClient(t, httpbin)
 			for _, p := range rand.Perm(len(sizes)) {
 				size := sizes[p]
 				c.GET(fmt.Sprintf("/stream-bytes/%d", size)).ExpectStatus(http.StatusOK).ExpectBodySize(size)
@@ -226,9 +226,9 @@ func TestProxyLocalhost(t *testing.T) {
 
 	for _, h := range hosts {
 		if os.Getenv("FORWARDER_PROXY_LOCALHOST") == "allow" {
-			NewClient(t, "http://"+net.JoinHostPort(h, "10000")).GET("/version").ExpectStatus(http.StatusOK)
+			newClient(t, "http://"+net.JoinHostPort(h, "10000")).GET("/version").ExpectStatus(http.StatusOK)
 		} else {
-			NewClient(t, "http://"+net.JoinHostPort(h, "10000")).GET("/version").ExpectStatus(http.StatusBadGateway)
+			newClient(t, "http://"+net.JoinHostPort(h, "10000")).GET("/version").ExpectStatus(http.StatusBadGateway)
 		}
 	}
 }
@@ -241,13 +241,13 @@ func TestBadGateway(t *testing.T) {
 
 	for _, scheme := range []string{"http", "https"} {
 		for _, h := range hosts {
-			NewClient(t, scheme+"://"+h).GET("/status/200").ExpectStatus(http.StatusBadGateway)
+			newClient(t, scheme+"://"+h).GET("/status/200").ExpectStatus(http.StatusBadGateway)
 		}
 	}
 }
 
 func TestGoogleCom(t *testing.T) {
-	NewClient(t, "https://www.google.com").HEAD("/").ExpectStatus(http.StatusOK)
+	newClient(t, "https://www.google.com").HEAD("/").ExpectStatus(http.StatusOK)
 }
 
 func TestSC2450(t *testing.T) {
@@ -255,7 +255,7 @@ func TestSC2450(t *testing.T) {
 		t.Skip("FORWARDER_SC2450 not set")
 	}
 
-	c := NewClient(t, "http://sc-2450:8307")
+	c := newClient(t, "http://sc-2450:8307")
 	c.HEAD("/").ExpectStatus(http.StatusOK)
 	c.GET("/").ExpectStatus(http.StatusOK).ExpectBodyContent(`{"android":{"min_version":"4.0.0"},"ios":{"min_version":"4.0.0"}}`)
 }
@@ -265,7 +265,7 @@ func TestHeaderMods(t *testing.T) {
 		t.Skip("FORWARDER_TEST_HEADERS not set")
 	}
 
-	c := NewClient(t, httpbin)
+	c := newClient(t, httpbin)
 	c.GET("/header/test-add/test-value").ExpectStatus(http.StatusOK)
 	c.GET("/header/test-empty/", func(r *http.Request) {
 		r.Header.Set("test-empty", "not-empty")
@@ -283,7 +283,7 @@ func TestHeaderRespMods(t *testing.T) {
 		t.Skip("FORWARDER_TEST_RESPONSE_HEADERS not set")
 	}
 
-	c := NewClient(t, httpbin)
+	c := newClient(t, httpbin)
 	c.GET("/status/200").ExpectStatus(http.StatusOK).ExpectHeader("test-resp-add", "test-resp-value")
 	c.GET("/header/test-resp-empty/not-empty", func(r *http.Request) {
 		r.Header.Set("test-resp-empty", "not-empty")
