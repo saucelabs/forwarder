@@ -143,6 +143,10 @@ dockers:
     goarch: amd64
     build_flag_templates:
       - "--platform=linux/amd64"
+      - "--label=org.opencontainers.image.created={{ .Date }}"
+      - "--label=org.opencontainers.image.title={{ .ProjectName }}"
+      - "--label=org.opencontainers.image.revision={{ .FullCommit }}"
+      - "--label=org.opencontainers.image.version={{ .Version }}"
     extra_files:
       - LICENSE
       - LICENSE.3RD_PARTY
@@ -154,6 +158,10 @@ dockers:
     goarm: 8
     build_flag_templates:
       - "--platform=linux/arm64/v8"
+      - "--label=org.opencontainers.image.created={{ .Date }}"
+      - "--label=org.opencontainers.image.title={{ .ProjectName }}"
+      - "--label=org.opencontainers.image.revision={{ .FullCommit }}"
+      - "--label=org.opencontainers.image.version={{ .Version }}"
     extra_files:
       - LICENSE
       - LICENSE.3RD_PARTY
