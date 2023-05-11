@@ -139,7 +139,7 @@ nfpms:
 
 dockers:
   - image_templates:
-      - "{{ if .IsSnapshot }}saucelabs/{{ .ProjectName }}:{{ .Tag }}-amd64{{ else }}saucelabs/{{ .ProjectName }}:{{ .Version }}-amd64{{ end }}"
+      - "saucelabs/{{ .ProjectName }}:{{ if .IsSnapshot }}{{ .Tag }}{{ else }}{{ .Version }}{{ end }}-amd64"
     use: buildx
     goos: linux
     goarch: amd64
@@ -153,7 +153,7 @@ dockers:
       - LICENSE
       - LICENSE.3RD_PARTY
   - image_templates:
-      - "{{ if .IsSnapshot }}saucelabs/{{ .ProjectName }}:{{ .Tag }}-arm64v8{{ else }}saucelabs/{{ .ProjectName }}:{{ .Version }}-arm64v8{{ end }}"
+      - "saucelabs/{{ .ProjectName }}:{{ if .IsSnapshot }}{{ .Tag }}{{ else }}{{ .Version }}{{ end }}-arm64v8"
     use: buildx
     goos: linux
     goarch: arm64
@@ -171,5 +171,5 @@ dockers:
 docker_manifests:
     - name_template: "saucelabs/{{ .ProjectName }}:{{ .Version }}"
       image_templates:
-        - "{{ if .IsSnapshot }}saucelabs/{{ .ProjectName }}:{{ .Tag }}-amd64{{ else }}saucelabs/{{ .ProjectName }}:{{ .Version }}-amd64{{ end }}"
-        - "{{ if .IsSnapshot }}saucelabs/{{ .ProjectName }}:{{ .Tag }}-arm64v8{{ else }}saucelabs/{{ .ProjectName }}:{{ .Version }}-arm64v8{{ end }}"
+        - "saucelabs/{{ .ProjectName }}:{{ if .IsSnapshot }}{{ .Tag }}{{ else }}{{ .Version }}{{ end }}-amd64"
+        - "saucelabs/{{ .ProjectName }}:{{ if .IsSnapshot }}{{ .Tag }}{{ else }}{{ .Version }}{{ end }}-arm64v8"
