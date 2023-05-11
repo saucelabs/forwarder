@@ -20,6 +20,9 @@ changelog:
       - '^perf:'
       - '^testing:'
 
+source:
+  enabled: false
+
 builds:
   - main: ./cmd/forwarder
     env:
