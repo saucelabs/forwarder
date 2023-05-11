@@ -1,5 +1,0 @@
-#!/bin/sh
-set -e
-
-getent group saucelabs || /usr/sbin/groupadd saucelabs 2> /dev/null || :
-getent passwd saucelabs || /usr/sbin/useradd -g saucelabs -s /usr/sbin/nologin -r saucelabs 2> /dev/null || :
