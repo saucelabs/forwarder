@@ -4,12 +4,12 @@ After=network-online.target
 
 [Service]
 Type=simple
+User=nobody
+Group=nobody
 LimitCORE=infinity
 LimitNOFILESoft=4096
 LimitNOFILE=10240
 EnvironmentFile=/etc/default/forwarder
-User=saucelabs
-Group=saucelabs
 ExecStart=/usr/bin/forwarder proxy
 TimeoutStartSec=900
 TimeoutStopSec=900
