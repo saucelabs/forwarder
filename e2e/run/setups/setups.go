@@ -4,7 +4,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package main
+package setups
 
 import (
 	"bytes"
@@ -22,13 +22,13 @@ import (
 )
 
 const (
-	proxyService    = "proxy"
-	upstreamService = "upstream-proxy"
-	httpbinService  = "httpbin"
+	ProxyService    = "proxy"
+	UpstreamService = "upstream-proxy"
+	HttpbinService  = "httpbin"
 	forwarderImage  = "saucelabs/forwarder:${FORWARDER_VERSION}"
 )
 
-func AllSetups() []*compose.Compose {
+func All() []*compose.Compose {
 	var all []*compose.Compose
 	all = append(all, standard()...)
 	all = append(all, standardUpstream()...)
@@ -121,12 +121,12 @@ func withProxyService(opts ...compose.ServiceOpt) compose.Opt {
 		withAPIAddress(":10000"),
 		withPorts("3128:3128", "10000:10000"),
 		withWaitFunc(func(s *compose.Service) error {
-			return waitForServerReady("http://localhost:10000")
+			return WaitForServerReady("http://localhost:10000")
 		}),
 	}
 	opts = append(defaultOpts, opts...)
 	return func(c *compose.Compose) {
-		c.AddService(proxyService, forwarderImage, opts...)
+		c.AddService(ProxyService, forwarderImage, opts...)
 	}
 }
 
@@ -137,12 +137,12 @@ func withHttpbinService(opts ...compose.ServiceOpt) compose.Opt {
 		withAPIAddress(":10000"),
 		withPorts("10010:10000"),
 		withWaitFunc(func(s *compose.Service) error {
-			return waitForServerReady("http://localhost:10010")
+			return WaitForServerReady("http://localhost:10010")
 		}),
 	}
 	opts = append(defaultOpts, opts...)
 	return func(c *compose.Compose) {
-		c.AddService(httpbinService, forwarderImage, opts...)
+		c.AddService(HttpbinService, forwarderImage, opts...)
 	}
 }
 
@@ -152,16 +152,16 @@ func withUpstreamService(opts ...compose.ServiceOpt) compose.Opt {
 		withAPIAddress(":10000"),
 		withPorts("10020:10000"),
 		withWaitFunc(func(s *compose.Service) error {
-			return waitForServerReady("http://localhost:10020")
+			return WaitForServerReady("http://localhost:10020")
 		}),
 	}
 	opts = append(defaultOpts, opts...)
 	return func(c *compose.Compose) {
-		c.AddService(upstreamService, forwarderImage, opts...)
+		c.AddService(UpstreamService, forwarderImage, opts...)
 	}
 }
 
-func withOnStart(run string) compose.Opt {
+func WithOnStartMakeTest(run string) compose.Opt {
 	return func(c *compose.Compose) {
 		c.OnStart = func() error {
 			cmd := exec.Command("make", "test")
@@ -207,7 +207,7 @@ func newCompose(name string, opts ...compose.Opt) *compose.Compose {
 	defaultOpts := []compose.Opt{
 		withComposePath("docker-compose.yaml"),
 		withVersion("3.8"),
-		withOnStart(""),
+		WithOnStartMakeTest(""),
 	}
 	opts = append(defaultOpts, opts...)
 	return compose.NewCompose(name, opts...)
@@ -232,7 +232,7 @@ func standardUpstream() []*compose.Compose {
 		for _, u := range []string{"http", "https"} {
 			for _, h := range []string{"http", "https", "h2"} {
 				cs = append(cs, newCompose("default-"+p+"-"+u+"-"+h,
-					withProxyService(withProtocol(p), withBasicAuth("u1:p1"), withUpstream(upstreamService, u),
+					withProxyService(withProtocol(p), withBasicAuth("u1:p1"), withUpstream(UpstreamService, u),
 						withGoleak()),
 					withUpstreamService(withProtocol(u)),
 					withHttpbinService(withProtocol(h)),
@@ -247,8 +247,8 @@ func upstreamAuth() []*compose.Compose {
 	var cs []*compose.Compose
 	for _, h := range []string{"http", "https", "h2"} {
 		cs = append(cs, newCompose("upstream-auth-"+h,
-			withProxyService(withUpstream(upstreamService, "http"),
-				withCredentials("u2:p2", upstreamService+":3128")),
+			withProxyService(withUpstream(UpstreamService, "http"),
+				withCredentials("u2:p2", UpstreamService+":3128")),
 			withUpstreamService(withBasicAuth("u2:p2")),
 			withHttpbinService(withProtocol(h)),
 		))
@@ -270,7 +270,7 @@ func pacs() []*compose.Compose {
 		newCompose("pac-issue-184",
 			withProxyService(withPac("./pac/issue-184.js")),
 			withHttpbinService(),
-			withOnStart("GoogleCom"),
+			WithOnStartMakeTest("GoogleCom"),
 		),
 	}
 }
@@ -279,7 +279,7 @@ func localhostAllow() *compose.Compose {
 	return newCompose("localhost-allow",
 		withProxyService(withLocalhostMode("allow")),
 		withHttpbinService(),
-		withOnStart("Localhost"),
+		WithOnStartMakeTest("Localhost"),
 	)
 }
 
@@ -298,7 +298,7 @@ func sc2450() *compose.Compose {
 				}),
 			)
 		},
-		withOnStart("SC2450"),
+		WithOnStartMakeTest("SC2450"),
 	)
 }
 
@@ -310,7 +310,7 @@ func headerModifiers() []*compose.Compose {
 				s.Environment["FORWARDER_HEADER"] = "test-add:test-value,-test-rm,-rm-pref*,test-empty;"
 			}),
 			withHttpbinService(),
-			withOnStart("HeaderMods"),
+			WithOnStartMakeTest("HeaderMods"),
 		),
 		newCompose("response-header-mods",
 			withProxyService(func(s *compose.Service) {
@@ -318,13 +318,13 @@ func headerModifiers() []*compose.Compose {
 				s.Environment["FORWARDER_RESPONSE_HEADER"] = "test-resp-add:test-resp-value,-test-resp-rm,-resp-rm-pref*,test-resp-empty;"
 			}),
 			withHttpbinService(),
-			withOnStart("HeaderRespMods"),
+			WithOnStartMakeTest("HeaderRespMods"),
 		),
 	}
 }
 
-// waitForServerReady checks the API server /readyz endpoint until it returns 200.
-func waitForServerReady(baseURL string) error {
+// WaitForServerReady checks the API server /readyz endpoint until it returns 200.
+func WaitForServerReady(baseURL string) error {
 	var client http.Client
 
 	u, err := url.Parse(baseURL)

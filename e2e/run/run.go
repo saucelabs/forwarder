@@ -8,10 +8,12 @@ package main
 
 import (
 	"log"
+
+	"github.com/saucelabs/forwarder/e2e/run/setups"
 )
 
 func main() {
-	for _, setup := range AllSetups() {
+	for _, setup := range setups.All() {
 		if err := setup.Run(); err != nil {
 			log.Fatalf("FAIL: %v", err)
 		}
