@@ -31,7 +31,7 @@ func TestStatusCodes(t *testing.T) {
 	// List of all valid status codes plus some non-standard ones.
 	// See https://www.iana.org/assignments/http-status-codes/http-status-codes.xhtml
 	validStatusCodes := []int{
-		// FIXME: proxy wrongly supports 1xx, see #113
+		// 1xx status codes are different from the rest (e.g. switching protocols is only defined in HTTP/1.1), so we skip them for now.
 		// 100, 101, 102, 103, 122,
 		200, 201, 202, 203, 204, 205, 206, 207, 208, 226,
 		300, 301, 302, 303, 304, 305, 306, 307, 308,
