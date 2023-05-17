@@ -45,6 +45,7 @@ func TestStatusCodes(t *testing.T) {
 		t.Run(fmt.Sprint(code), func(t *testing.T) {
 			t.Parallel()
 			c.GET(fmt.Sprintf("/status/%d", code)).ExpectStatus(code)
+			c.HEAD(fmt.Sprintf("/status/%d", code)).ExpectStatus(code)
 		})
 	}
 }
