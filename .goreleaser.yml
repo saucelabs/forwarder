@@ -10,15 +10,12 @@ changelog:
     exclude:
       - '^chore:'
       - '^ci:'
-      - '^docs:'
-      - '^fix:'
+      - '^dockerfile:'
       - '^gh:'
       - '^golangci:'
       - '^goreleaser:'
       - '^makefile:'
       - '^mk:'
-      - '^perf:'
-      - '^testing:'
 
 source:
   enabled: false
