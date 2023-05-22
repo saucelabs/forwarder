@@ -39,13 +39,16 @@ func TestStatusCodes(t *testing.T) {
 		500, 501, 502, 503, 504, 505, 506, 507, 508, 510, 511, 599,
 	}
 
+	methods := []string{"HEAD", "GET", "POST", "PUT", "PATCH", "DELETE"}
+
 	c := newClient(t, httpbin)
 	for i := range validStatusCodes {
 		code := validStatusCodes[i]
 		t.Run(fmt.Sprint(code), func(t *testing.T) {
 			t.Parallel()
-			c.GET(fmt.Sprintf("/status/%d", code)).ExpectStatus(code)
-			c.HEAD(fmt.Sprintf("/status/%d", code)).ExpectStatus(code)
+			for _, m := range methods {
+				c.Request(m, fmt.Sprintf("/status/%d", code)).ExpectStatus(code)
+			}
 		})
 	}
 }
