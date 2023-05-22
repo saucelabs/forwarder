@@ -58,14 +58,14 @@ func (c *Client) do(req *http.Request) (*http.Response, error) {
 }
 
 func (c *Client) GET(path string, opts ...func(*http.Request)) *Response {
-	return c.request("GET", path, opts...)
+	return c.Request("GET", path, opts...)
 }
 
 func (c *Client) HEAD(path string, opts ...func(*http.Request)) *Response {
-	return c.request("HEAD", path, opts...)
+	return c.Request("HEAD", path, opts...)
 }
 
-func (c *Client) request(method, path string, opts ...func(*http.Request)) *Response {
+func (c *Client) Request(method, path string, opts ...func(*http.Request)) *Response {
 	req, err := http.NewRequestWithContext(context.Background(), method, fmt.Sprintf("%s%s", c.baseURL, path), http.NoBody)
 	if err != nil {
 		c.t.Fatalf("Failed to create request %s, %s: %v", method, path, err)
