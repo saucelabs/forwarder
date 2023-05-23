@@ -167,21 +167,29 @@ func withMiddleware(cfg *HTTPServerConfig, log log.Logger, h http.Handler) http.
 func (hs *HTTPServer) configureHTTPS() error {
 	if hs.config.CertFile == "" && hs.config.KeyFile == "" {
 		hs.log.Infof("no TLS certificate provided, using self-signed certificate")
+	} else {
+		hs.log.Debugf("loading TLS certificate from %s and %s", hs.config.CertFile, hs.config.KeyFile)
 	}
+
 	tlsCfg := httpsTLSConfigTemplate()
 	err := LoadCertificateFromTLSConfig(tlsCfg, &hs.config.TLSConfig)
 	hs.srv.TLSConfig = tlsCfg
 	hs.srv.TLSNextProto = make(map[string]func(*http.Server, *tls.Conn, http.Handler))
+
 	return err
 }
 
 func (hs *HTTPServer) configureHTTP2() error {
 	if hs.config.CertFile == "" && hs.config.KeyFile == "" {
 		hs.log.Infof("no TLS certificate provided, using self-signed certificate")
+	} else {
+		hs.log.Debugf("loading TLS certificate from %s and %s", hs.config.CertFile, hs.config.KeyFile)
 	}
+
 	tlsCfg := h2TLSConfigTemplate()
 	err := LoadCertificateFromTLSConfig(tlsCfg, &hs.config.TLSConfig)
 	hs.srv.TLSConfig = tlsCfg
+
 	return err
 }
 
