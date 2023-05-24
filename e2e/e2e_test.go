@@ -67,8 +67,8 @@ func TestAuth(t *testing.T) {
 }
 
 func TestProxyAuth(t *testing.T) {
-	if os.Getenv("FORWARDER_BASIC_AUTH") == "" {
-		t.Skip("FORWARDER_BASIC_AUTH not set")
+	if basicAuth == "" {
+		t.Skip("basic auth not set")
 	}
 	newClient(t, httpbin, func(tr *http.Transport) {
 		p := tr.Proxy
