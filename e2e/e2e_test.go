@@ -187,12 +187,12 @@ func TestWebSocketEcho(t *testing.T) {
 	defer conn.Close()
 
 	if resp.StatusCode != http.StatusSwitchingProtocols {
-		t.Errorf("Expected status %d, got %d", http.StatusSwitchingProtocols, resp.StatusCode)
+		t.Fatalf("Expected status %d, got %d", http.StatusSwitchingProtocols, resp.StatusCode)
 	}
 
 	subprotocol := resp.Header.Get("Sec-WebSocket-Protocol")
 	if subprotocol != "" {
-		t.Errorf("Subprotocol: %s\n", subprotocol)
+		t.Fatalf("Subprotocol: %s\n", subprotocol)
 	}
 
 	for i := 0; i < 100; i++ {
@@ -208,11 +208,11 @@ func TestWebSocketEcho(t *testing.T) {
 		}
 
 		if messageType != websocket.TextMessage {
-			t.Errorf("Expected text message, got message type %d", messageType)
+			t.Fatalf("Expected text message, got message type %d", messageType)
 		}
 
 		if string(receivedMessage) != message {
-			t.Errorf("Expected message '%s', got '%s'", message, string(receivedMessage))
+			t.Fatalf("Expected message '%s', got '%s'", message, string(receivedMessage))
 		}
 	}
 
@@ -223,7 +223,7 @@ func TestWebSocketEcho(t *testing.T) {
 
 	_, _, err = conn.ReadMessage()
 	if !websocket.IsCloseError(err, websocket.CloseNormalClosure) {
-		t.Errorf("WebSocket closed unexpectedly: %v", err)
+		t.Fatalf("WebSocket closed unexpectedly: %v", err)
 	}
 }
 
