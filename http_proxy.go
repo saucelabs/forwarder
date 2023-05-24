@@ -200,10 +200,10 @@ func (hp *HTTPProxy) configureProxy() {
 		hp.log.Infof("using PAC proxy")
 		fn = hp.pacProxy
 	default:
-		hp.log.Infof("using direct proxy")
+		hp.log.Infof("no upstream proxy specified")
 	}
 
-	hp.log.Infof("localhost proxying mode: %s", hp.config.ProxyLocalhost)
+	hp.log.Infof("localhost proxying mode=%s", hp.config.ProxyLocalhost)
 	if hp.config.ProxyLocalhost == DirectProxyLocalhost {
 		fn = hp.directLocalhost(fn)
 	}
