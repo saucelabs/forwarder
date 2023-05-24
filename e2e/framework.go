@@ -9,9 +9,7 @@ package e2e
 import (
 	"crypto/tls"
 	"net/http"
-	"net/url"
 	"os"
-	"strings"
 	"testing"
 
 	"github.com/saucelabs/forwarder/utils/httpexpect"
@@ -31,33 +29,21 @@ func serviceScheme(envVar string) string {
 var (
 	proxy              = serviceScheme("FORWARDER_PROTOCOL") + "://proxy:3128"
 	httpbin            = serviceScheme("HTTPBIN_PROTOCOL") + "://httpbin:8080"
+	basicAuth          = os.Getenv("FORWARDER_BASIC_AUTH")
 	insecureSkipVerify = os.Getenv("INSECURE") != "false"
 )
-
-func newProxyURL(tb testing.TB) *url.URL {
-	tb.Helper()
-
-	proxyURL, err := url.Parse(proxy)
-	if err != nil {
-		tb.Fatal(err)
-	}
-
-	if ba := os.Getenv("FORWARDER_BASIC_AUTH"); ba != "" {
-		u, p, _ := strings.Cut(ba, ":")
-		proxyURL.User = url.UserPassword(u, p)
-		tb.Log("using basic auth for proxy", proxyURL)
-	}
-
-	return proxyURL
-}
 
 func newTransport(tb testing.TB) *http.Transport {
 	tb.Helper()
 
-	proxyURL := newProxyURL(tb)
 	tr := http.DefaultTransport.(*http.Transport).Clone() //nolint:forcetypeassert // we know it's a *http.Transport
 	tr.TLSClientConfig = &tls.Config{
 		InsecureSkipVerify: insecureSkipVerify, //nolint:gosec // This is for testing only.
+	}
+
+	proxyURL, err := httpexpect.NewURLWithBasicAuth(proxy, basicAuth)
+	if err != nil {
+		tb.Fatal(err)
 	}
 	tr.Proxy = http.ProxyURL(proxyURL)
 

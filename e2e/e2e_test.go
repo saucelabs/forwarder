@@ -24,6 +24,7 @@ import (
 	"testing"
 
 	"github.com/gorilla/websocket"
+	"github.com/saucelabs/forwarder/utils/httpexpect"
 )
 
 func TestStatusCodes(t *testing.T) {
@@ -162,7 +163,11 @@ func TestWebSocketEcho(t *testing.T) {
 		t.Skip("proxy: unknown scheme: https")
 	}
 
-	proxyURL := newProxyURL(t)
+	proxyURL, err := httpexpect.NewURLWithBasicAuth(proxy, basicAuth)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	d := *websocket.DefaultDialer
 	d.Proxy = http.ProxyURL(proxyURL)
 	d.TLSClientConfig = &tls.Config{
