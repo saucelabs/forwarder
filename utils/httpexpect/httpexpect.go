@@ -11,8 +11,29 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
+	"strings"
 	"testing"
 )
+
+// NewURLWithBasicAuth parses rawURL and adds user with basicAuth to it.
+// If basicAuth is empty, it returns rawURL as is.
+func NewURLWithBasicAuth(rawURL, basicAuth string) (*url.URL, error) {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return nil, err
+	}
+
+	if basicAuth != "" {
+		user, pass, ok := strings.Cut(basicAuth, ":")
+		if !ok {
+			return nil, fmt.Errorf("invalid basic auth string %q", basicAuth)
+		}
+		u.User = url.UserPassword(user, pass)
+	}
+
+	return u, nil
+}
 
 type Client struct {
 	t       *testing.T
