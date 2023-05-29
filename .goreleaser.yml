@@ -8,14 +8,14 @@ changelog:
   sort: asc
   filters:
     exclude:
-      - '^chore:'
-      - '^ci:'
-      - '^dockerfile:'
-      - '^gh:'
-      - '^golangci:'
-      - '^goreleaser:'
-      - '^makefile:'
-      - '^mk:'
+      - '^chore\s*(:|\()'
+      - '^ci\s*(:|\()'
+      - '^dockerfile\s*(:|\()'
+      - '^gh\s*(:|\()'
+      - '^golangci\s*(:|\()'
+      - '^goreleaser\s*(:|\()'
+      - '^makefile\s*(:|\()'
+      - '^mk\s*(:|\()'
 
 source:
   enabled: false
