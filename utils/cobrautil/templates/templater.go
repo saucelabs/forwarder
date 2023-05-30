@@ -35,7 +35,7 @@ type FlagExposer interface {
 	ExposeFlags(cmd *cobra.Command, flags ...string) FlagExposer
 }
 
-func ActsAsRootCommand(cmd *cobra.Command, filters []string, cg CommandGroups, fg FlagGroups) FlagExposer {
+func ActsAsRootCommand(cmd *cobra.Command, filters []string, cg CommandGroups, fg FlagGroups, envPrefix string) FlagExposer {
 	if cmd == nil {
 		panic("nil root command")
 	}
@@ -47,6 +47,7 @@ func ActsAsRootCommand(cmd *cobra.Command, filters []string, cg CommandGroups, f
 		CommandGroups: cg,
 		FlagGroups:    fg,
 		Filtered:      filters,
+		EnvPrefix:     envPrefix,
 	}
 	cmd.SetFlagErrorFunc(templater.FlagErrorFunc())
 	cmd.SilenceUsage = true
@@ -70,7 +71,8 @@ type templater struct {
 	RootCmd       *cobra.Command
 	CommandGroups
 	FlagGroups
-	Filtered []string
+	Filtered  []string
+	EnvPrefix string
 }
 
 func (templater *templater) FlagErrorFunc(exposedFlags ...string) func(*cobra.Command, error) error {
@@ -230,7 +232,7 @@ func (t *templater) usageLine(c *cobra.Command) string {
 // flagsUsages will print out the kubectl help flags
 func (t *templater) flagsUsages(f *flag.FlagSet) (string, error) {
 	flagBuf := new(bytes.Buffer)
-	printer := NewHelpFlagPrinter(flagBuf, t.RootCmd.Name(), DefaultWrapLimit)
+	printer := NewHelpFlagPrinter(flagBuf, t.EnvPrefix, DefaultWrapLimit)
 
 	printFs := func() {
 		f.VisitAll(func(flag *flag.Flag) {

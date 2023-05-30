@@ -63,7 +63,7 @@ func rootCommand() *cobra.Command {
 		},
 	}
 
-	templates.ActsAsRootCommand(cmd, nil, commandGroups, flagGroups)
+	templates.ActsAsRootCommand(cmd, nil, commandGroups, flagGroups, envPrefix)
 
 	// Add other commands
 	cmd.AddCommand(
