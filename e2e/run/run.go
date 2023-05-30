@@ -14,7 +14,10 @@ import (
 	"github.com/saucelabs/forwarder/e2e/run/setups"
 )
 
-var setup = flag.String("setup", "", "Only run setups matching this regexp")
+var (
+	setup = flag.String("setup", "", "Only run setups matching this regexp")
+	debug = flag.Bool("debug", false, "Enables debug logs and preserves containers after running, this will run only the first matching setup")
+)
 
 func setupRegexp() (*regexp.Regexp, error) {
 	if *setup == "" {
@@ -36,8 +39,19 @@ func main() {
 		if r != nil && !r.MatchString(s.Name) {
 			continue
 		}
-		if err := s.Run(); err != nil {
+
+		if *debug {
+			for _, srv := range s.Services {
+				srv.Environment["FORWARDER_LOG_LEVEL"] = "debug"
+				srv.Environment["FORWARDER_LOG_HTTP"] = "headers"
+			}
+			s.Debug = true
+		}
+		if err := s.Run(*debug); err != nil {
 			log.Fatalf("FAIL: %v", err)
+		}
+		if *debug {
+			break
 		}
 	}
 	log.Printf("SUCCESS")
