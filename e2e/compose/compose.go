@@ -130,10 +130,11 @@ func (c *Compose) Run() error {
 	if err := c.up(); err != nil {
 		return err
 	}
-	if c.OnStart != nil {
-		if err := c.OnStart(); err != nil {
-			return err
-		}
+	if c.OnStart == nil {
+		return fmt.Errorf("no OnStart function defined for %s", c.Name)
+	}
+	if err := c.OnStart(); err != nil {
+		return err
 	}
 	if err := c.down(); err != nil {
 		return err
