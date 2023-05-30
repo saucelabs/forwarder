@@ -9,6 +9,15 @@
 1. Environment will not be pruned once the error occurred, remember to manually clean it up with `make down`
 or use the containers to run single test and find bugs 
 
+### Running tests for specific environment setup
+
+Start the test runner `make run-e2e SETUP=<setup>` where `<setup>` is a regex matching the setup name.
+
+### Running specific test
+
+Start the test runner `make run-e2e RUN=<test>` where `<test>` is a regex matching the test name.
+It can be used with `SETUP` to run specific test in specific environment setup.
+
 ## Debugging / Manually running the e2e tests
 
 1. Build the forwarder image `make -C ../ update-devel-image`

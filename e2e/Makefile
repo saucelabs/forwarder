@@ -6,8 +6,9 @@ export FORWARDER_VERSION := devel
 endif
 
 .PHONY: run-e2e
+run-e2e: SETUP ?= .
 run-e2e:
-	@go run ./run
+	@go run ./run -setup $(SETUP)
 
 .PHONY: up
 up:
