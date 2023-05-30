@@ -227,8 +227,14 @@ func standard() []*compose.Compose {
 	for _, httpbinScheme := range allHttpbinSchemes {
 		for _, proxyScheme := range allProxySchemes {
 			cs = append(cs, newCompose("default-"+httpbinScheme+"-"+proxyScheme,
-				withProxyService(withProtocol(proxyScheme), withBasicAuth("u1:p1"), withGoleak()),
-				withHttpbinService(withProtocol(httpbinScheme)),
+				withProxyService(
+					withProtocol(proxyScheme),
+					withBasicAuth("u1:p1"),
+					withGoleak(),
+				),
+				withHttpbinService(
+					withProtocol(httpbinScheme),
+				),
 			))
 		}
 	}
@@ -241,10 +247,18 @@ func standardUpstream() []*compose.Compose {
 		for _, proxyScheme := range allProxySchemes {
 			for _, upstreamScheme := range allProxySchemes {
 				cs = append(cs, newCompose("default-"+httpbinScheme+"-"+proxyScheme+"-"+upstreamScheme,
-					withProxyService(withProtocol(proxyScheme), withBasicAuth("u1:p1"), withUpstream(UpstreamService, upstreamScheme),
-						withGoleak()),
-					withUpstreamService(withProtocol(upstreamScheme)),
-					withHttpbinService(withProtocol(httpbinScheme)),
+					withProxyService(
+						withProtocol(proxyScheme),
+						withBasicAuth("u1:p1"),
+						withUpstream(UpstreamService, upstreamScheme),
+						withGoleak(),
+					),
+					withUpstreamService(
+						withProtocol(upstreamScheme),
+					),
+					withHttpbinService(
+						withProtocol(httpbinScheme),
+					),
 				))
 			}
 		}
@@ -256,10 +270,15 @@ func upstreamAuth() []*compose.Compose {
 	var cs []*compose.Compose
 	for _, httpbinScheme := range allHttpbinSchemes {
 		cs = append(cs, newCompose("upstream-auth-"+httpbinScheme,
-			withProxyService(withUpstream(UpstreamService, "http"),
+			withProxyService(
+				withUpstream(UpstreamService, "http"),
 				withCredentials("u2:p2", UpstreamService+":3128")),
-			withUpstreamService(withBasicAuth("u2:p2")),
-			withHttpbinService(withProtocol(httpbinScheme)),
+			withUpstreamService(
+				withBasicAuth("u2:p2"),
+			),
+			withHttpbinService(
+				withProtocol(httpbinScheme),
+			),
 		))
 	}
 	return cs
