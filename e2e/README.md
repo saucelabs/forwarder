@@ -9,23 +9,27 @@
 1. Environment will not be pruned once the error occurred, remember to manually clean it up with `make down`
 or use the containers to run single test and find bugs 
 
-### Running tests for specific environment setup
-
-Start the test runner `make run-e2e SETUP=<setup>` where `<setup>` is a regex matching the setup name.
-
 ### Running specific test
 
 Start the test runner `make run-e2e RUN=<test>` where `<test>` is a regex matching the test name.
 It can be used with `SETUP` to run specific test in specific environment setup.
 
-## Debugging / Manually running the e2e tests
+### Running tests for specific environment setup
 
-1. Build the forwarder image `make -C ../ update-devel-image`
-1. Provide `docker-compose.yaml` or use the one created by the test runner
-1. Start the environment with `make up`
-1. Run specific test with `RUN=<test> make test`
-1. Dump containers logs if needed `make dump-logs` 
-1. Stop the environment with `make down`
+Start the test runner `make run-e2e SETUP=<setup>` where `<setup>` is a regex matching the setup name.
+
+### Debugging
+
+Start the test runner `make run-e2e SETUP=<setup> SETUP_ARGS="-debug"` where `<setup>` is the name of the setup you want to debug.
+It would:
+* enable debug logging in all containers,
+* print test logs,
+* preserve the environment after the test is finished.
+
+After the test is finished:
+* check the environment setup by looking at the `docker-compose.yml` file in the `e2e` directory,
+* run `make dump-logs` to print all the logs to the console,
+* use `docker-compose` or `docker` commands to inspect the running environment. 
 
 Once the test is complete you may also run curl from the proxy container ex. `docker-compose exec proxy curl -vvv --insecure --proxy-insecure --proxy https://localhost:3128 https://httpbin:8080/status/200`
 

@@ -179,10 +179,14 @@ func WithOnStartMakeTest(run string) compose.Opt {
 				if stderr.Len() > 0 {
 					log.Printf("%s", stderr.String())
 				}
-				s := strings.Split(stdout.String(), "\n")
-				for _, l := range s {
-					if strings.HasPrefix(l, "---") {
-						log.Printf("%s", l)
+				if c.Debug {
+					log.Printf("%s", stdout.String())
+				} else {
+					s := strings.Split(stdout.String(), "\n")
+					for _, l := range s {
+						if strings.HasPrefix(l, "---") {
+							log.Printf("%s", l)
+						}
 					}
 				}
 			}

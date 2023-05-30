@@ -42,6 +42,7 @@ type Compose struct {
 	Services map[string]*Service `yaml:"services,omitempty"`
 	Path     string              `yaml:"-"`
 	OnStart  func() error        `yaml:"-"`
+	Debug    bool                `yaml:"-"`
 }
 
 type Opt func(*Compose)
@@ -125,7 +126,7 @@ func (c *Compose) down() error {
 	return nil
 }
 
-func (c *Compose) Run() error {
+func (c *Compose) Run(preserve bool) error {
 	log.Printf("running %s", c.Name)
 	if err := c.up(); err != nil {
 		return err
@@ -136,8 +137,10 @@ func (c *Compose) Run() error {
 	if err := c.OnStart(); err != nil {
 		return err
 	}
-	if err := c.down(); err != nil {
-		return err
+	if !preserve {
+		if err := c.down(); err != nil {
+			return err
+		}
 	}
 	return nil
 }
