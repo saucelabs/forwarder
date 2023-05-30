@@ -217,13 +217,18 @@ func newCompose(name string, opts ...compose.Opt) *compose.Compose {
 	return compose.NewCompose(name, opts...)
 }
 
+var (
+	allHttpbinSchemes = []string{"http", "https", "h2"}
+	allProxySchemes   = []string{"http", "https"}
+)
+
 func standard() []*compose.Compose {
 	var cs []*compose.Compose
-	for _, p := range []string{"http", "https"} {
-		for _, h := range []string{"http", "https", "h2"} {
-			cs = append(cs, newCompose("default-"+p+"-"+h,
-				withProxyService(withProtocol(p), withBasicAuth("u1:p1"), withGoleak()),
-				withHttpbinService(withProtocol(h)),
+	for _, httpbinScheme := range allHttpbinSchemes {
+		for _, proxyScheme := range allProxySchemes {
+			cs = append(cs, newCompose("default-"+httpbinScheme+"-"+proxyScheme,
+				withProxyService(withProtocol(proxyScheme), withBasicAuth("u1:p1"), withGoleak()),
+				withHttpbinService(withProtocol(httpbinScheme)),
 			))
 		}
 	}
@@ -232,14 +237,14 @@ func standard() []*compose.Compose {
 
 func standardUpstream() []*compose.Compose {
 	var cs []*compose.Compose
-	for _, p := range []string{"http", "https"} {
-		for _, u := range []string{"http", "https"} {
-			for _, h := range []string{"http", "https", "h2"} {
-				cs = append(cs, newCompose("default-"+p+"-"+u+"-"+h,
-					withProxyService(withProtocol(p), withBasicAuth("u1:p1"), withUpstream(UpstreamService, u),
+	for _, httpbinScheme := range allHttpbinSchemes {
+		for _, proxyScheme := range allProxySchemes {
+			for _, upstreamScheme := range allProxySchemes {
+				cs = append(cs, newCompose("default-"+httpbinScheme+"-"+proxyScheme+"-"+upstreamScheme,
+					withProxyService(withProtocol(proxyScheme), withBasicAuth("u1:p1"), withUpstream(UpstreamService, upstreamScheme),
 						withGoleak()),
-					withUpstreamService(withProtocol(u)),
-					withHttpbinService(withProtocol(h)),
+					withUpstreamService(withProtocol(upstreamScheme)),
+					withHttpbinService(withProtocol(httpbinScheme)),
 				))
 			}
 		}
@@ -249,12 +254,12 @@ func standardUpstream() []*compose.Compose {
 
 func upstreamAuth() []*compose.Compose {
 	var cs []*compose.Compose
-	for _, h := range []string{"http", "https", "h2"} {
-		cs = append(cs, newCompose("upstream-auth-"+h,
+	for _, httpbinScheme := range allHttpbinSchemes {
+		cs = append(cs, newCompose("upstream-auth-"+httpbinScheme,
 			withProxyService(withUpstream(UpstreamService, "http"),
 				withCredentials("u2:p2", UpstreamService+":3128")),
 			withUpstreamService(withBasicAuth("u2:p2")),
-			withHttpbinService(withProtocol(h)),
+			withHttpbinService(withProtocol(httpbinScheme)),
 		))
 	}
 	return cs
