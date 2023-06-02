@@ -189,7 +189,7 @@ HTTP client options:
     --http-tls-handshake-timeout <duration> (default 10s) (env FORWARDER_HTTP_TLS_HANDSHAKE_TIMEOUT)
         The maximum amount of time waiting to wait for a TLS handshake. Zero means no limit.
 
-    -k, --insecure <value> (default false) (env FORWARDER_INSECURE)
+    --insecure <value> (default false) (env FORWARDER_INSECURE)
         Don't verify the server's certificate chain and host name. Enable to work with self-signed certificates. 
 
 Logging options:
