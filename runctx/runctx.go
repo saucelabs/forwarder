@@ -24,19 +24,24 @@ type Funcs []func(ctx context.Context) error
 // Run executes all funcs in parallel, and returns the first error.
 // Function context is canceled when the process receives a signal from NotifySignals.
 func (f Funcs) Run() error {
-	var eg *errgroup.Group
 	ctx := context.Background()
-	ctx, _ = signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM)
-	eg, ctx = errgroup.WithContext(ctx)
+	ctx, unregisterSignals := signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM)
+	eg, ctx := errgroup.WithContext(ctx)
+
+	eg.Go(func() error {
+		<-ctx.Done()
+		unregisterSignals()
+		return nil
+	})
+
 	for _, fn := range f {
 		fn := fn
 		eg.Go(func() error { return fn(ctx) })
 	}
+
 	return eg.Wait()
 }
 
 func Run(fn func(ctx context.Context) error) error {
-	ctx := context.Background()
-	ctx, _ = signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM)
-	return fn(ctx)
+	return Funcs{fn}.Run()
 }
