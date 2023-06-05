@@ -37,7 +37,7 @@ func (c *command) RunE(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	return runctx.Funcs{s.Run, a.Run}.Run()
+	return runctx.NewGroup(s.Run, a.Run).Run()
 }
 
 func Command() (cmd *cobra.Command) {

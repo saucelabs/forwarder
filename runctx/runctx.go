@@ -15,18 +15,43 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-// NotifySignals specifies signals that would cause the context to be canceled.
-var NotifySignals = []os.Signal{syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT} //nolint:gochecknoglobals // This is only useful in main packages.
+// DefaultNotifySignals specifies signals that would cause the context to be canceled.
+var DefaultNotifySignals = []os.Signal{
+	syscall.SIGINT,
+	syscall.SIGTERM,
+	syscall.SIGQUIT,
+}
 
-// Funcs is a list of functions that can be executed in parallel.
-type Funcs []func(ctx context.Context) error
+// Group is a collection of functions that would be run concurrently.
+// The context passed to each function is canceled when any of the signals in NotifySignals is received.
+type Group struct {
+	NotifySignals []os.Signal
+	funcs         []func(ctx context.Context) error
+}
 
-// Run executes all funcs in parallel, and returns the first error.
-// Function context is canceled when the process receives a signal from NotifySignals.
-func (f Funcs) Run() error {
-	ctx := context.Background()
-	ctx, unregisterSignals := signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM)
-	eg, ctx := errgroup.WithContext(ctx)
+func NewGroup(fn ...func(ctx context.Context) error) *Group {
+	return &Group{
+		funcs: fn,
+	}
+}
+
+func (g *Group) Add(fn func(ctx context.Context) error) {
+	g.funcs = append(g.funcs, fn)
+}
+
+func (g *Group) Run() error {
+	return g.RunContext(context.Background())
+}
+
+func (g *Group) RunContext(ctx context.Context) error {
+	sigs := g.NotifySignals
+	if len(sigs) == 0 {
+		sigs = DefaultNotifySignals
+	}
+	ctx, unregisterSignals := signal.NotifyContext(ctx, sigs...)
+
+	var eg *errgroup.Group
+	eg, ctx = errgroup.WithContext(ctx)
 
 	eg.Go(func() error {
 		<-ctx.Done()
@@ -34,14 +59,10 @@ func (f Funcs) Run() error {
 		return nil
 	})
 
-	for _, fn := range f {
+	for _, fn := range g.funcs {
 		fn := fn
 		eg.Go(func() error { return fn(ctx) })
 	}
 
 	return eg.Wait()
-}
-
-func Run(fn func(ctx context.Context) error) error {
-	return Funcs{fn}.Run()
 }

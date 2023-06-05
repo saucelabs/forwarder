@@ -51,7 +51,7 @@ func (c *command) RunE(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	return runctx.Run(s.Run)
+	return runctx.NewGroup(s.Run).Run()
 }
 
 func validatePACScript(script string) error {
