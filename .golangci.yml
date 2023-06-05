@@ -113,6 +113,10 @@ issues:
       source: "(nil)"
 
     - linters:
+        - gochecknoglobals
+      source: "Default"
+
+    - linters:
         - gocritic
       source: "// output:"
 

@@ -105,12 +105,12 @@ func (c *command) RunE(cmd *cobra.Command, args []string) error {
 		c.httpProxyConfig.ResponseModifiers = append(c.httpProxyConfig.ResponseModifiers, header.Headers(c.responseHeaders))
 	}
 
-	var f runctx.Funcs
+	var g runctx.Group
 	p, err := forwarder.NewHTTPProxy(c.httpProxyConfig, pr, cm, rt, logger.Named("proxy"))
 	if err != nil {
 		return err
 	}
-	f = append(f, p.Run)
+	g.Add(p.Run)
 
 	if c.apiServerConfig.Addr != "" {
 		h := forwarder.NewAPIHandler(c.promReg, p.Ready, config, script)
@@ -118,7 +118,7 @@ func (c *command) RunE(cmd *cobra.Command, args []string) error {
 		if err != nil {
 			return err
 		}
-		f = append(f, a.Run)
+		g.Add(a.Run)
 	}
 
 	if c.goleak {
@@ -129,7 +129,7 @@ func (c *command) RunE(cmd *cobra.Command, args []string) error {
 		}()
 	}
 
-	return f.Run()
+	return g.Run()
 }
 
 func Command() (cmd *cobra.Command) {
