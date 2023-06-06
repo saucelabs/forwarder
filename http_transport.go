@@ -79,7 +79,7 @@ type HTTPTransportConfig struct {
 func DefaultHTTPTransportConfig() *HTTPTransportConfig {
 	// The default values are taken from [hashicorp/go-cleanhttp](https://github.com/hashicorp/go-cleanhttp/blob/a0807dd79fc1680a7b1f2d5a2081d92567aab97d/cleanhttp.go#L19.
 	return &HTTPTransportConfig{
-		DialTimeout:           30 * time.Second,
+		DialTimeout:           10 * time.Second,
 		KeepAlive:             30 * time.Second,
 		MaxIdleConns:          100,
 		IdleConnTimeout:       90 * time.Second,
