@@ -24,8 +24,8 @@ import (
 )
 
 func ConfigFile(fs *pflag.FlagSet, configFile *string) {
-	fs.StringVar(configFile,
-		"config-file", *configFile, "<path>"+
+	fs.StringVarP(configFile,
+		"config-file", "c", *configFile, "<path>"+
 			"Configuration file to load options from. "+
 			"The supported formats are: JSON, YAML, TOML, HCL, and Java properties. "+
 			"The file format is determined by the file extension, if not specified the default format is YAML. "+
@@ -97,7 +97,7 @@ func HTTPProxyConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPProxyConfig, lcfg *lo
 
 func Credentials(fs *pflag.FlagSet, credentials *[]*forwarder.HostPortUser) {
 	fs.VarP(anyflag.NewSliceValueWithRedact[*forwarder.HostPortUser](*credentials, credentials, forwarder.ParseHostPortUser, forwarder.RedactHostPortUser),
-		"credentials", "c", "<username:password@host:port>"+
+		"credentials", "s", "<username:password@host:port>"+
 			"Site or upstream proxy basic authentication credentials. "+
 			"The host and port can be set to \"*\" to match all hosts and ports respectively. "+
 			"The flag can be specified multiple times to add multiple credentials. ")
