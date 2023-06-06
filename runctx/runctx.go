@@ -8,6 +8,7 @@ package runctx
 
 import (
 	"context"
+	"errors"
 	"os"
 	"os/signal"
 	"syscall"
@@ -39,10 +40,15 @@ func (g *Group) Add(fn func(ctx context.Context) error) {
 	g.funcs = append(g.funcs, fn)
 }
 
+// Run runs all the functions concurrently.
+// See RunContext for more details.
 func (g *Group) Run() error {
 	return g.RunContext(context.Background())
 }
 
+// RunContext runs all the functions concurrently.
+// It returns the first error returned by any of the functions.
+// If the context is canceled, it returns nil.
 func (g *Group) RunContext(ctx context.Context) error {
 	sigs := g.NotifySignals
 	if len(sigs) == 0 {
@@ -64,5 +70,9 @@ func (g *Group) RunContext(ctx context.Context) error {
 		eg.Go(func() error { return fn(ctx) })
 	}
 
-	return eg.Wait()
+	err := eg.Wait()
+	if errors.Is(err, context.Canceled) {
+		err = nil
+	}
+	return err
 }
