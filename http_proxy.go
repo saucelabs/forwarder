@@ -113,6 +113,7 @@ type HTTPProxy struct {
 	transport http.RoundTripper
 	log       log.Logger
 	proxy     *martian.Proxy
+	proxyFunc ProxyFunc
 	addr      atomic.Pointer[string]
 
 	TLSConfig *tls.Config
@@ -187,27 +188,26 @@ func (hp *HTTPProxy) configureProxy() {
 		hp.proxy.SetRoundTripper(hp.transport)
 	}
 
-	var fn ProxyFunc
 	switch {
 	case hp.config.UpstreamProxyFunc != nil:
 		hp.log.Infof("using external proxy function")
-		fn = hp.config.UpstreamProxyFunc
+		hp.proxyFunc = hp.config.UpstreamProxyFunc
 	case hp.config.UpstreamProxy != nil:
 		u := hp.upstreamProxyURL()
 		hp.log.Infof("using upstream proxy: %s", u.Redacted())
-		fn = http.ProxyURL(u)
+		hp.proxyFunc = http.ProxyURL(u)
 	case hp.pac != nil:
 		hp.log.Infof("using PAC proxy")
-		fn = hp.pacProxy
+		hp.proxyFunc = hp.pacProxy
 	default:
 		hp.log.Infof("no upstream proxy specified")
 	}
 
 	hp.log.Infof("localhost proxying mode=%s", hp.config.ProxyLocalhost)
 	if hp.config.ProxyLocalhost == DirectProxyLocalhost {
-		fn = hp.directLocalhost(fn)
+		hp.proxyFunc = hp.directLocalhost(hp.proxyFunc)
 	}
-	hp.proxy.SetUpstreamProxyFunc(fn)
+	hp.proxy.SetUpstreamProxyFunc(hp.proxyFunc)
 
 	mw := hp.middlewareStack()
 	hp.proxy.SetRequestModifier(mw)
@@ -422,6 +422,10 @@ func setEmptyUserAgent(req *http.Request) error {
 		req.Header.Set("User-Agent", "")
 	}
 	return nil
+}
+
+func (hp *HTTPProxy) ProxyFunc() ProxyFunc {
+	return hp.proxyFunc
 }
 
 func (hp *HTTPProxy) Handler() http.Handler {
