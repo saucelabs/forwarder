@@ -183,7 +183,7 @@ func (hp *HTTPProxy) configureProxy() {
 	// As a result the dialer needs to be reset.
 	if tr, ok := hp.transport.(*http.Transport); ok {
 		hp.proxy.SetRoundTripper(tr)
-		hp.proxy.SetDial(tr.Dial) //nolint:staticcheck // Martian does not use context
+		hp.proxy.SetDialContext(tr.DialContext)
 	} else {
 		hp.proxy.SetRoundTripper(hp.transport)
 	}
