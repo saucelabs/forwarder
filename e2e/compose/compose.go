@@ -14,6 +14,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	"golang.org/x/sync/errgroup"
 	"gopkg.in/yaml.v3"
 )
 
@@ -30,9 +31,14 @@ type Service struct {
 type ServiceOpt func(*Service)
 
 func (svc *Service) Wait() error {
-	if svc.WaitFunc != nil {
-		return svc.WaitFunc(svc)
+	if svc.WaitFunc == nil {
+		return nil
 	}
+
+	if err := svc.WaitFunc(svc); err != nil {
+		return fmt.Errorf("wait for %s: %w", svc.Name, err)
+	}
+
 	return nil
 }
 
@@ -105,12 +111,16 @@ func (c *Compose) up() error {
 		log.Printf("compose stderr: %s", stderr.String())
 		return fmt.Errorf("%s up: %w", c.Name, err)
 	}
-	for _, svc := range c.Services {
-		if err := svc.Wait(); err != nil {
-			return fmt.Errorf("%s wait for %s: %w", c.Name, svc.Name, err)
-		}
+
+	return c.wait()
+}
+
+func (c *Compose) wait() error {
+	var wg errgroup.Group
+	for i := range c.Services {
+		wg.Go(c.Services[i].Wait)
 	}
-	return nil
+	return wg.Wait()
 }
 
 func (c *Compose) down() error {
