@@ -8,6 +8,7 @@ package setups
 
 import (
 	"github.com/saucelabs/forwarder/e2e/compose"
+	"github.com/saucelabs/forwarder/e2e/wait"
 )
 
 const (
@@ -23,7 +24,7 @@ func ProxyService(opts ...compose.ServiceOpt) compose.Opt {
 		WithAPIAddress(":10000"),
 		WithPorts("3128:3128", "10000:10000"),
 		WithWaitFunc(func(s *compose.Service) error {
-			return WaitForServerReady("http://localhost:10000")
+			return wait.ServerReady("http://localhost:10000")
 		}),
 	}
 	opts = append(defaultOpts, opts...)
@@ -39,7 +40,7 @@ func UpstreamService(opts ...compose.ServiceOpt) compose.Opt {
 		WithAPIAddress(":10000"),
 		WithPorts("10020:10000"),
 		WithWaitFunc(func(s *compose.Service) error {
-			return WaitForServerReady("http://localhost:10020")
+			return wait.ServerReady("http://localhost:10020")
 		}),
 	}
 	opts = append(defaultOpts, opts...)
@@ -56,7 +57,7 @@ func HttpbinService(opts ...compose.ServiceOpt) compose.Opt {
 		WithAPIAddress(":10000"),
 		WithPorts("10010:10000"),
 		WithWaitFunc(func(s *compose.Service) error {
-			return WaitForServerReady("http://localhost:10010")
+			return wait.ServerReady("http://localhost:10010")
 		}),
 	}
 	opts = append(defaultOpts, opts...)
