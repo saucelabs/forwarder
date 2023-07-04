@@ -22,6 +22,7 @@ linters:
     - exhaustive
     - exhaustivestruct
     - exhaustruct
+    - gochecknoinits
     - godox
     - goerr113
     - gomoddirectives
