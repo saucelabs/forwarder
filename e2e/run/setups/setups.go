@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/saucelabs/forwarder/e2e/compose"
+	. "github.com/saucelabs/forwarder/e2e/compose/opts"
 )
 
 func MakeTest(run string) compose.Opt {

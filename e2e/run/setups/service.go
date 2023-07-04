@@ -8,6 +8,7 @@ package setups
 
 import (
 	"github.com/saucelabs/forwarder/e2e/compose"
+	. "github.com/saucelabs/forwarder/e2e/compose/opts"
 	"github.com/saucelabs/forwarder/e2e/wait"
 )
 

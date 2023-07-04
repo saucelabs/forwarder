@@ -143,3 +143,9 @@ issues:
     - linters:
         - gomnd
       source: "Priority:"
+
+    - linters:
+        - golint
+        - revive
+        - stylecheck
+      source: '\. "github.com/saucelabs/forwarder/e2e/compose/opts"'
