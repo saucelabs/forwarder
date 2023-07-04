@@ -31,7 +31,7 @@ dump-logs:
 test: RUN ?= .
 test: e2e.test
 	@docker run --name "test-runner" --network "forwarder-e2e_default" --cpuset-cpus 0 \
-	-v "$(PWD)/e2e.test:/usr/bin/e2e.test" -i --read-only --rm \
+	-v "$(CURDIR)/e2e.test:/usr/bin/e2e.test" -i --read-only --rm \
 	$(shell docker inspect forwarder-e2e-proxy-1 --format='{{ range .Config.Env }}{{ if eq "FORWARDER" (slice . 0 9) }} -e "{{.}}"{{end}}{{end}}') \
 	$(shell docker inspect forwarder-e2e-httpbin-1 --format='{{ range .Config.Env }}{{ if eq "FORWARDER" (slice . 0 9) }} -e "HTTPBIN{{slice . 9}}"{{end}}{{end}}') \
 	ubuntu e2e.test -test.run $(RUN) -test.v $(ARGS)
