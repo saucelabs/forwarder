@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
 	"time"
 )
 
@@ -25,9 +26,15 @@ type Waiter struct {
 }
 
 var defaultWaiter = Waiter{
-	MaxWait:  30 * time.Second,
+	MaxWait:  5 * time.Second,
 	Backoff:  500 * time.Millisecond, //nolint:gomnd // default value
 	Endpoint: "/readyz",
+}
+
+func init() {
+	if _, ok := os.LookupEnv("CI"); ok {
+		defaultWaiter.MaxWait = 30 * time.Second
+	}
 }
 
 func (w *Waiter) WaitForServerReady(baseURL string) error {
