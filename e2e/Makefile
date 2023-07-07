@@ -36,8 +36,8 @@ test: e2e.test
 	$(shell docker inspect forwarder-e2e-httpbin-1 --format='{{ range .Config.Env }}{{ if eq "FORWARDER" (slice . 0 9) }} -e "HTTPBIN{{slice . 9}}"{{end}}{{end}}') \
 	ubuntu e2e.test -test.run $(RUN) -test.v $(ARGS)
 
-e2e.test: *.go
-	@CGO_ENABLED=0 GOOS=linux go test -tags e2e -c -o e2e.test .
+e2e.test: tests/*.go
+	@CGO_ENABLED=0 GOOS=linux go test -tags e2e -c -o e2e.test ./tests
 
 .PHONY: bench
 bench: PROFILE ?= 10
