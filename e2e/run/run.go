@@ -12,6 +12,7 @@ import (
 	"regexp"
 
 	"github.com/saucelabs/forwarder/e2e/run/setups"
+	e2esetup "github.com/saucelabs/forwarder/e2e/setup"
 )
 
 var (
@@ -32,27 +33,28 @@ func main() {
 	}
 	r, err := setupRegexp()
 	if err != nil {
-		log.Fatalf("Invalid setup regexp: %v", err)
+		log.Fatalf("invalid setup regexp: %v", err)
 	}
 
-	for _, s := range setups.All() {
-		if r != nil && !r.MatchString(s.Name) {
-			continue
-		}
+	runner := e2esetup.Runner{
+		Setups:      setups.All(),
+		SetupRegexp: r,
+		Decorate: func(s *e2esetup.Setup) {
+			log.Printf("running setup %s", s.Name)
 
-		if *debug {
-			for _, srv := range s.Services {
-				srv.Environment["FORWARDER_LOG_LEVEL"] = "debug"
-				srv.Environment["FORWARDER_LOG_HTTP"] = "headers"
+			if *debug {
+				for _, srv := range s.Compose.Services {
+					srv.Environment["FORWARDER_LOG_LEVEL"] = "debug"
+					srv.Environment["FORWARDER_LOG_HTTP"] = "headers"
+				}
 			}
-			s.Debug = true
-		}
-		if err := s.Run(*debug); err != nil {
-			log.Fatalf("FAIL: %v", err)
-		}
-		if *debug {
-			break
-		}
+		},
+		Debug: *debug,
 	}
+
+	if err := runner.Run(); err != nil {
+		log.Fatalf(err.Error())
+	}
+
 	log.Printf("SUCCESS")
 }

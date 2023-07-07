@@ -9,82 +9,97 @@ package compose
 import (
 	"bytes"
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
-	"path/filepath"
 
 	"golang.org/x/sync/errgroup"
 	"gopkg.in/yaml.v3"
 )
 
 type Service struct {
-	Name        string               `yaml:"-"`
-	Image       string               `yaml:"image,omitempty"`
-	Command     string               `yaml:"command,omitempty"`
-	Environment map[string]string    `yaml:"environment,omitempty"`
-	Ports       []string             `yaml:"ports,omitempty"`
-	Volumes     []string             `yaml:"volumes,omitempty"`
-	WaitFunc    func(*Service) error `yaml:"-"`
+	Name        string            `yaml:"-"`
+	Image       string            `yaml:"image,omitempty"`
+	Command     string            `yaml:"command,omitempty"`
+	Environment map[string]string `yaml:"environment,omitempty"`
+	Ports       []string          `yaml:"ports,omitempty"`
+	Volumes     []string          `yaml:"volumes,omitempty"`
+
+	WaitFunc func() error `yaml:"-"`
 }
 
-type ServiceOpt func(*Service)
+func (s *Service) Validate() error {
+	if s == nil {
+		return fmt.Errorf("service is nil")
+	}
+	if s.Image == "" {
+		return fmt.Errorf("service image is empty")
+	}
+	if s.Name == "" {
+		return fmt.Errorf("service name is empty")
+	}
 
-func (svc *Service) Wait() error {
-	if svc.WaitFunc == nil {
+	return nil
+}
+
+func (s *Service) Wait() error {
+	if s.WaitFunc == nil {
 		return nil
 	}
 
-	if err := svc.WaitFunc(svc); err != nil {
-		return fmt.Errorf("wait for %s: %w", svc.Name, err)
+	if err := s.WaitFunc(); err != nil {
+		return fmt.Errorf("service %s: %w", s.Name, err)
 	}
 
 	return nil
 }
 
 type Compose struct {
-	Name     string              `yaml:"-"`
+	Path     string              `yaml:"-"`
 	Version  string              `yaml:"version"`
 	Services map[string]*Service `yaml:"services,omitempty"`
-	Path     string              `yaml:"-"`
-	OnStart  func() error        `yaml:"-"`
-	Debug    bool                `yaml:"-"`
 }
 
-type Opt func(*Compose)
-
-func NewCompose(name string, opts ...Opt) *Compose {
-	c := &Compose{Name: name}
-	for _, opt := range opts {
-		opt(c)
+func newCompose() *Compose {
+	return &Compose{
+		Path:     "docker-compose.yaml",
+		Version:  "3.8",
+		Services: make(map[string]*Service),
 	}
-	return c
 }
 
-func (c *Compose) AddService(name, image string, opts ...ServiceOpt) {
-	svc := &Service{Name: name, Image: image, Environment: map[string]string{}}
-	for _, opt := range opts {
-		opt(svc)
-	}
-	if c.Services == nil {
-		c.Services = map[string]*Service{}
-	}
-	c.Services[name] = svc
-}
-
-func createDir(name string) error {
-	_, err := os.Stat(name)
-	if os.IsNotExist(err) {
-		return os.MkdirAll(name, 0o755)
-	}
-	return err
-}
-
-func writeFile(name string, content []byte) error {
-	if err := createDir(filepath.Dir(name)); err != nil {
+func (c *Compose) addService(s *Service) error {
+	if err := s.Validate(); err != nil {
 		return err
 	}
-	return os.WriteFile(name, content, 0o600)
+	if c.Services[s.Name] != nil {
+		return fmt.Errorf("service %s already exists", s.Name)
+	}
+
+	c.Services[s.Name] = s
+
+	return nil
+}
+
+func (c *Compose) Run(callback func() error, preserve bool) error {
+	if err := c.save(c.Path); err != nil {
+		return fmt.Errorf("compose save: %w", err)
+	}
+	if err := c.up(); err != nil {
+		return fmt.Errorf("compose up: %w", err)
+	}
+	if err := c.wait(); err != nil {
+		return fmt.Errorf("compose wait: %w", err)
+	}
+	if err := callback(); err != nil {
+		return err
+	}
+	if !preserve {
+		if err := c.down(); err != nil {
+			return fmt.Errorf("compose down: %w", err)
+		}
+	}
+
+	return nil
 }
 
 func (c *Compose) save(path string) error {
@@ -96,23 +111,7 @@ func (c *Compose) save(path string) error {
 }
 
 func (c *Compose) up() error {
-	if c.Path == "" {
-		c.Path = filepath.Join(os.TempDir(), "testrunner", "docker-compose.yaml")
-	}
-	if err := c.save(c.Path); err != nil {
-		return fmt.Errorf("save compose %s at %s: %w", c.Name, c.Path, err)
-	}
-	cmd := exec.Command("docker", "compose", "-f", c.Path, "up", "-d", "--force-recreate", "--remove-orphans") //nolint:gosec // local usage only
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-	if err := cmd.Run(); err != nil {
-		log.Printf("compose stdout: %s", stdout.String())
-		log.Printf("compose stderr: %s", stderr.String())
-		return fmt.Errorf("%s up: %w", c.Name, err)
-	}
-
-	return c.wait()
+	return runQuietly(c.dockerCompose("up", "-d", "--force-recreate", "--remove-orphans"))
 }
 
 func (c *Compose) wait() error {
@@ -124,33 +123,24 @@ func (c *Compose) wait() error {
 }
 
 func (c *Compose) down() error {
-	cmd := exec.Command("docker", "compose", "-f", c.Path, "down", "-v", "--remove-orphans") //nolint:gosec // local usage only
+	return runQuietly(c.dockerCompose("down", "-v", "--remove-orphans"))
+}
+
+func (c *Compose) dockerCompose(args ...string) *exec.Cmd {
+	return exec.Command("docker", append([]string{ //nolint:gosec // G204: Subprocess launched with a potential tainted input or cmd arguments
+		"compose", "-f", c.Path,
+	}, args...)...)
+}
+
+func runQuietly(cmd *exec.Cmd) error {
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
-	if err := cmd.Run(); err != nil {
-		log.Printf("compose stdout: %s", stdout.String())
-		log.Printf("compose stderr: %s", stderr.String())
-		return fmt.Errorf("%s down: %w", c.Name, err)
-	}
-	return nil
-}
 
-func (c *Compose) Run(preserve bool) error {
-	log.Printf("running %s", c.Name)
-	if err := c.up(); err != nil {
-		return err
+	err := cmd.Run()
+	if err != nil {
+		stdout.WriteTo(os.Stdout)
+		stderr.WriteTo(os.Stderr)
 	}
-	if c.OnStart == nil {
-		return fmt.Errorf("no OnStart function defined for %s", c.Name)
-	}
-	if err := c.OnStart(); err != nil {
-		return err
-	}
-	if !preserve {
-		if err := c.down(); err != nil {
-			return err
-		}
-	}
-	return nil
+	return err
 }
