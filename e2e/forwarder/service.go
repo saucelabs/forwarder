@@ -11,58 +11,115 @@ import (
 	"github.com/saucelabs/forwarder/e2e/wait"
 )
 
+type Service compose.Service
+
 const (
-	ProxyServiceName    = "proxy"
-	UpstreamServiceName = "upstream-proxy"
-	HttpbinServiceName  = "httpbin"
-	ForwarderImage      = "saucelabs/forwarder:${FORWARDER_VERSION}"
+	Image = "saucelabs/forwarder:${FORWARDER_VERSION}"
+
+	ProxyServiceName         = "proxy"
+	UpstreamProxyServiceName = "upstream-proxy"
+	HttpbinServiceName       = "httpbin"
 )
 
-func ProxyService(opts ...compose.ServiceOpt) compose.Opt {
-	defaultOpts := []compose.ServiceOpt{
-		WithProtocol("http"),
-		WithAPIAddress(":10000"),
-		WithPorts("3128:3128", "10000:10000"),
-		WithWaitFunc(func(s *compose.Service) error {
+func ProxyService() *Service {
+	s := &Service{
+		Name:        ProxyServiceName,
+		Image:       Image,
+		Environment: make(map[string]string),
+		Ports: []string{
+			"3128:3128",
+			"10000:10000",
+		},
+		WaitFunc: func() error {
 			return wait.ServerReady("http://localhost:10000")
-		}),
+		},
 	}
-	opts = append(defaultOpts, opts...)
 
-	return func(c *compose.Compose) {
-		c.AddService(ProxyServiceName, ForwarderImage, opts...)
-	}
+	return s.WithAPIAddress(":10000")
 }
 
-func UpstreamService(opts ...compose.ServiceOpt) compose.Opt {
-	defaultOpts := []compose.ServiceOpt{
-		WithProtocol("http"),
-		WithAPIAddress(":10000"),
-		WithPorts("10020:10000"),
-		WithWaitFunc(func(s *compose.Service) error {
-			return wait.ServerReady("http://localhost:10020")
-		}),
+func UpstreamProxyService() *Service {
+	s := &Service{
+		Name:        UpstreamProxyServiceName,
+		Image:       Image,
+		Environment: make(map[string]string),
+		Ports: []string{
+			"10001:10001",
+		},
+		WaitFunc: func() error {
+			return wait.ServerReady("http://localhost:10001")
+		},
 	}
-	opts = append(defaultOpts, opts...)
 
-	return func(c *compose.Compose) {
-		c.AddService(UpstreamServiceName, ForwarderImage, opts...)
-	}
+	return s.WithAPIAddress(":10001")
 }
 
-func HttpbinService(opts ...compose.ServiceOpt) compose.Opt {
-	defaultOpts := []compose.ServiceOpt{
-		WithProtocol("http"),
-		WithCommand("httpbin"),
-		WithAPIAddress(":10000"),
-		WithPorts("10010:10000"),
-		WithWaitFunc(func(s *compose.Service) error {
-			return wait.ServerReady("http://localhost:10010")
-		}),
+func HttpbinService() *Service {
+	s := &Service{
+		Name:        HttpbinServiceName,
+		Image:       Image,
+		Command:     "httpbin",
+		Environment: make(map[string]string),
+		Ports: []string{
+			"10002:10002",
+		},
+		WaitFunc: func() error {
+			return wait.ServerReady("http://localhost:10002")
+		},
 	}
-	opts = append(defaultOpts, opts...)
 
-	return func(c *compose.Compose) {
-		c.AddService(HttpbinServiceName, ForwarderImage, opts...)
+	return s.WithAPIAddress(":10002")
+}
+
+func (s *Service) WithProtocol(protocol string) *Service {
+	s.Environment["FORWARDER_PROTOCOL"] = protocol
+	return s
+}
+
+func (s *Service) WithUpstream(name, protocol string) *Service {
+	s.Environment["FORWARDER_PROXY"] = protocol + "://" + name + ":3128"
+	if protocol == "https" {
+		s.Environment["FORWARDER_INSECURE"] = "true"
 	}
+	return s
+}
+
+func (s *Service) WithBasicAuth(auth string) *Service {
+	s.Environment["FORWARDER_BASIC_AUTH"] = auth
+	return s
+}
+
+func (s *Service) WithCredentials(credentials, address string) *Service {
+	s.Environment["FORWARDER_CREDENTIALS"] = credentials + "@" + address
+	return s
+}
+
+func (s *Service) WithPac(pac string) *Service {
+	s.Environment["FORWARDER_PAC"] = "/pac.js"
+	s.Volumes = append(s.Volumes, pac+":/pac.js")
+	return s
+}
+
+func (s *Service) WithLocalhostMode(mode string) *Service {
+	s.Environment["FORWARDER_PROXY_LOCALHOST"] = mode
+	return s
+}
+
+func (s *Service) WithAPIAddress(address string) *Service {
+	s.Environment["FORWARDER_API_ADDRESS"] = address
+	return s
+}
+
+func (s *Service) WithGoleak() *Service {
+	s.Environment["FORWARDER_GOLEAK"] = "true"
+	return s
+}
+
+func (s *Service) WithEnv(key, val string) *Service {
+	s.Environment[key] = val
+	return s
+}
+
+func (s *Service) Service() *compose.Service {
+	return (*compose.Service)(s)
 }
