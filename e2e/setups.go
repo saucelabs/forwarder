@@ -15,54 +15,93 @@ import (
 )
 
 func AllSetups() []setup.Setup {
-	var all []setup.Setup
-	all = append(all, DefaultsSetups()...)
-	all = append(all, UpstreamAuthSetups()...)
-	all = append(all, PacSetups()...)
-	all = append(all, LocalhostAllowSetup(), SC2450Setup())
-	all = append(all, HeaderModifiersSetups()...)
-	return all
+	var ss []setup.Setup
+	ss = append(ss, DefaultsSetups()...)
+	ss = append(ss, AuthSetups()...)
+	ss = append(ss, PacSetups()...)
+	ss = append(ss,
+		FlagProxyLocalhostAllowSetup(),
+		FlagHeaderSetup(),
+		FlagResponseHeaderSetup(),
+
+		SC2450Setup(),
+	)
+	return ss
 }
 
 func DefaultsSetups() (ss []setup.Setup) {
+	const run = "^TestProxy"
 	for _, httpbinScheme := range forwarder.HttpbinSchemes {
 		for _, proxyScheme := range forwarder.ProxySchemes {
-			ss = append(ss, setup.Setup{
-				Name: "defaults-" + httpbinScheme + "-" + proxyScheme,
-				Compose: compose.NewBuilder().
-					AddService(
-						forwarder.ProxyService().
-							WithProtocol(proxyScheme).
-							WithBasicAuth("u1:p1").
-							WithGoleak()).
-					AddService(
-						forwarder.HttpbinService().
-							WithProtocol(httpbinScheme)).
-					MustBuild(),
-				Run: "^TestProxy",
-			})
+			ss = append(ss,
+				setup.Setup{
+					Name: "defaults-" + httpbinScheme + "-" + proxyScheme,
+					Compose: compose.NewBuilder().
+						AddService(
+							forwarder.HttpbinService().
+								WithProtocol(httpbinScheme)).
+						AddService(
+							forwarder.ProxyService().
+								WithProtocol(proxyScheme)).
+						MustBuild(),
+					Run: run,
+				})
+			for _, upstreamProxyScheme := range forwarder.ProxySchemes {
+				ss = append(ss,
+					setup.Setup{
+						Name: "defaults-" + httpbinScheme + "-" + proxyScheme + "-" + upstreamProxyScheme,
+						Compose: compose.NewBuilder().
+							AddService(
+								forwarder.HttpbinService().
+									WithProtocol(httpbinScheme)).
+							AddService(
+								forwarder.ProxyService().
+									WithProtocol(proxyScheme).
+									WithUpstream(forwarder.UpstreamProxyServiceName, upstreamProxyScheme)).
+							AddService(
+								forwarder.UpstreamProxyService().
+									WithProtocol(upstreamProxyScheme)).
+							MustBuild(),
+						Run: run,
+					})
+			}
 		}
 	}
 	return
 }
 
-func UpstreamAuthSetups() (ss []setup.Setup) {
+func AuthSetups() (ss []setup.Setup) {
+	const run = "StatusCode|Auth"
 	for _, httpbinScheme := range forwarder.HttpbinSchemes {
-		ss = append(ss, setup.Setup{
-			Name: "upstream-auth-" + httpbinScheme,
-			Compose: compose.NewBuilder().
-				AddService(
-					forwarder.ProxyService().
-						WithUpstream(forwarder.UpstreamProxyServiceName, "http").
-						WithCredentials("u2:p2", forwarder.UpstreamProxyServiceName+":3128")).
-				AddService(
-					forwarder.UpstreamProxyService().
-						WithBasicAuth("u2:p2")).
-				AddService(
-					forwarder.HttpbinService().
-						WithProtocol(httpbinScheme)).
-				MustBuild(),
-		})
+		ss = append(ss,
+			setup.Setup{
+				Name: "auth-" + httpbinScheme + "-http",
+				Compose: compose.NewBuilder().
+					AddService(
+						forwarder.HttpbinService().
+							WithProtocol(httpbinScheme)).
+					AddService(
+						forwarder.ProxyService().
+							WithBasicAuth("u1:p1")).
+					MustBuild(),
+				Run: run,
+			}, setup.Setup{
+				Name: "auth-" + httpbinScheme + "-http-http",
+				Compose: compose.NewBuilder().
+					AddService(
+						forwarder.HttpbinService().
+							WithProtocol(httpbinScheme)).
+					AddService(
+						forwarder.ProxyService().
+							WithBasicAuth("u1:p1").
+							WithUpstream(forwarder.UpstreamProxyServiceName, "http").
+							WithCredentials("u2:p2", forwarder.UpstreamProxyServiceName+":3128")).
+					AddService(
+						forwarder.UpstreamProxyService().
+							WithBasicAuth("u2:p2")).
+					MustBuild(),
+				Run: run,
+			})
 	}
 	return
 }
@@ -78,6 +117,7 @@ func PacSetups() []setup.Setup {
 				AddService(
 					forwarder.HttpbinService()).
 				MustBuild(),
+			Run: "^TestProxy",
 		},
 		{
 			Name: "pac-upstream",
@@ -90,6 +130,7 @@ func PacSetups() []setup.Setup {
 				AddService(
 					forwarder.HttpbinService()).
 				MustBuild(),
+			Run: "^TestProxy",
 		},
 		{
 			Name: "pac-issue-184",
@@ -100,20 +141,48 @@ func PacSetups() []setup.Setup {
 				AddService(
 					forwarder.HttpbinService()).
 				MustBuild(),
-			Run: "GoogleCom",
+			Run: "^TestProxyGoogleCom$",
 		},
 	}
 }
 
-func LocalhostAllowSetup() setup.Setup {
+func FlagProxyLocalhostAllowSetup() setup.Setup {
 	return setup.Setup{
-		Name: "localhost-allow",
+		Name: "flag-proxy-localhost",
 		Compose: compose.NewBuilder().
 			AddService(
 				forwarder.ProxyService().
 					WithLocalhostMode("allow")).
 			MustBuild(),
-		Run: "Localhost",
+		Run: "^TestFlagProxyLocalhost",
+	}
+}
+
+func FlagHeaderSetup() setup.Setup {
+	return setup.Setup{
+		Name: "flag-header",
+		Compose: compose.NewBuilder().
+			AddService(
+				forwarder.HttpbinService()).
+			AddService(
+				forwarder.ProxyService().
+					WithHeader("test-add:test-value,-test-rm,-rm-pref*,test-empty;")).
+			MustBuild(),
+		Run: "^TestFlagHeader$",
+	}
+}
+
+func FlagResponseHeaderSetup() setup.Setup {
+	return setup.Setup{
+		Name: "flag-response-header",
+		Compose: compose.NewBuilder().
+			AddService(
+				forwarder.HttpbinService()).
+			AddService(
+				forwarder.ProxyService().
+					WithResponseHeader("test-resp-add:test-resp-value,-test-resp-rm,-resp-rm-pref*,test-resp-empty;")).
+			MustBuild(),
+		Run: "^TestFlagResponseHeader$",
 	}
 }
 
@@ -122,10 +191,9 @@ func SC2450Setup() setup.Setup {
 		Name: "sc-2450",
 		Compose: compose.NewBuilder().
 			AddService(
-				forwarder.ProxyService().
-					WithEnv("FORWARDER_SC2450", "go")).
-			AddService(
 				forwarder.HttpbinService()).
+			AddService(
+				forwarder.ProxyService()).
 			AddService(&compose.Service{
 				Name:    "sc-2450",
 				Image:   "python:3",
@@ -136,35 +204,6 @@ func SC2450Setup() setup.Setup {
 					return nil
 				},
 			}).MustBuild(),
-		Run: "SC2450",
-	}
-}
-
-func HeaderModifiersSetups() []setup.Setup {
-	return []setup.Setup{
-		{
-			Name: "header-mods",
-			Compose: compose.NewBuilder().
-				AddService(
-					forwarder.ProxyService().
-						WithEnv("FORWARDER_TEST_HEADERS", "test").
-						WithEnv("FORWARDER_HEADER", "test-add:test-value,-test-rm,-rm-pref*,test-empty;")).
-				AddService(
-					forwarder.HttpbinService()).
-				MustBuild(),
-			Run: "HeaderMods",
-		},
-		{
-			Name: "response-header-mods",
-			Compose: compose.NewBuilder().
-				AddService(
-					forwarder.ProxyService().
-						WithEnv("FORWARDER_TEST_RESPONSE_HEADERS", "test").
-						WithEnv("FORWARDER_RESPONSE_HEADER", "test-resp-add:test-resp-value,-test-resp-rm,-resp-rm-pref*,test-resp-empty;")).
-				AddService(
-					forwarder.HttpbinService()).
-				MustBuild(),
-			Run: "ResponseHeaderMods",
-		},
+		Run: "^TestSC2450$",
 	}
 }

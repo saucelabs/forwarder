@@ -99,6 +99,7 @@ issues:
       linters:
         - gochecknoglobals
         - prealloc
+        - nakedret
         - nosprintfhostport
 
     - path: internal/version/version.go
