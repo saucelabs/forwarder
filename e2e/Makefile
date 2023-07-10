@@ -8,7 +8,7 @@ endif
 .PHONY: run-e2e
 run-e2e: SETUP ?= .
 run-e2e:
-	@go run ./run -setup $(SETUP) $(SETUP_ARGS)
+	@go run . -setup $(SETUP) $(SETUP_ARGS)
 
 .PHONY: up
 up:
