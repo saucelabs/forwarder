@@ -8,7 +8,7 @@ endif
 .PHONY: run-e2e
 run-e2e: SETUP ?= .
 run-e2e:
-	@go run . -setup $(SETUP) $(SETUP_ARGS)
+	@go run . -setup "$(SETUP)" $(SETUP_ARGS)
 
 .PHONY: up
 up:
@@ -34,7 +34,7 @@ test: e2e.test
 	-v "$(CURDIR)/e2e.test:/usr/bin/e2e.test" -i --read-only --rm \
 	$(shell docker inspect forwarder-e2e-proxy-1 --format='{{ range .Config.Env }}{{ if eq "FORWARDER" (slice . 0 9) }} -e "{{.}}"{{end}}{{end}}') \
 	$(shell docker inspect forwarder-e2e-httpbin-1 --format='{{ range .Config.Env }}{{ if eq "FORWARDER" (slice . 0 9) }} -e "HTTPBIN{{slice . 9}}"{{end}}{{end}}') \
-	ubuntu e2e.test -test.run $(RUN) -test.v $(ARGS)
+	ubuntu e2e.test -test.run "$(RUN)" -test.v $(ARGS)
 
 e2e.test: tests/*.go
 	@CGO_ENABLED=0 GOOS=linux go test -tags e2e -c -o e2e.test ./tests
