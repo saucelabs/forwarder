@@ -9,7 +9,7 @@ package setup
 import (
 	"regexp"
 
-	"github.com/saucelabs/forwarder/e2e/compose"
+	"github.com/saucelabs/forwarder/utils/compose"
 )
 
 type Setup struct {

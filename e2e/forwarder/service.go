@@ -7,7 +7,7 @@
 package forwarder
 
 import (
-	"github.com/saucelabs/forwarder/e2e/compose"
+	"github.com/saucelabs/forwarder/utils/compose"
 	"github.com/saucelabs/forwarder/utils/wait"
 )
 

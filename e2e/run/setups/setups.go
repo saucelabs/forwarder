@@ -9,9 +9,9 @@ package setups
 import (
 	"time"
 
-	"github.com/saucelabs/forwarder/e2e/compose"
 	"github.com/saucelabs/forwarder/e2e/forwarder"
 	"github.com/saucelabs/forwarder/e2e/setup"
+	"github.com/saucelabs/forwarder/utils/compose"
 )
 
 func All() []setup.Setup {
