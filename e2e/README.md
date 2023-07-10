@@ -18,7 +18,7 @@ It can be used with `SETUP` to run specific test in specific environment setup.
 
 Start the test runner `make run-e2e SETUP=<setup>` where `<setup>` is a regex matching the setup name.
 
-The default setup naming scheme is `default-<httpbin-scheme>-<proxy-scheme>-<upstream-scheme>` ex. the `default-h2-http-https` setup will use 
+The defaults setup naming scheme is `defaults-<httpbin-scheme>-<proxy-scheme>-<upstream-scheme>` ex. the `defaults-h2-http-https` setup will use 
 * httpbin with http2 support, 
 * proxy with http scheme,
 * upstream with https scheme.

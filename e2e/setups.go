@@ -16,7 +16,7 @@ import (
 
 func AllSetups() []setup.Setup {
 	var all []setup.Setup
-	all = append(all, DefaultSetups()...)
+	all = append(all, DefaultsSetups()...)
 	all = append(all, UpstreamAuthSetups()...)
 	all = append(all, PacSetups()...)
 	all = append(all, LocalhostAllowSetup(), SC2450Setup())
@@ -24,11 +24,11 @@ func AllSetups() []setup.Setup {
 	return all
 }
 
-func DefaultSetups() (ss []setup.Setup) {
+func DefaultsSetups() (ss []setup.Setup) {
 	for _, httpbinScheme := range forwarder.HttpbinSchemes {
 		for _, proxyScheme := range forwarder.ProxySchemes {
 			ss = append(ss, setup.Setup{
-				Name: "default-" + httpbinScheme + "-" + proxyScheme,
+				Name: "defaults-" + httpbinScheme + "-" + proxyScheme,
 				Compose: compose.NewBuilder().
 					AddService(
 						forwarder.ProxyService().
@@ -39,6 +39,7 @@ func DefaultSetups() (ss []setup.Setup) {
 						forwarder.HttpbinService().
 							WithProtocol(httpbinScheme)).
 					MustBuild(),
+				Run: "^TestProxy",
 			})
 		}
 	}
