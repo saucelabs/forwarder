@@ -4,7 +4,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package setups
+package main
 
 import (
 	"time"
@@ -14,17 +14,17 @@ import (
 	"github.com/saucelabs/forwarder/utils/compose"
 )
 
-func All() []setup.Setup {
+func AllSetups() []setup.Setup {
 	var all []setup.Setup
-	all = append(all, Default()...)
-	all = append(all, UpstreamAuth()...)
-	all = append(all, Pacs()...)
-	all = append(all, LocalhostAllow(), SC2450())
-	all = append(all, HeaderModifiers()...)
+	all = append(all, DefaultSetups()...)
+	all = append(all, UpstreamAuthSetups()...)
+	all = append(all, PacSetups()...)
+	all = append(all, LocalhostAllowSetup(), SC2450Setup())
+	all = append(all, HeaderModifiersSetups()...)
 	return all
 }
 
-func Default() (ss []setup.Setup) {
+func DefaultSetups() (ss []setup.Setup) {
 	for _, httpbinScheme := range forwarder.HttpbinSchemes {
 		for _, proxyScheme := range forwarder.ProxySchemes {
 			ss = append(ss, setup.Setup{
@@ -45,7 +45,7 @@ func Default() (ss []setup.Setup) {
 	return
 }
 
-func UpstreamAuth() (ss []setup.Setup) {
+func UpstreamAuthSetups() (ss []setup.Setup) {
 	for _, httpbinScheme := range forwarder.HttpbinSchemes {
 		ss = append(ss, setup.Setup{
 			Name: "upstream-auth-" + httpbinScheme,
@@ -66,7 +66,7 @@ func UpstreamAuth() (ss []setup.Setup) {
 	return
 }
 
-func Pacs() []setup.Setup {
+func PacSetups() []setup.Setup {
 	return []setup.Setup{
 		{
 			Name: "pac-direct",
@@ -104,7 +104,7 @@ func Pacs() []setup.Setup {
 	}
 }
 
-func LocalhostAllow() setup.Setup {
+func LocalhostAllowSetup() setup.Setup {
 	return setup.Setup{
 		Name: "localhost-allow",
 		Compose: compose.NewBuilder().
@@ -116,7 +116,7 @@ func LocalhostAllow() setup.Setup {
 	}
 }
 
-func SC2450() setup.Setup {
+func SC2450Setup() setup.Setup {
 	return setup.Setup{
 		Name: "sc-2450",
 		Compose: compose.NewBuilder().
@@ -139,7 +139,7 @@ func SC2450() setup.Setup {
 	}
 }
 
-func HeaderModifiers() []setup.Setup {
+func HeaderModifiersSetups() []setup.Setup {
 	return []setup.Setup{
 		{
 			Name: "header-mods",
