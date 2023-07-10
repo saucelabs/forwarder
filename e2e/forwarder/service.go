@@ -8,7 +8,7 @@ package forwarder
 
 import (
 	"github.com/saucelabs/forwarder/e2e/compose"
-	"github.com/saucelabs/forwarder/e2e/wait"
+	"github.com/saucelabs/forwarder/utils/wait"
 )
 
 type Service compose.Service
