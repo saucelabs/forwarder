@@ -110,6 +110,16 @@ func (s *Service) WithAPIAddress(address string) *Service {
 	return s
 }
 
+func (s *Service) WithHeader(header string) *Service {
+	s.Environment["FORWARDER_HEADER"] = header
+	return s
+}
+
+func (s *Service) WithResponseHeader(header string) *Service {
+	s.Environment["FORWARDER_RESPONSE_HEADER"] = header
+	return s
+}
+
 func (s *Service) WithGoleak() *Service {
 	s.Environment["FORWARDER_GOLEAK"] = "true"
 	return s
