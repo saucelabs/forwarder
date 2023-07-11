@@ -264,6 +264,6 @@ func (hs *HTTPServer) Addr() string {
 }
 
 // Ready returns true if the server is running and ready to accept requests.
-func (hs *HTTPServer) Ready() bool {
+func (hs *HTTPServer) Ready(ctx context.Context) bool {
 	return hs.Addr() != ""
 }
