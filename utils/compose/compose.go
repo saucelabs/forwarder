@@ -12,7 +12,6 @@ import (
 	"os"
 	"os/exec"
 
-	"golang.org/x/sync/errgroup"
 	"gopkg.in/yaml.v3"
 )
 
@@ -50,9 +49,6 @@ func (c *Compose) Run(callback func() error, preserve bool) error {
 	if err := c.up(); err != nil {
 		return fmt.Errorf("compose up: %w", err)
 	}
-	if err := c.wait(); err != nil {
-		return fmt.Errorf("compose wait: %w", err)
-	}
 	if err := callback(); err != nil {
 		return err
 	}
@@ -74,15 +70,7 @@ func (c *Compose) save(path string) error {
 }
 
 func (c *Compose) up() error {
-	return runQuietly(c.dockerCompose("up", "-d", "--force-recreate", "--remove-orphans"))
-}
-
-func (c *Compose) wait() error {
-	var wg errgroup.Group
-	for i := range c.Services {
-		wg.Go(c.Services[i].Wait)
-	}
-	return wg.Wait()
+	return runQuietly(c.dockerCompose("up", "-d", "--wait", "--force-recreate", "--remove-orphans"))
 }
 
 func (c *Compose) down() error {
