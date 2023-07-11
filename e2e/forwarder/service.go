@@ -7,8 +7,9 @@
 package forwarder
 
 import (
+	"time"
+
 	"github.com/saucelabs/forwarder/utils/compose"
-	"github.com/saucelabs/forwarder/utils/wait"
 )
 
 type Service compose.Service
@@ -21,6 +22,15 @@ const (
 	HttpbinServiceName       = "httpbin"
 )
 
+func HealthCheck() *compose.HealthCheck {
+	return &compose.HealthCheck{
+		Test:     []string{"CMD", "forwarder", "ready"},
+		Interval: time.Second,
+		Timeout:  time.Second,
+		Retries:  1,
+	}
+}
+
 func ProxyService() *Service {
 	return &Service{
 		Name:  ProxyServiceName,
@@ -32,9 +42,7 @@ func ProxyService() *Service {
 			"3128:3128",
 			"10000:10000",
 		},
-		WaitFunc: func() error {
-			return wait.ServerReady("http://localhost:10000")
-		},
+		HealthCheck: HealthCheck(),
 	}
 }
 
@@ -48,9 +56,7 @@ func UpstreamProxyService() *Service {
 		Ports: []string{
 			"10001:10000",
 		},
-		WaitFunc: func() error {
-			return wait.ServerReady("http://localhost:10001")
-		},
+		HealthCheck: HealthCheck(),
 	}
 }
 
@@ -65,9 +71,7 @@ func HttpbinService() *Service {
 		Ports: []string{
 			"10002:10000",
 		},
-		WaitFunc: func() error {
-			return wait.ServerReady("http://localhost:10002")
-		},
+		HealthCheck: HealthCheck(),
 	}
 }
 

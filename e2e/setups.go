@@ -199,9 +199,11 @@ func SC2450Setup() setup.Setup {
 				Image:   "python:3",
 				Command: "python /server.py",
 				Volumes: []string{"./sc-2450/server.py:/server.py"},
-				WaitFunc: func() error {
-					time.Sleep(3 * time.Second)
-					return nil
+				HealthCheck: &compose.HealthCheck{
+					StartPeriod: 3 * time.Second,
+					Interval:    1 * time.Second,
+					Retries:     1,
+					Test:        []string{"CMD", "true"},
 				},
 			}).MustBuild(),
 		Run: "^TestSC2450$",
