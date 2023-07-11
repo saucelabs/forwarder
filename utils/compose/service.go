@@ -8,6 +8,7 @@ package compose
 
 import (
 	"fmt"
+	"time"
 )
 
 type Service struct {
@@ -17,6 +18,7 @@ type Service struct {
 	Environment map[string]string `yaml:"environment,omitempty"`
 	Ports       []string          `yaml:"ports,omitempty"`
 	Volumes     []string          `yaml:"volumes,omitempty"`
+	HealthCheck *HealthCheck      `yaml:"healthcheck,omitempty"`
 
 	WaitFunc func() error `yaml:"-"`
 }
@@ -45,4 +47,17 @@ func (s *Service) Wait() error {
 	}
 
 	return nil
+}
+
+type HealthCheck struct {
+	Test []string `yaml:"test,omitempty"`
+	// Interval between two health checks, the default is 30 seconds.
+	Interval time.Duration `yaml:"interval,omitempty"`
+	// The health check command runs the timeout period.
+	// If this time is exceeded, the health check is regarded as a failure.
+	Timeout time.Duration `yaml:"timeout,omitempty"`
+	// When the specified number of consecutive failures, the container status is treated as unhealthy, the default is 3 times.
+	Retries uint `yaml:"retries,omitempty"`
+	// The number of seconds to start the health check after the container starts, the default is 0 seconds.
+	StartPeriod time.Duration `yaml:"start_period,omitempty"`
 }
