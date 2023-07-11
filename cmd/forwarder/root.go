@@ -10,6 +10,7 @@ import (
 	"github.com/saucelabs/forwarder/bind"
 	"github.com/saucelabs/forwarder/cmd/forwarder/httpbin"
 	"github.com/saucelabs/forwarder/cmd/forwarder/pac"
+	"github.com/saucelabs/forwarder/cmd/forwarder/ready"
 	"github.com/saucelabs/forwarder/cmd/forwarder/run"
 	"github.com/saucelabs/forwarder/cmd/forwarder/version"
 	"github.com/saucelabs/forwarder/utils/cobrautil"
@@ -35,6 +36,7 @@ func rootCommand() *cobra.Command {
 			Commands: []*cobra.Command{
 				run.Command(),
 				pac.Command(),
+				ready.Command(),
 			},
 		},
 	}
