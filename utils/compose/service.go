@@ -19,8 +19,6 @@ type Service struct {
 	Ports       []string          `yaml:"ports,omitempty"`
 	Volumes     []string          `yaml:"volumes,omitempty"`
 	HealthCheck *HealthCheck      `yaml:"healthcheck,omitempty"`
-
-	WaitFunc func() error `yaml:"-"`
 }
 
 func (s *Service) Validate() error {
@@ -32,18 +30,6 @@ func (s *Service) Validate() error {
 	}
 	if s.Name == "" {
 		return fmt.Errorf("service name is empty")
-	}
-
-	return nil
-}
-
-func (s *Service) Wait() error {
-	if s.WaitFunc == nil {
-		return nil
-	}
-
-	if err := s.WaitFunc(); err != nil {
-		return fmt.Errorf("service %s: %w", s.Name, err)
 	}
 
 	return nil
