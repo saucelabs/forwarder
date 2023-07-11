@@ -8,6 +8,7 @@ package forwarder
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/pprof"
@@ -24,14 +25,14 @@ import (
 // It provides health and readiness endpoints prometheus metrics, and pprof debug endpoints.
 type APIHandler struct {
 	mux    *http.ServeMux
-	ready  func() bool
+	ready  func(ctx context.Context) bool
 	config string
 	script string
 
 	patterns []string
 }
 
-func NewAPIHandler(r prometheus.Gatherer, ready func() bool, config, pac string) *APIHandler {
+func NewAPIHandler(r prometheus.Gatherer, ready func(ctx context.Context) bool, config, pac string) *APIHandler {
 	m := http.NewServeMux()
 	a := &APIHandler{
 		mux:    m,
@@ -72,7 +73,7 @@ func (h *APIHandler) healthz(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *APIHandler) readyz(w http.ResponseWriter, r *http.Request) {
-	if h.ready() {
+	if h.ready(r.Context()) {
 		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "text/plain")
 		w.Write([]byte("OK"))
