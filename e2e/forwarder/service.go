@@ -22,10 +22,12 @@ const (
 )
 
 func ProxyService() *Service {
-	s := &Service{
-		Name:        ProxyServiceName,
-		Image:       Image,
-		Environment: make(map[string]string),
+	return &Service{
+		Name:  ProxyServiceName,
+		Image: Image,
+		Environment: map[string]string{
+			"FORWARDER_API_ADDRESS": ":10000",
+		},
 		Ports: []string{
 			"3128:3128",
 			"10000:10000",
@@ -34,41 +36,39 @@ func ProxyService() *Service {
 			return wait.ServerReady("http://localhost:10000")
 		},
 	}
-
-	return s.WithAPIAddress(":10000")
 }
 
 func UpstreamProxyService() *Service {
-	s := &Service{
-		Name:        UpstreamProxyServiceName,
-		Image:       Image,
-		Environment: make(map[string]string),
+	return &Service{
+		Name:  UpstreamProxyServiceName,
+		Image: Image,
+		Environment: map[string]string{
+			"FORWARDER_API_ADDRESS": ":10000",
+		},
 		Ports: []string{
-			"10001:10001",
+			"10001:10000",
 		},
 		WaitFunc: func() error {
 			return wait.ServerReady("http://localhost:10001")
 		},
 	}
-
-	return s.WithAPIAddress(":10001")
 }
 
 func HttpbinService() *Service {
-	s := &Service{
-		Name:        HttpbinServiceName,
-		Image:       Image,
-		Command:     "httpbin",
-		Environment: make(map[string]string),
+	return &Service{
+		Name:    HttpbinServiceName,
+		Image:   Image,
+		Command: "httpbin",
+		Environment: map[string]string{
+			"FORWARDER_API_ADDRESS": ":10000",
+		},
 		Ports: []string{
-			"10002:10002",
+			"10002:10000",
 		},
 		WaitFunc: func() error {
 			return wait.ServerReady("http://localhost:10002")
 		},
 	}
-
-	return s.WithAPIAddress(":10002")
 }
 
 func (s *Service) WithProtocol(protocol string) *Service {
@@ -102,11 +102,6 @@ func (s *Service) WithPac(pac string) *Service {
 
 func (s *Service) WithLocalhostMode(mode string) *Service {
 	s.Environment["FORWARDER_PROXY_LOCALHOST"] = mode
-	return s
-}
-
-func (s *Service) WithAPIAddress(address string) *Service {
-	s.Environment["FORWARDER_API_ADDRESS"] = address
 	return s
 }
 
