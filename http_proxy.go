@@ -135,7 +135,6 @@ func NewHTTPProxy(cfg *HTTPProxyConfig, pr PACResolver, cm *CredentialsMatcher, 
 	} else if _, ok := rt.(*http.Transport); !ok {
 		log.Debugf("using custom HTTP transport %T", rt)
 	}
-
 	hp := &HTTPProxy{
 		config:    *cfg,
 		pac:       pr,
@@ -182,8 +181,10 @@ func (hp *HTTPProxy) configureProxy() {
 	// The dialer is wrapped, so that additional syscalls are made to the dialed connections.
 	// As a result the dialer needs to be reset.
 	if tr, ok := hp.transport.(*http.Transport); ok {
-		hp.proxy.SetRoundTripper(tr)
+		// Note: The order matters. DialContext needs to be set first.
+		// SetRoundTripper overwrites tr.DialContext with hp.proxy.dial.
 		hp.proxy.SetDialContext(tr.DialContext)
+		hp.proxy.SetRoundTripper(tr)
 	} else {
 		hp.proxy.SetRoundTripper(hp.transport)
 	}

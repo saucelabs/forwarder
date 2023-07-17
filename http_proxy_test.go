@@ -7,6 +7,9 @@
 package forwarder
 
 import (
+	"context"
+	"errors"
+	"fmt"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -75,4 +78,34 @@ func TestAbortIf(t *testing.T) {
 
 		check(t, cc)
 	})
+}
+
+func TestNopDialer(t *testing.T) {
+	nopDialerErr := fmt.Errorf("nop dialer")
+
+	tr := &http.Transport{
+		DialContext: func(_ context.Context, _, _ string) (net.Conn, error) {
+			return nil, nopDialerErr
+		},
+	}
+
+	p, err := NewHTTPProxy(DefaultHTTPProxyConfig(), nil, nil, tr, stdlog.Default())
+	if err != nil {
+		t.Fatal(err)
+	}
+	p.configureProxy()
+
+	req := &http.Request{
+		Method: http.MethodGet,
+		Header: map[string][]string{},
+		URL: &url.URL{
+			Scheme: "http",
+			Host:   "foobar",
+		},
+		Host: "foobar",
+	}
+	_, err = p.proxy.GetRoundTripper().RoundTrip(req)
+	if !errors.Is(err, nopDialerErr) {
+		t.Fatalf("expected %v, got %v", nopDialerErr, err)
+	}
 }
