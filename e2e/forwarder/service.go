@@ -22,15 +22,6 @@ const (
 	HttpbinServiceName       = "httpbin"
 )
 
-func HealthCheck() *compose.HealthCheck {
-	return &compose.HealthCheck{
-		Test:     []string{"CMD", "forwarder", "ready"},
-		Interval: time.Second,
-		Timeout:  time.Second,
-		Retries:  1,
-	}
-}
-
 func ProxyService() *Service {
 	return &Service{
 		Name:  ProxyServiceName,
@@ -42,7 +33,7 @@ func ProxyService() *Service {
 			"3128:3128",
 			"10000:10000",
 		},
-		HealthCheck: HealthCheck(),
+		HealthCheck: healthCheck(),
 	}
 }
 
@@ -56,7 +47,7 @@ func UpstreamProxyService() *Service {
 		Ports: []string{
 			"10001:10000",
 		},
-		HealthCheck: HealthCheck(),
+		HealthCheck: healthCheck(),
 	}
 }
 
@@ -71,7 +62,7 @@ func HttpbinService() *Service {
 		Ports: []string{
 			"10002:10000",
 		},
-		HealthCheck: HealthCheck(),
+		HealthCheck: healthCheck(),
 	}
 }
 
@@ -131,4 +122,13 @@ func (s *Service) WithEnv(key, val string) *Service {
 
 func (s *Service) Service() *compose.Service {
 	return (*compose.Service)(s)
+}
+
+func healthCheck() *compose.HealthCheck {
+	return &compose.HealthCheck{
+		Test:     []string{"CMD", "forwarder", "ready"},
+		Interval: time.Second,
+		Timeout:  time.Second,
+		Retries:  10,
+	}
 }
