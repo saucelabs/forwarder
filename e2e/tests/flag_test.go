@@ -11,7 +11,6 @@ package tests
 import (
 	"net"
 	"net/http"
-	"os"
 	"testing"
 )
 
@@ -21,19 +20,16 @@ func TestFlagProxyLocalhost(t *testing.T) {
 		"127.0.0.1",
 	}
 
-	if os.Getenv("FORWARDER_PROXY_LOCALHOST") == "allow" {
-		t.Run("allow", func(t *testing.T) {
-			for _, h := range hosts {
-				newClient(t, "http://"+net.JoinHostPort(h, "10000")).GET("/version").ExpectStatus(http.StatusOK)
-			}
-		})
-	} else {
-		t.Run("deny", func(t *testing.T) {
-			for _, h := range hosts {
-				newClient(t, "http://"+net.JoinHostPort(h, "10000")).GET("/version").ExpectStatus(http.StatusBadGateway)
-			}
-		})
-	}
+	t.Run("allow", func(t *testing.T) {
+		for _, h := range hosts {
+			newClient(t, "http://"+net.JoinHostPort(h, "10000")).GET("/version").ExpectStatus(http.StatusOK)
+		}
+	})
+	t.Run("deny", func(t *testing.T) {
+		for _, h := range hosts {
+			newClient(t, "http://"+net.JoinHostPort(h, "10000")).GET("/version").ExpectStatus(http.StatusBadGateway)
+		}
+	})
 }
 
 func TestFlagHeader(t *testing.T) {
