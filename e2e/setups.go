@@ -19,8 +19,9 @@ func AllSetups() []setup.Setup {
 	ss = append(ss, DefaultsSetups()...)
 	ss = append(ss, AuthSetups()...)
 	ss = append(ss, PacSetups()...)
+
+	ss = append(ss, FlagProxyLocalhost()...)
 	ss = append(ss,
-		FlagProxyLocalhostAllowSetup(),
 		FlagHeaderSetup(),
 		FlagResponseHeaderSetup(),
 
@@ -146,16 +147,19 @@ func PacSetups() []setup.Setup {
 	}
 }
 
-func FlagProxyLocalhostAllowSetup() setup.Setup {
-	return setup.Setup{
-		Name: "flag-proxy-localhost",
-		Compose: compose.NewBuilder().
-			AddService(
-				forwarder.ProxyService().
-					WithLocalhostMode("allow")).
-			MustBuild(),
-		Run: "^TestFlagProxyLocalhost",
+func FlagProxyLocalhost() (ss []setup.Setup) {
+	for _, mode := range []string{"deny", "allow"} {
+		ss = append(ss, setup.Setup{
+			Name: "flag-proxy-localhost-" + mode,
+			Compose: compose.NewBuilder().
+				AddService(
+					forwarder.ProxyService().
+						WithLocalhostMode(mode)).
+				MustBuild(),
+			Run: "^TestFlagProxyLocalhost/" + mode + "$",
+		})
 	}
+	return
 }
 
 func FlagHeaderSetup() setup.Setup {
