@@ -110,9 +110,7 @@ func HTTPTransportConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPTransportConfig) 
 		"The maximum amount of time a dial will wait for a connect to complete. "+
 			"With or without a timeout, the operating system may impose its own earlier timeout. For instance, TCP timeouts are often around 3 minutes. ")
 
-	fs.DurationVar(&cfg.TLSHandshakeTimeout,
-		"http-tls-handshake-timeout", cfg.TLSHandshakeTimeout,
-		"The maximum amount of time waiting to wait for a TLS handshake. Zero means no limit.")
+	TLSClientConfig(fs, &cfg.TLSClientConfig)
 
 	fs.DurationVar(&cfg.IdleConnTimeout,
 		"http-idle-conn-timeout", cfg.IdleConnTimeout,
@@ -124,8 +122,14 @@ func HTTPTransportConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPTransportConfig) 
 		"The amount of time to wait for a server's response headers after fully writing the request (including its body, if any)."+
 			"This time does not include the time to read the response body. "+
 			"Zero means no limit. ")
+}
 
-	fs.BoolVar(&cfg.TLSClientConfig.InsecureSkipVerify, "insecure", cfg.TLSClientConfig.InsecureSkipVerify,
+func TLSClientConfig(fs *pflag.FlagSet, cfg *forwarder.TLSClientConfig) {
+	fs.DurationVar(&cfg.HandshakeTimeout,
+		"http-tls-handshake-timeout", cfg.HandshakeTimeout,
+		"The maximum amount of time waiting to wait for a TLS handshake. Zero means no limit.")
+
+	fs.BoolVar(&cfg.InsecureSkipVerify, "insecure", cfg.InsecureSkipVerify,
 		"Don't verify the server's certificate chain and host name. "+
 			"Enable to work with self-signed certificates. ")
 }
