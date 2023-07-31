@@ -73,7 +73,7 @@ type HTTPTransportConfig struct {
 	// This time does not include the time to send the request header.
 	ExpectContinueTimeout time.Duration
 
-	TLSConfig
+	TLSClientConfig
 }
 
 func DefaultHTTPTransportConfig() *HTTPTransportConfig {

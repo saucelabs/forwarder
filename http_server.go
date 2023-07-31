@@ -77,7 +77,7 @@ func h2TLSConfigTemplate() *tls.Config {
 type HTTPServerConfig struct {
 	Protocol Scheme
 	Addr     string
-	TLSConfig
+	TLSServerConfig
 	ReadTimeout       time.Duration
 	ReadHeaderTimeout time.Duration
 	WriteTimeout      time.Duration
@@ -172,7 +172,7 @@ func (hs *HTTPServer) configureHTTPS() error {
 	}
 
 	tlsCfg := httpsTLSConfigTemplate()
-	err := LoadCertificateFromTLSConfig(tlsCfg, &hs.config.TLSConfig)
+	err := LoadCertificateFromTLSConfig(tlsCfg, &hs.config.TLSServerConfig)
 	hs.srv.TLSConfig = tlsCfg
 	hs.srv.TLSNextProto = make(map[string]func(*http.Server, *tls.Conn, http.Handler))
 
@@ -187,7 +187,7 @@ func (hs *HTTPServer) configureHTTP2() error {
 	}
 
 	tlsCfg := h2TLSConfigTemplate()
-	err := LoadCertificateFromTLSConfig(tlsCfg, &hs.config.TLSConfig)
+	err := LoadCertificateFromTLSConfig(tlsCfg, &hs.config.TLSServerConfig)
 	hs.srv.TLSConfig = tlsCfg
 
 	return err
