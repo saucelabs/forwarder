@@ -160,11 +160,9 @@ func (hp *HTTPProxy) configureHTTPS() error {
 		hp.log.Debugf("loading TLS certificate from %s and %s", hp.config.CertFile, hp.config.KeyFile)
 	}
 
-	tlsCfg := httpsTLSConfigTemplate()
-	err := LoadCertificateFromTLSConfig(tlsCfg, &hp.config.TLSServerConfig)
-	hp.TLSConfig = tlsCfg
+	hp.TLSConfig = httpsTLSConfigTemplate()
 
-	return err
+	return hp.config.ConfigureTLSConfig(hp.TLSConfig)
 }
 
 func (hp *HTTPProxy) configureProxy() {
