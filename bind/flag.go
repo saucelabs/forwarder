@@ -169,12 +169,14 @@ func HTTPServerConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPServerConfig, prefix
 				"the server will use a self-signed certificate. ")
 
 		fs.StringVar(&cfg.CertFile,
-			namePrefix+"tls-cert-file", cfg.CertFile, "<path>"+
-				"TLS certificate to use if the server protocol is https or h2. ")
+			namePrefix+"tls-cert-file", cfg.CertFile, "<path or base64>"+
+				"TLS certificate to use if the server protocol is https or h2. "+
+				"Can be a path to a file or \"data:\" followed by base64 encoded certificate. ")
 
 		fs.StringVar(&cfg.KeyFile,
-			namePrefix+"tls-key-file", cfg.KeyFile, "<path>"+
-				"TLS private key to use if the server protocol is https or h2. ")
+			namePrefix+"tls-key-file", cfg.KeyFile, "<path or base64>"+
+				"TLS private key to use if the server protocol is https or h2. "+
+				"Can be a path to a file or \"data:\" followed by base64 encoded key. ")
 	}
 
 	fs.DurationVar(&cfg.ReadHeaderTimeout,

@@ -37,11 +37,23 @@ func LoadCertificateFromTLSConfig(dst *tls.Config, src *TLSConfig) error {
 	if src.CertFile == "" && src.KeyFile == "" {
 		cert, err = certutil.RSASelfSignedCert().Gen()
 	} else {
-		cert, err = tls.LoadX509KeyPair(src.CertFile, src.KeyFile)
+		cert, err = loadX509KeyPair(src.CertFile, src.KeyFile)
 	}
 
 	if err == nil {
 		dst.Certificates = append(dst.Certificates, cert)
 	}
 	return err
+}
+
+func loadX509KeyPair(certFile, keyFile string) (tls.Certificate, error) {
+	certPEMBlock, err := ReadFileOrBase64(certFile)
+	if err != nil {
+		return tls.Certificate{}, err
+	}
+	keyPEMBlock, err := ReadFileOrBase64(keyFile)
+	if err != nil {
+		return tls.Certificate{}, err
+	}
+	return tls.X509KeyPair(certPEMBlock, keyPEMBlock)
 }
