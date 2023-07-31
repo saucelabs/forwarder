@@ -97,6 +97,13 @@ func TestParseFilePathOrURL(t *testing.T) {
 				Path:   "/path/to/file",
 			},
 		},
+		{
+			input: "data:text/plain;base64,U2F1Y2VMYWJzCg==",
+			want: url.URL{
+				Scheme: "data",
+				Opaque: "text/plain;base64,U2F1Y2VMYWJzCg==",
+			},
+		},
 	}
 
 	for i := range tests {
