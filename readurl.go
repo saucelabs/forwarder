@@ -7,14 +7,16 @@
 package forwarder
 
 import (
+	"encoding/base64"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 )
 
-// ReadURLString can read a local file, http or https URL or stdin and return it as a string.
+// ReadURLString can read base64 encoded data, local file, http or https URL or stdin and return it as a string.
 func ReadURLString(u *url.URL, rt http.RoundTripper) (string, error) {
 	b, err := ReadURL(u, rt)
 	if err != nil {
@@ -23,9 +25,11 @@ func ReadURLString(u *url.URL, rt http.RoundTripper) (string, error) {
 	return string(b), nil
 }
 
-// ReadURL can read a local file, http or https URL or stdin.
+// ReadURL can read base64 encoded data, local file, http or https URL or stdin.
 func ReadURL(u *url.URL, rt http.RoundTripper) ([]byte, error) {
 	switch u.Scheme {
+	case "data":
+		return readData(u)
 	case "file":
 		return readFile(u)
 	case "http", "https":
@@ -33,6 +37,25 @@ func ReadURL(u *url.URL, rt http.RoundTripper) ([]byte, error) {
 	default:
 		return nil, fmt.Errorf("unsupported scheme %q, supported schemes are: file, http and https", u.Scheme)
 	}
+}
+
+func readData(u *url.URL) ([]byte, error) {
+	v := strings.TrimPrefix(u.Opaque, "//")
+
+	idx := strings.IndexByte(v, ',')
+	if idx != -1 {
+		if v[:idx] != "base64" {
+			return nil, fmt.Errorf("invalid data URI, the only supported format is: data:base64,<encoded data>")
+		}
+		v = v[idx+1:]
+	}
+
+	b, err := base64.StdEncoding.DecodeString(v)
+	if err != nil {
+		return nil, err
+	}
+
+	return b, nil
 }
 
 func readFile(u *url.URL) ([]byte, error) {
