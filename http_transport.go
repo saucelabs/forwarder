@@ -32,9 +32,7 @@ type HTTPTransportConfig struct {
 	// If negative, keep-alive probes are disabled.
 	KeepAlive time.Duration
 
-	// TLSHandshakeTimeout specifies the maximum amount of time waiting to
-	// wait for a TLS handshake. Zero means no timeout.
-	TLSHandshakeTimeout time.Duration
+	TLSClientConfig
 
 	// MaxIdleConns controls the maximum number of idle (keep-alive)
 	// connections across all hosts. Zero means no limit.
@@ -72,18 +70,18 @@ type HTTPTransportConfig struct {
 	// waiting for the server to approve.
 	// This time does not include the time to send the request header.
 	ExpectContinueTimeout time.Duration
-
-	TLSClientConfig
 }
 
 func DefaultHTTPTransportConfig() *HTTPTransportConfig {
 	// The default values are taken from [hashicorp/go-cleanhttp](https://github.com/hashicorp/go-cleanhttp/blob/a0807dd79fc1680a7b1f2d5a2081d92567aab97d/cleanhttp.go#L19.
 	return &HTTPTransportConfig{
-		DialTimeout:           10 * time.Second,
-		KeepAlive:             30 * time.Second,
+		DialTimeout: 10 * time.Second,
+		KeepAlive:   30 * time.Second,
+		TLSClientConfig: TLSClientConfig{
+			HandshakeTimeout: 10 * time.Second,
+		},
 		MaxIdleConns:          100,
 		IdleConnTimeout:       90 * time.Second,
-		TLSHandshakeTimeout:   10 * time.Second,
 		ExpectContinueTimeout: 1 * time.Second,
 		MaxIdleConnsPerHost:   runtime.GOMAXPROCS(0) + 1,
 	}
@@ -106,12 +104,12 @@ func NewHTTPTransport(cfg *HTTPTransportConfig, r *net.Resolver) (*http.Transpor
 		Proxy:                 nil,
 		Dial:                  d.Dial,
 		DialContext:           d.DialContext,
+		TLSClientConfig:       tlsCfg,
+		TLSHandshakeTimeout:   cfg.TLSClientConfig.HandshakeTimeout,
 		MaxIdleConns:          cfg.MaxIdleConns,
 		IdleConnTimeout:       cfg.IdleConnTimeout,
-		TLSHandshakeTimeout:   cfg.TLSHandshakeTimeout,
 		ExpectContinueTimeout: cfg.ExpectContinueTimeout,
 		ForceAttemptHTTP2:     true,
 		MaxIdleConnsPerHost:   cfg.MaxIdleConnsPerHost,
-		TLSClientConfig:       tlsCfg,
 	}, nil
 }
