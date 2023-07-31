@@ -161,7 +161,7 @@ func (hp *HTTPProxy) configureHTTPS() error {
 	}
 
 	tlsCfg := httpsTLSConfigTemplate()
-	err := LoadCertificateFromTLSConfig(tlsCfg, &hp.config.TLSConfig)
+	err := LoadCertificateFromTLSConfig(tlsCfg, &hp.config.TLSServerConfig)
 	hp.TLSConfig = tlsCfg
 
 	return err
