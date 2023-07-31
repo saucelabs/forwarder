@@ -30,20 +30,28 @@ type TLSServerConfig struct {
 	KeyFile string
 }
 
-func LoadCertificateFromTLSConfig(dst *tls.Config, src *TLSServerConfig) error {
+func (c *TLSServerConfig) ConfigureTLSConfig(tlsCfg *tls.Config) error {
+	if err := c.loadCertificate(tlsCfg); err != nil {
+		return fmt.Errorf("load certificate: %w", err)
+	}
+
+	return nil
+}
+
+func (c *TLSServerConfig) loadCertificate(tlsCfg *tls.Config) error {
 	var (
 		cert tls.Certificate
 		err  error
 	)
 
-	if src.CertFile == "" && src.KeyFile == "" {
+	if c.CertFile == "" && c.KeyFile == "" {
 		cert, err = certutil.RSASelfSignedCert().Gen()
 	} else {
-		cert, err = loadX509KeyPair(src.CertFile, src.KeyFile)
+		cert, err = loadX509KeyPair(c.CertFile, c.KeyFile)
 	}
 
 	if err == nil {
-		dst.Certificates = append(dst.Certificates, cert)
+		tlsCfg.Certificates = append(tlsCfg.Certificates, cert)
 	}
 	return err
 }

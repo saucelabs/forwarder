@@ -171,12 +171,10 @@ func (hs *HTTPServer) configureHTTPS() error {
 		hs.log.Debugf("loading TLS certificate from %s and %s", hs.config.CertFile, hs.config.KeyFile)
 	}
 
-	tlsCfg := httpsTLSConfigTemplate()
-	err := LoadCertificateFromTLSConfig(tlsCfg, &hs.config.TLSServerConfig)
-	hs.srv.TLSConfig = tlsCfg
+	hs.srv.TLSConfig = httpsTLSConfigTemplate()
 	hs.srv.TLSNextProto = make(map[string]func(*http.Server, *tls.Conn, http.Handler))
 
-	return err
+	return hs.config.ConfigureTLSConfig(hs.srv.TLSConfig)
 }
 
 func (hs *HTTPServer) configureHTTP2() error {
@@ -186,11 +184,9 @@ func (hs *HTTPServer) configureHTTP2() error {
 		hs.log.Debugf("loading TLS certificate from %s and %s", hs.config.CertFile, hs.config.KeyFile)
 	}
 
-	tlsCfg := h2TLSConfigTemplate()
-	err := LoadCertificateFromTLSConfig(tlsCfg, &hs.config.TLSServerConfig)
-	hs.srv.TLSConfig = tlsCfg
+	hs.srv.TLSConfig = h2TLSConfigTemplate()
 
-	return err
+	return hs.config.ConfigureTLSConfig(hs.srv.TLSConfig)
 }
 
 func (hs *HTTPServer) Run(ctx context.Context) error {
