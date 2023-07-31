@@ -10,11 +10,16 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"time"
 
 	"github.com/saucelabs/forwarder/utils/certutil"
 )
 
 type TLSClientConfig struct {
+	// HandshakeTimeout specifies the maximum amount of time waiting to
+	// wait for a TLS handshake. Zero means no timeout.
+	HandshakeTimeout time.Duration
+
 	// InsecureSkipVerify controls whether a client verifies the server's
 	// certificate chain and host name. If InsecureSkipVerify is true, crypto/tls
 	// accepts any certificate presented by the server and any host name in that
