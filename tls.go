@@ -8,6 +8,8 @@ package forwarder
 
 import (
 	"crypto/tls"
+	"crypto/x509"
+	"fmt"
 
 	"github.com/saucelabs/forwarder/utils/certutil"
 )
@@ -20,6 +22,45 @@ type TLSClientConfig struct {
 	// attacks unless custom verification is used. This should be used only for
 	// testing or in combination with VerifyConnection or VerifyPeerCertificate.
 	InsecureSkipVerify bool
+
+	// CAFiles is a list of paths to CA certificate files.
+	// If this is set, the system root CA pool will be supplemented with certificates from these files.
+	CAFiles []string
+}
+
+func (c *TLSClientConfig) ConfigureTLSConfig(tlsCfg *tls.Config) error {
+	tlsCfg.InsecureSkipVerify = c.InsecureSkipVerify
+
+	if err := c.loadRootCAs(tlsCfg); err != nil {
+		return fmt.Errorf("load CAs: %w", err)
+	}
+
+	return nil
+}
+
+func (c *TLSClientConfig) loadRootCAs(tlsCfg *tls.Config) error {
+	if len(c.CAFiles) == 0 {
+		return nil
+	}
+
+	rootCAs, err := x509.SystemCertPool()
+	if err != nil {
+		return err
+	}
+
+	for _, name := range c.CAFiles {
+		b, err := ReadFileOrBase64(name)
+		if err != nil {
+			return err
+		}
+		if !rootCAs.AppendCertsFromPEM(b) {
+			return fmt.Errorf("append certificate %q", name)
+		}
+	}
+
+	tlsCfg.RootCAs = rootCAs
+
+	return nil
 }
 
 type TLSServerConfig struct {

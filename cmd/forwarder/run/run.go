@@ -71,7 +71,11 @@ func (c *command) RunE(cmd *cobra.Command, args []string) error {
 			}
 			resolver = r
 		}
-		rt = forwarder.NewHTTPTransport(c.httpTransportConfig, resolver)
+		var err error
+		rt, err = forwarder.NewHTTPTransport(c.httpTransportConfig, resolver)
+		if err != nil {
+			return err
+		}
 	}
 
 	if c.pac != nil {
