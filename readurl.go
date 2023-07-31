@@ -116,3 +116,14 @@ func readHTTP(u *url.URL, rt http.RoundTripper) ([]byte, error) {
 
 	return b, nil
 }
+
+func ReadFileOrBase64(name string) ([]byte, error) {
+	if strings.HasPrefix(name, "data:") {
+		return readData(&url.URL{
+			Scheme: "data",
+			Opaque: name[5:],
+		})
+	}
+
+	return os.ReadFile(name)
+}
