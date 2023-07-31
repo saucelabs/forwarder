@@ -88,6 +88,7 @@ issues:
       linters:
         - bodyclose
         - funlen
+        - gochecknoglobals
         - gocognit
         - gomnd
         - gosec
