@@ -89,11 +89,17 @@ func DefaultHTTPTransportConfig() *HTTPTransportConfig {
 	}
 }
 
-func NewHTTPTransport(cfg *HTTPTransportConfig, r *net.Resolver) *http.Transport {
+func NewHTTPTransport(cfg *HTTPTransportConfig, r *net.Resolver) (*http.Transport, error) {
 	d := &net.Dialer{
 		Timeout:   cfg.DialTimeout,
 		KeepAlive: cfg.KeepAlive,
 		Resolver:  r,
+	}
+
+	tlsCfg := new(tls.Config)
+
+	if err := cfg.ConfigureTLSConfig(tlsCfg); err != nil {
+		return nil, err
 	}
 
 	return &http.Transport{
@@ -106,8 +112,6 @@ func NewHTTPTransport(cfg *HTTPTransportConfig, r *net.Resolver) *http.Transport
 		ExpectContinueTimeout: cfg.ExpectContinueTimeout,
 		ForceAttemptHTTP2:     true,
 		MaxIdleConnsPerHost:   cfg.MaxIdleConnsPerHost,
-		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: cfg.InsecureSkipVerify, //nolint:gosec // for self-signed certificates
-		},
-	}
+		TLSClientConfig:       tlsCfg,
+	}, nil
 }

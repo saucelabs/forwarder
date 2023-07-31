@@ -34,7 +34,10 @@ func (c *command) RunE(cmd *cobra.Command, args []string) error {
 		}
 		resolver = r
 	}
-	t := forwarder.NewHTTPTransport(c.httpTransportConfig, resolver)
+	t, err := forwarder.NewHTTPTransport(c.httpTransportConfig, resolver)
+	if err != nil {
+		return err
+	}
 
 	script, err := forwarder.ReadURLString(c.pac, t)
 	if err != nil {
