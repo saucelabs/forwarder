@@ -76,7 +76,7 @@ func (c *command) RunE(cmd *cobra.Command, args []string) error {
 
 	if c.pac != nil {
 		var err error
-		script, err = forwarder.ReadURL(c.pac, rt)
+		script, err = forwarder.ReadURLString(c.pac, rt)
 		if err != nil {
 			return fmt.Errorf("read PAC file: %w", err)
 		}

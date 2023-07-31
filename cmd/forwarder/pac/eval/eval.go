@@ -36,7 +36,7 @@ func (c *command) RunE(cmd *cobra.Command, args []string) error {
 	}
 	t := forwarder.NewHTTPTransport(c.httpTransportConfig, resolver)
 
-	script, err := forwarder.ReadURL(c.pac, t)
+	script, err := forwarder.ReadURLString(c.pac, t)
 	if err != nil {
 		return fmt.Errorf("read PAC file: %w", err)
 	}
