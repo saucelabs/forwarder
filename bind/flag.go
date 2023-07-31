@@ -132,6 +132,13 @@ func TLSClientConfig(fs *pflag.FlagSet, cfg *forwarder.TLSClientConfig) {
 	fs.BoolVar(&cfg.InsecureSkipVerify, "insecure", cfg.InsecureSkipVerify,
 		"Don't verify the server's certificate chain and host name. "+
 			"Enable to work with self-signed certificates. ")
+
+	fs.StringSliceVar(&cfg.CAFiles,
+		"ca-file", cfg.CAFiles, "<path or base64>"+
+			"Add your own CA certificates to verify against. "+
+			"The system root certificates will be used in addition to any certificates in this list. "+
+			"Can be a path to a file or \"data:\" followed by base64 encoded certificate. "+
+			"Use this flag multiple times to specify multiple CA certificate files. ")
 }
 
 func HTTPServerConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPServerConfig, prefix string, schemes ...forwarder.Scheme) {

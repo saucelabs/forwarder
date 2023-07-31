@@ -56,8 +56,12 @@ func rootCommand() *cobra.Command {
 			Prefix: []string{"dns"},
 		},
 		{
-			Name:   "HTTP client options",
-			Prefix: []string{"http", "insecure"},
+			Name: "HTTP client options",
+			Prefix: []string{
+				"http",
+				"ca-file",
+				"insecure",
+			},
 		},
 		{
 			Name:   "Logging options",
