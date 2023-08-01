@@ -65,12 +65,15 @@ jobs:
         with:
           go-version: "${{env.GO_VERSION}}"
 
+      - name: Generate certificates
+        run: make -C e2e/certs certs
+
       - name: Build Docker image
         run: make update-devel-image
 
       - name: Run e2e test
-        run: cd e2e && make run-e2e
+        run: make -C e2e run-e2e
 
       - name: Dump Logs
         if: failure()
-        run: cd e2e && make dump-logs
+        run: make -C e2e dump-logs
