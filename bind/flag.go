@@ -179,15 +179,7 @@ func HTTPServerConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPServerConfig, prefix
 				"For https and h2 protocols, if TLS certificate is not specified, "+
 				"the server will use a self-signed certificate. ")
 
-		fs.StringVar(&cfg.CertFile,
-			namePrefix+"tls-cert-file", cfg.CertFile, "<path or base64>"+
-				"TLS certificate to use if the server protocol is https or h2. "+
-				"Can be a path to a file or \"data:\" followed by base64 encoded certificate. ")
-
-		fs.StringVar(&cfg.KeyFile,
-			namePrefix+"tls-key-file", cfg.KeyFile, "<path or base64>"+
-				"TLS private key to use if the server protocol is https or h2. "+
-				"Can be a path to a file or \"data:\" followed by base64 encoded key. ")
+		TLSServerConfig(fs, &cfg.TLSServerConfig, namePrefix)
 	}
 
 	fs.DurationVar(&cfg.ReadHeaderTimeout,
@@ -212,6 +204,18 @@ func HTTPServerConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPServerConfig, prefix
 			"HTTP request and response logging mode. "+
 			"By default, request line and headers are logged if response status code is greater than or equal to 500. "+
 			"Setting this to none disables logging. ")
+}
+
+func TLSServerConfig(fs *pflag.FlagSet, cfg *forwarder.TLSServerConfig, namePrefix string) {
+	fs.StringVar(&cfg.CertFile,
+		namePrefix+"tls-cert-file", cfg.CertFile, "<path or base64>"+
+			"TLS certificate to use if the server protocol is https or h2. "+
+			"Can be a path to a file or \"data:\" followed by base64 encoded certificate. ")
+
+	fs.StringVar(&cfg.KeyFile,
+		namePrefix+"tls-key-file", cfg.KeyFile, "<path or base64>"+
+			"TLS private key to use if the server protocol is https or h2. "+
+			"Can be a path to a file or \"data:\" followed by base64 encoded key. ")
 }
 
 func LogConfig(fs *pflag.FlagSet, cfg *log.Config) {
