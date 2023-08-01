@@ -20,8 +20,8 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"regexp"
 	"strings"
+	"unicode"
 
 	"github.com/mitchellh/go-wordwrap"
 	flag "github.com/spf13/pflag"
@@ -95,13 +95,12 @@ func writeFlag(out io.Writer, f *flag.Flag, envPrefix string) {
 	fmt.Fprintf(out, getFlagFormat(f), f.Shorthand, f.Name, name, def, env, usage, deprecated)
 }
 
-var valueTypeRegex = regexp.MustCompile(`^[<|\[].+[>|\]]`)
-
 func flagNameAndUsage(f *flag.Flag) (string, string) {
 	name, usage := flag.UnquoteUsage(f)
-	if vt := valueTypeRegex.FindString(usage); vt != "" {
-		name = vt
-		usage = strings.TrimSpace(usage[len(vt):])
+
+	if vt := findValueType(usage); vt > 0 {
+		name = usage[:vt]
+		usage = strings.TrimSpace(usage[vt:])
 	} else {
 		if name == "" || name == "string" {
 			name = "value"
@@ -113,6 +112,55 @@ func flagNameAndUsage(f *flag.Flag) (string, string) {
 	}
 
 	return name, usage
+}
+
+func findValueType(usage string) int {
+	runes := []rune(usage)
+	if len(runes) == 0 {
+		return 0
+	}
+
+	var (
+		a, b  rune
+		stack int
+	)
+	update := func(r rune) {
+		switch r {
+		case '<':
+			a, b = '<', '>'
+			stack = 1
+		case '[':
+			a, b = '[', ']'
+			stack = 1
+		}
+	}
+	update(runes[0])
+
+	if stack == 0 {
+		return 0
+	}
+
+	for i := 1; i < len(runes); i++ {
+		if stack == 0 {
+			if unicode.IsUpper(runes[i]) {
+				return i
+			}
+			update(runes[i])
+		} else {
+			switch runes[i] {
+			case a:
+				stack++
+			case b:
+				stack--
+			}
+		}
+	}
+
+	if stack > 0 {
+		panic("unbalanced brackets in usage string")
+	}
+
+	return len(runes)
 }
 
 var envReplacer = strings.NewReplacer(".", "_", "-", "_")
