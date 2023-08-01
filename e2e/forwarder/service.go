@@ -68,13 +68,24 @@ func HttpbinService() *Service {
 
 func (s *Service) WithProtocol(protocol string) *Service {
 	s.Environment["FORWARDER_PROTOCOL"] = protocol
+
+	if protocol == "https" || protocol == "h2" {
+		s.Environment["FORWARDER_CERT_FILE"] = "/etc/forwarder/certs/" + s.Name + ".crt"
+		s.Environment["FORWARDER_KEY_FILE"] = "/etc/forwarder/private/" + s.Name + ".key"
+		s.Volumes = append(s.Volumes,
+			"./certs/"+s.Name+".crt:/etc/forwarder/certs/"+s.Name+".crt:ro",
+			"./certs/"+s.Name+".key:/etc/forwarder/private/"+s.Name+".key:ro",
+		)
+	}
+
 	return s
 }
 
 func (s *Service) WithUpstream(name, protocol string) *Service {
 	s.Environment["FORWARDER_PROXY"] = protocol + "://" + name + ":3128"
 	if protocol == "https" {
-		s.Environment["FORWARDER_INSECURE"] = "true"
+		s.Environment["FORWARDER_CA_FILE"] = "/etc/forwarder/certs/ca-certificates.crt"
+		s.Volumes = append(s.Volumes, "./certs/ca.crt:/etc/forwarder/certs/ca-certificates.crt:ro")
 	}
 	return s
 }
