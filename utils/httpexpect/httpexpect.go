@@ -125,12 +125,12 @@ func (c *Client) Request(method, path string, opts ...func(*http.Request)) *Resp
 	if err != nil {
 		c.t.Fatalf("Failed to read body from %s, %s: %v", method, req.URL, err)
 	}
-	return &Response{Response: resp, body: b, t: c.t}
+	return &Response{Response: resp, Body: b, t: c.t}
 }
 
 type Response struct {
 	*http.Response
-	body []byte
+	Body []byte
 	t    *testing.T
 }
 
@@ -149,14 +149,14 @@ func (r *Response) ExpectHeader(key, value string) *Response {
 }
 
 func (r *Response) ExpectBodySize(expectedSize int) *Response {
-	if bodySize := len(r.body); bodySize != expectedSize {
+	if bodySize := len(r.Body); bodySize != expectedSize {
 		r.t.Fatalf("%s, %s: expected body size %d, got %d", r.Request.Method, r.Request.URL, expectedSize, bodySize)
 	}
 	return r
 }
 
 func (r *Response) ExpectBodyContent(content string) *Response {
-	if b := string(r.body); b != content {
+	if b := string(r.Body); b != content {
 		r.t.Fatalf("%s, %s: expected body to equal '%s', got '%s'", r.Request.Method, r.Request.URL, content, b)
 	}
 	return r
