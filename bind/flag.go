@@ -103,6 +103,10 @@ func HTTPProxyConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPProxyConfig, lcfg *lo
 			"Setting this to allow enables sending requests to localhost through the upstream proxy. "+
 			"Setting this to direct sends requests to localhost directly without using the upstream proxy. "+
 			"By default, requests to localhost are denied. ")
+
+	fs.StringVar(&cfg.Name, "name", cfg.Name, "<string>"+
+		"Name of this proxy instance. This value is used in the Via header in requests. "+
+		"The name value in Via header is extended with a random string to avoid collisions when several proxies are chained. ")
 }
 
 func MITMConfig(fs *pflag.FlagSet, mitm *bool, cfg *forwarder.MITMConfig) {

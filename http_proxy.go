@@ -64,6 +64,7 @@ type ProxyFunc func(*http.Request) (*url.URL, error)
 
 type HTTPProxyConfig struct {
 	HTTPServerConfig
+	Name               string
 	MITM               *MITMConfig
 	ProxyLocalhost     ProxyLocalhostMode
 	UpstreamProxy      *url.URL
@@ -86,6 +87,7 @@ func DefaultHTTPProxyConfig() *HTTPProxyConfig {
 			ReadHeaderTimeout: 1 * time.Minute,
 			LogHTTPMode:       httplog.Errors,
 		},
+		Name:           "forwarder",
 		ProxyLocalhost: DenyProxyLocalhost,
 	}
 }
@@ -273,7 +275,7 @@ func (hp *HTTPProxy) middlewareStack() martian.RequestResponseModifier {
 
 	// stack contains the request/response modifiers in the order they are applied.
 	// fg is the inner stack that is executed after the core request modifiers and before the core response modifiers.
-	stack, fg := httpspec.NewStack("forwarder")
+	stack, fg := httpspec.NewStack(hp.config.Name)
 	topg.AddRequestModifier(stack)
 	topg.AddResponseModifier(stack)
 
