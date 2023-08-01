@@ -208,12 +208,12 @@ func HTTPServerConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPServerConfig, prefix
 
 func TLSServerConfig(fs *pflag.FlagSet, cfg *forwarder.TLSServerConfig, namePrefix string) {
 	fs.StringVar(&cfg.CertFile,
-		namePrefix+"tls-cert-file", cfg.CertFile, "<path or base64>"+
+		namePrefix+"cert-file", cfg.CertFile, "<path or base64>"+
 			"TLS certificate to use if the server protocol is https or h2. "+
 			"Can be a path to a file or \"data:\" followed by base64 encoded certificate. ")
 
 	fs.StringVar(&cfg.KeyFile,
-		namePrefix+"tls-key-file", cfg.KeyFile, "<path or base64>"+
+		namePrefix+"key-file", cfg.KeyFile, "<path or base64>"+
 			"TLS private key to use if the server protocol is https or h2. "+
 			"Can be a path to a file or \"data:\" followed by base64 encoded key. ")
 }
