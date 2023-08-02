@@ -70,3 +70,15 @@ func setHeader(key, value string) func(r *http.Request) {
 		r.Header.Set(key, value)
 	}
 }
+
+var httpbinDNS = serviceScheme("HTTPBIN_PROTOCOL") + "://httpbin.local:8080"
+
+func TestFlagDNSServer(t *testing.T) {
+	t.Run("default httpbin address", func(t *testing.T) {
+		newClient(t, httpbin).GET("/status/200").ExpectStatus(http.StatusBadGateway)
+	})
+
+	t.Run("custom httpbin address", func(t *testing.T) {
+		newClient(t, httpbinDNS).GET("/status/200").ExpectStatus(http.StatusOK)
+	})
+}

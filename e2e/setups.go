@@ -9,6 +9,7 @@ package main
 import (
 	"time"
 
+	"github.com/saucelabs/forwarder/e2e/dns"
 	"github.com/saucelabs/forwarder/e2e/forwarder"
 	"github.com/saucelabs/forwarder/e2e/setup"
 	"github.com/saucelabs/forwarder/utils/compose"
@@ -24,6 +25,7 @@ func AllSetups() []setup.Setup {
 	ss = append(ss,
 		FlagHeaderSetup(),
 		FlagResponseHeaderSetup(),
+		FlagDNSServerSetup(),
 
 		SC2450Setup(),
 	)
@@ -187,6 +189,46 @@ func FlagResponseHeaderSetup() setup.Setup {
 					WithResponseHeader("test-resp-add:test-resp-value,-test-resp-rm,-resp-rm-pref*,test-resp-empty;")).
 			MustBuild(),
 		Run: "^TestFlagResponseHeader$",
+	}
+}
+
+func FlagDNSServerSetup() setup.Setup {
+	const (
+		run = "^TestFlagDNS"
+
+		networkName   = "forwarder-e2e_default"
+		httpbinIPAddr = "192.168.100.10"
+		proxyIPAddr   = "192.168.100.11"
+		dnsIPAddr     = "192.168.100.13"
+	)
+	return setup.Setup{
+		Name: "dns",
+		Compose: compose.NewBuilder().
+			AddService(
+				forwarder.HttpbinService().
+					WithIP(networkName, httpbinIPAddr)).
+			AddService(
+				forwarder.ProxyService().
+					WithIP(networkName, proxyIPAddr).
+					WithDNSServer(dnsIPAddr)).
+			AddService(
+				dns.Service().
+					WithIP(networkName, dnsIPAddr)).
+			AddNetwork(&compose.Network{
+				Name:   networkName,
+				Driver: "bridge",
+				IPAM: compose.IPAM{
+					Config: []compose.IPAMConfig{
+						{
+							Subnet:  "192.168.100.0/24",
+							Gateway: "192.168.100.1",
+							IPRange: "192.168.100.10/29",
+						},
+					},
+				},
+			}).
+			MustBuild(),
+		Run: run,
 	}
 }
 
