@@ -1,0 +1,4 @@
+zone "rpz" {
+  type master;
+  file "/etc/bind/db.rpz";
+};
