@@ -74,6 +74,10 @@ jobs:
       - name: Run e2e test
         run: make -C e2e run-e2e
 
-      - name: Dump Logs
+      - name: Docker Compose file
+        if: failure()
+        run: cat e2e/docker-compose.yaml
+
+      - name: Docker Logs
         if: failure()
         run: make -C e2e dump-logs
