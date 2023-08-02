@@ -7,6 +7,7 @@
 package forwarder
 
 import (
+	"strings"
 	"time"
 
 	"github.com/saucelabs/forwarder/utils/compose"
@@ -135,6 +136,11 @@ func (s *Service) WithIP(network, ipv4 string) *Service {
 	s.Network = map[string]compose.ServiceNetwork{
 		network: {IPv4: ipv4},
 	}
+	return s
+}
+
+func (s *Service) WithDNSServer(servers ...string) *Service {
+	s.Environment["FORWARDER_DNS_SERVER"] = strings.Join(servers, ",")
 	return s
 }
 
