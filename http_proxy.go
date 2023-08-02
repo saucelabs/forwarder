@@ -132,8 +132,12 @@ func NewHTTPProxy(cfg *HTTPProxyConfig, pr PACResolver, cm *CredentialsMatcher, 
 	if rt == nil {
 		log.Infof("HTTP transport not configured, using standard library default")
 		rt = http.DefaultTransport.(*http.Transport).Clone() //nolint:forcetypeassert // we know it's a *http.Transport
-	} else if _, ok := rt.(*http.Transport); !ok {
+	} else if tr, ok := rt.(*http.Transport); !ok {
 		log.Debugf("using custom HTTP transport %T", rt)
+	} else {
+		if tr.TLSClientConfig != nil && tr.TLSClientConfig.RootCAs != nil {
+			log.Infof("using custom root CA certificates")
+		}
 	}
 	hp := &HTTPProxy{
 		config:    *cfg,
