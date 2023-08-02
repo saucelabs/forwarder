@@ -19,6 +19,7 @@ type Compose struct {
 	Path     string              `yaml:"-"`
 	Version  string              `yaml:"version"`
 	Services map[string]*Service `yaml:"services,omitempty"`
+	Networks map[string]*Network `yaml:"networks,omitempty"`
 }
 
 func newCompose() *Compose {
@@ -26,6 +27,7 @@ func newCompose() *Compose {
 		Path:     "docker-compose.yaml",
 		Version:  "3.8",
 		Services: make(map[string]*Service),
+		Networks: make(map[string]*Network),
 	}
 }
 
@@ -38,6 +40,19 @@ func (c *Compose) addService(s *Service) error {
 	}
 
 	c.Services[s.Name] = s
+
+	return nil
+}
+
+func (c *Compose) addNetwork(n *Network) error {
+	if err := n.Validate(); err != nil {
+		return err
+	}
+	if c.Networks[n.Name] != nil {
+		return fmt.Errorf("network %s already exists", n.Name)
+	}
+
+	c.Networks[n.Name] = n
 
 	return nil
 }

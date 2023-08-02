@@ -11,14 +11,19 @@ import (
 	"time"
 )
 
+type ServiceNetwork struct {
+	IPv4 string `yaml:"ipv4_address,omitempty"`
+}
+
 type Service struct {
-	Name        string            `yaml:"-"`
-	Image       string            `yaml:"image,omitempty"`
-	Command     string            `yaml:"command,omitempty"`
-	Environment map[string]string `yaml:"environment,omitempty"`
-	Ports       []string          `yaml:"ports,omitempty"`
-	Volumes     []string          `yaml:"volumes,omitempty"`
-	HealthCheck *HealthCheck      `yaml:"healthcheck,omitempty"`
+	Name        string                    `yaml:"-"`
+	Image       string                    `yaml:"image,omitempty"`
+	Command     string                    `yaml:"command,omitempty"`
+	Environment map[string]string         `yaml:"environment,omitempty"`
+	Ports       []string                  `yaml:"ports,omitempty"`
+	Volumes     []string                  `yaml:"volumes,omitempty"`
+	HealthCheck *HealthCheck              `yaml:"healthcheck,omitempty"`
+	Network     map[string]ServiceNetwork `yaml:"networks,omitempty"`
 }
 
 func (s *Service) Validate() error {
