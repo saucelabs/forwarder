@@ -134,7 +134,7 @@ func TLSClientConfig(fs *pflag.FlagSet, cfg *forwarder.TLSClientConfig) {
 			"Enable to work with self-signed certificates. ")
 
 	fs.StringSliceVar(&cfg.CAFiles,
-		"ca-file", cfg.CAFiles, "<path or base64>"+
+		"cacert-file", cfg.CAFiles, "<path or base64>"+
 			"Add your own CA certificates to verify against. "+
 			"The system root certificates will be used in addition to any certificates in this list. "+
 			"Can be a path to a file or \"data:\" followed by base64 encoded certificate. "+
