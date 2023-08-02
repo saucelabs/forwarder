@@ -131,6 +131,13 @@ func (s *Service) WithEnv(key, val string) *Service {
 	return s
 }
 
+func (s *Service) WithIP(network, ipv4 string) *Service {
+	s.Network = map[string]compose.ServiceNetwork{
+		network: {IPv4: ipv4},
+	}
+	return s
+}
+
 func (s *Service) Service() *compose.Service {
 	return (*compose.Service)(s)
 }
