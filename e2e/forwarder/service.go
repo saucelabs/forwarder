@@ -84,7 +84,7 @@ func (s *Service) WithProtocol(protocol string) *Service {
 func (s *Service) WithUpstream(name, protocol string) *Service {
 	s.Environment["FORWARDER_PROXY"] = protocol + "://" + name + ":3128"
 	if protocol == "https" {
-		s.Environment["FORWARDER_CA_FILE"] = "/etc/forwarder/certs/ca-certificates.crt"
+		s.Environment["FORWARDER_CACERT_FILE"] = "/etc/forwarder/certs/ca-certificates.crt"
 		s.Volumes = append(s.Volumes, "./certs/ca.crt:/etc/forwarder/certs/ca-certificates.crt:ro")
 	}
 	return s

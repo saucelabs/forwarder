@@ -59,7 +59,7 @@ func rootCommand() *cobra.Command {
 			Name: "HTTP client options",
 			Prefix: []string{
 				"http",
-				"ca-file",
+				"cacert-file",
 				"insecure",
 			},
 		},
