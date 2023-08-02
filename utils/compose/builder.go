@@ -32,6 +32,13 @@ func (b *Builder) AddService(s ServiceBuilder) *Builder {
 	return b
 }
 
+func (b *Builder) AddNetwork(n *Network) *Builder {
+	if b.error == nil {
+		b.error = b.c.addNetwork(n)
+	}
+	return b
+}
+
 func (b *Builder) Build() (*Compose, error) {
 	if b.error != nil {
 		return nil, b.error
