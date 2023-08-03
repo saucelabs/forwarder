@@ -128,10 +128,6 @@ issues:
       source: 'import _ "embed"'
 
     - linters:
-        - errorlint
-      source: ".(net.Error)"
-
-    - linters:
         - lll
       source: "//nolint:"
 

@@ -59,8 +59,9 @@ func errorResponse(req *http.Request, err error) *http.Response {
 type errorHandler func(*http.Request, error) (int, string)
 
 func handleNetError(_ *http.Request, err error) (code int, msg string) {
-	if nerr, ok := cause(err).(net.Error); ok {
-		if nerr.Timeout() {
+	var netErr *net.OpError
+	if errors.As(err, &netErr) {
+		if netErr.Timeout() {
 			code = http.StatusGatewayTimeout
 			msg = "Timed out connecting to remote host"
 		} else {
@@ -74,7 +75,7 @@ func handleNetError(_ *http.Request, err error) (code int, msg string) {
 
 func handleTLSRecordHeader(_ *http.Request, err error) (code int, msg string) {
 	var headerErr *tls.RecordHeaderError
-	if ok := errors.As(err, &headerErr); ok {
+	if errors.As(err, &headerErr) {
 		code = http.StatusBadGateway
 		msg = "TLS handshake failed"
 	}
@@ -84,7 +85,7 @@ func handleTLSRecordHeader(_ *http.Request, err error) (code int, msg string) {
 
 func handleTLSCertificateError(_ *http.Request, err error) (code int, msg string) {
 	var certErr *tls.CertificateVerificationError
-	if ok := errors.As(err, &certErr); ok {
+	if errors.As(err, &certErr) {
 		code = http.StatusBadGateway
 		msg = "TLS handshake failed"
 	}
@@ -93,7 +94,8 @@ func handleTLSCertificateError(_ *http.Request, err error) (code int, msg string
 }
 
 func handleDenyError(req *http.Request, err error) (code int, msg string) {
-	if _, ok := cause(err).(denyError); ok { //nolint:errorlint // makes no sense here
+	var denyErr denyError
+	if errors.As(err, &denyErr) {
 		code = http.StatusBadGateway
 		msg = fmt.Sprintf("proxying is denied to host %q", req.Host)
 	}
@@ -105,16 +107,4 @@ func unauthorizedResponse(req *http.Request) *http.Response {
 	resp := proxyutil.NewResponse(http.StatusProxyAuthRequired, nil, req)
 	resp.Header.Set("Proxy-Authenticate", `Basic realm="Sauce Labs Forwarder"`)
 	return resp
-}
-
-func cause(err error) error {
-	cause := err
-	for {
-		e := errors.Unwrap(cause)
-		if e == nil {
-			break
-		}
-		cause = e
-	}
-	return cause
 }
