@@ -286,11 +286,24 @@ func (p *Proxy) handleLoop(conn net.Conn) {
 		ctx = withSession(s)
 	)
 
+	const maxConsecutiveErrors = 5
+	errors := 0
 	for {
-		if err := p.handle(ctx, conn, brw); isCloseable(err) {
-			log.Debugf("martian: closing connection: %v", conn.RemoteAddr())
-			return
+		if err := p.handle(ctx, conn, brw); err != nil {
+			if isCloseable(err) {
+				log.Debugf("martian: closing connection: %v", conn.RemoteAddr())
+				return
+			}
+
+			errors++
+			if errors >= maxConsecutiveErrors {
+				log.Errorf("martian: closing connection after %d consecutive errors: %v", errors, err)
+				return
+			}
+		} else {
+			errors = 0
 		}
+
 		if s.Hijacked() {
 			log.Debugf("martian: closing connection: %v", conn.RemoteAddr())
 			return
