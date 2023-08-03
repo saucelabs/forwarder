@@ -27,6 +27,7 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"regexp"
+	"strings"
 	"sync"
 	"time"
 
@@ -48,6 +49,10 @@ func isCloseable(err error) bool {
 
 	switch err {
 	case io.EOF, io.ErrClosedPipe, errClose:
+		return true
+	}
+
+	if strings.Contains(err.Error(), "tls:") {
 		return true
 	}
 
