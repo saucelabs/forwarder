@@ -195,15 +195,13 @@ func FlagResponseHeaderSetup() setup.Setup {
 
 func FlagDNSServerSetup() setup.Setup {
 	const (
-		run = "^TestFlagDNS"
-
 		networkName   = "forwarder-e2e_default"
 		httpbinIPAddr = "192.168.100.10"
 		proxyIPAddr   = "192.168.100.11"
 		dnsIPAddr     = "192.168.100.13"
 	)
 	return setup.Setup{
-		Name: "dns",
+		Name: "flag-dns-server",
 		Compose: compose.NewBuilder().
 			AddService(
 				forwarder.HttpbinService().
@@ -229,7 +227,7 @@ func FlagDNSServerSetup() setup.Setup {
 				},
 			}).
 			MustBuild(),
-		Run: run,
+		Run: "^TestFlagDNServer$",
 	}
 }
 
