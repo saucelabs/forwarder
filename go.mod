@@ -48,4 +48,4 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
 
-replace github.com/google/martian/v3 => github.com/saucelabs/martian/v3 v3.0.0-20230629120554-559e69fff37b
+replace github.com/google/martian/v3 => github.com/saucelabs/martian/v3 v3.0.0-20230803120737-766348f8e605
