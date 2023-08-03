@@ -8,6 +8,7 @@ package forwarder
 
 import (
 	"bytes"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"net"
@@ -28,6 +29,8 @@ var ErrProxyLocalhost = denyError{errors.New("localhost proxying is disabled")}
 func errorResponse(req *http.Request, err error) *http.Response {
 	handlers := []errorHandler{
 		handleNetError,
+		handleTLSRecordHeader,
+		handleTLSCertificateError,
 		handleDenyError,
 	}
 
@@ -64,6 +67,26 @@ func handleNetError(_ *http.Request, err error) (code int, msg string) {
 			code = http.StatusBadGateway
 			msg = "Failed to connect to remote host"
 		}
+	}
+
+	return
+}
+
+func handleTLSRecordHeader(_ *http.Request, err error) (code int, msg string) {
+	var headerErr *tls.RecordHeaderError
+	if ok := errors.As(err, &headerErr); ok {
+		code = http.StatusBadGateway
+		msg = "TLS handshake failed"
+	}
+
+	return
+}
+
+func handleTLSCertificateError(_ *http.Request, err error) (code int, msg string) {
+	var certErr *tls.CertificateVerificationError
+	if ok := errors.As(err, &certErr); ok {
+		code = http.StatusBadGateway
+		msg = "TLS handshake failed"
 	}
 
 	return
