@@ -27,19 +27,22 @@ func serviceScheme(envVar string) string {
 }
 
 var (
-	proxy              = serviceScheme("FORWARDER_PROTOCOL") + "://proxy:3128"
-	httpbin            = serviceScheme("HTTPBIN_PROTOCOL") + "://httpbin:8080"
-	basicAuth          = os.Getenv("FORWARDER_BASIC_AUTH")
-	insecureSkipVerify = os.Getenv("INSECURE") != "false"
+	proxy     = serviceScheme("FORWARDER_PROTOCOL") + "://proxy:3128"
+	httpbin   = serviceScheme("HTTPBIN_PROTOCOL") + "://httpbin:8080"
+	basicAuth = os.Getenv("FORWARDER_BASIC_AUTH")
 )
+
+func defaultTLSConfig() *tls.Config {
+	return &tls.Config{
+		InsecureSkipVerify: true, //nolint:gosec // Do not check cert for httpbin
+	}
+}
 
 func newTransport(tb testing.TB) *http.Transport {
 	tb.Helper()
 
 	tr := http.DefaultTransport.(*http.Transport).Clone() //nolint:forcetypeassert // we know it's a *http.Transport
-	tr.TLSClientConfig = &tls.Config{
-		InsecureSkipVerify: insecureSkipVerify, //nolint:gosec // This is for testing only.
-	}
+	tr.TLSClientConfig = defaultTLSConfig()
 
 	proxyURL, err := httpexpect.NewURLWithBasicAuth(proxy, basicAuth)
 	if err != nil {

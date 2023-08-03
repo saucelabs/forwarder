@@ -10,7 +10,6 @@ package tests
 
 import (
 	"context"
-	"crypto/tls"
 	"errors"
 	"fmt"
 	"math/rand"
@@ -168,9 +167,7 @@ func TestProxyWebSocket(t *testing.T) {
 
 	d := *websocket.DefaultDialer
 	d.Proxy = http.ProxyURL(proxyURL)
-	d.TLSClientConfig = &tls.Config{
-		InsecureSkipVerify: insecureSkipVerify,
-	}
+	d.TLSClientConfig = defaultTLSConfig()
 
 	var u string
 	if p, _, _ := strings.Cut(httpbin, ":"); p == "https" {
