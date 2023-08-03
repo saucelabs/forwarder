@@ -29,6 +29,7 @@ func AllSetups() []setup.Setup {
 
 		SC2450Setup(),
 	)
+	ss = append(ss, FlagInsecureSetups()...)
 	return ss
 }
 
@@ -229,6 +230,40 @@ func FlagDNSServerSetup() setup.Setup {
 			}).
 			MustBuild(),
 		Run: run,
+	}
+}
+
+func FlagInsecureSetups() []setup.Setup {
+	return []setup.Setup{
+		{
+			Name: "flag-insecure-true",
+			Compose: compose.NewBuilder().
+				AddService(
+					forwarder.HttpbinService()).
+				AddService(
+					forwarder.ProxyService().
+						WithUpstream(forwarder.UpstreamProxyServiceName, "https").
+						Insecure()).
+				AddService(
+					forwarder.UpstreamProxyService().
+						WithSelfSigned("https")).
+				MustBuild(),
+			Run: "^TestFlagInsecure/true$",
+		},
+		{
+			Name: "flag-insecure-false",
+			Compose: compose.NewBuilder().
+				AddService(
+					forwarder.HttpbinService()).
+				AddService(
+					forwarder.ProxyService().
+						WithUpstream(forwarder.UpstreamProxyServiceName, "https")).
+				AddService(
+					forwarder.UpstreamProxyService().
+						WithSelfSigned("https")).
+				MustBuild(),
+			Run: "^TestFlagInsecure/false$",
+		},
 	}
 }
 

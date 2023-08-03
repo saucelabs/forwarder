@@ -82,3 +82,14 @@ func TestFlagDNSServer(t *testing.T) {
 		newClient(t, httpbinDNS).GET("/status/200").ExpectStatus(http.StatusOK)
 	})
 }
+
+func TestFlagInsecure(t *testing.T) {
+	t.Run("true", func(t *testing.T) {
+		newClient(t, httpbin).GET("/status/200").ExpectStatus(http.StatusOK)
+	})
+	t.Run("false", func(t *testing.T) {
+		for _, scheme := range []string{"http", "https"} {
+			newClient(t, scheme+"://httpbin:8080").GET("/status/200").ExpectStatus(http.StatusBadGateway)
+		}
+	})
+}
