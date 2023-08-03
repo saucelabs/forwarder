@@ -202,41 +202,57 @@ func SetupFlagResponseHeader(l *setupList) {
 
 func SetupFlagDNSServer(l *setupList) {
 	const (
-		networkName   = "forwarder-e2e_default"
+		networkName = "forwarder-e2e_default"
+
+		dnsIPAddr        = "192.168.100.2"
+		invalidDNSIPAddr = "192.168.100.3"
+
 		httpbinIPAddr = "192.168.100.10"
 		proxyIPAddr   = "192.168.100.11"
-		dnsIPAddr     = "192.168.100.13"
 	)
-
-	l.Add(setup.Setup{
-		Name: "flag-dns-server",
-		Compose: compose.NewBuilder().
-			AddService(
-				forwarder.HttpbinService().
-					WithIP(networkName, httpbinIPAddr)).
-			AddService(
-				forwarder.ProxyService().
-					WithIP(networkName, proxyIPAddr).
-					WithDNSServer(dnsIPAddr)).
-			AddService(
-				dns.Service().
-					WithIP(networkName, dnsIPAddr)).
-			AddNetwork(&compose.Network{
-				Name:   networkName,
-				Driver: "bridge",
-				IPAM: compose.IPAM{
-					Config: []compose.IPAMConfig{
-						{
-							Subnet:  "192.168.100.0/24",
-							Gateway: "192.168.100.1",
-							IPRange: "192.168.100.10/29",
+	for _, s := range []struct {
+		name    string
+		servers []string
+	}{
+		{
+			name:    "flag-dns-server",
+			servers: []string{dnsIPAddr},
+		},
+		{
+			name:    "flag-dns-fallback",
+			servers: []string{invalidDNSIPAddr, dnsIPAddr},
+		},
+	} {
+		l.Add(setup.Setup{
+			Name: s.name,
+			Compose: compose.NewBuilder().
+				AddService(
+					forwarder.HttpbinService().
+						WithIP(networkName, httpbinIPAddr)).
+				AddService(
+					forwarder.ProxyService().
+						WithIP(networkName, proxyIPAddr).
+						WithDNSServer(s.servers...)).
+				AddService(
+					dns.Service().
+						WithIP(networkName, dnsIPAddr)).
+				AddNetwork(&compose.Network{
+					Name:   networkName,
+					Driver: "bridge",
+					IPAM: compose.IPAM{
+						Config: []compose.IPAMConfig{
+							{
+								Subnet:  "192.168.100.0/24",
+								Gateway: "192.168.100.1",
+								IPRange: "192.168.100.10/29",
+							},
 						},
 					},
-				},
-			}).
-			MustBuild(),
-		Run: "^TestFlagDNServer$",
-	})
+				}).
+				MustBuild(),
+			Run: "^TestFlagDNSServer$",
+		})
+	}
 }
 
 func SetupFlagInsecure(l *setupList) {
