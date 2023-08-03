@@ -82,6 +82,16 @@ func (s *Service) WithProtocol(protocol string) *Service {
 	return s
 }
 
+func (s *Service) WithSelfSigned(protocol string) *Service {
+	s.Environment["FORWARDER_PROTOCOL"] = protocol
+	return s
+}
+
+func (s *Service) Insecure() *Service {
+	s.Environment["FORWARDER_INSECURE"] = "true"
+	return s
+}
+
 func (s *Service) WithUpstream(name, protocol string) *Service {
 	s.Environment["FORWARDER_PROXY"] = protocol + "://" + name + ":3128"
 	if protocol == "https" {
