@@ -26,32 +26,22 @@ const ErrorHeader = "X-Forwarder-Error"
 var ErrProxyLocalhost = denyError{errors.New("localhost proxying is disabled")}
 
 func errorResponse(req *http.Request, err error) *http.Response {
-	// Get the root cause of the error.
-	rootErr := err
-	for {
-		e := errors.Unwrap(rootErr)
-		if e == nil {
-			break
-		}
-		rootErr = e
+	handlers := []errorHandler{
+		handleNetError,
+		handleDenyError,
 	}
 
 	var (
-		msg  string
 		code int
+		msg  string
 	)
-	if nerr, ok := err.(net.Error); ok { //nolint // switch is not an option for type asserts
-		if nerr.Timeout() {
-			code = http.StatusGatewayTimeout
-			msg = "Timed out connecting to remote host"
-		} else {
-			code = http.StatusBadGateway
-			msg = "Failed to connect to remote host"
+	for _, h := range handlers {
+		code, msg = h(req, err)
+		if code != 0 {
+			break
 		}
-	} else if _, ok := err.(denyError); ok { //nolint:errorlint // makes no sense here
-		code = http.StatusBadGateway
-		msg = fmt.Sprintf("proxying is denied to host %q", req.Host)
-	} else {
+	}
+	if code == 0 {
 		code = http.StatusInternalServerError
 		msg = "An unexpected error occurred"
 	}
@@ -63,8 +53,45 @@ func errorResponse(req *http.Request, err error) *http.Response {
 	return resp
 }
 
+type errorHandler func(*http.Request, error) (int, string)
+
+func handleNetError(_ *http.Request, err error) (code int, msg string) {
+	if nerr, ok := cause(err).(net.Error); ok {
+		if nerr.Timeout() {
+			code = http.StatusGatewayTimeout
+			msg = "Timed out connecting to remote host"
+		} else {
+			code = http.StatusBadGateway
+			msg = "Failed to connect to remote host"
+		}
+	}
+
+	return
+}
+
+func handleDenyError(req *http.Request, err error) (code int, msg string) {
+	if _, ok := cause(err).(denyError); ok { //nolint:errorlint // makes no sense here
+		code = http.StatusBadGateway
+		msg = fmt.Sprintf("proxying is denied to host %q", req.Host)
+	}
+
+	return
+}
+
 func unauthorizedResponse(req *http.Request) *http.Response {
 	resp := proxyutil.NewResponse(http.StatusProxyAuthRequired, nil, req)
 	resp.Header.Set("Proxy-Authenticate", `Basic realm="Sauce Labs Forwarder"`)
 	return resp
+}
+
+func cause(err error) error {
+	cause := err
+	for {
+		e := errors.Unwrap(cause)
+		if e == nil {
+			break
+		}
+		cause = e
+	}
+	return cause
 }
