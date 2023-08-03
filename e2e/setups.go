@@ -15,69 +15,76 @@ import (
 	"github.com/saucelabs/forwarder/utils/compose"
 )
 
-func AllSetups() []setup.Setup {
-	var ss []setup.Setup
-	ss = append(ss, DefaultsSetups()...)
-	ss = append(ss, AuthSetups()...)
-	ss = append(ss, PacSetups()...)
-
-	ss = append(ss, FlagProxyLocalhost()...)
-	ss = append(ss,
-		FlagHeaderSetup(),
-		FlagResponseHeaderSetup(),
-		FlagDNSServerSetup(),
-
-		SC2450Setup(),
-	)
-	ss = append(ss, FlagInsecureSetups()...)
-	return ss
+type setupList struct {
+	s []setup.Setup
 }
 
-func DefaultsSetups() (ss []setup.Setup) {
+func (l *setupList) Add(s ...setup.Setup) {
+	l.s = append(l.s, s...)
+}
+
+func (l *setupList) Build() []setup.Setup {
+	return l.s
+}
+
+func AllSetups() []setup.Setup {
+	l := &setupList{}
+
+	SetupDefaults(l)
+	SetupAuth(l)
+	SetupPac(l)
+	SetupFlagProxyLocalhost(l)
+	SetupFlagHeader(l)
+	SetupFlagResponseHeader(l)
+	SetupFlagDNSServer(l)
+	SetupFlagInsecure(l)
+	SetupSC2450(l)
+
+	return l.Build()
+}
+
+func SetupDefaults(l *setupList) {
 	const run = "^TestProxy"
 	for _, httpbinScheme := range forwarder.HttpbinSchemes {
 		for _, proxyScheme := range forwarder.ProxySchemes {
-			ss = append(ss,
-				setup.Setup{
-					Name: "defaults-" + httpbinScheme + "-" + proxyScheme,
+			l.Add(setup.Setup{
+				Name: "defaults-" + httpbinScheme + "-" + proxyScheme,
+				Compose: compose.NewBuilder().
+					AddService(
+						forwarder.HttpbinService().
+							WithProtocol(httpbinScheme)).
+					AddService(
+						forwarder.ProxyService().
+							WithProtocol(proxyScheme)).
+					MustBuild(),
+				Run: run,
+			})
+			for _, upstreamProxyScheme := range forwarder.ProxySchemes {
+				l.Add(setup.Setup{
+					Name: "defaults-" + httpbinScheme + "-" + proxyScheme + "-" + upstreamProxyScheme,
 					Compose: compose.NewBuilder().
 						AddService(
 							forwarder.HttpbinService().
 								WithProtocol(httpbinScheme)).
 						AddService(
 							forwarder.ProxyService().
-								WithProtocol(proxyScheme)).
+								WithProtocol(proxyScheme).
+								WithUpstream(forwarder.UpstreamProxyServiceName, upstreamProxyScheme)).
+						AddService(
+							forwarder.UpstreamProxyService().
+								WithProtocol(upstreamProxyScheme)).
 						MustBuild(),
 					Run: run,
 				})
-			for _, upstreamProxyScheme := range forwarder.ProxySchemes {
-				ss = append(ss,
-					setup.Setup{
-						Name: "defaults-" + httpbinScheme + "-" + proxyScheme + "-" + upstreamProxyScheme,
-						Compose: compose.NewBuilder().
-							AddService(
-								forwarder.HttpbinService().
-									WithProtocol(httpbinScheme)).
-							AddService(
-								forwarder.ProxyService().
-									WithProtocol(proxyScheme).
-									WithUpstream(forwarder.UpstreamProxyServiceName, upstreamProxyScheme)).
-							AddService(
-								forwarder.UpstreamProxyService().
-									WithProtocol(upstreamProxyScheme)).
-							MustBuild(),
-						Run: run,
-					})
 			}
 		}
 	}
-	return
 }
 
-func AuthSetups() (ss []setup.Setup) {
+func SetupAuth(l *setupList) {
 	const run = "StatusCode|Auth"
 	for _, httpbinScheme := range forwarder.HttpbinSchemes {
-		ss = append(ss,
+		l.Add(
 			setup.Setup{
 				Name: "auth-" + httpbinScheme + "-http",
 				Compose: compose.NewBuilder().
@@ -89,7 +96,8 @@ func AuthSetups() (ss []setup.Setup) {
 							WithBasicAuth("u1:p1")).
 					MustBuild(),
 				Run: run,
-			}, setup.Setup{
+			},
+			setup.Setup{
 				Name: "auth-" + httpbinScheme + "-http-http",
 				Compose: compose.NewBuilder().
 					AddService(
@@ -105,14 +113,14 @@ func AuthSetups() (ss []setup.Setup) {
 							WithBasicAuth("u2:p2")).
 					MustBuild(),
 				Run: run,
-			})
+			},
+		)
 	}
-	return
 }
 
-func PacSetups() []setup.Setup {
-	return []setup.Setup{
-		{
+func SetupPac(l *setupList) {
+	l.Add(
+		setup.Setup{
 			Name: "pac-direct",
 			Compose: compose.NewBuilder().
 				AddService(
@@ -123,7 +131,7 @@ func PacSetups() []setup.Setup {
 				MustBuild(),
 			Run: "^TestProxy",
 		},
-		{
+		setup.Setup{
 			Name: "pac-upstream",
 			Compose: compose.NewBuilder().
 				AddService(
@@ -136,7 +144,7 @@ func PacSetups() []setup.Setup {
 				MustBuild(),
 			Run: "^TestProxy",
 		},
-		{
+		setup.Setup{
 			Name: "pac-issue-184",
 			Compose: compose.NewBuilder().
 				AddService(
@@ -147,12 +155,12 @@ func PacSetups() []setup.Setup {
 				MustBuild(),
 			Run: "^TestProxyGoogleCom$",
 		},
-	}
+	)
 }
 
-func FlagProxyLocalhost() (ss []setup.Setup) {
+func SetupFlagProxyLocalhost(l *setupList) {
 	for _, mode := range []string{"deny", "allow"} {
-		ss = append(ss, setup.Setup{
+		l.Add(setup.Setup{
 			Name: "flag-proxy-localhost-" + mode,
 			Compose: compose.NewBuilder().
 				AddService(
@@ -162,11 +170,10 @@ func FlagProxyLocalhost() (ss []setup.Setup) {
 			Run: "^TestFlagProxyLocalhost/" + mode + "$",
 		})
 	}
-	return
 }
 
-func FlagHeaderSetup() setup.Setup {
-	return setup.Setup{
+func SetupFlagHeader(l *setupList) {
+	l.Add(setup.Setup{
 		Name: "flag-header",
 		Compose: compose.NewBuilder().
 			AddService(
@@ -176,11 +183,11 @@ func FlagHeaderSetup() setup.Setup {
 					WithHeader("test-add:test-value,-test-rm,-rm-pref*,test-empty;")).
 			MustBuild(),
 		Run: "^TestFlagHeader$",
-	}
+	})
 }
 
-func FlagResponseHeaderSetup() setup.Setup {
-	return setup.Setup{
+func SetupFlagResponseHeader(l *setupList) {
+	l.Add(setup.Setup{
 		Name: "flag-response-header",
 		Compose: compose.NewBuilder().
 			AddService(
@@ -190,17 +197,18 @@ func FlagResponseHeaderSetup() setup.Setup {
 					WithResponseHeader("test-resp-add:test-resp-value,-test-resp-rm,-resp-rm-pref*,test-resp-empty;")).
 			MustBuild(),
 		Run: "^TestFlagResponseHeader$",
-	}
+	})
 }
 
-func FlagDNSServerSetup() setup.Setup {
+func SetupFlagDNSServer(l *setupList) {
 	const (
 		networkName   = "forwarder-e2e_default"
 		httpbinIPAddr = "192.168.100.10"
 		proxyIPAddr   = "192.168.100.11"
 		dnsIPAddr     = "192.168.100.13"
 	)
-	return setup.Setup{
+
+	l.Add(setup.Setup{
 		Name: "flag-dns-server",
 		Compose: compose.NewBuilder().
 			AddService(
@@ -228,12 +236,12 @@ func FlagDNSServerSetup() setup.Setup {
 			}).
 			MustBuild(),
 		Run: "^TestFlagDNServer$",
-	}
+	})
 }
 
-func FlagInsecureSetups() []setup.Setup {
-	return []setup.Setup{
-		{
+func SetupFlagInsecure(l *setupList) {
+	l.Add(
+		setup.Setup{
 			Name: "flag-insecure-true",
 			Compose: compose.NewBuilder().
 				AddService(
@@ -248,7 +256,7 @@ func FlagInsecureSetups() []setup.Setup {
 				MustBuild(),
 			Run: "^TestFlagInsecure/true$",
 		},
-		{
+		setup.Setup{
 			Name: "flag-insecure-false",
 			Compose: compose.NewBuilder().
 				AddService(
@@ -262,11 +270,11 @@ func FlagInsecureSetups() []setup.Setup {
 				MustBuild(),
 			Run: "^TestFlagInsecure/false$",
 		},
-	}
+	)
 }
 
-func SC2450Setup() setup.Setup {
-	return setup.Setup{
+func SetupSC2450(l *setupList) {
+	l.Add(setup.Setup{
 		Name: "sc-2450",
 		Compose: compose.NewBuilder().
 			AddService(
@@ -286,5 +294,5 @@ func SC2450Setup() setup.Setup {
 				},
 			}).MustBuild(),
 		Run: "^TestSC2450$",
-	}
+	})
 }
