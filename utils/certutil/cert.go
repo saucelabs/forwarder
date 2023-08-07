@@ -35,7 +35,6 @@ type SelfSignedCert struct {
 
 func RSASelfSignedCert() *SelfSignedCert {
 	return &SelfSignedCert{
-		Hosts:        []string{"localhost"},
 		Organization: []string{"Sauce Labs Inc."},
 		ValidFrom:    time.Now(),
 		ValidFor:     365 * 24 * time.Hour,
@@ -45,7 +44,6 @@ func RSASelfSignedCert() *SelfSignedCert {
 
 func ECDSASelfSignedCert() *SelfSignedCert {
 	return &SelfSignedCert{
-		Hosts:        []string{"localhost"},
 		Organization: []string{"Sauce Labs Inc."},
 		ValidFrom:    time.Now(),
 		ValidFor:     365 * 24 * time.Hour,
