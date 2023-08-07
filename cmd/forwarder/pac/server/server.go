@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/saucelabs/forwarder"
 	"github.com/saucelabs/forwarder/bind"
@@ -17,11 +18,13 @@ import (
 	"github.com/saucelabs/forwarder/log/stdlog"
 	"github.com/saucelabs/forwarder/pac"
 	"github.com/saucelabs/forwarder/runctx"
+	"github.com/saucelabs/forwarder/utils/osdns"
 	"github.com/spf13/cobra"
 )
 
 type command struct {
 	pac                 *url.URL
+	dnsConfig           *osdns.Config
 	httpTransportConfig *forwarder.HTTPTransportConfig
 	httpServerConfig    *forwarder.HTTPServerConfig
 	logConfig           *log.Config
@@ -35,6 +38,14 @@ func (c *command) RunE(cmd *cobra.Command, args []string) error {
 	}
 	logger := stdlog.New(c.logConfig)
 	logger.Debugf("configuration\n%s", config)
+
+	if len(c.dnsConfig.Servers) > 0 {
+		s := strings.ReplaceAll(fmt.Sprintf("%s", c.dnsConfig.Servers), " ", ", ")
+		logger.Named("dns").Infof("using DNS servers %v", s)
+		if err := osdns.Configure(c.dnsConfig); err != nil {
+			return fmt.Errorf("configure DNS: %w", err)
+		}
+	}
 
 	t, err := forwarder.NewHTTPTransport(c.httpTransportConfig)
 	if err != nil {
@@ -76,6 +87,7 @@ func servePAC(script string) http.Handler {
 func Command() (cmd *cobra.Command) {
 	c := command{
 		pac:                 &url.URL{Scheme: "file", Path: "pac.js"},
+		dnsConfig:           osdns.DefaultConfig(),
 		httpTransportConfig: forwarder.DefaultHTTPTransportConfig(),
 		httpServerConfig:    forwarder.DefaultHTTPServerConfig(),
 		logConfig:           log.DefaultConfig(),
@@ -85,6 +97,7 @@ func Command() (cmd *cobra.Command) {
 		fs := cmd.Flags()
 
 		bind.PAC(fs, &c.pac)
+		bind.DNSConfig(fs, c.dnsConfig)
 		bind.HTTPServerConfig(fs, c.httpServerConfig, "")
 		bind.LogConfig(fs, c.logConfig)
 		bind.HTTPTransportConfig(fs, c.httpTransportConfig)
