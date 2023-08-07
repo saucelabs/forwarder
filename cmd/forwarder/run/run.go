@@ -21,12 +21,14 @@ import (
 	"github.com/saucelabs/forwarder/log/stdlog"
 	"github.com/saucelabs/forwarder/pac"
 	"github.com/saucelabs/forwarder/runctx"
+	"github.com/saucelabs/forwarder/utils/osdns"
 	"github.com/spf13/cobra"
 	"go.uber.org/goleak"
 )
 
 type command struct {
 	promReg             *prometheus.Registry
+	dnsConfig           *osdns.Config
 	httpTransportConfig *forwarder.HTTPTransportConfig
 	pac                 *url.URL
 	credentials         []*forwarder.HostPortUser
@@ -53,6 +55,14 @@ func (c *command) RunE(cmd *cobra.Command, args []string) error {
 		return strings.TrimPrefix(format, "martian: ")
 	}
 	martianlog.SetLogger(ml)
+
+	if len(c.dnsConfig.Servers) > 0 {
+		s := strings.ReplaceAll(fmt.Sprintf("%s", c.dnsConfig.Servers), " ", ", ")
+		logger.Named("dns").Infof("using DNS servers %v", s)
+		if err := osdns.Configure(c.dnsConfig); err != nil {
+			return fmt.Errorf("configure dns: %w", err)
+		}
+	}
 
 	var (
 		script string
@@ -129,6 +139,7 @@ func (c *command) RunE(cmd *cobra.Command, args []string) error {
 func Command() (cmd *cobra.Command) {
 	c := command{
 		promReg:             prometheus.NewRegistry(),
+		dnsConfig:           osdns.DefaultConfig(),
 		httpTransportConfig: forwarder.DefaultHTTPTransportConfig(),
 		httpProxyConfig:     forwarder.DefaultHTTPProxyConfig(),
 		apiServerConfig:     forwarder.DefaultHTTPServerConfig(),
@@ -144,6 +155,7 @@ func Command() (cmd *cobra.Command) {
 		bind.ResponseHeaders(fs, &c.responseHeaders)
 		bind.HTTPProxyConfig(fs, c.httpProxyConfig, c.logConfig)
 		bind.PAC(fs, &c.pac)
+		bind.DNSConfig(fs, c.dnsConfig)
 		bind.HTTPServerConfig(fs, c.apiServerConfig, "api", forwarder.HTTPScheme)
 		bind.HTTPTransportConfig(fs, c.httpTransportConfig)
 
