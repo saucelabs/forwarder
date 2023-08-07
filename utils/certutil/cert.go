@@ -43,6 +43,17 @@ func RSASelfSignedCert() *SelfSignedCert {
 	}
 }
 
+func ECDSASelfSignedCert() *SelfSignedCert {
+	return &SelfSignedCert{
+		Hosts:        []string{"localhost"},
+		Organization: []string{"Sauce Labs Inc."},
+		ValidFrom:    time.Now(),
+		ValidFor:     365 * 24 * time.Hour,
+		EcdsaCurve:   "P256",
+		Ed25519Key:   true,
+	}
+}
+
 // Gen generates a self-signed certificate, the implementation is based on https://golang.org/src/crypto/tls/generate_cert.go.
 func (c *SelfSignedCert) Gen() (tls.Certificate, error) {
 	var cert tls.Certificate
