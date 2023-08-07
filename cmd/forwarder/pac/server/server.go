@@ -36,7 +36,7 @@ func (c *command) RunE(cmd *cobra.Command, args []string) error {
 	logger := stdlog.New(c.logConfig)
 	logger.Debugf("configuration\n%s", config)
 
-	t, err := forwarder.NewHTTPTransport(c.httpTransportConfig, nil)
+	t, err := forwarder.NewHTTPTransport(c.httpTransportConfig)
 	if err != nil {
 		return err
 	}
