@@ -25,7 +25,7 @@ func TestCertificate(t *testing.T) {
 		ServerName: "httpbin",
 	}
 	cfg := forwarder.TLSClientConfig{
-		CAFiles: []string{
+		CACertFiles: []string{
 			"./ca.crt",
 		},
 	}
