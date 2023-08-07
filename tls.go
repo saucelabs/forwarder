@@ -91,7 +91,7 @@ func (c *TLSServerConfig) loadCertificate(tlsCfg *tls.Config) error {
 	)
 
 	if c.CertFile == "" && c.KeyFile == "" {
-		cert, err = certutil.RSASelfSignedCert().Gen()
+		cert, err = certutil.ECDSASelfSignedCert().Gen()
 	} else {
 		cert, err = loadX509KeyPair(c.CertFile, c.KeyFile)
 	}
