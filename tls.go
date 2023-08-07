@@ -28,9 +28,9 @@ type TLSClientConfig struct {
 	// testing or in combination with VerifyConnection or VerifyPeerCertificate.
 	InsecureSkipVerify bool
 
-	// CAFiles is a list of paths to CA certificate files.
+	// CACertFiles is a list of paths to CA certificate files.
 	// If this is set, the system root CA pool will be supplemented with certificates from these files.
-	CAFiles []string
+	CACertFiles []string
 }
 
 func (c *TLSClientConfig) ConfigureTLSConfig(tlsCfg *tls.Config) error {
@@ -44,7 +44,7 @@ func (c *TLSClientConfig) ConfigureTLSConfig(tlsCfg *tls.Config) error {
 }
 
 func (c *TLSClientConfig) loadRootCAs(tlsCfg *tls.Config) error {
-	if len(c.CAFiles) == 0 {
+	if len(c.CACertFiles) == 0 {
 		return nil
 	}
 
@@ -53,7 +53,7 @@ func (c *TLSClientConfig) loadRootCAs(tlsCfg *tls.Config) error {
 		return err
 	}
 
-	for _, name := range c.CAFiles {
+	for _, name := range c.CACertFiles {
 		b, err := ReadFileOrBase64(name)
 		if err != nil {
 			return err
