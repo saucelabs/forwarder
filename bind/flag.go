@@ -8,6 +8,7 @@ package bind
 
 import (
 	"fmt"
+	"net/netip"
 	"net/url"
 	"os"
 	"strings"
@@ -18,6 +19,7 @@ import (
 	"github.com/saucelabs/forwarder/header"
 	"github.com/saucelabs/forwarder/httplog"
 	"github.com/saucelabs/forwarder/log"
+	"github.com/saucelabs/forwarder/utils/osdns"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -29,6 +31,24 @@ func ConfigFile(fs *pflag.FlagSet, configFile *string) {
 			"The supported formats are: JSON, YAML, TOML, HCL, and Java properties. "+
 			"The file format is determined by the file extension, if not specified the default format is YAML. "+
 			"The following precedence order of configuration sources is used: command flags, environment variables, config file, default values. ")
+}
+
+func DNSConfig(fs *pflag.FlagSet, cfg *osdns.Config) {
+	fs.VarP(anyflag.NewSliceValue[netip.AddrPort](nil, &cfg.Servers, forwarder.ParseDNSAddress),
+		"dns-server", "n", "<ip>[:<port>]"+
+			"DNS server(s) to use instead of system default. "+
+			"There are two execution policies, when more then one server is specified. "+
+			"Fallback: the first server in a list is used as primary, the rest are used as fallbacks. "+
+			"Round robin: the servers are used in a round-robin fashion. "+
+			"The port is optional, if not specified the default port is 53. ")
+
+	fs.DurationVar(&cfg.Timeout,
+		"dns-timeout", cfg.Timeout, "Timeout for dialing DNS servers. "+
+			"Only used if DNS servers are specified. ")
+
+	fs.BoolVar(&cfg.RoundRobin, "dns-round-robin", cfg.RoundRobin,
+		"If more than one DNS server is specified with the --dns-server flag, "+
+			"passing this flag will enable round-robin selection. ")
 }
 
 func PAC(fs *pflag.FlagSet, pac **url.URL) {
