@@ -94,10 +94,7 @@ func Credentials(fs *pflag.FlagSet, credentials *[]*forwarder.HostPortUser) {
 }
 
 func HTTPTransportConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPTransportConfig) {
-	fs.DurationVar(&cfg.DialTimeout,
-		"http-dial-timeout", cfg.DialTimeout,
-		"The maximum amount of time a dial will wait for a connect to complete. "+
-			"With or without a timeout, the operating system may impose its own earlier timeout. For instance, TCP timeouts are often around 3 minutes. ")
+	DialConfig(fs, &cfg.DialConfig, "http")
 
 	TLSClientConfig(fs, &cfg.TLSClientConfig)
 
@@ -111,6 +108,18 @@ func HTTPTransportConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPTransportConfig) 
 		"The amount of time to wait for a server's response headers after fully writing the request (including its body, if any)."+
 			"This time does not include the time to read the response body. "+
 			"Zero means no limit. ")
+}
+
+func DialConfig(fs *pflag.FlagSet, cfg *forwarder.DialConfig, prefix string) {
+	namePrefix := prefix
+	if namePrefix != "" {
+		namePrefix += "-"
+	}
+
+	fs.DurationVar(&cfg.DialTimeout,
+		namePrefix+"dial-timeout", cfg.DialTimeout,
+		"The maximum amount of time a dial will wait for a connect to complete. "+
+			"With or without a timeout, the operating system may impose its own earlier timeout. For instance, TCP timeouts are often around 3 minutes. ")
 }
 
 func TLSClientConfig(fs *pflag.FlagSet, cfg *forwarder.TLSClientConfig) {

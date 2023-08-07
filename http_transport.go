@@ -8,29 +8,13 @@ package forwarder
 
 import (
 	"crypto/tls"
-	"net"
 	"net/http"
 	"runtime"
 	"time"
 )
 
 type HTTPTransportConfig struct {
-	// DialTimeout is the maximum amount of time a dial will wait for
-	// a connect to complete.
-	//
-	// With or without a timeout, the operating system may impose
-	// its own earlier timeout. For instance, TCP timeouts are
-	// often around 3 minutes.
-	DialTimeout time.Duration
-
-	// KeepAlive specifies the interval between keep-alive
-	// probes for an active network connection.
-	// If zero, keep-alive probes are sent with a default value
-	// (currently 15 seconds), if supported by the protocol and operating
-	// system. Network protocols or operating systems that do
-	// not support keep-alives ignore this field.
-	// If negative, keep-alive probes are disabled.
-	KeepAlive time.Duration
+	DialConfig
 
 	TLSClientConfig
 
@@ -75,8 +59,7 @@ type HTTPTransportConfig struct {
 func DefaultHTTPTransportConfig() *HTTPTransportConfig {
 	// The default values are taken from [hashicorp/go-cleanhttp](https://github.com/hashicorp/go-cleanhttp/blob/a0807dd79fc1680a7b1f2d5a2081d92567aab97d/cleanhttp.go#L19.
 	return &HTTPTransportConfig{
-		DialTimeout: 10 * time.Second,
-		KeepAlive:   30 * time.Second,
+		DialConfig: *DefaultDialConfig(),
 		TLSClientConfig: TLSClientConfig{
 			HandshakeTimeout: 10 * time.Second,
 		},
@@ -88,9 +71,9 @@ func DefaultHTTPTransportConfig() *HTTPTransportConfig {
 }
 
 func NewHTTPTransport(cfg *HTTPTransportConfig) (*http.Transport, error) {
-	d := &net.Dialer{
-		Timeout:   cfg.DialTimeout,
-		KeepAlive: cfg.KeepAlive,
+	d, err := NewDialer(&cfg.DialConfig)
+	if err != nil {
+		return nil, err
 	}
 
 	tlsCfg := new(tls.Config)
@@ -101,7 +84,6 @@ func NewHTTPTransport(cfg *HTTPTransportConfig) (*http.Transport, error) {
 
 	return &http.Transport{
 		Proxy:                 nil,
-		Dial:                  d.Dial,
 		DialContext:           d.DialContext,
 		TLSClientConfig:       tlsCfg,
 		TLSHandshakeTimeout:   cfg.TLSClientConfig.HandshakeTimeout,
