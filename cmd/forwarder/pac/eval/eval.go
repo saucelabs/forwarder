@@ -14,15 +14,23 @@ import (
 	"github.com/saucelabs/forwarder"
 	"github.com/saucelabs/forwarder/bind"
 	"github.com/saucelabs/forwarder/pac"
+	"github.com/saucelabs/forwarder/utils/osdns"
 	"github.com/spf13/cobra"
 )
 
 type command struct {
 	pac                 *url.URL
+	dnsConfig           *osdns.Config
 	httpTransportConfig *forwarder.HTTPTransportConfig
 }
 
 func (c *command) RunE(cmd *cobra.Command, args []string) error {
+	if len(c.dnsConfig.Servers) > 0 {
+		if err := osdns.Configure(c.dnsConfig); err != nil {
+			return fmt.Errorf("configure DNS: %w", err)
+		}
+	}
+
 	t, err := forwarder.NewHTTPTransport(c.httpTransportConfig)
 	if err != nil {
 		return err
@@ -60,6 +68,7 @@ func (c *command) RunE(cmd *cobra.Command, args []string) error {
 func Command() (cmd *cobra.Command) {
 	c := command{
 		pac:                 &url.URL{Scheme: "file", Path: "pac.js"},
+		dnsConfig:           osdns.DefaultConfig(),
 		httpTransportConfig: forwarder.DefaultHTTPTransportConfig(),
 	}
 
@@ -67,6 +76,7 @@ func Command() (cmd *cobra.Command) {
 		fs := cmd.Flags()
 
 		bind.PAC(fs, &c.pac)
+		bind.DNSConfig(fs, c.dnsConfig)
 		bind.HTTPTransportConfig(fs, c.httpTransportConfig)
 
 		bind.AutoMarkFlagFilename(cmd)
