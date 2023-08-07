@@ -8,33 +8,22 @@ package eval
 
 import (
 	"fmt"
-	"net"
 	"net/url"
 	"os"
 
 	"github.com/saucelabs/forwarder"
 	"github.com/saucelabs/forwarder/bind"
-	"github.com/saucelabs/forwarder/log"
 	"github.com/saucelabs/forwarder/pac"
 	"github.com/spf13/cobra"
 )
 
 type command struct {
 	pac                 *url.URL
-	dnsConfig           *forwarder.DNSConfig
 	httpTransportConfig *forwarder.HTTPTransportConfig
 }
 
 func (c *command) RunE(cmd *cobra.Command, args []string) error {
-	var resolver *net.Resolver
-	if len(c.dnsConfig.Servers) > 0 {
-		r, err := forwarder.NewResolver(c.dnsConfig, log.NopLogger)
-		if err != nil {
-			return err
-		}
-		resolver = r
-	}
-	t, err := forwarder.NewHTTPTransport(c.httpTransportConfig, resolver)
+	t, err := forwarder.NewHTTPTransport(c.httpTransportConfig)
 	if err != nil {
 		return err
 	}
@@ -47,7 +36,7 @@ func (c *command) RunE(cmd *cobra.Command, args []string) error {
 		Script:    script,
 		AlertSink: os.Stderr,
 	}
-	pr, err := pac.NewProxyResolver(&cfg, resolver)
+	pr, err := pac.NewProxyResolver(&cfg, nil)
 	if err != nil {
 		return err
 	}
@@ -71,7 +60,6 @@ func (c *command) RunE(cmd *cobra.Command, args []string) error {
 func Command() (cmd *cobra.Command) {
 	c := command{
 		pac:                 &url.URL{Scheme: "file", Path: "pac.js"},
-		dnsConfig:           forwarder.DefaultDNSConfig(),
 		httpTransportConfig: forwarder.DefaultHTTPTransportConfig(),
 	}
 
@@ -79,7 +67,6 @@ func Command() (cmd *cobra.Command) {
 		fs := cmd.Flags()
 
 		bind.PAC(fs, &c.pac)
-		bind.DNSConfig(fs, c.dnsConfig)
 		bind.HTTPTransportConfig(fs, c.httpTransportConfig)
 
 		bind.AutoMarkFlagFilename(cmd)

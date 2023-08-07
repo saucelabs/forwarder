@@ -8,7 +8,6 @@ package bind
 
 import (
 	"fmt"
-	"net/netip"
 	"net/url"
 	"os"
 	"strings"
@@ -30,16 +29,6 @@ func ConfigFile(fs *pflag.FlagSet, configFile *string) {
 			"The supported formats are: JSON, YAML, TOML, HCL, and Java properties. "+
 			"The file format is determined by the file extension, if not specified the default format is YAML. "+
 			"The following precedence order of configuration sources is used: command flags, environment variables, config file, default values. ")
-}
-
-func DNSConfig(fs *pflag.FlagSet, cfg *forwarder.DNSConfig) {
-	fs.VarP(anyflag.NewSliceValue[netip.AddrPort](nil, &cfg.Servers, forwarder.ParseDNSAddress),
-		"dns-server", "n", "<ip>[:<port>]"+
-			"DNS server(s) to use instead of system default. "+
-			"If specified multiple times, the first one is used as primary server, the rest are used as fallbacks. "+
-			"The port is optional, if not specified the default port is 53. ")
-	fs.DurationVar(&cfg.Timeout,
-		"dns-timeout", cfg.Timeout, "Timeout for dialing DNS servers.")
 }
 
 func PAC(fs *pflag.FlagSet, pac **url.URL) {

@@ -8,7 +8,6 @@ package run
 
 import (
 	"fmt"
-	"net"
 	"net/http"
 	"net/url"
 	"strings"
@@ -28,7 +27,6 @@ import (
 
 type command struct {
 	promReg             *prometheus.Registry
-	dnsConfig           *forwarder.DNSConfig
 	httpTransportConfig *forwarder.HTTPTransportConfig
 	pac                 *url.URL
 	credentials         []*forwarder.HostPortUser
@@ -63,16 +61,8 @@ func (c *command) RunE(cmd *cobra.Command, args []string) error {
 	)
 
 	{
-		var resolver *net.Resolver
-		if len(c.dnsConfig.Servers) > 0 {
-			r, err := forwarder.NewResolver(c.dnsConfig, logger.Named("dns"))
-			if err != nil {
-				return err
-			}
-			resolver = r
-		}
 		var err error
-		rt, err = forwarder.NewHTTPTransport(c.httpTransportConfig, resolver)
+		rt, err = forwarder.NewHTTPTransport(c.httpTransportConfig)
 		if err != nil {
 			return err
 		}
@@ -139,7 +129,6 @@ func (c *command) RunE(cmd *cobra.Command, args []string) error {
 func Command() (cmd *cobra.Command) {
 	c := command{
 		promReg:             prometheus.NewRegistry(),
-		dnsConfig:           forwarder.DefaultDNSConfig(),
 		httpTransportConfig: forwarder.DefaultHTTPTransportConfig(),
 		httpProxyConfig:     forwarder.DefaultHTTPProxyConfig(),
 		apiServerConfig:     forwarder.DefaultHTTPServerConfig(),
@@ -155,7 +144,6 @@ func Command() (cmd *cobra.Command) {
 		bind.ResponseHeaders(fs, &c.responseHeaders)
 		bind.HTTPProxyConfig(fs, c.httpProxyConfig, c.logConfig)
 		bind.PAC(fs, &c.pac)
-		bind.DNSConfig(fs, c.dnsConfig)
 		bind.HTTPServerConfig(fs, c.apiServerConfig, "api", forwarder.HTTPScheme)
 		bind.HTTPTransportConfig(fs, c.httpTransportConfig)
 

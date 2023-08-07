@@ -87,11 +87,10 @@ func DefaultHTTPTransportConfig() *HTTPTransportConfig {
 	}
 }
 
-func NewHTTPTransport(cfg *HTTPTransportConfig, r *net.Resolver) (*http.Transport, error) {
+func NewHTTPTransport(cfg *HTTPTransportConfig) (*http.Transport, error) {
 	d := &net.Dialer{
 		Timeout:   cfg.DialTimeout,
 		KeepAlive: cfg.KeepAlive,
-		Resolver:  r,
 	}
 
 	tlsCfg := new(tls.Config)
