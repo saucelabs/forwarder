@@ -10,6 +10,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/saucelabs/forwarder/utils/certutil"
@@ -91,7 +92,14 @@ func (c *TLSServerConfig) loadCertificate(tlsCfg *tls.Config) error {
 	)
 
 	if c.CertFile == "" && c.KeyFile == "" {
-		cert, err = certutil.ECDSASelfSignedCert().Gen()
+		ssc := certutil.ECDSASelfSignedCert()
+
+		if n, err := os.Hostname(); err == nil {
+			ssc.Hosts = append(ssc.Hosts, n)
+		}
+		ssc.Hosts = append(ssc.Hosts, "localhost")
+
+		cert, err = ssc.Gen()
 	} else {
 		cert, err = loadX509KeyPair(c.CertFile, c.KeyFile)
 	}

@@ -15,7 +15,10 @@ import (
 )
 
 func TestRSASelfSignedCertGen(t *testing.T) {
-	cert, err := RSASelfSignedCert().Gen()
+	c := RSASelfSignedCert()
+	c.Hosts = []string{"127.0.0.1"}
+
+	cert, err := c.Gen()
 	if err != nil {
 		t.Fatalf("RSASelfSignedCert.Gen() error %s", err)
 	}
@@ -23,7 +26,10 @@ func TestRSASelfSignedCertGen(t *testing.T) {
 }
 
 func TestECDSASelfSignedCertGen(t *testing.T) {
-	cert, err := ECDSASelfSignedCert().Gen()
+	c := ECDSASelfSignedCert()
+	c.Hosts = []string{"127.0.0.1"}
+
+	cert, err := c.Gen()
 	if err != nil {
 		t.Fatalf("ECDSASelfSignedCert.Gen() error %s", err)
 	}
@@ -49,8 +55,7 @@ func testCert(t *testing.T, cert *tls.Certificate) { //nolint:thelper // this is
 	pool.AddCert(cacert)
 
 	c := http.Client{Transport: &http.Transport{TLSClientConfig: &tls.Config{
-		ServerName: "localhost",
-		RootCAs:    pool,
+		RootCAs: pool,
 	}}}
 	resp, err := c.Get(s.URL)
 	if err != nil {
