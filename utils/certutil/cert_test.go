@@ -8,6 +8,7 @@ package certutil
 
 import (
 	"crypto/tls"
+	"crypto/x509"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -18,16 +19,39 @@ func TestRSASelfSignedCertGen(t *testing.T) {
 	if err != nil {
 		t.Fatalf("RSASelfSignedCert.Gen() error %s", err)
 	}
+	testCert(t, &cert)
+}
+
+func TestECDSASelfSignedCertGen(t *testing.T) {
+	cert, err := ECDSASelfSignedCert().Gen()
+	if err != nil {
+		t.Fatalf("ECDSASelfSignedCert.Gen() error %s", err)
+	}
+	testCert(t, &cert)
+}
+
+func testCert(t *testing.T, cert *tls.Certificate) { //nolint:thelper // this is not a test helper
 	s := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
 	s.TLS = &tls.Config{
-		Certificates: []tls.Certificate{cert},
+		Certificates: []tls.Certificate{*cert},
 	}
 	defer s.Close()
 	s.StartTLS()
 
-	c := http.Client{Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}}
+	cacert, err := x509.ParseCertificate(cert.Certificate[0])
+	if err != nil {
+		t.Fatalf("x509.ParseCertificate() error %s", err)
+	}
+
+	pool := x509.NewCertPool()
+	pool.AddCert(cacert)
+
+	c := http.Client{Transport: &http.Transport{TLSClientConfig: &tls.Config{
+		ServerName: "localhost",
+		RootCAs:    pool,
+	}}}
 	resp, err := c.Get(s.URL)
 	if err != nil {
 		t.Fatalf("http.Get() error %s", err)
