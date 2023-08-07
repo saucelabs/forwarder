@@ -1,0 +1,51 @@
+# Copyright 2021 The forwarder Authors. All rights reserved.
+# Use of this source code is governed by a MIT
+# license that can be found in the LICENSE file.
+
+---
+# Forwarder uses go:linkname directive. It may lead to unsafe behavior if the linked code changes.
+# This workflow performs a primitive check by calculating the checksums of linked modules.
+# If the checksums do not match, a user is forced to manually check the changes and update the checksums.
+name: Integrity
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.version'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.version'
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set version env variables
+        run: |
+          cat .version >> $GITHUB_ENV
+
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: "${{env.GO_VERSION}}"
+
+      - name: Export GOROOT
+        run: |
+          GOROOT_VALUE=$(go env | awk -F'=' '/^GOROOT=/{gsub("\"", "", $2); print $2}')
+          echo $GOROOT_VALUE
+          echo "GOROOT=${GOROOT_VALUE}" >> $GITHUB_ENV
+
+      - name: Assert DNS client
+        run: |
+          md5sum -c --quiet <<< "516cf174c57f20905997b74529c6542f ${{env.GOROOT}}/src/net/dnsclient_unix.go" \
+          || (echo "Please check resolverConfig." && false)
+
+      - name: Assert DNS config
+        run: |
+          md5sum -c --quiet <<< "52dd7dea88dfce956c3de0b6f6513b76 ${{env.GOROOT}}/src/net/dnsconfig.go" \
+          || (echo "Please check dnsConfig." && false)
