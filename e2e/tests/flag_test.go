@@ -93,3 +93,8 @@ func TestFlagInsecure(t *testing.T) {
 		}
 	})
 }
+
+func TestFlagMITM(t *testing.T) {
+	newClient(t, httpbin).GET("/status/200").ExpectStatus(http.StatusOK).
+		ExpectHeader("test-resp-add", "test-resp-value")
+}
