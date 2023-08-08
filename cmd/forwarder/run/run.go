@@ -150,15 +150,14 @@ func Command() (cmd *cobra.Command) {
 
 	defer func() {
 		fs := cmd.Flags()
+		bind.DNSConfig(fs, c.dnsConfig)
+		bind.HTTPTransportConfig(fs, c.httpTransportConfig)
+		bind.PAC(fs, &c.pac)
 		bind.Credentials(fs, &c.credentials)
 		bind.RequestHeaders(fs, &c.requestHeaders)
 		bind.ResponseHeaders(fs, &c.responseHeaders)
 		bind.HTTPProxyConfig(fs, c.httpProxyConfig, c.logConfig)
-		bind.PAC(fs, &c.pac)
-		bind.DNSConfig(fs, c.dnsConfig)
 		bind.HTTPServerConfig(fs, c.apiServerConfig, "api", forwarder.HTTPScheme)
-		bind.HTTPTransportConfig(fs, c.httpTransportConfig)
-
 		bind.AutoMarkFlagFilename(cmd)
 		cmd.MarkFlagsMutuallyExclusive("proxy", "pac")
 
