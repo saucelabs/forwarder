@@ -8,6 +8,8 @@ package tests
 
 import (
 	"crypto/tls"
+	"crypto/x509"
+	"fmt"
 	"net/http"
 	"os"
 	"testing"
@@ -32,17 +34,36 @@ var (
 	basicAuth = os.Getenv("FORWARDER_BASIC_AUTH")
 )
 
-func defaultTLSConfig() *tls.Config {
-	return &tls.Config{
-		InsecureSkipVerify: true, //nolint:gosec // Do not check cert for httpbin
+const caCertFile = "/etc/forwarder/certs/ca.crt"
+
+func defaultTLSConfig() (*tls.Config, error) {
+	pool, err := x509.SystemCertPool()
+	if err != nil {
+		return nil, err
 	}
+	b, err := os.ReadFile(caCertFile)
+	if err != nil {
+		return nil, err
+	}
+	if ok := pool.AppendCertsFromPEM(b); !ok {
+		return nil, fmt.Errorf("failed to append cert from %s", caCertFile)
+	}
+
+	return &tls.Config{
+		RootCAs:    pool,
+		MinVersion: tls.VersionTLS13,
+	}, nil
 }
 
 func newTransport(tb testing.TB) *http.Transport {
 	tb.Helper()
 
 	tr := http.DefaultTransport.(*http.Transport).Clone() //nolint:forcetypeassert // we know it's a *http.Transport
-	tr.TLSClientConfig = defaultTLSConfig()
+	if tlsCfg, err := defaultTLSConfig(); err != nil {
+		tb.Fatal(err)
+	} else {
+		tr.TLSClientConfig = tlsCfg
+	}
 
 	proxyURL, err := httpexpect.NewURLWithBasicAuth(proxy, basicAuth)
 	if err != nil {
