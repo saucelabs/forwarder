@@ -167,7 +167,11 @@ func TestProxyWebSocket(t *testing.T) {
 
 	d := *websocket.DefaultDialer
 	d.Proxy = http.ProxyURL(proxyURL)
-	d.TLSClientConfig = defaultTLSConfig()
+	if tlsCfg, err := defaultTLSConfig(); err != nil {
+		t.Fatal(err)
+	} else {
+		d.TLSClientConfig = tlsCfg
+	}
 
 	var u string
 	if p, _, _ := strings.Cut(httpbin, ":"); p == "https" {
