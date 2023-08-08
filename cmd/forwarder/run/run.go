@@ -35,6 +35,8 @@ type command struct {
 	requestHeaders      []header.Header
 	responseHeaders     []header.Header
 	httpProxyConfig     *forwarder.HTTPProxyConfig
+	mitm                bool
+	mitmConfig          *forwarder.MITMConfig
 	apiServerConfig     *forwarder.HTTPServerConfig
 	logConfig           *log.Config
 	goleak              bool
@@ -109,6 +111,13 @@ func (c *command) RunE(cmd *cobra.Command, args []string) error {
 		c.httpProxyConfig.ResponseModifiers = append(c.httpProxyConfig.ResponseModifiers, header.Headers(c.responseHeaders))
 	}
 
+	if c.mitmConfig.CACertFile != "" {
+		c.mitm = true
+	}
+	if c.mitm {
+		c.httpProxyConfig.MITM = c.mitmConfig
+	}
+
 	var g runctx.Group
 	p, err := forwarder.NewHTTPProxy(c.httpProxyConfig, pr, cm, rt, logger.Named("proxy"))
 	if err != nil {
@@ -142,6 +151,7 @@ func Command() (cmd *cobra.Command) {
 		dnsConfig:           osdns.DefaultConfig(),
 		httpTransportConfig: forwarder.DefaultHTTPTransportConfig(),
 		httpProxyConfig:     forwarder.DefaultHTTPProxyConfig(),
+		mitmConfig:          forwarder.DefaultMITMConfig(),
 		apiServerConfig:     forwarder.DefaultHTTPServerConfig(),
 		logConfig:           log.DefaultConfig(),
 	}
@@ -157,6 +167,7 @@ func Command() (cmd *cobra.Command) {
 		bind.RequestHeaders(fs, &c.requestHeaders)
 		bind.ResponseHeaders(fs, &c.responseHeaders)
 		bind.HTTPProxyConfig(fs, c.httpProxyConfig, c.logConfig)
+		bind.MITMConfig(fs, &c.mitm, c.mitmConfig)
 		bind.HTTPServerConfig(fs, c.apiServerConfig, "api", forwarder.HTTPScheme)
 		bind.AutoMarkFlagFilename(cmd)
 		cmd.MarkFlagsMutuallyExclusive("proxy", "pac")
