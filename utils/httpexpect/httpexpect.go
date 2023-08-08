@@ -8,6 +8,8 @@ package httpexpect
 
 import (
 	"context"
+	"crypto/tls"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -96,6 +98,13 @@ func (c *Client) Request(method, path string, opts ...func(*http.Request)) *Resp
 	}
 	resp, err := c.do(req)
 	if err != nil {
+		var tlsErr *tls.CertificateVerificationError
+		if errors.As(err, &tlsErr) {
+			for i, u := range tlsErr.UnverifiedCertificates {
+				c.t.Logf("Unverified certificate[%d]: %s %s %s", i, u.Subject, u.Issuer, u.DNSNames)
+			}
+		}
+
 		c.t.Fatalf("Failed to execute request %s, %s: %v", method, path, err)
 	}
 	defer resp.Body.Close()
