@@ -48,8 +48,8 @@ func rootCommand() *cobra.Command {
 			Prefix: []string{""},
 		},
 		{
-			Name:   "API server options",
-			Prefix: []string{"api"},
+			Name:   "MITM options",
+			Prefix: []string{"mitm"},
 		},
 		{
 			Name:   "DNS options",
@@ -62,6 +62,10 @@ func rootCommand() *cobra.Command {
 				"cacert-file",
 				"insecure",
 			},
+		},
+		{
+			Name:   "API server options",
+			Prefix: []string{"api"},
 		},
 		{
 			Name:   "Logging options",

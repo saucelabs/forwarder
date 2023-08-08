@@ -105,6 +105,29 @@ func HTTPProxyConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPProxyConfig, lcfg *lo
 			"By default, requests to localhost are denied. ")
 }
 
+func MITMConfig(fs *pflag.FlagSet, mitm *bool, cfg *forwarder.MITMConfig) {
+	fs.BoolVar(mitm, "mitm", *mitm, ""+
+		"Enable Man-in-the-Middle (MITM) mode. "+
+		"It only works with HTTPS requests, HTTP/2 is not supported. "+
+		"MITM is enabled by default when the --mitm-cacert-file flag is set. "+
+		"If the CA certificate is not provided MITM uses a generated CA certificate. "+
+		"The CA certificate used can be retrieved from the API server .")
+
+	fs.StringVar(&cfg.CACertFile, "mitm-cacert-file", cfg.CACertFile, "<path or base64>"+
+		"CA certificate file to use for generating MITM certificates. "+
+		"If the file is not specified, a generated CA certificate will be used. "+
+		"See the documentation for the --mitm flag for more details. ")
+
+	fs.StringVar(&cfg.CAKeyFile, "mitm-cakey-file", cfg.CAKeyFile, "<path or base64>"+
+		"CA key file to use for generating MITM certificates. ")
+
+	fs.StringVar(&cfg.Organization, "mitm-org", cfg.Organization, "<name>"+
+		"Organization name to use in the generated MITM certificates. ")
+
+	fs.DurationVar(&cfg.Validity, "mitm-validity", cfg.Validity, ""+
+		"Validity period of the generated MITM certificates. ")
+}
+
 func Credentials(fs *pflag.FlagSet, credentials *[]*forwarder.HostPortUser) {
 	fs.VarP(anyflag.NewSliceValueWithRedact[*forwarder.HostPortUser](*credentials, credentials, forwarder.ParseHostPortUser, forwarder.RedactHostPortUser),
 		"credentials", "s", "<username:password@host:port>"+

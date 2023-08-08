@@ -93,7 +93,9 @@ func TestNopDialer(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	p.configureProxy()
+	if err := p.configureProxy(); err != nil {
+		t.Fatal(err)
+	}
 
 	req := &http.Request{
 		Method: http.MethodGet,

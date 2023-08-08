@@ -64,6 +64,7 @@ type ProxyFunc func(*http.Request) (*url.URL, error)
 
 type HTTPProxyConfig struct {
 	HTTPServerConfig
+	MITM               *MITMConfig
 	ProxyLocalhost     ProxyLocalhostMode
 	UpstreamProxy      *url.URL
 	UpstreamProxyFunc  ProxyFunc
@@ -150,7 +151,9 @@ func NewHTTPProxy(cfg *HTTPProxyConfig, pr PACResolver, cm *CredentialsMatcher, 
 			return nil, err
 		}
 	}
-	hp.configureProxy()
+	if err := hp.configureProxy(); err != nil {
+		return nil, err
+	}
 
 	return hp, nil
 }
@@ -167,8 +170,18 @@ func (hp *HTTPProxy) configureHTTPS() error {
 	return hp.config.ConfigureTLSConfig(hp.TLSConfig)
 }
 
-func (hp *HTTPProxy) configureProxy() {
+func (hp *HTTPProxy) configureProxy() error {
 	hp.proxy = martian.NewProxy()
+
+	if hp.config.MITM != nil {
+		hp.log.Infof("using MITM")
+		mc, err := newMartianMITMConfig(hp.config.MITM)
+		if err != nil {
+			return fmt.Errorf("mitm: %w", err)
+		}
+		hp.proxy.SetMITM(mc)
+	}
+
 	hp.proxy.AllowHTTP = true
 	hp.proxy.ConnectPassthrough = hp.config.ConnectPassthrough
 	hp.proxy.WithoutWarning = true
@@ -213,6 +226,8 @@ func (hp *HTTPProxy) configureProxy() {
 	mw := hp.middlewareStack()
 	hp.proxy.SetRequestModifier(mw)
 	hp.proxy.SetResponseModifier(mw)
+
+	return nil
 }
 
 func (hp *HTTPProxy) upstreamProxyURL() *url.URL {
