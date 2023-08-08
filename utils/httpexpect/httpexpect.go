@@ -91,7 +91,7 @@ func (c *Client) HEAD(path string, opts ...func(*http.Request)) *Response {
 func (c *Client) Request(method, path string, opts ...func(*http.Request)) *Response {
 	req, err := http.NewRequestWithContext(context.Background(), method, fmt.Sprintf("%s%s", c.baseURL, path), http.NoBody)
 	if err != nil {
-		c.t.Fatalf("Failed to create request %s, %s: %v", method, path, err)
+		c.t.Fatalf("Failed to create request %s, %s: %v", method, req.URL, err)
 	}
 	for _, opt := range opts {
 		opt(req)
@@ -105,12 +105,12 @@ func (c *Client) Request(method, path string, opts ...func(*http.Request)) *Resp
 			}
 		}
 
-		c.t.Fatalf("Failed to execute request %s, %s: %v", method, path, err)
+		c.t.Fatalf("Failed to execute request %s, %s: %v", method, req.URL, err)
 	}
 	defer resp.Body.Close()
 	b, err := io.ReadAll(resp.Body)
 	if err != nil {
-		c.t.Fatalf("Failed to read body from %s, %s: %v", method, path, err)
+		c.t.Fatalf("Failed to read body from %s, %s: %v", method, req.URL, err)
 	}
 	return &Response{Response: resp, body: b, t: c.t}
 }
