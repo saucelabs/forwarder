@@ -38,6 +38,7 @@ func AllSetups() []setup.Setup {
 	SetupFlagResponseHeader(l)
 	SetupFlagDNSServer(l)
 	SetupFlagInsecure(l)
+	SetupFlagMITM(l)
 	SetupSC2450(l)
 
 	return l.Build()
@@ -288,6 +289,44 @@ func SetupFlagInsecure(l *setupList) {
 			Run: "^TestFlagInsecure/false$",
 		},
 	)
+}
+
+func SetupFlagMITM(l *setupList) {
+	const run = "^TestFlagMITM"
+
+	l.Add(setup.Setup{
+		Name: "flag-mitm-cacert",
+		Compose: compose.NewBuilder().
+			AddService(
+				forwarder.HttpbinService().WithSelfSigned("https")).
+			AddService(
+				forwarder.ProxyService().
+					WithResponseHeader("test-resp-add:test-resp-value").
+					WithMITMCacert().
+					Insecure()).
+			MustBuild(),
+		Run: run,
+	})
+
+	for _, upstreamProxyScheme := range forwarder.ProxySchemes {
+		l.Add(setup.Setup{
+			Name: "flag-mitm-cacert" + "-" + upstreamProxyScheme,
+			Compose: compose.NewBuilder().
+				AddService(
+					forwarder.HttpbinService().WithSelfSigned("https")).
+				AddService(
+					forwarder.ProxyService().
+						WithResponseHeader("test-resp-add:test-resp-value").
+						WithMITMCacert().
+						Insecure().
+						WithUpstream(forwarder.UpstreamProxyServiceName, upstreamProxyScheme)).
+				AddService(
+					forwarder.UpstreamProxyService().
+						WithProtocol(upstreamProxyScheme)).
+				MustBuild(),
+			Run: run,
+		})
+	}
 }
 
 func SetupSC2450(l *setupList) {
