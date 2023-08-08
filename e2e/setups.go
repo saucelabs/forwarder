@@ -304,8 +304,7 @@ func SetupSC2450(l *setupList) {
 				Command: "python /server.py",
 				Volumes: []string{"./sc-2450/server.py:/server.py"},
 				HealthCheck: &compose.HealthCheck{
-					StartPeriod: 3 * time.Second,
-					Interval:    1 * time.Second,
+					StartPeriod: 5 * time.Second,
 					Retries:     1,
 					Test:        []string{"CMD", "true"},
 				},
