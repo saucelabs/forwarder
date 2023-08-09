@@ -244,10 +244,11 @@ func TestIntegrationHTTP(t *testing.T) {
 }
 
 func TestIntegrationHTTP100Continue(t *testing.T) {
+	t.Parallel()
+
 	if *withHandler {
 		t.Skip("skipping in handler mode")
 	}
-	t.Parallel()
 
 	l := newListener(t)
 	p := NewProxy()
@@ -963,10 +964,11 @@ func TestIntegrationConnectPassthrough(t *testing.T) {
 }
 
 func TestIntegrationMITM(t *testing.T) {
+	t.Parallel()
+
 	if *withHandler {
 		t.Skip("skipping in handler mode")
 	}
-	t.Parallel()
 
 	l := newListener(t)
 	p := NewProxy()
@@ -1130,10 +1132,11 @@ func TestIntegrationTransparentHTTP(t *testing.T) {
 }
 
 func TestIntegrationTransparentMITM(t *testing.T) {
+	t.Parallel()
+
 	if *withHandler {
 		t.Skip("skipping in handler mode")
 	}
-	t.Parallel()
 
 	ca, priv, err := mitm.NewAuthority("martian.proxy", "Martian Authority", 2*time.Hour)
 	if err != nil {
