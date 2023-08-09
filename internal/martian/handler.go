@@ -194,8 +194,8 @@ func (p proxyHandler) handleConnectRequest(ctx *Context, rw http.ResponseWriter,
 			log.Errorf("martian: got error while flushing response back to client: %v", err)
 		}
 
-		go copySync("outbound", cw, conn, donec)
-		go copySync("inbound", conn, cr, donec)
+		go copySync("outbound CONNECT", cw, conn, donec)
+		go copySync("inbound CONNECT", conn, cr, donec)
 	case 2:
 		copyHeader(rw.Header(), res.Header)
 		rw.WriteHeader(res.StatusCode)
@@ -204,8 +204,8 @@ func (p proxyHandler) handleConnectRequest(ctx *Context, rw http.ResponseWriter,
 			log.Errorf("martian: got error while flushing response back to client: %v", err)
 		}
 
-		go copySync("outbound", cw, req.Body, donec)
-		go copySync("inbound", writeFlusher{rw, rc}, cr, donec)
+		go copySync("outbound CONNECT", cw, req.Body, donec)
+		go copySync("inbound CONNECT", writeFlusher{rw, rc}, cr, donec)
 	default:
 		return fmt.Errorf("unsupported protocol version: %d", req.ProtoMajor)
 	}
