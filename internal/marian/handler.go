@@ -170,6 +170,26 @@ func (p proxyHandler) handleConnectRequest(ctx *Context, rw http.ResponseWriter,
 		return nil
 	}
 
+	if req.ProtoMajor == 1 {
+		res.ContentLength = -1
+	}
+	return p.tunnel("CONNECT", rw, req, res, cw, cr)
+}
+
+func (p proxyHandler) handleUpgradeResponse(rw http.ResponseWriter, req *http.Request, res *http.Response) error {
+	resUpType := upgradeType(res.Header)
+
+	uconn, ok := res.Body.(io.ReadWriteCloser)
+	if !ok {
+		log.Errorf("martian: internal error: switching protocols response with non-writable body")
+		return errClose
+	}
+
+	res.Body = nil
+	return p.tunnel(resUpType, rw, req, res, uconn, uconn)
+}
+
+func (p proxyHandler) tunnel(name string, rw http.ResponseWriter, req *http.Request, res *http.Response, cw io.WriteCloser, cr io.Reader) error {
 	var (
 		rc    = http.NewResponseController(rw)
 		donec = make(chan bool, 2)
@@ -182,20 +202,19 @@ func (p proxyHandler) handleConnectRequest(ctx *Context, rw http.ResponseWriter,
 		}
 		defer conn.Close()
 
-		if err := drainBuffer(cw, brw.Reader); err != nil {
-			return err
-		}
-
-		res.ContentLength = -1
 		if err := res.Write(brw); err != nil {
 			log.Errorf("martian: got error while writing response back to client: %v", err)
 		}
 		if err := brw.Flush(); err != nil {
 			log.Errorf("martian: got error while flushing response back to client: %v", err)
 		}
+		if err := drainBuffer(cw, brw.Reader); err != nil {
+			log.Errorf("martian: got error while draining buffer: %v", err)
+			return err
+		}
 
-		go copySync("outbound CONNECT", cw, conn, donec)
-		go copySync("inbound CONNECT", conn, cr, donec)
+		go copySync("outbound "+name, cw, conn, donec)
+		go copySync("inbound "+name, conn, cr, donec)
 	case 2:
 		copyHeader(rw.Header(), res.Header)
 		rw.WriteHeader(res.StatusCode)
@@ -204,16 +223,16 @@ func (p proxyHandler) handleConnectRequest(ctx *Context, rw http.ResponseWriter,
 			log.Errorf("martian: got error while flushing response back to client: %v", err)
 		}
 
-		go copySync("outbound CONNECT", cw, req.Body, donec)
-		go copySync("inbound CONNECT", writeFlusher{rw, rc}, cr, donec)
+		go copySync("outbound "+name, cw, req.Body, donec)
+		go copySync("inbound "+name, writeFlusher{rw, rc}, cr, donec)
 	default:
 		return fmt.Errorf("unsupported protocol version: %d", req.ProtoMajor)
 	}
 
-	log.Debugf("martian: established CONNECT tunnel, proxying traffic")
+	log.Debugf("martian: established %s tunnel, proxying traffic", name)
 	<-donec
 	<-donec
-	log.Debugf("martian: closed CONNECT tunnel")
+	log.Debugf("martian: closed %s tunnel", name)
 
 	return nil
 }
@@ -244,6 +263,10 @@ func (p proxyHandler) handleRequest(ctx *Context, rw http.ResponseWriter, req *h
 		}
 	}
 
+	reqUpType := upgradeType(req.Header)
+	if reqUpType != "" {
+		log.Debugf("martian: upgrade request: %s", reqUpType)
+	}
 	if err := p.reqmod.ModifyRequest(req); err != nil {
 		log.Errorf("martian: error modifying request: %v", err)
 		p.warning(req.Header, err)
@@ -251,6 +274,13 @@ func (p proxyHandler) handleRequest(ctx *Context, rw http.ResponseWriter, req *h
 	if session.Hijacked() {
 		log.Debugf("martian: connection hijacked by request modifier")
 		return nil
+	}
+
+	// After stripping all the hop-by-hop connection headers above, add back any
+	// necessary for protocol upgrades, such as for websockets.
+	if reqUpType != "" {
+		req.Header.Set("Connection", "Upgrade")
+		req.Header.Set("Upgrade", reqUpType)
 	}
 
 	// perform the HTTP roundtrip
@@ -266,6 +296,10 @@ func (p proxyHandler) handleRequest(ctx *Context, rw http.ResponseWriter, req *h
 	// see https://github.com/google/martian/issues/298
 	res.Request = req
 
+	resUpType := upgradeType(res.Header)
+	if resUpType != "" {
+		log.Debugf("martian: upgrade response: %s", resUpType)
+	}
 	if err := p.resmod.ModifyResponse(res); err != nil {
 		log.Errorf("martian: error modifying response: %v", err)
 		p.warning(res.Header, err)
@@ -275,12 +309,24 @@ func (p proxyHandler) handleRequest(ctx *Context, rw http.ResponseWriter, req *h
 		return nil
 	}
 
+	// after stripping all the hop-by-hop connection headers above, add back any
+	// necessary for protocol upgrades, such as for websockets.
+	if resUpType != "" {
+		res.Header.Set("Connection", "Upgrade")
+		res.Header.Set("Upgrade", resUpType)
+	}
+
 	if !req.ProtoAtLeast(1, 1) || req.Close || res.Close || p.Closing() {
 		log.Debugf("martian: received close request: %v", req.RemoteAddr)
 		res.Close = true
 	}
 	if p.CloseAfterReply {
 		res.Close = true
+	}
+
+	// deal with 101 Switching Protocols responses: (WebSocket, h2c, etc)
+	if res.StatusCode == 101 {
+		return p.handleUpgradeResponse(rw, req, res)
 	}
 
 	writeResponse(rw, res)

@@ -37,6 +37,7 @@ import (
 	"github.com/google/martian/v3/nosigpipe"
 	"github.com/google/martian/v3/proxyutil"
 	"github.com/google/martian/v3/trafficshape"
+	"golang.org/x/net/http/httpguts"
 )
 
 var errClose = errors.New("closing connection")
@@ -552,8 +553,8 @@ func (p *Proxy) handleConnectRequest(ctx *Context, req *http.Request, session *S
 	if err := brw.Flush(); err != nil {
 		log.Errorf("martian: got error while flushing response back to client: %v", err)
 	}
-
 	if err := drainBuffer(cw, brw.Reader); err != nil {
+		log.Errorf("martian: got error while draining read buffer: %v", err)
 		return err
 	}
 
@@ -565,6 +566,39 @@ func (p *Proxy) handleConnectRequest(ctx *Context, req *http.Request, session *S
 	<-donec
 	<-donec
 	log.Debugf("martian: closed CONNECT tunnel")
+
+	return errClose
+}
+
+func (p *Proxy) handleUpgradeResponse(res *http.Response, brw *bufio.ReadWriter, conn net.Conn) error {
+	resUpType := upgradeType(res.Header)
+
+	uconn, ok := res.Body.(io.ReadWriteCloser)
+	if !ok {
+		log.Errorf("martian: internal error: switching protocols response with non-writable body")
+		return errClose
+	}
+
+	res.Body = nil
+	if err := res.Write(brw); err != nil {
+		log.Errorf("martian: got error while writing response back to client: %v", err)
+	}
+	if err := brw.Flush(); err != nil {
+		log.Errorf("martian: got error while flushing response back to client: %v", err)
+	}
+	if err := drainBuffer(uconn, brw.Reader); err != nil {
+		log.Errorf("martian: got error while draining read buffer: %v", err)
+		return err
+	}
+
+	donec := make(chan bool, 2)
+	go copySync("outbound "+resUpType, uconn, conn, donec)
+	go copySync("inbound "+resUpType, conn, uconn, donec)
+
+	log.Debugf("martian: switched protocols, proxying %s traffic", resUpType)
+	<-donec
+	<-donec
+	log.Debugf("martian: closed %s tunnel", resUpType)
 
 	return errClose
 }
@@ -619,6 +653,10 @@ func (p *Proxy) handle(ctx *Context, conn net.Conn, brw *bufio.ReadWriter) error
 		}
 	}
 
+	reqUpType := upgradeType(req.Header)
+	if reqUpType != "" {
+		log.Debugf("martian: upgrade request: %s", reqUpType)
+	}
 	if err := p.reqmod.ModifyRequest(req); err != nil {
 		log.Errorf("martian: error modifying request: %v", err)
 		p.warning(req.Header, err)
@@ -626,6 +664,13 @@ func (p *Proxy) handle(ctx *Context, conn net.Conn, brw *bufio.ReadWriter) error
 	if session.Hijacked() {
 		log.Debugf("martian: connection hijacked by request modifier")
 		return nil
+	}
+
+	// after stripping all the hop-by-hop connection headers above, add back any
+	// necessary for protocol upgrades, such as for websockets.
+	if reqUpType != "" {
+		req.Header.Set("Connection", "Upgrade")
+		req.Header.Set("Upgrade", reqUpType)
 	}
 
 	// perform the HTTP roundtrip
@@ -641,6 +686,10 @@ func (p *Proxy) handle(ctx *Context, conn net.Conn, brw *bufio.ReadWriter) error
 	// see https://github.com/google/martian/issues/298
 	res.Request = req
 
+	resUpType := upgradeType(res.Header)
+	if resUpType != "" {
+		log.Debugf("martian: upgrade response: %s", resUpType)
+	}
 	if err := p.resmod.ModifyResponse(res); err != nil {
 		log.Errorf("martian: error modifying response: %v", err)
 		p.warning(res.Header, err)
@@ -648,6 +697,13 @@ func (p *Proxy) handle(ctx *Context, conn net.Conn, brw *bufio.ReadWriter) error
 	if session.Hijacked() {
 		log.Debugf("martian: connection hijacked by response modifier")
 		return nil
+	}
+
+	// after stripping all the hop-by-hop connection headers above, add back any
+	// necessary for protocol upgrades, such as for websockets.
+	if resUpType != "" {
+		res.Header.Set("Connection", "Upgrade")
+		res.Header.Set("Upgrade", resUpType)
 	}
 
 	var closing error
@@ -694,6 +750,11 @@ func (p *Proxy) handle(ctx *Context, conn net.Conn, brw *bufio.ReadWriter) error
 				break
 			}
 		}
+	}
+
+	// deal with 101 Switching Protocols responses: (WebSocket, h2c, etc)
+	if res.StatusCode == 101 {
+		return p.handleUpgradeResponse(res, brw, conn)
 	}
 
 	if p.WriteTimeout > 0 {
@@ -843,4 +904,11 @@ func (p *Proxy) connectSOCKS5(req *http.Request, proxyURL *url.URL) (*http.Respo
 	}
 
 	return proxyutil.NewResponse(200, nil, req), conn, nil
+}
+
+func upgradeType(h http.Header) string {
+	if !httpguts.HeaderValuesContainsToken(h["Connection"], "Upgrade") {
+		return ""
+	}
+	return h.Get("Upgrade")
 }
