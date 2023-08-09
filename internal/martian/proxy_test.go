@@ -358,6 +358,119 @@ func TestIntegrationHTTP100Continue(t *testing.T) {
 	}
 }
 
+func TestIntegrationHTTP101SwitchingProtocols(t *testing.T) {
+	t.Parallel()
+
+	l := newListener(t)
+	p := NewProxy()
+	if *withTLS {
+		p.AllowHTTP = true
+	}
+	defer p.Close()
+
+	p.SetTimeout(200 * time.Millisecond)
+
+	sl, err := net.Listen("tcp", "[::]:0")
+	if err != nil {
+		t.Fatalf("net.Listen(): got %v, want no error", err)
+	}
+
+	go func() {
+		conn, err := sl.Accept()
+		if err != nil {
+			log.Errorf("proxy_test: failed to accept connection: %v", err)
+			return
+		}
+		defer conn.Close()
+
+		log.Infof("proxy_test: accepted connection: %s", conn.RemoteAddr())
+
+		req, err := http.ReadRequest(bufio.NewReader(conn))
+		if err != nil {
+			log.Errorf("proxy_test: failed to read request: %v", err)
+			return
+		}
+
+		if reqUpType := upgradeType(req.Header); reqUpType != "" {
+			log.Infof("proxy_test: received upgrade request")
+
+			res := proxyutil.NewResponse(101, nil, req)
+			res.Header.Set("Connection", "upgrade")
+			res.Header.Set("Upgrade", reqUpType)
+
+			res.Write(conn)
+			log.Infof("proxy_test: sent 101 response")
+
+			if _, err := io.Copy(conn, conn); err != nil {
+				log.Errorf("proxy_test: failed to copy connection: %v", err)
+			}
+		} else {
+			log.Infof("proxy_test: received non upgrade request")
+
+			res := proxyutil.NewResponse(417, nil, req)
+			res.Header.Set("Connection", "close")
+			res.Write(conn)
+			return
+		}
+
+		log.Infof("proxy_test: closed connection")
+	}()
+
+	tm := martiantest.NewModifier()
+	p.SetRequestModifier(tm)
+	p.SetResponseModifier(tm)
+
+	go serve(p, l)
+
+	conn, err := l.dial()
+	if err != nil {
+		t.Fatalf("net.Dial(): got %v, want no error", err)
+	}
+	defer conn.Close()
+
+	host := sl.Addr().String()
+
+	req, err := http.NewRequest("POST", "http://"+host, nil)
+	if err != nil {
+		t.Fatalf("http.NewRequest(): got %v, want no error", err)
+	}
+	req.Header.Set("Connection", "upgrade")
+	req.Header.Set("Upgrade", "binary")
+	if err := req.WriteProxy(conn); err != nil {
+		t.Fatalf("req.WriteProxy(): got %v, want no error", err)
+	}
+
+	res, err := http.ReadResponse(bufio.NewReader(conn), nil)
+	if err != nil {
+		t.Fatalf("http.ReadResponse(): got %v, want no error", err)
+	}
+	defer res.Body.Close()
+
+	if got, want := res.StatusCode, 101; got != want {
+		t.Fatalf("res.StatusCode: got %d, want %d", got, want)
+	}
+	if got, want := res.Header.Get("Connection"), "Upgrade"; got != want {
+		t.Errorf("res.Header.Get(%q): got %q, want %q", "Connection", got, want)
+	}
+	if got, want := res.Header.Get("Upgrade"), "binary"; got != want {
+		t.Errorf("res.Header.Get(%q): got %q, want %q", "Upgrade", got, want)
+	}
+
+	want := []byte("body content")
+	if _, err := conn.Write(want); err != nil {
+		t.Fatalf("conn.Write(): got %v, want no error", err)
+	}
+
+	got := make([]byte, len(want))
+	if _, err := io.ReadFull(conn, got); err != nil {
+		t.Fatalf("io.ReadAll(): got %v, want no error", err)
+	}
+
+	if !bytes.Equal(got, want) {
+		t.Errorf("conn: got %q, want %q", got, want)
+	}
+}
+
 func TestIntegrationUnexpectedUpstreamFailure(t *testing.T) {
 	t.Parallel()
 
