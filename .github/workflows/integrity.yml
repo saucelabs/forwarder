@@ -36,7 +36,7 @@ jobs:
 
       - name: Export GOROOT
         run: |
-          GOROOT_VALUE=$(go env | awk -F'=' '/^GOROOT=/{gsub("\"", "", $2); print $2}')
+          GOROOT_VALUE=$(go env | awk -F'=' '/^GOROOT=/{gsub(/["'"'"']/, "", $2); print $2}')
           echo $GOROOT_VALUE
           echo "GOROOT=${GOROOT_VALUE}" >> $GITHUB_ENV
 
