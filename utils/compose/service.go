@@ -24,6 +24,7 @@ type Service struct {
 	Volumes     []string                  `yaml:"volumes,omitempty"`
 	HealthCheck *HealthCheck              `yaml:"healthcheck,omitempty"`
 	Network     map[string]ServiceNetwork `yaml:"networks,omitempty"`
+	Privileged  bool                      `yaml:"privileged,omitempty"`
 }
 
 func (s *Service) Validate() error {
