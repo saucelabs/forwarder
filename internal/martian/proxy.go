@@ -386,23 +386,23 @@ var copyBufPool = sync.Pool{
 	},
 }
 
-func copySync(dir string, w io.Writer, r io.Reader, donec chan<- bool) {
+func copySync(name string, w io.Writer, r io.Reader, donec chan<- bool) {
 	bufp := copyBufPool.Get().(*[]byte)
 	buf := *bufp
 	defer copyBufPool.Put(bufp)
 
 	if _, err := io.CopyBuffer(w, r, buf); err != nil && err != io.EOF {
-		log.Errorf("martian: failed to copy %s CONNECT tunnel: %v", dir, err)
+		log.Errorf("martian: failed to copy %s tunnel: %v", name, err)
 	}
 	if cw, ok := w.(closeWriter); ok {
 		cw.CloseWrite()
 	} else if pw, ok := w.(*io.PipeWriter); ok {
 		pw.Close()
 	} else {
-		log.Errorf("martian: cannot close write side of %s CONNECT tunnel (%T)", dir, w)
+		log.Errorf("martian: cannot close write side of %s tunnel (%T)", name, w)
 	}
 
-	log.Debugf("martian: %s CONNECT tunnel finished copying", dir)
+	log.Debugf("martian: %s tunnel finished copying", name)
 	donec <- true
 }
 
@@ -567,8 +567,8 @@ func (p *Proxy) handleConnectRequest(ctx *Context, req *http.Request, session *S
 	}
 
 	donec := make(chan bool, 2)
-	go copySync("outbound", cw, conn, donec)
-	go copySync("inbound", conn, cr, donec)
+	go copySync("outbound CONNECT", cw, conn, donec)
+	go copySync("inbound CONNECT", conn, cr, donec)
 
 	log.Debugf("martian: established CONNECT tunnel, proxying traffic")
 	<-donec
