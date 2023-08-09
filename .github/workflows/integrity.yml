@@ -42,7 +42,7 @@ jobs:
 
       - name: Assert DNS client
         run: |
-          md5sum -c --quiet <<< "516cf174c57f20905997b74529c6542f ${{env.GOROOT}}/src/net/dnsclient_unix.go" \
+          md5sum -c --quiet <<< "fcebeaf138d8b33bca8cdd91a7bd352a ${{env.GOROOT}}/src/net/dnsclient_unix.go" \
           || (echo "Please check resolverConfig." && false)
 
       - name: Assert DNS config
