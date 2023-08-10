@@ -547,25 +547,10 @@ func (p *Proxy) handleConnectRequest(ctx *Context, req *http.Request, session *S
 	}
 
 	res.ContentLength = -1
-	if err := res.Write(brw); err != nil {
-		log.Errorf("martian: got error while writing response back to client: %v", err)
-	}
-	if err := brw.Flush(); err != nil {
-		log.Errorf("martian: got error while flushing response back to client: %v", err)
-	}
-	if err := drainBuffer(cw, brw.Reader); err != nil {
-		log.Errorf("martian: got error while draining read buffer: %v", err)
-		return err
-	}
 
-	donec := make(chan bool, 2)
-	go copySync("outbound CONNECT", cw, conn, donec)
-	go copySync("inbound CONNECT", conn, cr, donec)
-
-	log.Debugf("martian: established CONNECT tunnel, proxying traffic")
-	<-donec
-	<-donec
-	log.Debugf("martian: closed CONNECT tunnel")
+	if err := p.tunnel("CONNECT", res, brw, conn, cw, cr); err != nil {
+		log.Errorf("martian: CONNECT tunnel: %w", err)
+	}
 
 	return errClose
 }
@@ -580,27 +565,35 @@ func (p *Proxy) handleUpgradeResponse(res *http.Response, brw *bufio.ReadWriter,
 	}
 
 	res.Body = nil
+
+	if err := p.tunnel(resUpType, res, brw, conn, uconn, uconn); err != nil {
+		log.Errorf("martian: %s tunnel: %w", resUpType, err)
+	}
+
+	return errClose
+}
+
+func (p *Proxy) tunnel(name string, res *http.Response, brw *bufio.ReadWriter, conn net.Conn, cw io.Writer, cr io.Reader) error {
 	if err := res.Write(brw); err != nil {
-		log.Errorf("martian: got error while writing response back to client: %v", err)
+		return fmt.Errorf("got error while writing response back to client: %w", err)
 	}
 	if err := brw.Flush(); err != nil {
-		log.Errorf("martian: got error while flushing response back to client: %v", err)
+		return fmt.Errorf("got error while flushing response back to client: %w", err)
 	}
-	if err := drainBuffer(uconn, brw.Reader); err != nil {
-		log.Errorf("martian: got error while draining read buffer: %v", err)
-		return err
+	if err := drainBuffer(cw, brw.Reader); err != nil {
+		return fmt.Errorf("got error while draining read buffer: %w", err)
 	}
 
 	donec := make(chan bool, 2)
-	go copySync("outbound "+resUpType, uconn, conn, donec)
-	go copySync("inbound "+resUpType, conn, uconn, donec)
+	go copySync("outbound "+name, cw, conn, donec)
+	go copySync("inbound "+name, conn, cr, donec)
 
-	log.Debugf("martian: switched protocols, proxying %s traffic", resUpType)
+	log.Debugf("martian: switched protocols, proxying %s traffic", name)
 	<-donec
 	<-donec
-	log.Debugf("martian: closed %s tunnel", resUpType)
+	log.Debugf("martian: closed %s tunnel", name)
 
-	return errClose
+	return nil
 }
 
 func (p *Proxy) handle(ctx *Context, conn net.Conn, brw *bufio.ReadWriter) error {

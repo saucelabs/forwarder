@@ -93,15 +93,10 @@ func (p proxyHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	}
 	outreq.Close = false
 
-	err := p.handleRequest(ctx, rw, outreq)
-	if err != nil {
-		res := p.errorResponse(req, err)
-		defer res.Body.Close()
-		writeResponse(rw, res)
-	}
+	p.handleRequest(ctx, rw, outreq)
 }
 
-func (p proxyHandler) handleConnectRequest(ctx *Context, rw http.ResponseWriter, req *http.Request) error {
+func (p proxyHandler) handleConnectRequest(ctx *Context, rw http.ResponseWriter, req *http.Request) {
 	session := ctx.Session()
 
 	if err := p.reqmod.ModifyRequest(req); err != nil {
@@ -110,7 +105,7 @@ func (p proxyHandler) handleConnectRequest(ctx *Context, rw http.ResponseWriter,
 	}
 	if session.Hijacked() {
 		log.Debugf("martian: connection hijacked by request modifier")
-		return nil
+		return
 	}
 
 	log.Debugf("martian: attempting to establish CONNECT tunnel: %s", req.URL.Host)
@@ -159,7 +154,7 @@ func (p proxyHandler) handleConnectRequest(ctx *Context, rw http.ResponseWriter,
 	}
 	if session.Hijacked() {
 		log.Debugf("martian: connection hijacked by response modifier")
-		return nil
+		return
 	}
 
 	if res.StatusCode != 200 {
@@ -167,26 +162,34 @@ func (p proxyHandler) handleConnectRequest(ctx *Context, rw http.ResponseWriter,
 			log.Errorf("martian: CONNECT rejected with status code: %d", res.StatusCode)
 		}
 		writeResponse(rw, res)
-		return nil
+		return
 	}
 
 	if req.ProtoMajor == 1 {
 		res.ContentLength = -1
 	}
-	return p.tunnel("CONNECT", rw, req, res, cw, cr)
+
+	if err := p.tunnel("CONNECT", rw, req, res, cw, cr); err != nil {
+		log.Errorf("martian: CONNECT tunnel: %v", err)
+		panic(http.ErrAbortHandler)
+	}
 }
 
-func (p proxyHandler) handleUpgradeResponse(rw http.ResponseWriter, req *http.Request, res *http.Response) error {
+func (p proxyHandler) handleUpgradeResponse(rw http.ResponseWriter, req *http.Request, res *http.Response) {
 	resUpType := upgradeType(res.Header)
 
 	uconn, ok := res.Body.(io.ReadWriteCloser)
 	if !ok {
-		log.Errorf("martian: internal error: switching protocols response with non-writable body")
-		return errClose
+		log.Errorf("martian: %s tunnel: internal error: switching protocols response with non-ReadWriteCloser body", resUpType)
+		panic(http.ErrAbortHandler)
 	}
 
 	res.Body = nil
-	return p.tunnel(resUpType, rw, req, res, uconn, uconn)
+
+	if err := p.tunnel(resUpType, rw, req, res, uconn, uconn); err != nil {
+		log.Errorf("martian: %s tunnel: %w", resUpType, err)
+		panic(http.ErrAbortHandler)
+	}
 }
 
 func (p proxyHandler) tunnel(name string, rw http.ResponseWriter, req *http.Request, res *http.Response, cw io.WriteCloser, cr io.Reader) error {
@@ -203,14 +206,13 @@ func (p proxyHandler) tunnel(name string, rw http.ResponseWriter, req *http.Requ
 		defer conn.Close()
 
 		if err := res.Write(brw); err != nil {
-			log.Errorf("martian: got error while writing response back to client: %v", err)
+			return fmt.Errorf("got error while writing response back to client: %w", err)
 		}
 		if err := brw.Flush(); err != nil {
-			log.Errorf("martian: got error while flushing response back to client: %v", err)
+			return fmt.Errorf("got error while flushing response back to client: %w", err)
 		}
 		if err := drainBuffer(cw, brw.Reader); err != nil {
-			log.Errorf("martian: got error while draining buffer: %v", err)
-			return err
+			return fmt.Errorf("got error while draining buffer: %w", err)
 		}
 
 		go copySync("outbound "+name, cw, conn, donec)
@@ -220,7 +222,7 @@ func (p proxyHandler) tunnel(name string, rw http.ResponseWriter, req *http.Requ
 		rw.WriteHeader(res.StatusCode)
 
 		if err := rc.Flush(); err != nil {
-			log.Errorf("martian: got error while flushing response back to client: %v", err)
+			return fmt.Errorf("got error while flushing response back to client: %w", err)
 		}
 
 		go copySync("outbound "+name, cw, req.Body, donec)
@@ -239,11 +241,12 @@ func (p proxyHandler) tunnel(name string, rw http.ResponseWriter, req *http.Requ
 
 // handleRequest handles a request and writes the response to the given http.ResponseWriter.
 // It returns an error if the request
-func (p proxyHandler) handleRequest(ctx *Context, rw http.ResponseWriter, req *http.Request) error {
+func (p proxyHandler) handleRequest(ctx *Context, rw http.ResponseWriter, req *http.Request) {
 	session := ctx.Session()
 
 	if req.Method == "CONNECT" {
-		return p.handleConnectRequest(ctx, rw, req)
+		p.handleConnectRequest(ctx, rw, req)
+		return
 	}
 
 	req.Proto = "HTTP/1.1"
@@ -273,7 +276,7 @@ func (p proxyHandler) handleRequest(ctx *Context, rw http.ResponseWriter, req *h
 	}
 	if session.Hijacked() {
 		log.Debugf("martian: connection hijacked by request modifier")
-		return nil
+		return
 	}
 
 	// After stripping all the hop-by-hop connection headers above, add back any
@@ -306,7 +309,7 @@ func (p proxyHandler) handleRequest(ctx *Context, rw http.ResponseWriter, req *h
 	}
 	if session.Hijacked() {
 		log.Debugf("martian: connection hijacked by response modifier")
-		return nil
+		return
 	}
 
 	// after stripping all the hop-by-hop connection headers above, add back any
@@ -326,11 +329,10 @@ func (p proxyHandler) handleRequest(ctx *Context, rw http.ResponseWriter, req *h
 
 	// deal with 101 Switching Protocols responses: (WebSocket, h2c, etc)
 	if res.StatusCode == 101 {
-		return p.handleUpgradeResponse(rw, req, res)
+		p.handleUpgradeResponse(rw, req, res)
+	} else {
+		writeResponse(rw, res)
 	}
-
-	writeResponse(rw, res)
-	return nil
 }
 
 func newWriteFlusher(rw http.ResponseWriter) writeFlusher {
