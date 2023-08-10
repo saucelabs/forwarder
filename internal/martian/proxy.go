@@ -316,15 +316,6 @@ func (p *Proxy) handleLoop(conn net.Conn) {
 	}
 }
 
-type closeWriter interface {
-	CloseWrite() error
-}
-
-var (
-	_ closeWriter = (*net.TCPConn)(nil)
-	_ closeWriter = (*tls.Conn)(nil)
-)
-
 func (p *Proxy) readHeaderTimeout() time.Duration {
 	if p.ReadHeaderTimeout > 0 {
 		return p.ReadHeaderTimeout
@@ -356,7 +347,7 @@ func (p *Proxy) readRequest(ctx *Context, conn net.Conn, brw *bufio.ReadWriter) 
 		} else {
 			log.Errorf("martian: failed to read request: %v", err)
 		}
-		if cw, ok := conn.(closeWriter); ok {
+		if cw, ok := asCloseWriter(conn); ok {
 			cw.CloseWrite()
 		}
 	} else {
@@ -394,7 +385,7 @@ func copySync(name string, w io.Writer, r io.Reader, donec chan<- bool) {
 	if _, err := io.CopyBuffer(w, r, buf); err != nil && err != io.EOF {
 		log.Errorf("martian: failed to copy %s tunnel: %v", name, err)
 	}
-	if cw, ok := w.(closeWriter); ok {
+	if cw, ok := asCloseWriter(w); ok {
 		cw.CloseWrite()
 	} else if pw, ok := w.(*io.PipeWriter); ok {
 		pw.Close()
