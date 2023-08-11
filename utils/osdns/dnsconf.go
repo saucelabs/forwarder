@@ -34,9 +34,6 @@ type dnsConfig struct {
 	noReload      bool          // do not check for config file updates
 }
 
-//go:linkname getSystemDNSConfig net.getSystemDNSConfig
-func getSystemDNSConfig() *dnsConfig
-
 type Config struct {
 	Servers    []netip.AddrPort
 	Timeout    time.Duration
