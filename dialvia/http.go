@@ -89,6 +89,8 @@ func (d *HTTPProxyDialer) DialContext(ctx context.Context, network, addr string)
 	return conn, nil
 }
 
+// DialContextR is like DialContext but returns the HTTP response as well.
+// The caller is responsible for closing the response body.
 func (d *HTTPProxyDialer) DialContextR(ctx context.Context, network, addr string) (*http.Response, net.Conn, error) {
 	if network != "tcp" && network != "tcp4" && network != "tcp6" {
 		return nil, nil, fmt.Errorf("unsupported network: %s", network)
@@ -128,7 +130,7 @@ func (d *HTTPProxyDialer) DialContextR(ctx context.Context, network, addr string
 	errCh := make(chan error, 1)
 
 	go func() {
-		res, err := http.ReadResponse(pbr, &req)
+		res, err := http.ReadResponse(pbr, &req) //nolint:bodyclose // caller is responsible for closing the response body
 		if err != nil {
 			errCh <- err
 		} else {
