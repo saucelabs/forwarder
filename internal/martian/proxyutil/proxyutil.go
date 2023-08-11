@@ -95,7 +95,6 @@ func GetRangeStart(res *http.Response) int64 {
 	}
 
 	num, err := strconv.ParseInt(matchSlice[1], 10, 64)
-
 	if err != nil {
 		return -1
 	}

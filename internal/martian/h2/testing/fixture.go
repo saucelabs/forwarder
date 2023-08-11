@@ -28,19 +28,16 @@ import (
 
 	"github.com/saucelabs/forwarder/internal/martian"
 	"github.com/saucelabs/forwarder/internal/martian/h2"
+	tspb "github.com/saucelabs/forwarder/internal/martian/h2/testservice"
 	"github.com/saucelabs/forwarder/internal/martian/mitm"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
-
-	tspb "github.com/saucelabs/forwarder/internal/martian/h2/testservice"
 )
 
-var (
-	// proxyPort is a global variable that stores the listener used by the proxy. This value is
-	// shared globally because golang http transport code caches the environment variable values, in
-	// particular HTTPS_PROXY.
-	proxyPort int
-)
+// proxyPort is a global variable that stores the listener used by the proxy. This value is
+// shared globally because golang http transport code caches the environment variable values, in
+// particular HTTPS_PROXY.
+var proxyPort int
 
 // Fixture encapsulates the TestService gRPC server, a proxy and a gRPC client.
 type Fixture struct {

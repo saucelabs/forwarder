@@ -16,11 +16,10 @@ package log
 
 import (
 	"bytes"
+	stdlog "log"
 	"os"
 	"strings"
 	"testing"
-
-	stdlog "log"
 )
 
 func TestLog(t *testing.T) {
