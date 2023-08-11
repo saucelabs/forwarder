@@ -32,6 +32,7 @@ func errorResponse(req *http.Request, err error) *http.Response {
 		handleTLSRecordHeader,
 		handleTLSCertificateError,
 		handleDenyError,
+		handleStatusText,
 	}
 
 	var (
@@ -98,6 +99,21 @@ func handleDenyError(req *http.Request, err error) (code int, msg string) {
 	if errors.As(err, &denyErr) {
 		code = http.StatusBadGateway
 		msg = fmt.Sprintf("proxying is denied to host %q", req.Host)
+	}
+
+	return
+}
+
+// There is a difference between sending HTTP and HTTPS requests in the presence of an upstream proxy.
+// For HTTPS client issues a CONNECT request to the proxy and then sends the original request.
+// In case the proxy responds with status code 4XX or 5XX to the CONNECT request, the client interprets it as URL error.
+func handleStatusText(req *http.Request, err error) (code int, msg string) {
+	if req.URL.Scheme == "https" && err != nil {
+		for i := 400; i < 600; i++ {
+			if err.Error() == http.StatusText(i) {
+				return i, err.Error()
+			}
+		}
 	}
 
 	return
