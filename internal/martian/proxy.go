@@ -1,3 +1,9 @@
+// Copyright 2023 Sauce Labs Inc. All rights reserved.
+//
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 // Copyright 2015 Google Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -40,8 +46,10 @@ import (
 	"golang.org/x/net/http/httpguts"
 )
 
-var errClose = errors.New("closing connection")
-var noop = Noop("martian")
+var (
+	errClose = errors.New("closing connection")
+	noop     = Noop("martian")
+)
 
 func isCloseable(err error) bool {
 	if neterr, ok := err.(net.Error); ok && neterr.Timeout() {
