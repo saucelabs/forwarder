@@ -21,13 +21,10 @@
 package fifo
 
 import (
-	"encoding/json"
 	"net/http"
 	"sync"
 
 	"github.com/google/martian/v3"
-	"github.com/google/martian/v3/parse"
-	"github.com/google/martian/v3/verify"
 )
 
 type group struct {
@@ -99,16 +96,6 @@ type Group struct {
 	resmu sync.RWMutex // guards group.resmods
 }
 
-type groupJSON struct {
-	Modifiers       []json.RawMessage    `json:"modifiers"`
-	Scope           []parse.ModifierType `json:"scope"`
-	AggregateErrors bool                 `json:"aggregateErrors"`
-}
-
-func init() {
-	parse.Register("fifo.Group", groupFromJSON)
-}
-
 // NewGroup returns a modifier group.
 func NewGroup() *Group {
 	return &Group{}
@@ -158,130 +145,6 @@ func (g *Group) ModifyResponse(res *http.Response) error {
 	g.resmu.RLock()
 	defer g.resmu.RUnlock()
 	return g.group.ModifyResponse(res)
-}
-
-// VerifyRequests returns a MultiError containing all the
-// verification errors returned by request verifiers.
-func (g *Group) VerifyRequests() error {
-	g.reqmu.Lock()
-	defer g.reqmu.Unlock()
-
-	var merr *martian.MultiError
-	for _, reqmod := range g.reqmods {
-		reqv, ok := reqmod.(verify.RequestVerifier)
-		if !ok {
-			continue
-		}
-
-		if err := reqv.VerifyRequests(); err != nil {
-			if merr == nil {
-				merr = martian.NewMultiError()
-			}
-			merr.Add(err)
-		}
-	}
-
-	if merr == nil || merr.Empty() {
-		return nil
-	}
-
-	return merr
-}
-
-// VerifyResponses returns a MultiError containing all the
-// verification errors returned by response verifiers.
-func (g *Group) VerifyResponses() error {
-	g.resmu.Lock()
-	defer g.resmu.Unlock()
-
-	var merr *martian.MultiError
-	for _, resmod := range g.resmods {
-		resv, ok := resmod.(verify.ResponseVerifier)
-		if !ok {
-			continue
-		}
-
-		if err := resv.VerifyResponses(); err != nil {
-			if merr == nil {
-				merr = martian.NewMultiError()
-			}
-			merr.Add(err)
-		}
-	}
-
-	if merr == nil || merr.Empty() {
-		return nil
-	}
-
-	return merr
-}
-
-// ResetRequestVerifications resets the state of the contained request verifiers.
-func (g *Group) ResetRequestVerifications() {
-	g.reqmu.Lock()
-	defer g.reqmu.Unlock()
-
-	for _, reqmod := range g.reqmods {
-		if reqv, ok := reqmod.(verify.RequestVerifier); ok {
-			reqv.ResetRequestVerifications()
-		}
-	}
-}
-
-// ResetResponseVerifications resets the state of the contained request verifiers.
-func (g *Group) ResetResponseVerifications() {
-	g.resmu.Lock()
-	defer g.resmu.Unlock()
-
-	for _, resmod := range g.resmods {
-		if resv, ok := resmod.(verify.ResponseVerifier); ok {
-			resv.ResetResponseVerifications()
-		}
-	}
-}
-
-// groupFromJSON builds a fifo.Group from JSON.
-//
-// Example JSON:
-//
-//	{
-//	  "fifo.Group" : {
-//	    "scope": ["request", "result"],
-//	    "modifiers": [
-//	      { ... },
-//	      { ... },
-//	    ]
-//	  }
-//	}
-func groupFromJSON(b []byte) (*parse.Result, error) {
-	msg := &groupJSON{}
-	if err := json.Unmarshal(b, msg); err != nil {
-		return nil, err
-	}
-
-	g := NewGroup()
-	if msg.AggregateErrors {
-		g.SetAggregateErrors(true)
-	}
-
-	for _, m := range msg.Modifiers {
-		r, err := parse.FromJSON(m)
-		if err != nil {
-			return nil, err
-		}
-
-		reqmod := r.RequestModifier()
-		if reqmod != nil {
-			g.AddRequestModifier(reqmod)
-		}
-
-		resmod := r.ResponseModifier()
-		if resmod != nil {
-			g.AddResponseModifier(resmod)
-		}
-	}
-
-	return parse.NewResult(g, msg.Scope)
 }
 
 // ToImmutable creates ImmutableGroup from existing Group.

@@ -16,82 +16,14 @@ package fifo
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
-	"reflect"
 	"testing"
 
 	"github.com/google/martian/v3"
-	"github.com/google/martian/v3/martiantest"
-	"github.com/google/martian/v3/parse"
-	"github.com/google/martian/v3/proxyutil"
-	"github.com/google/martian/v3/verify"
-
 	_ "github.com/google/martian/v3/header"
+	"github.com/google/martian/v3/martiantest"
+	"github.com/google/martian/v3/proxyutil"
 )
-
-func TestGroupFromJSON(t *testing.T) {
-	msg := []byte(`{
-    "fifo.Group": {
-      "scope": ["request", "response"],
-      "aggregateErrors": true,
-      "modifiers": [
-        {
-          "header.Modifier": {
-            "scope": ["request", "response"],
-            "name": "X-Testing",
-            "value": "true"
-          }
-        },
-        {
-          "header.Modifier": {
-            "scope": ["request", "response"],
-            "name": "Y-Testing",
-            "value": "true"
-          }
-        }
-      ]
-    }
-  }`)
-
-	r, err := parse.FromJSON(msg)
-	if err != nil {
-		t.Fatalf("parse.FromJSON(): got %v, want no error", err)
-	}
-
-	reqmod := r.RequestModifier()
-	if reqmod == nil {
-		t.Fatal("reqmod: got nil, want not nil")
-	}
-	req, err := http.NewRequest("GET", "http://example.com", nil)
-	if err != nil {
-		t.Fatalf("http.NewRequest(): got %v, want no error", err)
-	}
-	if err := reqmod.ModifyRequest(req); err != nil {
-		t.Fatalf("ModifyRequest(): got %v, want no error", err)
-	}
-	if got, want := req.Header.Get("X-Testing"), "true"; got != want {
-		t.Errorf("req.Header.Get(%q): got %q, want %q", "X-Testing", got, want)
-	}
-	if got, want := req.Header.Get("Y-Testing"), "true"; got != want {
-		t.Errorf("req.Header.Get(%q): got %q, want %q", "Y-Testing", got, want)
-	}
-
-	resmod := r.ResponseModifier()
-	if resmod == nil {
-		t.Fatal("resmod: got nil, want not nil")
-	}
-	res := proxyutil.NewResponse(200, nil, req)
-	if err := resmod.ModifyResponse(res); err != nil {
-		t.Fatalf("ModifyResponse(): got %v, want no error", err)
-	}
-	if got, want := res.Header.Get("X-Testing"), "true"; got != want {
-		t.Errorf("res.Header.Get(%q): got %q, want %q", "X-Testing", got, want)
-	}
-	if got, want := res.Header.Get("Y-Testing"), "true"; got != want {
-		t.Errorf("res.Header.Get(%q): got %q, want %q", "Y-Testing", got, want)
-	}
-}
 
 func TestModifyRequest(t *testing.T) {
 	fg := NewGroup()
@@ -238,94 +170,6 @@ func TestModifyResponseAggregatesErrors(t *testing.T) {
 
 	if err := fg.ModifyResponse(res); err.Error() != merr.Error() {
 		t.Fatalf("fg.ModifyResponse(): got %v, want %v", err, merr)
-	}
-}
-
-func TestVerifyRequests(t *testing.T) {
-	fg := NewGroup()
-
-	if err := fg.VerifyRequests(); err != nil {
-		t.Fatalf("VerifyRequest(): got %v, want no error", err)
-	}
-
-	errs := []error{}
-	for i := 0; i < 3; i++ {
-		err := fmt.Errorf("%d. verify request failure", i)
-
-		tv := &verify.TestVerifier{
-			RequestError: err,
-		}
-		fg.AddRequestModifier(tv)
-
-		errs = append(errs, err)
-	}
-
-	merr, ok := fg.VerifyRequests().(*martian.MultiError)
-	if !ok {
-		t.Fatal("VerifyRequests(): got nil, want *verify.MultiError")
-	}
-
-	if !reflect.DeepEqual(merr.Errors(), errs) {
-		t.Errorf("merr.Errors(): got %v, want %v", merr.Errors(), errs)
-	}
-}
-
-func TestVerifyResponses(t *testing.T) {
-	fg := NewGroup()
-
-	if err := fg.VerifyResponses(); err != nil {
-		t.Fatalf("VerifyResponses(): got %v, want no error", err)
-	}
-
-	errs := []error{}
-	for i := 0; i < 3; i++ {
-		err := fmt.Errorf("%d. verify responses failure", i)
-
-		tv := &verify.TestVerifier{
-			ResponseError: err,
-		}
-		fg.AddResponseModifier(tv)
-
-		errs = append(errs, err)
-	}
-
-	merr, ok := fg.VerifyResponses().(*martian.MultiError)
-	if !ok {
-		t.Fatal("VerifyResponses(): got nil, want *verify.MultiError")
-	}
-
-	if !reflect.DeepEqual(merr.Errors(), errs) {
-		t.Errorf("merr.Errors(): got %v, want %v", merr.Errors(), errs)
-	}
-}
-
-func TestResets(t *testing.T) {
-	fg := NewGroup()
-
-	for i := 0; i < 3; i++ {
-		tv := &verify.TestVerifier{
-			RequestError:  fmt.Errorf("%d. verify request error", i),
-			ResponseError: fmt.Errorf("%d. verify response error", i),
-		}
-		fg.AddRequestModifier(tv)
-		fg.AddResponseModifier(tv)
-	}
-
-	if err := fg.VerifyRequests(); err == nil {
-		t.Fatal("VerifyRequests(): got nil, want error")
-	}
-	if err := fg.VerifyResponses(); err == nil {
-		t.Fatal("VerifyResponses(): got nil, want error")
-	}
-
-	fg.ResetRequestVerifications()
-	fg.ResetResponseVerifications()
-
-	if err := fg.VerifyRequests(); err != nil {
-		t.Errorf("VerifyRequests(): got %v, want no error", err)
-	}
-	if err := fg.VerifyResponses(); err != nil {
-		t.Errorf("VerifyResponses(): got %v, want no error", err)
 	}
 }
 
