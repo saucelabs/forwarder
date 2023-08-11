@@ -25,6 +25,7 @@ linters:
     - gochecknoinits
     - godox
     - goerr113
+    - gomnd
     - gomoddirectives
     - maligned
     - nlreturn
@@ -50,8 +51,6 @@ linters-settings:
       - diagnostic
       - performance
       - style
-  gomnd:
-    ignored-numbers: [0, 1, 2, 3, 5, 10, 15, 30, 50, 60, 90, 100, 250, 128, 2048]
   lll:
     line-length: 180
   nestif:
@@ -69,7 +68,6 @@ issues:
     - "Error return value of `w.Write` is not checked"
     - "Function 'RunE' has too many statements"
     - "Function 'RunE' is too long"
-    - "Magic number: 0o"
     - "Temporary has been deprecated since Go 1.18 because it shouldn't be used"
     - "`nop.+` is unused"
     - "can be `expvar.Var`"
