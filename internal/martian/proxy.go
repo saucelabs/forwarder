@@ -24,9 +24,7 @@ import (
 	"io"
 	"net"
 	"net/http"
-	"net/http/httputil"
 	"net/url"
-	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -36,7 +34,7 @@ import (
 	"github.com/google/martian/v3/mitm"
 	"github.com/google/martian/v3/nosigpipe"
 	"github.com/google/martian/v3/proxyutil"
-	"github.com/google/martian/v3/trafficshape"
+	"github.com/saucelabs/forwarder/dialvia"
 	"golang.org/x/net/http/httpguts"
 )
 
@@ -428,16 +426,9 @@ func (p *Proxy) handleConnectRequest(ctx *Context, req *http.Request, session *S
 				return p.mitm.H2Config().Proxy(p.closing, tlsconn, req.URL)
 			}
 
-			var nconn net.Conn
-			nconn = tlsconn
-			// If the original connection is a traffic shaped connection, wrap the tls
-			// connection inside a traffic shaped connection too.
-			if ptsconn, ok := conn.(*trafficshape.Conn); ok {
-				nconn = ptsconn.Listener.GetTrafficShapedConn(tlsconn)
-			}
-			brw.Writer.Reset(nconn)
-			brw.Reader.Reset(nconn)
-			return p.handle(ctx, nconn, brw)
+			brw.Writer.Reset(tlsconn)
+			brw.Reader.Reset(tlsconn)
+			return p.handle(ctx, tlsconn, brw)
 		}
 
 		// Prepend the previously read data to be read again by http.ReadRequest.
@@ -608,16 +599,6 @@ func (p *Proxy) handle(ctx *Context, conn net.Conn, brw *bufio.ReadWriter) error
 	}
 	defer req.Body.Close()
 
-	if tsconn, ok := conn.(*trafficshape.Conn); ok {
-		wrconn := tsconn.GetWrappedConn()
-		if sconn, ok := wrconn.(*tls.Conn); ok {
-			session.MarkSecure()
-
-			cs := sconn.ConnectionState()
-			req.TLS = &cs
-		}
-	}
-
 	if tconn, ok := conn.(*tls.Conn); ok {
 		session.MarkSecure()
 
@@ -706,45 +687,6 @@ func (p *Proxy) handle(ctx *Context, conn net.Conn, brw *bufio.ReadWriter) error
 		closing = errClose
 	}
 
-	// check if conn is a traffic shaped connection.
-	if ptsconn, ok := conn.(*trafficshape.Conn); ok {
-		ptsconn.Context = &trafficshape.Context{}
-		// Check if the request URL matches any URLRegex in Shapes. If so, set the connections's Context
-		// with the required information, so that the Write() method of the Conn has access to it.
-		for urlregex, buckets := range ptsconn.LocalBuckets {
-			if match, _ := regexp.MatchString(urlregex, req.URL.String()); match {
-				if rangeStart := proxyutil.GetRangeStart(res); rangeStart > -1 {
-					dump, err := httputil.DumpResponse(res, false)
-					if err != nil {
-						return err
-					}
-					ptsconn.Context = &trafficshape.Context{
-						Shaping:            true,
-						Buckets:            buckets,
-						GlobalBucket:       ptsconn.GlobalBuckets[urlregex],
-						URLRegex:           urlregex,
-						RangeStart:         rangeStart,
-						ByteOffset:         rangeStart,
-						HeaderLen:          int64(len(dump)),
-						HeaderBytesWritten: 0,
-					}
-					// Get the next action to perform, if there.
-					ptsconn.Context.NextActionInfo = ptsconn.GetNextActionFromByte(rangeStart)
-					// Check if response lies in a throttled byte range.
-					ptsconn.Context.ThrottleContext = ptsconn.GetCurrentThrottle(rangeStart)
-					if ptsconn.Context.ThrottleContext.ThrottleNow {
-						ptsconn.Context.Buckets.WriteBucket.SetCapacity(
-							ptsconn.Context.ThrottleContext.Bandwidth)
-					}
-					log.Infof(
-						"trafficshape: Request %s with Range Start: %d matches a Shaping request %s. Enforcing Traffic shaping.",
-						req.URL, rangeStart, urlregex)
-				}
-				break
-			}
-		}
-	}
-
 	// deal with 101 Switching Protocols responses: (WebSocket, h2c, etc)
 	if res.StatusCode == 101 {
 		return p.handleUpgradeResponse(res, brw, conn)
@@ -766,9 +708,6 @@ func (p *Proxy) handle(ctx *Context, conn net.Conn, brw *bufio.ReadWriter) error
 	}
 	if err != nil {
 		log.Errorf("martian: got error while writing response back to client: %v", err)
-		if _, ok := err.(*trafficshape.ErrForceClose); ok {
-			closing = errClose
-		}
 		if err == io.ErrUnexpectedEOF {
 			closing = errClose
 		}
@@ -776,9 +715,6 @@ func (p *Proxy) handle(ctx *Context, conn net.Conn, brw *bufio.ReadWriter) error
 	err = brw.Flush()
 	if err != nil {
 		log.Errorf("martian: got error while flushing response back to client: %v", err)
-		if _, ok := err.(*trafficshape.ErrForceClose); ok {
-			closing = errClose
-		}
 	}
 
 	if p.CloseAfterReply {
