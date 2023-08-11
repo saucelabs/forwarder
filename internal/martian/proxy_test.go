@@ -32,10 +32,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/martian/v3/log"
-	"github.com/google/martian/v3/martiantest"
-	"github.com/google/martian/v3/mitm"
-	"github.com/google/martian/v3/proxyutil"
+	"github.com/saucelabs/forwarder/internal/martian/log"
+	"github.com/saucelabs/forwarder/internal/martian/martiantest"
+	"github.com/saucelabs/forwarder/internal/martian/mitm"
+	"github.com/saucelabs/forwarder/internal/martian/proxyutil"
 )
 
 type tempError struct{}
@@ -1143,7 +1143,6 @@ func TestIntegrationMITM(t *testing.T) {
 		t.Fatalf("http.ReadResponse(): got %v, want no error", err)
 	}
 	if got, want := res.StatusCode, 200; got != want {
-
 		t.Errorf("res.StatusCode: got %d, want %d", got, want)
 	}
 	if got, want := res.Header.Get("Warning"), reserr.Error(); !strings.Contains(got, want) {

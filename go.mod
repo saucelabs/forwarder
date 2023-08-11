@@ -4,8 +4,8 @@ go 1.20
 
 require (
 	github.com/dop251/goja v0.0.0-20221118162653-d4bf6fde1b86
+	github.com/golang/snappy v0.0.3
 	github.com/google/go-cmp v0.5.9
-	github.com/google/martian/v3 v3.2.1
 	github.com/gorilla/websocket v1.5.0
 	github.com/mitchellh/go-wordwrap v1.0.1
 	github.com/mmatczuk/anyflag v0.0.0-20230209112147-9567d4cab866
@@ -19,6 +19,8 @@ require (
 	golang.org/x/exp v0.0.0-20230314191032-db074128a8ec
 	golang.org/x/net v0.7.0
 	golang.org/x/sync v0.1.0
+	google.golang.org/grpc v1.42.0
+	google.golang.org/protobuf v1.28.1
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -43,9 +45,7 @@ require (
 	github.com/subosito/gotenv v1.2.0 // indirect
 	golang.org/x/sys v0.5.0 // indirect
 	golang.org/x/text v0.7.0 // indirect
-	google.golang.org/protobuf v1.28.1 // indirect
+	google.golang.org/genproto v0.0.0-20211208223120-3a66f561d7aa // indirect
 	gopkg.in/ini.v1 v1.66.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
-
-replace github.com/google/martian/v3 => github.com/saucelabs/martian/v3 v3.0.0-20230811091615-1aab6935a07c

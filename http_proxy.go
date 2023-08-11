@@ -20,10 +20,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/google/martian/v3"
-	"github.com/google/martian/v3/fifo"
-	"github.com/google/martian/v3/httpspec"
 	"github.com/saucelabs/forwarder/httplog"
+	"github.com/saucelabs/forwarder/internal/martian"
+	"github.com/saucelabs/forwarder/internal/martian/fifo"
+	"github.com/saucelabs/forwarder/internal/martian/httpspec"
 	"github.com/saucelabs/forwarder/log"
 	"github.com/saucelabs/forwarder/middleware"
 	"github.com/saucelabs/forwarder/pac"

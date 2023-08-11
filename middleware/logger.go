@@ -10,7 +10,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/google/martian/v3"
+	"github.com/saucelabs/forwarder/internal/martian"
 )
 
 type LogEntry struct {

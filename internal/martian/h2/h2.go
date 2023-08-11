@@ -25,7 +25,7 @@ import (
 	"net/url"
 	"sync"
 
-	"github.com/google/martian/v3/log"
+	"github.com/saucelabs/forwarder/internal/martian/log"
 	"golang.org/x/net/http2"
 )
 

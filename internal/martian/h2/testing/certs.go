@@ -27,8 +27,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/google/martian/v3/cybervillains"
-	"github.com/google/martian/v3/mitm"
+	"github.com/saucelabs/forwarder/internal/martian/cybervillains"
+	"github.com/saucelabs/forwarder/internal/martian/mitm"
 	"google.golang.org/grpc/credentials"
 )
 

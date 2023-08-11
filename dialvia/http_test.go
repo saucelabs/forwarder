@@ -14,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/martian/v3/proxyutil"
+	"github.com/saucelabs/forwarder/internal/martian/proxyutil"
 	"golang.org/x/net/context"
 )
 

@@ -24,7 +24,7 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/google/martian/v3"
+	"github.com/saucelabs/forwarder/internal/martian"
 )
 
 type group struct {

@@ -19,9 +19,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/google/martian/v3"
-	"github.com/google/martian/v3/martiantest"
-	"github.com/google/martian/v3/proxyutil"
+	"github.com/saucelabs/forwarder/internal/martian"
+	"github.com/saucelabs/forwarder/internal/martian/martiantest"
+	"github.com/saucelabs/forwarder/internal/martian/proxyutil"
 )
 
 func TestNewStack(t *testing.T) {
