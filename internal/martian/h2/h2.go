@@ -29,11 +29,9 @@ import (
 	"golang.org/x/net/http2"
 )
 
-var (
-	// connectionPreface is the constant value of the connection preface.
-	// https://tools.ietf.org/html/rfc7540#section-3.5
-	connectionPreface = []byte("PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n")
-)
+// connectionPreface is the constant value of the connection preface.
+// https://tools.ietf.org/html/rfc7540#section-3.5
+var connectionPreface = []byte("PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n")
 
 // Config stores the configuration information needed for HTTP/2 processing.
 type Config struct {

@@ -27,13 +27,12 @@ import (
 	"github.com/saucelabs/forwarder/internal/martian/h2"
 	mgrpc "github.com/saucelabs/forwarder/internal/martian/h2/grpc"
 	ht "github.com/saucelabs/forwarder/internal/martian/h2/testing"
+	tspb "github.com/saucelabs/forwarder/internal/martian/h2/testservice"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/hpack"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/encoding/gzip"
 	"google.golang.org/protobuf/proto"
-
-	tspb "github.com/saucelabs/forwarder/internal/martian/h2/testservice"
 )
 
 type requestProcessor struct {
