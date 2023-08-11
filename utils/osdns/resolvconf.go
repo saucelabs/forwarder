@@ -38,3 +38,6 @@ func (conf *resolverConfig) releaseSema() {
 
 //go:linkname resolvConf net.resolvConf
 var resolvConf resolverConfig //nolint:gochecknoglobals // used by go:linkname
+
+//go:linkname getSystemDNSConfig net.getSystemDNSConfig
+func getSystemDNSConfig() *dnsConfig
