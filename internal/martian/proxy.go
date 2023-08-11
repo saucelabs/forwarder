@@ -29,17 +29,18 @@ import (
 	"sync"
 	"time"
 
-	"github.com/google/martian/v3/dialvia"
-	"github.com/google/martian/v3/log"
-	"github.com/google/martian/v3/mitm"
-	"github.com/google/martian/v3/nosigpipe"
-	"github.com/google/martian/v3/proxyutil"
 	"github.com/saucelabs/forwarder/dialvia"
+	"github.com/saucelabs/forwarder/internal/martian/log"
+	"github.com/saucelabs/forwarder/internal/martian/mitm"
+	"github.com/saucelabs/forwarder/internal/martian/nosigpipe"
+	"github.com/saucelabs/forwarder/internal/martian/proxyutil"
 	"golang.org/x/net/http/httpguts"
 )
 
-var errClose = errors.New("closing connection")
-var noop = Noop("martian")
+var (
+	errClose = errors.New("closing connection")
+	noop     = Noop("martian")
+)
 
 func isCloseable(err error) bool {
 	if neterr, ok := err.(net.Error); ok && neterr.Timeout() {

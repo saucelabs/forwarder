@@ -14,7 +14,7 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/google/martian/v3/proxyutil"
+	"github.com/saucelabs/forwarder/internal/martian/proxyutil"
 )
 
 type denyError struct {

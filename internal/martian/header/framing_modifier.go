@@ -19,7 +19,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/google/martian/v3"
+	"github.com/saucelabs/forwarder/internal/martian"
 )
 
 // NewBadFramingModifier makes a best effort to fix inconsistencies in the

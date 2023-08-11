@@ -17,7 +17,7 @@ package martian
 import (
 	"net/http"
 
-	"github.com/google/martian/v3/log"
+	"github.com/saucelabs/forwarder/internal/martian/log"
 )
 
 type noopModifier struct {

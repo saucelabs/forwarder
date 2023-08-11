@@ -19,10 +19,10 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/google/martian/v3"
-	_ "github.com/google/martian/v3/header"
-	"github.com/google/martian/v3/martiantest"
-	"github.com/google/martian/v3/proxyutil"
+	"github.com/saucelabs/forwarder/internal/martian"
+	_ "github.com/saucelabs/forwarder/internal/martian/header"
+	"github.com/saucelabs/forwarder/internal/martian/martiantest"
+	"github.com/saucelabs/forwarder/internal/martian/proxyutil"
 )
 
 func TestModifyRequest(t *testing.T) {

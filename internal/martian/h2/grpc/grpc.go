@@ -26,7 +26,7 @@ import (
 	"sync/atomic"
 
 	"github.com/golang/snappy"
-	"github.com/google/martian/v3/h2"
+	"github.com/saucelabs/forwarder/internal/martian/h2"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/hpack"
 )

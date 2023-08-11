@@ -12,7 +12,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/google/martian/v3/mitm"
+	"github.com/saucelabs/forwarder/internal/martian/mitm"
 	"github.com/saucelabs/forwarder/utils/certutil"
 )
 

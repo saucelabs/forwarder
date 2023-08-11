@@ -18,7 +18,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/google/martian/v3"
+	"github.com/saucelabs/forwarder/internal/martian"
 )
 
 // Hop-by-hop headers as defined by RFC2616.

@@ -22,7 +22,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/google/martian/v3"
+	"github.com/saucelabs/forwarder/internal/martian"
 )
 
 const viaLoopKey = "via.LoopDetection"

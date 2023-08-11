@@ -12,11 +12,11 @@ import (
 	"net/url"
 	"strings"
 
-	martianlog "github.com/google/martian/v3/log"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/saucelabs/forwarder"
 	"github.com/saucelabs/forwarder/bind"
 	"github.com/saucelabs/forwarder/header"
+	martianlog "github.com/saucelabs/forwarder/internal/martian/log"
 	"github.com/saucelabs/forwarder/log"
 	"github.com/saucelabs/forwarder/log/stdlog"
 	"github.com/saucelabs/forwarder/pac"

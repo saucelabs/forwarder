@@ -23,8 +23,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/google/martian/v3/log"
-	"github.com/google/martian/v3/proxyutil"
+	"github.com/saucelabs/forwarder/internal/martian/log"
+	"github.com/saucelabs/forwarder/internal/martian/proxyutil"
 )
 
 func copyHeader(dst, src http.Header) {

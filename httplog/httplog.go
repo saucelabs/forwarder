@@ -12,7 +12,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/google/martian/v3/messageview"
+	"github.com/saucelabs/forwarder/internal/martian/messageview"
 	"github.com/saucelabs/forwarder/middleware"
 )
 
