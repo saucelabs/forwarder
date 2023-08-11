@@ -371,44 +371,6 @@ func (p *Proxy) readRequest(ctx *Context, conn net.Conn, brw *bufio.ReadWriter) 
 	return
 }
 
-var copyBufPool = sync.Pool{
-	New: func() any {
-		b := make([]byte, 32*1024)
-		return &b
-	},
-}
-
-func copySync(name string, w io.Writer, r io.Reader, donec chan<- bool) {
-	bufp := copyBufPool.Get().(*[]byte)
-	buf := *bufp
-	defer copyBufPool.Put(bufp)
-
-	if _, err := io.CopyBuffer(w, r, buf); err != nil && err != io.EOF {
-		log.Errorf("martian: failed to copy %s tunnel: %v", name, err)
-	}
-	if cw, ok := asCloseWriter(w); ok {
-		cw.CloseWrite()
-	} else if pw, ok := w.(*io.PipeWriter); ok {
-		pw.Close()
-	} else {
-		log.Errorf("martian: cannot close write side of %s tunnel (%T)", name, w)
-	}
-
-	log.Debugf("martian: %s tunnel finished copying", name)
-	donec <- true
-}
-
-func drainBuffer(w io.Writer, r *bufio.Reader) error {
-	if n := r.Buffered(); n > 0 {
-		rbuf, err := r.Peek(n)
-		if err != nil {
-			return err
-		}
-		w.Write(rbuf)
-	}
-	return nil
-}
-
 func (p *Proxy) handleConnectRequest(ctx *Context, req *http.Request, session *Session, brw *bufio.ReadWriter, conn net.Conn) error {
 	if err := p.reqmod.ModifyRequest(req); err != nil {
 		log.Errorf("martian: error modifying CONNECT request: %v", err)
@@ -594,6 +556,44 @@ func (p *Proxy) tunnel(name string, res *http.Response, brw *bufio.ReadWriter, c
 	log.Debugf("martian: closed %s tunnel", name)
 
 	return nil
+}
+
+func drainBuffer(w io.Writer, r *bufio.Reader) error {
+	if n := r.Buffered(); n > 0 {
+		rbuf, err := r.Peek(n)
+		if err != nil {
+			return err
+		}
+		w.Write(rbuf)
+	}
+	return nil
+}
+
+var copyBufPool = sync.Pool{
+	New: func() any {
+		b := make([]byte, 32*1024)
+		return &b
+	},
+}
+
+func copySync(name string, w io.Writer, r io.Reader, donec chan<- bool) {
+	bufp := copyBufPool.Get().(*[]byte)
+	buf := *bufp
+	defer copyBufPool.Put(bufp)
+
+	if _, err := io.CopyBuffer(w, r, buf); err != nil && err != io.EOF {
+		log.Errorf("martian: failed to copy %s tunnel: %v", name, err)
+	}
+	if cw, ok := asCloseWriter(w); ok {
+		cw.CloseWrite()
+	} else if pw, ok := w.(*io.PipeWriter); ok {
+		pw.Close()
+	} else {
+		log.Errorf("martian: cannot close write side of %s tunnel (%T)", name, w)
+	}
+
+	log.Debugf("martian: %s tunnel finished copying", name)
+	donec <- true
 }
 
 func (p *Proxy) handle(ctx *Context, conn net.Conn, brw *bufio.ReadWriter) error {
