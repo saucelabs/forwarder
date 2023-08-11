@@ -12,6 +12,7 @@ run:
     - middleware/delegator.go
     - utils/cobrautil/templates
     - utils/cobrautil/term
+    - internal/martian
   silent: true
 
 linters:
