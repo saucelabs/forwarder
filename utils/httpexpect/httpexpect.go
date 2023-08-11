@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/http/httptrace"
 	"net/url"
 	"strings"
 	"testing"
@@ -40,6 +41,7 @@ func NewURLWithBasicAuth(rawURL, basicAuth string) (*url.URL, error) {
 type Client struct {
 	t       *testing.T
 	rt      http.RoundTripper
+	trace   *httptrace.ClientTrace
 	baseURL string
 }
 
@@ -53,7 +55,18 @@ func NewClient(t *testing.T, baseURL string, rt http.RoundTripper) *Client {
 	}
 }
 
+func (c *Client) Trace(enabled bool) {
+	if !enabled {
+		c.trace = nil
+	} else {
+		c.trace = newTestClientTrace(c.t)
+	}
+}
+
 func (c *Client) do(req *http.Request) (*http.Response, error) {
+	if c.trace != nil {
+		req = req.WithContext(httptrace.WithClientTrace(req.Context(), c.trace))
+	}
 	resp, err := c.rt.RoundTrip(req)
 
 	// There is a difference between sending HTTP and HTTPS requests.
