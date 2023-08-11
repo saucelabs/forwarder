@@ -292,7 +292,7 @@ func SetupFlagInsecure(l *setupList) {
 }
 
 func SetupFlagMITM(l *setupList) {
-	const run = "^TestFlagMITM"
+	const run = "^Test(FlagMITM|Proxy)"
 
 	l.Add(setup.Setup{
 		Name: "flag-mitm-cacert",

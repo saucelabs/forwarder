@@ -649,8 +649,8 @@ github.com/rogpeppe/go-internal v1.6.1/go.mod h1:xXDCJY+GAPziupqXw64V24skbSoqbTE
 github.com/rogpeppe/go-internal v1.8.0 h1:FCbCCtXNOY3UtUuHUYaghJg4y7Fd14rXifAYUAtL9R8=
 github.com/rogpeppe/go-internal v1.8.0/go.mod h1:WmiCO8CzOY8rg0OYDC4/i/2WRWAB6poM+XZ2dLUbcbE=
 github.com/russross/blackfriday/v2 v2.1.0/go.mod h1:+Rmxgy9KzJVeS9/2gXHxylqXiyQDYRxCVz55jmeOWTM=
-github.com/saucelabs/martian/v3 v3.0.0-20230803120737-766348f8e605 h1:sVItAj/OZNJkRr3WqOdxYeDo/zg+i/7kniU//SAFOik=
-github.com/saucelabs/martian/v3 v3.0.0-20230803120737-766348f8e605/go.mod h1:fo2MCZTVpeA93I0COqJSEcCxinS5YSzUXlEhyyU2RbQ=
+github.com/saucelabs/martian/v3 v3.0.0-20230811091615-1aab6935a07c h1:XxqaWpJVIHjT0HraxKY57IRx78scXFXrM8k/xSjt6lA=
+github.com/saucelabs/martian/v3 v3.0.0-20230811091615-1aab6935a07c/go.mod h1:fo2MCZTVpeA93I0COqJSEcCxinS5YSzUXlEhyyU2RbQ=
 github.com/sirupsen/logrus v1.2.0/go.mod h1:LxeOpSwHxABJmUn/MG1IvRgCAasNZTLOkJPxbbu5VWo=
 github.com/sirupsen/logrus v1.4.2/go.mod h1:tLMulIdttU9McNUspp0xgXVQah82FyeX6MwdIuYE2rE=
 github.com/sirupsen/logrus v1.6.0/go.mod h1:7uNnSEd1DgxDLC74fIahvMZmmYsHGZGEOFrfsX/uA88=
