@@ -40,6 +40,7 @@ func TestNewStack(t *testing.T) {
 	// Hop-by-hop header to be removed.
 	req.Header.Set("Hop-By-Hop", "true")
 	req.Header.Set("Connection", "Hop-By-Hop")
+	req.Header.Set("Transfer-Encoding", "chunked")
 
 	req.RemoteAddr = "10.0.0.1:5000"
 
@@ -49,6 +50,12 @@ func TestNewStack(t *testing.T) {
 
 	if got, want := req.Header.Get("Hop-By-Hop"), ""; got != want {
 		t.Errorf("req.Header.Get(%q): got %q, want %q", "Hop-By-Hop", got, want)
+	}
+	if got, want := req.Header.Get("Connection"), ""; got != want {
+		t.Errorf("req.Header.Get(%q): got %q, want %q", "Connection", got, want)
+	}
+	if got, want := req.Header.Get("Transfer-Encoding"), ""; got != want {
+		t.Errorf("req.Header.Get(%q): got %q, want %q", "Transfer-Encoding", got, want)
 	}
 	if got, want := req.Header.Get("X-Forwarded-For"), "10.0.0.1"; got != want {
 		t.Errorf("req.Header.Get(%q): got %q, want %q", "X-Forwarded-For", got, want)
@@ -62,6 +69,7 @@ func TestNewStack(t *testing.T) {
 	// Hop-by-hop header to be removed.
 	res.Header.Set("Hop-By-Hop", "true")
 	res.Header.Set("Connection", "Hop-By-Hop")
+	res.Header.Set("Transfer-Encoding", "chunked")
 
 	if err := stack.ModifyResponse(res); err != nil {
 		t.Fatalf("ModifyResponse(): got %v, want no error", err)
@@ -69,5 +77,11 @@ func TestNewStack(t *testing.T) {
 
 	if got, want := res.Header.Get("Hop-By-Hop"), ""; got != want {
 		t.Errorf("res.Header.Get(%q): got %q, want %q", "Hop-By-Hop", got, want)
+	}
+	if got, want := res.Header.Get("Connection"), ""; got != want {
+		t.Errorf("res.Header.Get(%q): got %q, want %q", "Connection", got, want)
+	}
+	if got, want := res.Header.Get("Transfer-Encoding"), ""; got != want {
+		t.Errorf("res.Header.Get(%q): got %q, want %q", "Transfer-Encoding", got, want)
 	}
 }
