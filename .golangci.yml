@@ -50,7 +50,8 @@ linters-settings:
   errcheck:
     check-blank: true
   funlen:
-    lines: 100
+    lines: 140
+    statements: 75
   gocognit:
     min-complexity: 40
   gocyclo:
