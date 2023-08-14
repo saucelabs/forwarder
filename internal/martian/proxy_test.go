@@ -325,10 +325,8 @@ func TestIntegrationHTTP100Continue(t *testing.T) {
 	}
 
 	go func() {
-		select {
-		case <-time.After(time.Second):
-			conn.Write([]byte("body content"))
-		}
+		<-time.After(time.Second)
+		conn.Write([]byte("body content"))
 	}()
 
 	res, err := http.ReadResponse(bufio.NewReader(conn), nil)

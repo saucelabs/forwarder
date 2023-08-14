@@ -52,11 +52,7 @@ func isCloseable(err error) bool {
 		return true
 	}
 
-	if strings.Contains(err.Error(), "tls:") {
-		return true
-	}
-
-	return false
+	return strings.Contains(err.Error(), "tls:")
 }
 
 // Proxy is an HTTP proxy with support for TLS MITM and customizable behavior.

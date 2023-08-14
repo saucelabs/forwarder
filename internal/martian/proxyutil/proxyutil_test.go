@@ -16,7 +16,6 @@ package proxyutil
 
 import (
 	"fmt"
-	"io"
 	"net/http"
 	"strings"
 	"testing"
@@ -50,9 +49,6 @@ func TestNewResponse(t *testing.T) {
 	}
 	if res.Header == nil {
 		t.Error("res.Header: got nil, want header")
-	}
-	if _, ok := res.Body.(io.ReadCloser); !ok {
-		t.Error("res.Body.(io.ReadCloser): got !ok, want ok")
 	}
 	if got, want := res.Request, req; got != want {
 		t.Errorf("res.Request: got %v, want %v", got, want)
