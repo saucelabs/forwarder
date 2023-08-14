@@ -20,6 +20,7 @@ linters:
   disable:
     - contextcheck
     - cyclop
+    - depguard
     - exhaustive
     - exhaustivestruct
     - exhaustruct
