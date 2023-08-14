@@ -32,6 +32,7 @@ linters:
     - gomoddirectives
     - ifshort
     - interfacer
+    - ireturn
     - maligned
     - nlreturn
     - nonamedreturns
@@ -81,8 +82,6 @@ issues:
     - "can be `expvar.Var`"
     - "can be `fmt.Stringer`"
     - "missing cases in switch of type Scheme: TunnelScheme"
-    - "returns interface \\(github.com/dop251/goja\\.Value\\)"
-    - "returns interface \\(github.com/saucelabs/forwarder/internal/martian\\.(Request|Response)+Modifier\\)"
     - "shadow of imported from 'github.com/saucelabs/forwarder/log' package 'log'"
     - "string `https?` has \\d+ occurrences"
   exclude-rules:
