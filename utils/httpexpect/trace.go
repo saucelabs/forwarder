@@ -14,6 +14,7 @@ import (
 )
 
 func newTestClientTrace(t *testing.T) *httptrace.ClientTrace {
+	t.Helper()
 	return &httptrace.ClientTrace{
 		GetConn: func(hostPort string) {
 			t.Logf("GetConn for hostPort: %s", hostPort)
