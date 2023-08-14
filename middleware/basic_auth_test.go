@@ -14,7 +14,7 @@ import (
 
 func TestBasicAuth(t *testing.T) {
 	ba := NewBasicAuth()
-	r := httptest.NewRequest(http.MethodGet, "/", nil)
+	r := httptest.NewRequest(http.MethodGet, "/", http.NoBody)
 	r.SetBasicAuth("user", "pass")
 
 	if user, pass, ok := ba.BasicAuth(r); !ok || user != "user" || pass != "pass" {
@@ -37,7 +37,7 @@ func TestBasicAuthWrap(t *testing.T) {
 
 	t.Run("Authenticated", func(t *testing.T) {
 		w := httptest.NewRecorder()
-		r := httptest.NewRequest(http.MethodGet, "/", nil)
+		r := httptest.NewRequest(http.MethodGet, "/", http.NoBody)
 		r.SetBasicAuth("user", "pass")
 
 		h.ServeHTTP(w, r)
@@ -48,7 +48,7 @@ func TestBasicAuthWrap(t *testing.T) {
 
 	t.Run("Not Authenticated", func(t *testing.T) {
 		w := httptest.NewRecorder()
-		r := httptest.NewRequest(http.MethodGet, "/", nil)
+		r := httptest.NewRequest(http.MethodGet, "/", http.NoBody)
 
 		h.ServeHTTP(w, r)
 		if w.Result().StatusCode != http.StatusUnauthorized {

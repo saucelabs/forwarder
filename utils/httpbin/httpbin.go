@@ -124,8 +124,9 @@ func atoi(w http.ResponseWriter, s string) (int, bool) {
 	if err != nil {
 		msg := fmt.Sprintf("invalid argument %q: %s", s, err)
 		http.Error(w, msg, http.StatusBadRequest)
+		return 0, false
 	}
-	return v, err == nil
+	return v, true
 }
 
 // headerHandler implements the /header/{key}/{value} endpoint.
