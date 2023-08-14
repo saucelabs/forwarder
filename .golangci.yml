@@ -8,7 +8,6 @@ run:
   build-tags:
     - e2e
   skip-files:
-    - httpbin/httpbin.go
     - middleware/delegator.go
     - utils/cobrautil/templates
     - utils/cobrautil/term
