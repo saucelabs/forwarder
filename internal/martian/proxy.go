@@ -705,13 +705,20 @@ func (p *Proxy) handle(ctx *Context, conn net.Conn, brw *bufio.ReadWriter) error
 		}
 	}
 
-	// Add support for Server Sent Events - relay HTTP chunks and flush after each chunk.
-	// This is safe for events that are smaller than the buffer io.Copy uses (32KB).
-	// If the event is larger than the buffer, the event will be split into multiple chunks.
-	if shouldFlush(res) {
-		err = res.Write(flushAfterChunkWriter{brw.Writer})
+	if req.Method == "HEAD" && res.Body == http.NoBody {
+		// The http package is misbehaving when writing a HEAD response.
+		// See https://github.com/golang/go/issues/62015 for details.
+		// This works around the issue by writing the response manually.
+		err = writeHeadResponse(brw.Writer, res)
 	} else {
-		err = res.Write(brw)
+		// Add support for Server Sent Events - relay HTTP chunks and flush after each chunk.
+		// This is safe for events that are smaller than the buffer io.Copy uses (32KB).
+		// If the event is larger than the buffer, the event will be split into multiple chunks.
+		if shouldFlush(res) {
+			err = res.Write(flushAfterChunkWriter{brw.Writer})
+		} else {
+			err = res.Write(brw)
+		}
 	}
 	if err != nil {
 		tracedLog.Errorf("martian: got error while writing response back to client: %v", err)
