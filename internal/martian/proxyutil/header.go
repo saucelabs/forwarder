@@ -60,19 +60,25 @@ func ResponseHeader(res *http.Response) *Header {
 	}
 }
 
+const (
+	hostHeaderName             = "Host"
+	contentLengthHeaderName    = "Content-Length"
+	transferEncodingHeaderName = "Transfer-Encoding"
+)
+
 // Set sets value at header name for the request or response.
 func (h *Header) Set(name, value string) error {
 	switch http.CanonicalHeaderKey(name) {
-	case "Host":
+	case hostHeaderName:
 		h.setHost(value)
-	case "Content-Length":
+	case contentLengthHeaderName:
 		cl, err := strconv.ParseInt(value, 10, 64)
 		if err != nil {
 			return err
 		}
 
 		h.setCL(cl)
-	case "Transfer-Encoding":
+	case transferEncodingHeaderName:
 		h.setTE([]string{value})
 	default:
 		h.h.Set(name, value)
@@ -85,19 +91,19 @@ func (h *Header) Set(name, value string) error {
 // response.
 func (h *Header) Add(name, value string) error {
 	switch http.CanonicalHeaderKey(name) {
-	case "Host":
+	case hostHeaderName:
 		if h.host() != "" {
 			return fmt.Errorf("proxyutil: illegal header multiple: %s", "Host")
 		}
 
 		return h.Set(name, value)
-	case "Content-Length":
+	case contentLengthHeaderName:
 		if h.cl() > 0 {
 			return fmt.Errorf("proxyutil: illegal header multiple: %s", "Content-Length")
 		}
 
 		return h.Set(name, value)
-	case "Transfer-Encoding":
+	case transferEncodingHeaderName:
 		h.setTE(append(h.te(), value))
 	default:
 		h.h.Add(name, value)
@@ -109,15 +115,15 @@ func (h *Header) Add(name, value string) error {
 // Get returns the first value at header name for the request or response.
 func (h *Header) Get(name string) string {
 	switch http.CanonicalHeaderKey(name) {
-	case "Host":
+	case hostHeaderName:
 		return h.host()
-	case "Content-Length":
+	case contentLengthHeaderName:
 		if h.cl() < 0 {
 			return ""
 		}
 
 		return strconv.FormatInt(h.cl(), 10)
-	case "Transfer-Encoding":
+	case transferEncodingHeaderName:
 		if len(h.te()) < 1 {
 			return ""
 		}
@@ -132,19 +138,19 @@ func (h *Header) Get(name string) string {
 // returns nil, false.
 func (h *Header) All(name string) ([]string, bool) {
 	switch http.CanonicalHeaderKey(name) {
-	case "Host":
+	case hostHeaderName:
 		if h.host() == "" {
 			return nil, false
 		}
 
 		return []string{h.host()}, true
-	case "Content-Length":
+	case contentLengthHeaderName:
 		if h.cl() <= 0 {
 			return nil, false
 		}
 
 		return []string{strconv.FormatInt(h.cl(), 10)}, true
-	case "Transfer-Encoding":
+	case transferEncodingHeaderName:
 		if h.te() == nil {
 			return nil, false
 		}
@@ -159,11 +165,11 @@ func (h *Header) All(name string) ([]string, bool) {
 // Del deletes the header at name for the request or response.
 func (h *Header) Del(name string) {
 	switch http.CanonicalHeaderKey(name) {
-	case "Host":
+	case hostHeaderName:
 		h.setHost("")
-	case "Content-Length":
+	case contentLengthHeaderName:
 		h.setCL(-1)
-	case "Transfer-Encoding":
+	case transferEncodingHeaderName:
 		h.setTE(nil)
 	default:
 		h.h.Del(name)
@@ -180,9 +186,9 @@ func (h *Header) Map() http.Header {
 	}
 
 	for _, k := range []string{
-		"Host",
-		"Content-Length",
-		"Transfer-Encoding",
+		hostHeaderName,
+		contentLengthHeaderName,
+		transferEncodingHeaderName,
 	} {
 		vs, ok := h.All(k)
 		if !ok {

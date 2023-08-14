@@ -24,6 +24,8 @@ import (
 )
 
 func TestMITM(t *testing.T) {
+	const exampleHostname = "example.com"
+
 	ca, priv, err := NewAuthority("martian.proxy", "Martian Authority", 24*time.Hour)
 	if err != nil {
 		t.Fatalf("NewAuthority(): got %v, want no error", err)
@@ -57,7 +59,7 @@ func TestMITM(t *testing.T) {
 	}
 
 	// Simulate a TLS connection with SNI.
-	clientHello.ServerName = "example.com"
+	clientHello.ServerName = exampleHostname
 
 	tlsc, err := conf.GetCertificate(clientHello)
 	if err != nil {
@@ -65,13 +67,13 @@ func TestMITM(t *testing.T) {
 	}
 
 	x509c := tlsc.Leaf
-	if got, want := x509c.Subject.CommonName, "example.com"; got != want {
+	if got, want := x509c.Subject.CommonName, exampleHostname; got != want {
 		t.Errorf("x509c.Subject.CommonName: got %q, want %q", got, want)
 	}
 
 	c.SkipTLSVerify(true)
 
-	conf = c.TLSForHost("example.com")
+	conf = c.TLSForHost(exampleHostname)
 	if got := conf.NextProtos; !reflect.DeepEqual(got, protos) {
 		t.Errorf("conf.NextProtos: got %v, want %v", got, protos)
 	}
@@ -99,12 +101,14 @@ func TestMITM(t *testing.T) {
 	}
 
 	x509c = tlsc.Leaf
-	if got, want := x509c.Subject.CommonName, "example.com"; got != want {
+	if got, want := x509c.Subject.CommonName, exampleHostname; got != want {
 		t.Errorf("x509c.Subject.CommonName: got %q, want %q", got, want)
 	}
 }
 
 func TestCert(t *testing.T) {
+	const exampleHostname = "example.com"
+
 	ca, priv, err := NewAuthority("martian.proxy", "Martian Authority", 24*time.Hour)
 	if err != nil {
 		t.Fatalf("NewAuthority(): got %v, want no error", err)
@@ -115,9 +119,9 @@ func TestCert(t *testing.T) {
 		t.Fatalf("NewConfig(): got %v, want no error", err)
 	}
 
-	tlsc, err := c.cert("example.com")
+	tlsc, err := c.cert(exampleHostname)
 	if err != nil {
-		t.Fatalf("c.cert(%q): got %v, want no error", "example.com:8080", err)
+		t.Fatalf("c.cert(%q): got %v, want no error", exampleHostname, err)
 	}
 
 	if tlsc.Certificate == nil {
@@ -135,11 +139,11 @@ func TestCert(t *testing.T) {
 	if got := x509c.SerialNumber; got.Cmp(MaxSerialNumber) >= 0 {
 		t.Errorf("x509c.SerialNumber: got %v, want <= MaxSerialNumber", got)
 	}
-	if got, want := x509c.Subject.CommonName, "example.com"; got != want {
+	if got, want := x509c.Subject.CommonName, exampleHostname; got != want {
 		t.Errorf("X509c.Subject.CommonName: got %q, want %q", got, want)
 	}
-	if err := x509c.VerifyHostname("example.com"); err != nil {
-		t.Errorf("x509c.VerifyHostname(%q): got %v, want no error", "example.com", err)
+	if err := x509c.VerifyHostname(exampleHostname); err != nil {
+		t.Errorf("x509c.VerifyHostname(%q): got %v, want no error", exampleHostname, err)
 	}
 
 	if got, want := x509c.Subject.Organization, []string{"Martian Proxy"}; !reflect.DeepEqual(got, want) {
@@ -165,7 +169,7 @@ func TestCert(t *testing.T) {
 		t.Errorf("x509c.ExtKeyUsage: got %v, want %v", got, want)
 	}
 
-	if got, want := x509c.DNSNames, []string{"example.com"}; !reflect.DeepEqual(got, want) {
+	if got, want := x509c.DNSNames, []string{exampleHostname}; !reflect.DeepEqual(got, want) {
 		t.Errorf("x509c.DNSNames: got %v, want %v", got, want)
 	}
 
@@ -180,9 +184,9 @@ func TestCert(t *testing.T) {
 	}
 
 	// Retrieve cached certificate.
-	tlsc2, err := c.cert("example.com")
+	tlsc2, err := c.cert(exampleHostname)
 	if err != nil {
-		t.Fatalf("c.cert(%q): got %v, want no error", "example.com", err)
+		t.Fatalf("c.cert(%q): got %v, want no error", exampleHostname, err)
 	}
 	if tlsc != tlsc2 {
 		t.Error("tlsc2: got new certificate, want cached certificate")
