@@ -23,7 +23,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"net/url"
@@ -339,9 +338,9 @@ func TestIntegrationHTTP100Continue(t *testing.T) {
 		t.Fatalf("res.StatusCode: got %d, want %d", got, want)
 	}
 
-	got, err := ioutil.ReadAll(res.Body)
+	got, err := io.ReadAll(res.Body)
 	if err != nil {
-		t.Fatalf("ioutil.ReadAll(): got %v, want no error", err)
+		t.Fatalf("io.ReadAll(): got %v, want no error", err)
 	}
 
 	if want := []byte("body content"); !bytes.Equal(got, want) {
@@ -510,7 +509,7 @@ func TestIntegrationUnexpectedUpstreamFailure(t *testing.T) {
 			Proto:      "HTTP/1.1",
 			ProtoMajor: 1,
 			ProtoMinor: 1,
-			Body:       ioutil.NopCloser(bytes.NewBufferString("body content")),
+			Body:       io.NopCloser(bytes.NewBufferString("body content")),
 			// Content length is set as 13 but response
 			// stops after sending 12 bytes
 			ContentLength: 13,
@@ -553,10 +552,10 @@ func TestIntegrationUnexpectedUpstreamFailure(t *testing.T) {
 		t.Fatalf("res.StatusCode: got %d, want %d", got, want)
 	}
 
-	got, err := ioutil.ReadAll(res.Body)
+	got, err := io.ReadAll(res.Body)
 	// if below error is unhandled in proxy, the test will timeout.
 	if err != io.ErrUnexpectedEOF {
-		t.Fatalf("ioutil.ReadAll(): got %v, want %v", err, io.ErrUnexpectedEOF)
+		t.Fatalf("io.ReadAll(): got %v, want %v", err, io.ErrUnexpectedEOF)
 	}
 
 	if want := []byte("body content"); !bytes.Equal(got, want) {
@@ -1633,7 +1632,7 @@ func TestServerClosesConnection(t *testing.T) {
 	if err != nil {
 		t.Fatalf("http.ReadResponse(): got %v, want no error", err)
 	}
-	_, err = ioutil.ReadAll(res.Body)
+	_, err = io.ReadAll(res.Body)
 	if err != nil {
 		t.Fatalf("error while ReadAll: %v", err)
 	}

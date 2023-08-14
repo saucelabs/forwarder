@@ -20,7 +20,6 @@ import (
 	"compress/flate"
 	"compress/gzip"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"strings"
 	"testing"
@@ -43,9 +42,9 @@ func TestRequestViewHeadersOnly(t *testing.T) {
 		t.Fatalf("SnapshotRequest(): got %v, want no error", err)
 	}
 
-	got, err := ioutil.ReadAll(mv.HeaderReader())
+	got, err := io.ReadAll(mv.HeaderReader())
 	if err != nil {
-		t.Fatalf("ioutil.ReadAll(mv.HeaderReader()): got %v, want no error", err)
+		t.Fatalf("io.ReadAll(mv.HeaderReader()): got %v, want no error", err)
 	}
 
 	hdrwant := "GET http://example.com/path?k=v HTTP/1.1\r\n" +
@@ -63,16 +62,16 @@ func TestRequestViewHeadersOnly(t *testing.T) {
 	}
 
 	if _, err := br.Read(nil); err != io.EOF {
-		t.Fatalf("ioutil.ReadAll(mv.BodyReader()): got %v, want io.EOF", err)
+		t.Fatalf("io.ReadAll(mv.BodyReader()): got %v, want io.EOF", err)
 	}
 
 	r, err := mv.Reader()
 	if err != nil {
 		t.Fatalf("mv.Reader(): got %v, want no error", err)
 	}
-	got, err = ioutil.ReadAll(r)
+	got, err = io.ReadAll(r)
 	if err != nil {
-		t.Fatalf("ioutil.ReadAll(mv.Reader()): got %v, want no error", err)
+		t.Fatalf("io.ReadAll(mv.Reader()): got %v, want no error", err)
 	}
 
 	if want := []byte(hdrwant); !bytes.Equal(got, want) {
@@ -97,9 +96,9 @@ func TestRequestView(t *testing.T) {
 		t.Fatalf("SnapshotRequest(): got %v, want no error", err)
 	}
 
-	got, err := ioutil.ReadAll(mv.HeaderReader())
+	got, err := io.ReadAll(mv.HeaderReader())
 	if err != nil {
-		t.Fatalf("ioutil.ReadAll(mv.HeaderReader()): got %v, want no error", err)
+		t.Fatalf("io.ReadAll(mv.HeaderReader()): got %v, want no error", err)
 	}
 
 	hdrwant := "GET http://example.com/path?k=v HTTP/1.1\r\n" +
@@ -115,9 +114,9 @@ func TestRequestView(t *testing.T) {
 		t.Fatalf("mv.BodyReader(): got %v, want no error", err)
 	}
 
-	got, err = ioutil.ReadAll(br)
+	got, err = io.ReadAll(br)
 	if err != nil {
-		t.Fatalf("ioutil.ReadAll(mv.BodyReader()): got %v, want no error", err)
+		t.Fatalf("io.ReadAll(mv.BodyReader()): got %v, want no error", err)
 	}
 
 	bodywant := "body content"
@@ -129,9 +128,9 @@ func TestRequestView(t *testing.T) {
 	if err != nil {
 		t.Fatalf("mv.Reader(): got %v, want no error", err)
 	}
-	got, err = ioutil.ReadAll(r)
+	got, err = io.ReadAll(r)
 	if err != nil {
-		t.Fatalf("ioutil.ReadAll(mv.Reader()): got %v, want no error", err)
+		t.Fatalf("io.ReadAll(mv.Reader()): got %v, want no error", err)
 	}
 
 	if want := []byte(hdrwant + bodywant); !bytes.Equal(got, want) {
@@ -163,9 +162,9 @@ func TestRequestViewSkipBodyUnlessContentType(t *testing.T) {
 		t.Fatalf("mv.BodyReader(): got %v, want no error", err)
 	}
 
-	got, err := ioutil.ReadAll(br)
+	got, err := io.ReadAll(br)
 	if err != nil {
-		t.Fatalf("ioutil.ReadAll(mv.BodyReader()): got %v, want no error", err)
+		t.Fatalf("io.ReadAll(mv.BodyReader()): got %v, want no error", err)
 	}
 
 	bodywant := "body content"
@@ -206,9 +205,9 @@ func TestRequestViewChunkedTransferEncoding(t *testing.T) {
 		t.Fatalf("SnapshotRequest(): got %v, want no error", err)
 	}
 
-	got, err := ioutil.ReadAll(mv.HeaderReader())
+	got, err := io.ReadAll(mv.HeaderReader())
 	if err != nil {
-		t.Fatalf("ioutil.ReadAll(mv.HeaderReader()): got %v, want no error", err)
+		t.Fatalf("io.ReadAll(mv.HeaderReader()): got %v, want no error", err)
 	}
 
 	hdrwant := "GET http://example.com/path?k=v HTTP/1.1\r\n" +
@@ -225,9 +224,9 @@ func TestRequestViewChunkedTransferEncoding(t *testing.T) {
 		t.Fatalf("mv.BodyReader(): got %v, want no error", err)
 	}
 
-	got, err = ioutil.ReadAll(br)
+	got, err = io.ReadAll(br)
 	if err != nil {
-		t.Fatalf("ioutil.ReadAll(mv.BodyReader()): got %v, want no error", err)
+		t.Fatalf("io.ReadAll(mv.BodyReader()): got %v, want no error", err)
 	}
 
 	bodywant := "c\r\nbody content\r\n0\r\n"
@@ -235,9 +234,9 @@ func TestRequestViewChunkedTransferEncoding(t *testing.T) {
 		t.Fatalf("mv.BodyReader(): got %q, want %q", got, bodywant)
 	}
 
-	got, err = ioutil.ReadAll(mv.TrailerReader())
+	got, err = io.ReadAll(mv.TrailerReader())
 	if err != nil {
-		t.Fatalf("ioutil.ReadAll(mv.TrailerReader()): got %v, want no error", err)
+		t.Fatalf("io.ReadAll(mv.TrailerReader()): got %v, want no error", err)
 	}
 
 	trailerwant := "Trailer-Header: true\r\n"
@@ -249,9 +248,9 @@ func TestRequestViewChunkedTransferEncoding(t *testing.T) {
 	if err != nil {
 		t.Fatalf("mv.Reader(): got %v, want no error", err)
 	}
-	got, err = ioutil.ReadAll(r)
+	got, err = io.ReadAll(r)
 	if err != nil {
-		t.Fatalf("ioutil.ReadAll(mv.Reader()): got %v, want no error", err)
+		t.Fatalf("io.ReadAll(mv.Reader()): got %v, want no error", err)
 	}
 
 	if want := []byte(hdrwant + bodywant + trailerwant); !bytes.Equal(got, want) {
@@ -283,9 +282,9 @@ func TestRequestViewDecodeGzipContentEncoding(t *testing.T) {
 		t.Fatalf("SnapshotRequest(): got %v, want no error", err)
 	}
 
-	got, err := ioutil.ReadAll(mv.HeaderReader())
+	got, err := io.ReadAll(mv.HeaderReader())
 	if err != nil {
-		t.Fatalf("ioutil.ReadAll(mv.HeaderReader()): got %v, want no error", err)
+		t.Fatalf("io.ReadAll(mv.HeaderReader()): got %v, want no error", err)
 	}
 
 	hdrwant := "GET http://example.com/path?k=v HTTP/1.1\r\n" +
@@ -302,9 +301,9 @@ func TestRequestViewDecodeGzipContentEncoding(t *testing.T) {
 		t.Fatalf("mv.BodyReader(): got %v, want no error", err)
 	}
 
-	got, err = ioutil.ReadAll(br)
+	got, err = io.ReadAll(br)
 	if err != nil {
-		t.Fatalf("ioutil.ReadAll(mv.BodyReader()): got %v, wt o error", err)
+		t.Fatalf("io.ReadAll(mv.BodyReader()): got %v, wt o error", err)
 	}
 
 	bodywant := "body content"
@@ -317,9 +316,9 @@ func TestRequestViewDecodeGzipContentEncoding(t *testing.T) {
 	if err != nil {
 		t.Fatalf("mv.Reader(): got %v, want no error", err)
 	}
-	got, err = ioutil.ReadAll(r)
+	got, err = io.ReadAll(r)
 	if err != nil {
-		t.Fatalf("ioutil.ReadAll(mv.Reader()): got %v, want no error", err)
+		t.Fatalf("io.ReadAll(mv.Reader()): got %v, want no error", err)
 	}
 
 	if want := []byte(hdrwant + bodywant + "\r\n"); !bytes.Equal(got, want) {
@@ -349,9 +348,9 @@ func TestRequestViewDecodeDeflateContentEncoding(t *testing.T) {
 		t.Fatalf("SnapshotRequest(): got %v, want no error", err)
 	}
 
-	got, err := ioutil.ReadAll(mv.HeaderReader())
+	got, err := io.ReadAll(mv.HeaderReader())
 	if err != nil {
-		t.Fatalf("ioutil.ReadAll(mv.HeaderReader()): got %v, want no error", err)
+		t.Fatalf("io.ReadAll(mv.HeaderReader()): got %v, want no error", err)
 	}
 
 	hdrwant := "GET http://example.com/path?k=v HTTP/1.1\r\n" +
@@ -368,9 +367,9 @@ func TestRequestViewDecodeDeflateContentEncoding(t *testing.T) {
 		t.Fatalf("mv.BodyReader(): got %v, want no error", err)
 	}
 
-	got, err = ioutil.ReadAll(br)
+	got, err = io.ReadAll(br)
 	if err != nil {
-		t.Fatalf("ioutil.ReadAll(mv.BodyReader()): got %v, want no error", err)
+		t.Fatalf("io.ReadAll(mv.BodyReader()): got %v, want no error", err)
 	}
 
 	bodywant := "body content"
@@ -383,9 +382,9 @@ func TestRequestViewDecodeDeflateContentEncoding(t *testing.T) {
 	if err != nil {
 		t.Fatalf("mv.Reader(): got %v, want no error", err)
 	}
-	got, err = ioutil.ReadAll(r)
+	got, err = io.ReadAll(r)
 	if err != nil {
-		t.Fatalf("ioutil.ReadAll(mv.Reader()): got %v, want no error", err)
+		t.Fatalf("io.ReadAll(mv.Reader()): got %v, want no error", err)
 	}
 
 	if want := []byte(hdrwant + bodywant + "\r\n"); !bytes.Equal(got, want) {
@@ -405,9 +404,9 @@ func TestResponseViewHeadersOnly(t *testing.T) {
 		t.Fatalf("SnapshotResponse(): got %v, want no error", err)
 	}
 
-	got, err := ioutil.ReadAll(mv.HeaderReader())
+	got, err := io.ReadAll(mv.HeaderReader())
 	if err != nil {
-		t.Fatalf("ioutil.ReadAll(mv.HeaderReader()): got %v, want no error", err)
+		t.Fatalf("io.ReadAll(mv.HeaderReader()): got %v, want no error", err)
 	}
 
 	hdrwant := "HTTP/1.1 200 OK\r\n" +
@@ -424,16 +423,16 @@ func TestResponseViewHeadersOnly(t *testing.T) {
 	}
 
 	if _, err := br.Read(nil); err != io.EOF {
-		t.Fatalf("ioutil.ReadAll(mv.BodyReader()): got %v, want io.EOF", err)
+		t.Fatalf("io.ReadAll(mv.BodyReader()): got %v, want io.EOF", err)
 	}
 
 	r, err := mv.Reader()
 	if err != nil {
 		t.Fatalf("mv.Reader(): got %v, want no error", err)
 	}
-	got, err = ioutil.ReadAll(r)
+	got, err = io.ReadAll(r)
 	if err != nil {
-		t.Fatalf("ioutil.ReadAll(mv.Reader()): got %v, want no error", err)
+		t.Fatalf("io.ReadAll(mv.Reader()): got %v, want no error", err)
 	}
 
 	if want := []byte(hdrwant); !bytes.Equal(got, want) {
@@ -452,9 +451,9 @@ func TestResponseView(t *testing.T) {
 		t.Fatalf("SnapshotResponse(): got %v, want no error", err)
 	}
 
-	got, err := ioutil.ReadAll(mv.HeaderReader())
+	got, err := io.ReadAll(mv.HeaderReader())
 	if err != nil {
-		t.Fatalf("ioutil.ReadAll(mv.HeaderReader()): got %v, want no error", err)
+		t.Fatalf("io.ReadAll(mv.HeaderReader()): got %v, want no error", err)
 	}
 
 	hdrwant := "HTTP/1.1 200 OK\r\n" +
@@ -470,9 +469,9 @@ func TestResponseView(t *testing.T) {
 		t.Fatalf("mv.BodyReader(): got %v, want no error", err)
 	}
 
-	got, err = ioutil.ReadAll(br)
+	got, err = io.ReadAll(br)
 	if err != nil {
-		t.Fatalf("ioutil.ReadAll(mv.BodyReader()): got %v, want no error", err)
+		t.Fatalf("io.ReadAll(mv.BodyReader()): got %v, want no error", err)
 	}
 
 	bodywant := "body content"
@@ -484,9 +483,9 @@ func TestResponseView(t *testing.T) {
 	if err != nil {
 		t.Fatalf("mv.Reader(): got %v, want no error", err)
 	}
-	got, err = ioutil.ReadAll(r)
+	got, err = io.ReadAll(r)
 	if err != nil {
-		t.Fatalf("ioutil.ReadAll(mv.Reader()): got %v, want no error", err)
+		t.Fatalf("io.ReadAll(mv.Reader()): got %v, want no error", err)
 	}
 
 	if want := []byte(hdrwant + bodywant); !bytes.Equal(got, want) {
@@ -515,9 +514,9 @@ func TestResponseViewSkipBodyUnlessContentType(t *testing.T) {
 		t.Fatalf("mv.BodyReader(): got %v, want no error", err)
 	}
 
-	got, err := ioutil.ReadAll(br)
+	got, err := io.ReadAll(br)
 	if err != nil {
-		t.Fatalf("ioutil.ReadAll(mv.BodyReader()): got %v, want no error", err)
+		t.Fatalf("io.ReadAll(mv.BodyReader()): got %v, want no error", err)
 	}
 
 	bodywant := "body content"
@@ -556,9 +555,9 @@ func TestResponseViewChunkedTransferEncoding(t *testing.T) {
 		t.Fatalf("SnapshotResponse(): got %v, want no error", err)
 	}
 
-	got, err := ioutil.ReadAll(mv.HeaderReader())
+	got, err := io.ReadAll(mv.HeaderReader())
 	if err != nil {
-		t.Fatalf("ioutil.ReadAll(mv.HeaderReader()): got %v, want no error", err)
+		t.Fatalf("io.ReadAll(mv.HeaderReader()): got %v, want no error", err)
 	}
 
 	hdrwant := "HTTP/1.1 200 OK\r\n" +
@@ -574,9 +573,9 @@ func TestResponseViewChunkedTransferEncoding(t *testing.T) {
 		t.Fatalf("mv.BodyReader(): got %v, want no error", err)
 	}
 
-	got, err = ioutil.ReadAll(br)
+	got, err = io.ReadAll(br)
 	if err != nil {
-		t.Fatalf("ioutil.ReadAll(mv.BodyReader()): got %v, want no error", err)
+		t.Fatalf("io.ReadAll(mv.BodyReader()): got %v, want no error", err)
 	}
 
 	bodywant := "c\r\nbody content\r\n0\r\n"
@@ -584,9 +583,9 @@ func TestResponseViewChunkedTransferEncoding(t *testing.T) {
 		t.Fatalf("mv.BodyReader(): got %q, want %q", got, bodywant)
 	}
 
-	got, err = ioutil.ReadAll(mv.TrailerReader())
+	got, err = io.ReadAll(mv.TrailerReader())
 	if err != nil {
-		t.Fatalf("ioutil.ReadAll(mv.TrailerReader()): got %v, want no error", err)
+		t.Fatalf("io.ReadAll(mv.TrailerReader()): got %v, want no error", err)
 	}
 
 	trailerwant := "Trailer-Header: true\r\n"
@@ -598,9 +597,9 @@ func TestResponseViewChunkedTransferEncoding(t *testing.T) {
 	if err != nil {
 		t.Fatalf("mv.Reader(): got %v, want no error", err)
 	}
-	got, err = ioutil.ReadAll(r)
+	got, err = io.ReadAll(r)
 	if err != nil {
-		t.Fatalf("ioutil.ReadAll(mv.Reader()): got %v, want no error", err)
+		t.Fatalf("io.ReadAll(mv.Reader()): got %v, want no error", err)
 	}
 
 	if want := []byte(hdrwant + bodywant + trailerwant); !bytes.Equal(got, want) {
@@ -629,9 +628,9 @@ func TestResponseViewDecodeGzipContentEncoding(t *testing.T) {
 		t.Fatalf("SnapshotResponse(): got %v, want no error", err)
 	}
 
-	got, err := ioutil.ReadAll(mv.HeaderReader())
+	got, err := io.ReadAll(mv.HeaderReader())
 	if err != nil {
-		t.Fatalf("ioutil.ReadAll(mv.HeaderReader()): got %v, want no error", err)
+		t.Fatalf("io.ReadAll(mv.HeaderReader()): got %v, want no error", err)
 	}
 
 	hdrwant := "HTTP/1.1 200 OK\r\n" +
@@ -647,9 +646,9 @@ func TestResponseViewDecodeGzipContentEncoding(t *testing.T) {
 		t.Fatalf("mv.BodyReader(): got %v, want no error", err)
 	}
 
-	got, err = ioutil.ReadAll(br)
+	got, err = io.ReadAll(br)
 	if err != nil {
-		t.Fatalf("ioutil.ReadAll(mv.BodyReader()): got %v, wt o error", err)
+		t.Fatalf("io.ReadAll(mv.BodyReader()): got %v, wt o error", err)
 	}
 
 	bodywant := "body content"
@@ -662,9 +661,9 @@ func TestResponseViewDecodeGzipContentEncoding(t *testing.T) {
 	if err != nil {
 		t.Fatalf("mv.Reader(): got %v, want no error", err)
 	}
-	got, err = ioutil.ReadAll(r)
+	got, err = io.ReadAll(r)
 	if err != nil {
-		t.Fatalf("ioutil.ReadAll(mv.Reader()): got %v, want no error", err)
+		t.Fatalf("io.ReadAll(mv.Reader()): got %v, want no error", err)
 	}
 
 	if want := []byte(hdrwant + bodywant + "\r\n"); !bytes.Equal(got, want) {
@@ -687,9 +686,9 @@ func TestResponseViewDecodeGzipContentEncodingPartial(t *testing.T) {
 		t.Fatalf("mv.BodyReader(): got %v, want no error", err)
 	}
 
-	got, err := ioutil.ReadAll(br)
+	got, err := io.ReadAll(br)
 	if err != nil {
-		t.Fatalf("ioutil.ReadAll(mv.BodyReader()): got %v, wt o error", err)
+		t.Fatalf("io.ReadAll(mv.BodyReader()): got %v, wt o error", err)
 	}
 	if !bytes.Equal(got, []byte(bodywant)) {
 		t.Fatalf("mv.BodyReader(): got %q, want %q", got, bodywant)
@@ -715,9 +714,9 @@ func TestResponseViewDecodeDeflateContentEncoding(t *testing.T) {
 		t.Fatalf("SnapshotResponse(): got %v, want no error", err)
 	}
 
-	got, err := ioutil.ReadAll(mv.HeaderReader())
+	got, err := io.ReadAll(mv.HeaderReader())
 	if err != nil {
-		t.Fatalf("ioutil.ReadAll(mv.HeaderReader()): got %v, want no error", err)
+		t.Fatalf("io.ReadAll(mv.HeaderReader()): got %v, want no error", err)
 	}
 
 	hdrwant := "HTTP/1.1 200 OK\r\n" +
@@ -733,9 +732,9 @@ func TestResponseViewDecodeDeflateContentEncoding(t *testing.T) {
 		t.Fatalf("mv.BodyReader(): got %v, want no error", err)
 	}
 
-	got, err = ioutil.ReadAll(br)
+	got, err = io.ReadAll(br)
 	if err != nil {
-		t.Fatalf("ioutil.ReadAll(mv.BodyReader()): got %v, wt o error", err)
+		t.Fatalf("io.ReadAll(mv.BodyReader()): got %v, wt o error", err)
 	}
 
 	bodywant := "body content"
@@ -748,9 +747,9 @@ func TestResponseViewDecodeDeflateContentEncoding(t *testing.T) {
 	if err != nil {
 		t.Fatalf("mv.Reader(): got %v, want no error", err)
 	}
-	got, err = ioutil.ReadAll(r)
+	got, err = io.ReadAll(r)
 	if err != nil {
-		t.Fatalf("ioutil.ReadAll(mv.Reader()): got %v, want no error", err)
+		t.Fatalf("io.ReadAll(mv.Reader()): got %v, want no error", err)
 	}
 
 	if want := []byte(hdrwant + bodywant + "\r\n"); !bytes.Equal(got, want) {
