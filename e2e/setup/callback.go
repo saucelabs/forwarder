@@ -8,7 +8,7 @@ package setup
 
 import (
 	"bytes"
-	"log"
+	"fmt"
 	"os"
 	"os/exec"
 	"strings"
@@ -37,13 +37,31 @@ func makeTestCallback(run string, debug bool) func() error {
 		}
 
 		if stderr.Len() > 0 {
+			fmt.Fprintln(os.Stderr, "stderr:")
 			stderr.WriteTo(os.Stderr)
+			fmt.Fprintln(os.Stderr)
 		}
+
 		s := strings.Split(stdout.String(), "\n")
+	lines:
 		for _, l := range s {
-			if strings.HasPrefix(l, "---") {
-				log.Printf("%s", l)
+			skipLinePrefix := []string{
+				"make[1]",
+				"===",
+				"    --- PASS",
 			}
+
+			for _, p := range skipLinePrefix {
+				if strings.HasPrefix(l, p) {
+					continue lines
+				}
+			}
+
+			if l == "PASS" || l == "" {
+				continue lines
+			}
+
+			fmt.Fprintln(os.Stdout, l)
 		}
 
 		return nil
