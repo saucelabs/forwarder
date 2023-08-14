@@ -36,7 +36,7 @@ func SOCKS5Proxy(dial ContextDialerFunc, proxyURL *url.URL) *SOCKS5ProxyDialer {
 	}
 }
 
-func (d *SOCKS5ProxyDialer) DialContext(ctx context.Context, network, addr string) (net.Conn, error) {
+func (d *SOCKS5ProxyDialer) DialContext(_ context.Context, network, addr string) (net.Conn, error) {
 	u := d.proxyURL.User
 	var auth *proxy.Auth
 	if u != nil {

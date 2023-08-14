@@ -18,11 +18,11 @@ var NopLogger = nopLogger{} //nolint:gochecknoglobals // nop implementation
 
 type nopLogger struct{}
 
-func (l nopLogger) Errorf(format string, args ...interface{}) {
+func (l nopLogger) Errorf(_ string, _ ...interface{}) {
 }
 
-func (l nopLogger) Infof(format string, args ...interface{}) {
+func (l nopLogger) Infof(_ string, _ ...interface{}) {
 }
 
-func (l nopLogger) Debugf(format string, args ...interface{}) {
+func (l nopLogger) Debugf(_ string, _ ...interface{}) {
 }

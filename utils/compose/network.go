@@ -90,9 +90,5 @@ func validateIPWithMask(input string) error {
 	if err := validateIP(ip); err != nil {
 		return err
 	}
-	if err := validateMask(mask); err != nil {
-		return err
-	}
-
-	return nil
+	return validateMask(mask)
 }

@@ -37,7 +37,7 @@ func wsEcho(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func wsHTML(w http.ResponseWriter, r *http.Request) {
+func wsHTML(w http.ResponseWriter, _ *http.Request) {
 	const html = `<!DOCTYPE html>
 <html>
 <body>
