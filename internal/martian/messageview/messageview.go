@@ -22,7 +22,6 @@ import (
 	"compress/gzip"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httputil"
 	"strings"
@@ -111,7 +110,7 @@ func (mv *MessageView) SnapshotRequest(req *http.Request) error {
 		return nil
 	}
 
-	data, err := ioutil.ReadAll(req.Body)
+	data, err := io.ReadAll(req.Body)
 	if err != nil {
 		return err
 	}
@@ -127,7 +126,7 @@ func (mv *MessageView) SnapshotRequest(req *http.Request) error {
 
 	mv.traileroffset = int64(buf.Len())
 
-	req.Body = ioutil.NopCloser(bytes.NewReader(data))
+	req.Body = io.NopCloser(bytes.NewReader(data))
 
 	if req.Trailer != nil {
 		req.Trailer.Write(buf)
@@ -178,7 +177,7 @@ func (mv *MessageView) SnapshotResponse(res *http.Response) error {
 		return nil
 	}
 
-	data, err := ioutil.ReadAll(res.Body)
+	data, err := io.ReadAll(res.Body)
 	if err != nil {
 		return err
 	}
@@ -194,7 +193,7 @@ func (mv *MessageView) SnapshotResponse(res *http.Response) error {
 
 	mv.traileroffset = int64(buf.Len())
 
-	res.Body = ioutil.NopCloser(bytes.NewReader(data))
+	res.Body = io.NopCloser(bytes.NewReader(data))
 
 	if res.Trailer != nil {
 		res.Trailer.Write(buf)
@@ -250,7 +249,7 @@ func (mv *MessageView) BodyReader(opts ...Option) (io.ReadCloser, error) {
 	r = io.NewSectionReader(br, mv.bodyoffset, mv.traileroffset-mv.bodyoffset)
 
 	if !conf.decode {
-		return ioutil.NopCloser(r), nil
+		return io.NopCloser(r), nil
 	}
 
 	if mv.chunked {
@@ -266,7 +265,7 @@ func (mv *MessageView) BodyReader(opts ...Option) (io.ReadCloser, error) {
 	case "deflate":
 		return flate.NewReader(r), nil
 	default:
-		return ioutil.NopCloser(r), nil
+		return io.NopCloser(r), nil
 	}
 }
 

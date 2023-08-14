@@ -18,7 +18,7 @@ package testing
 import (
 	"crypto/tls"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"os"
@@ -185,7 +185,7 @@ func queryPortServer() int {
 		if _, err := fmt.Fprintf(c, "%d\n", os.Getpid()); err != nil {
 			return 0
 		}
-		buf, err := ioutil.ReadAll(c)
+		buf, err := io.ReadAll(c)
 		if err != nil || len(buf) == 0 {
 			return 0
 		}

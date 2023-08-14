@@ -16,10 +16,10 @@ package h2_test
 
 import (
 	"context"
+	"crypto/rand"
 	"encoding/base64"
 	"fmt"
 	"io"
-	"math/rand"
 	"net/url"
 	"sync"
 	"testing"

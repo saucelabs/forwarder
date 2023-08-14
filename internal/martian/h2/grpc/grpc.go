@@ -21,7 +21,7 @@ import (
 	"compress/gzip"
 	"encoding/binary"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/url"
 	"sync/atomic"
 
@@ -220,7 +220,7 @@ func (a *adapter) Data(data []byte, streamEnded bool) error {
 					}
 				case Snappy:
 					var err error
-					data, err = ioutil.ReadAll(snappy.NewReader(bytes.NewReader(data)))
+					data, err = io.ReadAll(snappy.NewReader(bytes.NewReader(data)))
 					if err != nil {
 						return fmt.Errorf("uncompressing snappy: %w", err)
 					}
@@ -328,7 +328,7 @@ func gunzip(data []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return ioutil.ReadAll(r)
+	return io.ReadAll(r)
 }
 
 func deflate(data []byte) (_ []byte, rerr error) {
@@ -338,5 +338,5 @@ func deflate(data []byte) (_ []byte, rerr error) {
 			rerr = err
 		}
 	}()
-	return ioutil.ReadAll(r)
+	return io.ReadAll(r)
 }
