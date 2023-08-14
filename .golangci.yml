@@ -124,6 +124,11 @@ issues:
         - errcheck
         - gosec
 
+    - path: internal/martian/h2/testing
+      linters:
+        - forbidigo
+      text: use of `fmt.Print
+
     - linters:
         - thelper
       source: "configure: func\\(t \\*testing.T"
