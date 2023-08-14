@@ -54,6 +54,10 @@ func addTrailerHeader(rw http.ResponseWriter, tr http.Header) int {
 }
 
 func copyBody(w io.Writer, body io.ReadCloser) error {
+	if body == http.NoBody {
+		return nil
+	}
+
 	bufp := copyBufPool.Get().(*[]byte) //nolint:forcetypeassert // It's *[]byte.
 	buf := *bufp
 	defer copyBufPool.Put(bufp)
