@@ -22,7 +22,7 @@ import (
 )
 
 func TestNewResponse(t *testing.T) {
-	req, err := http.NewRequest(http.MethodGet, "http://www.example.com", nil)
+	req, err := http.NewRequest(http.MethodGet, "http://www.example.com", http.NoBody)
 	if err != nil {
 		t.Fatalf("http.NewRequest(): got %v, want no error", err)
 	}

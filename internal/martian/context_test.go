@@ -24,7 +24,7 @@ import (
 )
 
 func TestContexts(t *testing.T) {
-	req, err := http.NewRequest(http.MethodGet, "http://example.com", nil)
+	req, err := http.NewRequest(http.MethodGet, "http://example.com", http.NoBody)
 	if err != nil {
 		t.Fatalf("http.NewRequest(): got %v, want no error", err)
 	}
@@ -72,8 +72,7 @@ func TestContexts(t *testing.T) {
 
 func TestContextHijack(t *testing.T) {
 	rc, wc := net.Pipe()
-
-	req, err := http.NewRequest(http.MethodGet, "http://example.com", nil)
+	req, err := http.NewRequest(http.MethodGet, "http://example.com", http.NoBody)
 	if err != nil {
 		t.Fatalf("http.NewRequest(): got %v, want no error", err)
 	}
@@ -99,7 +98,7 @@ func TestContextHijack(t *testing.T) {
 	}
 
 	go func() {
-		brw.Write([]byte("test message"))
+		brw.WriteString("test message")
 		brw.Flush()
 		conn.Close()
 	}()

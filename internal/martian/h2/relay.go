@@ -493,7 +493,7 @@ func (r *relay) outputBuffer(streamID uint32) *outputBuffer {
 // sendWindowUpdates sends WINDOW_UPDATE frames effectively acknowledging consumption of the
 // given data frame.
 func (r *relay) sendWindowUpdates(f *http2.DataFrame) error {
-	if len(f.Data()) <= 0 {
+	if len(f.Data()) == 0 {
 		return nil
 	}
 	r.destMu.Lock()

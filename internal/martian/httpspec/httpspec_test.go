@@ -30,8 +30,7 @@ func TestNewStack(t *testing.T) {
 	tm := martiantest.NewModifier()
 	fg.AddRequestModifier(tm)
 	fg.AddResponseModifier(tm)
-
-	req, err := http.NewRequest(http.MethodGet, "http://example.com", nil)
+	req, err := http.NewRequest(http.MethodGet, "http://example.com", http.NoBody)
 	if err != nil {
 		t.Fatalf("http.NewRequest(): got %v, want no error", err)
 	}

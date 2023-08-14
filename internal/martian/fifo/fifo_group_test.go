@@ -31,7 +31,7 @@ func TestModifyRequest(t *testing.T) {
 
 	fg.AddRequestModifier(tm)
 
-	req, err := http.NewRequest(http.MethodGet, "/", nil)
+	req, err := http.NewRequest(http.MethodGet, "/", http.NoBody)
 	if err != nil {
 		t.Fatalf("http.NewRequest(): got %v, want no error", err)
 	}
@@ -54,7 +54,7 @@ func TestModifyRequestHaltsOnError(t *testing.T) {
 	tm2 := martiantest.NewModifier()
 	fg.AddRequestModifier(tm2)
 
-	req, err := http.NewRequest(http.MethodGet, "http://example.com/", nil)
+	req, err := http.NewRequest(http.MethodGet, "http://example.com/", http.NoBody)
 	if err != nil {
 		t.Fatalf("http.NewRequest(): got %v, want no error", err)
 	}
@@ -81,7 +81,7 @@ func TestModifyRequestAggregatesErrors(t *testing.T) {
 	tm2.RequestError(reqerr2)
 	fg.AddRequestModifier(tm2)
 
-	req, err := http.NewRequest(http.MethodGet, "http://example.com/", nil)
+	req, err := http.NewRequest(http.MethodGet, "http://example.com/", http.NoBody)
 	if err != nil {
 		t.Fatalf("http.NewRequest(): got %v, want no error", err)
 	}
@@ -152,7 +152,7 @@ func TestModifyResponseAggregatesErrors(t *testing.T) {
 	tm2.ResponseError(reserr2)
 	fg.AddResponseModifier(tm2)
 
-	req, err := http.NewRequest(http.MethodGet, "http://example.com/", nil)
+	req, err := http.NewRequest(http.MethodGet, "http://example.com/", http.NoBody)
 	if err != nil {
 		t.Fatalf("http.NewRequest(): got %v, want no error", err)
 	}
@@ -203,7 +203,7 @@ func TestModifyResponseInlineGroupsAggregateErrors(t *testing.T) {
 		t.Fatalf("inner groups should be inlined")
 	}
 
-	req, err := http.NewRequest(http.MethodGet, "http://example.com/", nil)
+	req, err := http.NewRequest(http.MethodGet, "http://example.com/", http.NoBody)
 	if err != nil {
 		t.Fatalf("http.NewRequest(): got %v, want no error", err)
 	}
@@ -255,7 +255,7 @@ func TestModifyRequestInlineGroupsAggregateErrors(t *testing.T) {
 		t.Fatalf("inner groups should be inlined")
 	}
 
-	req, err := http.NewRequest(http.MethodGet, "http://example.com/", nil)
+	req, err := http.NewRequest(http.MethodGet, "http://example.com/", http.NoBody)
 	if err != nil {
 		t.Fatalf("http.NewRequest(): got %v, want no error", err)
 	}

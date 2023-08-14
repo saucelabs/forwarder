@@ -22,7 +22,7 @@ import (
 
 func TestBadFramingMultipleContentLengths(t *testing.T) {
 	m := NewBadFramingModifier()
-	req, err := http.NewRequest(http.MethodGet, "/", nil)
+	req, err := http.NewRequest(http.MethodGet, "/", http.NoBody)
 	if err != nil {
 		t.Fatalf("http.NewRequest(): got %v, want no error", err)
 	}
@@ -43,7 +43,7 @@ func TestBadFramingMultipleContentLengths(t *testing.T) {
 
 func TestBadFramingTransferEncodingAndContentLength(t *testing.T) {
 	m := NewBadFramingModifier()
-	req, err := http.NewRequest(http.MethodGet, "/", nil)
+	req, err := http.NewRequest(http.MethodGet, "/", http.NoBody)
 	if err != nil {
 		t.Fatalf("http.NewRequest(): got %v, want no error", err)
 	}

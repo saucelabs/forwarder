@@ -291,7 +291,7 @@ func (p *Proxy) handleLoop(conn net.Conn) {
 	)
 
 	const maxConsecutiveErrors = 5
-	errors := 0
+	errorsN := 0
 	for {
 		if err := p.handle(ctx, conn, brw); err != nil {
 			if isCloseable(err) {
@@ -299,13 +299,13 @@ func (p *Proxy) handleLoop(conn net.Conn) {
 				return
 			}
 
-			errors++
-			if errors >= maxConsecutiveErrors {
-				log.Errorf("martian: closing connection after %d consecutive errors: %v", errors, err)
+			errorsN++
+			if errorsN >= maxConsecutiveErrors {
+				log.Errorf("martian: closing connection after %d consecutive errors: %v", errorsN, err)
 				return
 			}
 		} else {
-			errors = 0
+			errorsN = 0
 		}
 
 		if s.Hijacked() {
@@ -738,7 +738,7 @@ func (c *peekedConn) Read(buf []byte) (int, error) { return c.r.Read(buf) }
 func (p *Proxy) roundTrip(ctx *Context, req *http.Request) (*http.Response, error) {
 	if ctx.SkippingRoundTrip() {
 		log.Debugf("martian: skipping round trip")
-		return proxyutil.NewResponse(200, nil, req), nil
+		return proxyutil.NewResponse(200, http.NoBody, req), nil
 	}
 
 	return p.roundTripper.RoundTrip(req)
@@ -755,7 +755,7 @@ func (p *Proxy) errorResponse(req *http.Request, err error) *http.Response {
 	if p.ErrorResponse != nil {
 		return p.ErrorResponse(req, err)
 	}
-	return proxyutil.NewResponse(502, nil, req)
+	return proxyutil.NewResponse(502, http.NoBody, req)
 }
 
 func (p *Proxy) connect(req *http.Request) (*http.Response, net.Conn, error) {
@@ -776,7 +776,7 @@ func (p *Proxy) connect(req *http.Request) (*http.Response, net.Conn, error) {
 			return nil, nil, err
 		}
 
-		return proxyutil.NewResponse(200, nil, req), conn, nil
+		return proxyutil.NewResponse(200, http.NoBody, req), conn, nil
 	}
 
 	switch proxyURL.Scheme {
@@ -803,7 +803,7 @@ func (p *Proxy) connectHTTP(req *http.Request, proxyURL *url.URL) (res *http.Res
 	if res != nil {
 		if res.StatusCode/100 == 2 {
 			res.Body.Close()
-			return proxyutil.NewResponse(200, nil, req), conn, nil
+			return proxyutil.NewResponse(200, http.NoBody, req), conn, nil
 		}
 
 		// If the proxy returns a non-2xx response, return it to the client.
@@ -832,7 +832,7 @@ func (p *Proxy) connectSOCKS5(req *http.Request, proxyURL *url.URL) (*http.Respo
 		return nil, nil, err
 	}
 
-	return proxyutil.NewResponse(200, nil, req), conn, nil
+	return proxyutil.NewResponse(200, http.NoBody, req), conn, nil
 }
 
 func upgradeType(h http.Header) string {
