@@ -240,7 +240,7 @@ func (p proxyHandler) tunnel(name string, rw http.ResponseWriter, req *http.Requ
 }
 
 // handleRequest handles a request and writes the response to the given http.ResponseWriter.
-// It returns an error if the request
+// It returns an error if the request.
 func (p proxyHandler) handleRequest(ctx *Context, rw http.ResponseWriter, req *http.Request) {
 	session := ctx.Session()
 

@@ -75,7 +75,7 @@ func AsStreamProcessorFactory(f ProcessorFactory) h2.StreamProcessorFactory {
 		sToCEmitter := &emitter{sink: sinks.ForDirection(h2.ServerToClient)}
 		cToSProcessor, sToCProcessor := f(url, cToSEmitter, sToCEmitter)
 
-		// enabled indicates whether the stream should be processed as gRPC. It is shared between the
+		// enabled indicates whether the stream should be processed as gRPC. It is shared between
 		// the two adapters because its detection is on a client-to-server HEADER frame and the state
 		// applies bidirectionally.
 		enabled := int32(0)
