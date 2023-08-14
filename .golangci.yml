@@ -20,6 +20,7 @@ linters:
   disable:
     - contextcheck
     - cyclop
+    - deadcode
     - depguard
     - exhaustive
     - exhaustivestruct
@@ -27,13 +28,19 @@ linters:
     - gochecknoinits
     - godox
     - goerr113
+    - golint
     - gomnd
     - gomoddirectives
+    - ifshort
+    - interfacer
     - maligned
     - nlreturn
     - nonamedreturns
     - nosnakecase
+    - scopelint
+    - structcheck
     - tagliatelle
+    - varcheck
     - varnamelen
     - wrapcheck
     - wsl
