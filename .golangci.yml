@@ -117,6 +117,10 @@ issues:
       linters:
         - gochecknoglobals
 
+    - path: internal/martian
+      linters:
+        - goheader
+
     - linters:
         - thelper
       source: "configure: func\\(t \\*testing.T"
