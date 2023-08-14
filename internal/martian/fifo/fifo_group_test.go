@@ -58,7 +58,7 @@ func TestModifyRequestHaltsOnError(t *testing.T) {
 	if err != nil {
 		t.Fatalf("http.NewRequest(): got %v, want no error", err)
 	}
-	if err := fg.ModifyRequest(req); err != reqerr {
+	if err := fg.ModifyRequest(req); !errors.Is(err, reqerr) {
 		t.Fatalf("fg.ModifyRequest(): got %v, want %v", err, reqerr)
 	}
 
@@ -129,7 +129,7 @@ func TestModifyResponseHaltsOnError(t *testing.T) {
 	fg.AddResponseModifier(tm2)
 
 	res := proxyutil.NewResponse(200, nil, nil)
-	if err := fg.ModifyResponse(res); err != reserr {
+	if err := fg.ModifyResponse(res); !errors.Is(err, reserr) {
 		t.Fatalf("fg.ModifyResponse(): got %v, want %v", err, reserr)
 	}
 

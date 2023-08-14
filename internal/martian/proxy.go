@@ -43,12 +43,14 @@ var (
 )
 
 func isCloseable(err error) bool {
-	if neterr, ok := err.(net.Error); ok && neterr.Timeout() {
+	var neterr net.Error
+	if ok := errors.As(err, &neterr); ok && neterr.Timeout() {
 		return true
 	}
 
-	switch err {
-	case io.EOF, io.ErrClosedPipe, errClose:
+	if errors.Is(err, io.EOF) ||
+		errors.Is(err, io.ErrClosedPipe) ||
+		errors.Is(err, errClose) {
 		return true
 	}
 
@@ -236,7 +238,8 @@ func (p *Proxy) Serve(l net.Listener) error {
 		conn, err := l.Accept()
 		nosigpipe.IgnoreSIGPIPE(conn)
 		if err != nil {
-			if nerr, ok := err.(net.Error); ok && nerr.Temporary() {
+			var nerr net.Error
+			if ok := errors.As(err, &nerr); ok && nerr.Temporary() {
 				if delay == 0 {
 					delay = 5 * time.Millisecond
 				} else {
@@ -569,7 +572,7 @@ func copySync(name string, w io.Writer, r io.Reader, donec chan<- bool) {
 	buf := *bufp
 	defer copyBufPool.Put(bufp)
 
-	if _, err := io.CopyBuffer(w, r, buf); err != nil && err != io.EOF {
+	if _, err := io.CopyBuffer(w, r, buf); err != nil && !errors.Is(err, io.EOF) {
 		log.Errorf("martian: failed to copy %s tunnel: %v", name, err)
 	}
 	if cw, ok := asCloseWriter(w); ok {
@@ -705,7 +708,7 @@ func (p *Proxy) handle(ctx *Context, conn net.Conn, brw *bufio.ReadWriter) error
 	}
 	if err != nil {
 		log.Errorf("martian: got error while writing response back to client: %v", err)
-		if err == io.ErrUnexpectedEOF {
+		if errors.Is(err, io.ErrUnexpectedEOF) {
 			closing = errClose
 		}
 	}

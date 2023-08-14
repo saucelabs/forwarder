@@ -18,6 +18,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"io"
 	"net/url"
@@ -406,7 +407,7 @@ func TestStream(t *testing.T) {
 				defer wg.Done()
 				for {
 					resp, err := stream.Recv()
-					if err == io.EOF {
+					if errors.Is(err, io.EOF) {
 						return
 					}
 					if err != nil {

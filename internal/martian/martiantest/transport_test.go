@@ -42,7 +42,7 @@ func TestTransport(t *testing.T) {
 	trerr := errors.New("transport error")
 	tr.RespondError(trerr)
 
-	if _, err := tr.RoundTrip(req); err != trerr {
+	if _, err := tr.RoundTrip(req); !errors.Is(err, trerr) {
 		t.Fatalf("tr.Roundtrip(): got %v, want %v", err, trerr)
 	}
 

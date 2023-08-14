@@ -196,7 +196,7 @@ func (r *relay) relayFrames(closing chan bool) error {
 		select {
 		case <-frameReady:
 			if err != nil {
-				if err == io.EOF {
+				if errors.Is(err, io.EOF) {
 					return nil
 				}
 				return fmt.Errorf("reading frame: %w", err)

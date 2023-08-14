@@ -554,7 +554,7 @@ func TestIntegrationUnexpectedUpstreamFailure(t *testing.T) {
 
 	got, err := io.ReadAll(res.Body)
 	// if below error is unhandled in proxy, the test will timeout.
-	if err != io.ErrUnexpectedEOF {
+	if !errors.Is(err, io.ErrUnexpectedEOF) {
 		t.Fatalf("io.ReadAll(): got %v, want %v", err, io.ErrUnexpectedEOF)
 	}
 

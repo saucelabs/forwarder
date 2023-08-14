@@ -15,6 +15,7 @@
 package martian
 
 import (
+	"errors"
 	"strings"
 	"sync"
 )
@@ -57,7 +58,8 @@ func (merr *MultiError) Add(err error) {
 	defer merr.mu.Unlock()
 
 	// Unwrap *MultiError to ensure that depth never exceeds 1.
-	if merr2, ok := err.(*MultiError); ok {
+	var merr2 *MultiError
+	if errors.As(err, &merr2) {
 		merr.errs = append(merr.errs, merr2.Errors()...)
 		return
 	}

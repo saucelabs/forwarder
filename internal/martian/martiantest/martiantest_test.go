@@ -43,7 +43,7 @@ func TestModifier(t *testing.T) {
 		t.Fatalf("http.NewRequest(): got %v, want no error", err)
 	}
 
-	if err := tm.ModifyRequest(req); err != moderr {
+	if err := tm.ModifyRequest(req); !errors.Is(err, moderr) {
 		t.Fatalf("tm.ModifyRequest(): got %v, want %v", err, moderr)
 	}
 	if !tm.RequestModified() {
@@ -58,7 +58,7 @@ func TestModifier(t *testing.T) {
 
 	res := proxyutil.NewResponse(200, nil, req)
 
-	if err := tm.ModifyResponse(res); err != moderr {
+	if err := tm.ModifyResponse(res); !errors.Is(err, moderr) {
 		t.Fatalf("tm.ModifyResponse(): got %v, want %v", err, moderr)
 	}
 	if !tm.ResponseModified() {
