@@ -120,6 +120,7 @@ issues:
     - path: internal/martian
       linters:
         - goheader
+        - gochecknoglobals
 
     - linters:
         - thelper
