@@ -78,7 +78,7 @@ func (m *ViaModifier) ModifyResponse(res *http.Response) error {
 
 	if err, _ := ctx.Get(viaLoopKey); err != nil {
 		res.StatusCode = 400
-		res.Status = http.StatusText(400)
+		res.Status = http.StatusText(http.StatusBadRequest)
 
 		return err.(error)
 	}

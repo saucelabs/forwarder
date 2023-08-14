@@ -15,7 +15,7 @@ type Transport struct {
 // response.
 func NewTransport() *Transport {
 	tr := &Transport{}
-	tr.Respond(200)
+	tr.Respond(http.StatusOK)
 
 	return tr
 }
@@ -24,8 +24,8 @@ func NewTransport() *Transport {
 func (tr *Transport) Respond(statusCode int) {
 	tr.rtfunc = func(req *http.Request) (*http.Response, error) {
 		// Force CONNECT requests to 200 to test CONNECT with upstream proxy.
-		if req.Method == "CONNECT" {
-			statusCode = 200
+		if req.Method == http.MethodConnect {
+			statusCode = http.StatusOK
 		}
 
 		res := proxyutil.NewResponse(statusCode, nil, req)

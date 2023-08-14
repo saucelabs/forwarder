@@ -26,7 +26,7 @@ func TestSetForwardHeaders(t *testing.T) {
 	xfu := "X-Forwarded-Url"
 
 	m := NewForwardedModifier()
-	req, err := http.NewRequest("GET", "http://martian.local?key=value", nil)
+	req, err := http.NewRequest(http.MethodGet, "http://martian.local?key=value", nil)
 	if err != nil {
 		t.Fatalf("http.NewRequest(): got %v, want no error", err)
 	}
@@ -61,7 +61,7 @@ func TestSetForwardHeaders(t *testing.T) {
 	}
 
 	// Test that proto, host, and URL headers are preserved if already present.
-	req, err = http.NewRequest("GET", "http://example.com/path?k=v", nil)
+	req, err = http.NewRequest(http.MethodGet, "http://example.com/path?k=v", nil)
 	if err != nil {
 		t.Fatalf("http.NewRequest(): got %v, want no error", err)
 	}

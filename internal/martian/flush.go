@@ -23,7 +23,7 @@ import (
 )
 
 func shouldFlush(res *http.Response) bool {
-	if res.Request.Method == "HEAD" {
+	if res.Request.Method == http.MethodHead {
 		return false
 	}
 	if res.StatusCode == http.StatusNoContent || res.StatusCode == http.StatusNotModified {

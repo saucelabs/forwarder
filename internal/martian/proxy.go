@@ -486,7 +486,7 @@ func (p *Proxy) handleConnectRequest(ctx *Context, req *http.Request, session *S
 		return nil
 	}
 
-	if res.StatusCode != 200 {
+	if res.StatusCode != http.StatusOK {
 		if cerr == nil {
 			log.Errorf("martian: CONNECT rejected with status code: %d", res.StatusCode)
 		}
@@ -612,7 +612,7 @@ func (p *Proxy) handle(ctx *Context, conn net.Conn, brw *bufio.ReadWriter) error
 		req.URL.Host = req.Host
 	}
 
-	if req.Method == "CONNECT" {
+	if req.Method == http.MethodConnect {
 		return p.handleConnectRequest(ctx, req, session, brw, conn)
 	}
 
@@ -689,7 +689,7 @@ func (p *Proxy) handle(ctx *Context, conn net.Conn, brw *bufio.ReadWriter) error
 	}
 
 	// deal with 101 Switching Protocols responses: (WebSocket, h2c, etc)
-	if res.StatusCode == 101 {
+	if res.StatusCode == http.StatusSwitchingProtocols {
 		return p.handleUpgradeResponse(res, brw, conn)
 	}
 
