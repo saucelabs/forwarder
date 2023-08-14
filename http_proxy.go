@@ -525,6 +525,6 @@ func (hp *HTTPProxy) Addr() string {
 }
 
 // Ready returns true if the server is running and ready to accept requests.
-func (hp *HTTPProxy) Ready(ctx context.Context) bool {
+func (hp *HTTPProxy) Ready(_ context.Context) bool {
 	return hp.Addr() != ""
 }

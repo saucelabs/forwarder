@@ -37,7 +37,7 @@ func (pr *ProxyResolver) dnsResolve(call goja.FunctionCall) goja.Value {
 // Handler for "myIpAddress()".
 // Returns the machine IP address as a string in the dot-separated integer format.
 // See https://developer.mozilla.org/en-US/docs/Web/HTTP/Proxy_servers_and_tunneling/Proxy_Auto-Configuration_PAC_file#myipaddress
-func (pr *ProxyResolver) myIPAddress(call goja.FunctionCall) goja.Value {
+func (pr *ProxyResolver) myIPAddress(_ goja.FunctionCall) goja.Value {
 	var ips []net.IP
 	if pr.config.testingMyIPAddress != nil {
 		ips = pr.config.testingMyIPAddress

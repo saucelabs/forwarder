@@ -85,7 +85,7 @@ func (pr *ProxyResolver) dnsResolveEx(call goja.FunctionCall) goja.Value {
 // Handler for "myIpAddressEx()".
 // Returns a semicolon delimited string containing all IP addresses for localhost (IPv6 and/or IPv4), or an empty string if unable to resolve localhost to an IP address.
 // See https://learn.microsoft.com/en-us/windows/win32/winhttp/myipaddressex
-func (pr *ProxyResolver) myIPAddressEx(call goja.FunctionCall) goja.Value {
+func (pr *ProxyResolver) myIPAddressEx(_ goja.FunctionCall) goja.Value {
 	var ips []net.IP
 	if pr.config.testingMyIPAddressEx != nil {
 		ips = pr.config.testingMyIPAddressEx
@@ -153,6 +153,6 @@ func (pr *ProxyResolver) sortIPAddressList(call goja.FunctionCall) goja.Value {
 // Handler for "getClientVersion()".
 // Returns the appropriate versions number of the WPAD engine, currently 1.0.
 // See https://learn.microsoft.com/en-us/windows/win32/winhttp/getclientversion
-func (pr *ProxyResolver) getClientVersion(call goja.FunctionCall) goja.Value {
+func (pr *ProxyResolver) getClientVersion(_ goja.FunctionCall) goja.Value {
 	return pr.vm.ToValue("1.0")
 }

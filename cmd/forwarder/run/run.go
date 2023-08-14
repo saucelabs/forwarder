@@ -42,7 +42,7 @@ type command struct {
 	goleak              bool
 }
 
-func (c *command) RunE(cmd *cobra.Command, args []string) error {
+func (c *command) RunE(cmd *cobra.Command, _ []string) error {
 	config := bind.DescribeFlags(cmd.Flags())
 
 	if f := c.logConfig.File; f != nil {

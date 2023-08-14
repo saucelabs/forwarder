@@ -48,7 +48,7 @@ func events(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func eventsHTML(w http.ResponseWriter, r *http.Request) {
+func eventsHTML(w http.ResponseWriter, _ *http.Request) {
 	const html = `<!DOCTYPE html>
 <html>
 <body>

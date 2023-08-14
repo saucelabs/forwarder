@@ -66,7 +66,7 @@ func NewAPIHandler(r prometheus.Gatherer, ready func(ctx context.Context) bool, 
 	return a
 }
 
-func (h *APIHandler) healthz(w http.ResponseWriter, r *http.Request) {
+func (h *APIHandler) healthz(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "text/plain")
 	w.Write([]byte("OK"))
@@ -84,18 +84,18 @@ func (h *APIHandler) readyz(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *APIHandler) configz(w http.ResponseWriter, r *http.Request) {
+func (h *APIHandler) configz(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "text/plain")
 	w.Write([]byte(h.config))
 }
 
-func (h *APIHandler) pac(w http.ResponseWriter, r *http.Request) {
+func (h *APIHandler) pac(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/x-ns-proxy-autoconfig")
 	w.Write([]byte(h.script))
 }
 
-func (h *APIHandler) version(w http.ResponseWriter, r *http.Request) {
+func (h *APIHandler) version(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	v := struct {
 		Version string `json:"version"`
@@ -133,7 +133,7 @@ const indexTemplate = `<!DOCTYPE html>
 </html>
 `
 
-func (h *APIHandler) index(w http.ResponseWriter, r *http.Request) {
+func (h *APIHandler) index(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "text/html")
 
