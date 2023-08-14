@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"compress/flate"
 	"compress/gzip"
+	"errors"
 	"io"
 	"net/http"
 	"strings"
@@ -61,7 +62,7 @@ func TestRequestViewHeadersOnly(t *testing.T) {
 		t.Fatalf("mv.BodyReader(): got %v, want no error", err)
 	}
 
-	if _, err := br.Read(nil); err != io.EOF {
+	if _, err := br.Read(nil); !errors.Is(err, io.EOF) {
 		t.Fatalf("io.ReadAll(mv.BodyReader()): got %v, want io.EOF", err)
 	}
 
@@ -184,7 +185,7 @@ func TestRequestViewSkipBodyUnlessContentType(t *testing.T) {
 		t.Fatalf("mv.BodyReader(): got %v, want no error", err)
 	}
 
-	if _, err := br.Read(nil); err != io.EOF {
+	if _, err := br.Read(nil); !errors.Is(err, io.EOF) {
 		t.Fatalf("br.Read(): got %v, want io.EOF", err)
 	}
 }
@@ -422,7 +423,7 @@ func TestResponseViewHeadersOnly(t *testing.T) {
 		t.Fatalf("mv.BodyReader(): got %v, want no error", err)
 	}
 
-	if _, err := br.Read(nil); err != io.EOF {
+	if _, err := br.Read(nil); !errors.Is(err, io.EOF) {
 		t.Fatalf("io.ReadAll(mv.BodyReader()): got %v, want io.EOF", err)
 	}
 
@@ -536,7 +537,7 @@ func TestResponseViewSkipBodyUnlessContentType(t *testing.T) {
 		t.Fatalf("mv.BodyReader(): got %v, want no error", err)
 	}
 
-	if _, err := br.Read(nil); err != io.EOF {
+	if _, err := br.Read(nil); !errors.Is(err, io.EOF) {
 		t.Fatalf("br.Read(): got %v, want io.EOF", err)
 	}
 }

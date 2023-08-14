@@ -16,6 +16,7 @@ package testing
 
 import (
 	"context"
+	"errors"
 	"io"
 
 	tspb "github.com/saucelabs/forwarder/internal/martian/h2/testservice"
@@ -48,7 +49,7 @@ func (s *Server) Sum(_ context.Context, in *tspb.SumRequest) (*tspb.SumResponse,
 func (s *Server) DoubleEcho(stream tspb.TestService_DoubleEchoServer) error {
 	for {
 		req, err := stream.Recv()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			return nil
 		}
 		if err != nil {
