@@ -30,7 +30,7 @@ import (
 
 func TestRequestViewHeadersOnly(t *testing.T) {
 	body := strings.NewReader("body content")
-	req, err := http.NewRequest("GET", "http://example.com/path?k=v", body)
+	req, err := http.NewRequest(http.MethodGet, "http://example.com/path?k=v", body)
 	if err != nil {
 		t.Fatalf("http.NewRequest(): got %v, want no error", err)
 	}
@@ -82,7 +82,7 @@ func TestRequestViewHeadersOnly(t *testing.T) {
 
 func TestRequestView(t *testing.T) {
 	body := strings.NewReader("body content")
-	req, err := http.NewRequest("GET", "http://example.com/path?k=v", body)
+	req, err := http.NewRequest(http.MethodGet, "http://example.com/path?k=v", body)
 	if err != nil {
 		t.Fatalf("http.NewRequest(): got %v, want no error", err)
 	}
@@ -145,7 +145,7 @@ func TestRequestView(t *testing.T) {
 }
 
 func TestRequestViewSkipBodyUnlessContentType(t *testing.T) {
-	req, err := http.NewRequest("GET", "http://example.com", strings.NewReader("body content"))
+	req, err := http.NewRequest(http.MethodGet, "http://example.com", strings.NewReader("body content"))
 	if err != nil {
 		t.Fatalf("http.NewRequest(): got %v, want no error", err)
 	}
@@ -191,7 +191,7 @@ func TestRequestViewSkipBodyUnlessContentType(t *testing.T) {
 }
 
 func TestRequestViewChunkedTransferEncoding(t *testing.T) {
-	req, err := http.NewRequest("GET", "http://example.com/path?k=v", strings.NewReader("body content"))
+	req, err := http.NewRequest(http.MethodGet, "http://example.com/path?k=v", strings.NewReader("body content"))
 	if err != nil {
 		t.Fatalf("http.NewRequest(): got %v, want no error", err)
 	}
@@ -271,7 +271,7 @@ func TestRequestViewDecodeGzipContentEncoding(t *testing.T) {
 	gw.Flush()
 	gw.Close()
 
-	req, err := http.NewRequest("GET", "http://example.com/path?k=v", body)
+	req, err := http.NewRequest(http.MethodGet, "http://example.com/path?k=v", body)
 	if err != nil {
 		t.Fatalf("http.NewRequest(): got %v, want no error", err)
 	}
@@ -337,7 +337,7 @@ func TestRequestViewDecodeDeflateContentEncoding(t *testing.T) {
 	dw.Flush()
 	dw.Close()
 
-	req, err := http.NewRequest("GET", "http://example.com/path?k=v", body)
+	req, err := http.NewRequest(http.MethodGet, "http://example.com/path?k=v", body)
 	if err != nil {
 		t.Fatalf("http.NewRequest(): got %v, want no error", err)
 	}

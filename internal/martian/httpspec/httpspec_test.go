@@ -31,7 +31,7 @@ func TestNewStack(t *testing.T) {
 	fg.AddRequestModifier(tm)
 	fg.AddResponseModifier(tm)
 
-	req, err := http.NewRequest("GET", "http://example.com", nil)
+	req, err := http.NewRequest(http.MethodGet, "http://example.com", nil)
 	if err != nil {
 		t.Fatalf("http.NewRequest(): got %v, want no error", err)
 	}

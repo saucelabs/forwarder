@@ -157,7 +157,7 @@ func (p proxyHandler) handleConnectRequest(ctx *Context, rw http.ResponseWriter,
 		return
 	}
 
-	if res.StatusCode != 200 {
+	if res.StatusCode != http.StatusOK {
 		if cerr == nil {
 			log.Errorf("martian: CONNECT rejected with status code: %d", res.StatusCode)
 		}
@@ -244,7 +244,7 @@ func (p proxyHandler) tunnel(name string, rw http.ResponseWriter, req *http.Requ
 func (p proxyHandler) handleRequest(ctx *Context, rw http.ResponseWriter, req *http.Request) {
 	session := ctx.Session()
 
-	if req.Method == "CONNECT" {
+	if req.Method == http.MethodConnect {
 		p.handleConnectRequest(ctx, rw, req)
 		return
 	}
@@ -328,7 +328,7 @@ func (p proxyHandler) handleRequest(ctx *Context, rw http.ResponseWriter, req *h
 	}
 
 	// deal with 101 Switching Protocols responses: (WebSocket, h2c, etc)
-	if res.StatusCode == 101 {
+	if res.StatusCode == http.StatusSwitchingProtocols {
 		p.handleUpgradeResponse(rw, req, res)
 	} else {
 		writeResponse(rw, res)

@@ -25,7 +25,7 @@ import (
 
 func TestViaModifier(t *testing.T) {
 	m := NewViaModifier("martian")
-	req, err := http.NewRequest("GET", "/", nil)
+	req, err := http.NewRequest(http.MethodGet, "/", nil)
 	if err != nil {
 		t.Fatalf("http.NewRequest(): got %v, want no error", err)
 	}
@@ -64,10 +64,10 @@ func TestViaModifier(t *testing.T) {
 	if err := m.ModifyResponse(res); err == nil {
 		t.Fatal("ModifyResponse(): got nil, want request loop error")
 	}
-	if got, want := res.StatusCode, 400; got != want {
+	if got, want := res.StatusCode, http.StatusBadRequest; got != want {
 		t.Errorf("res.StatusCode: got %d, want %d", got, want)
 	}
-	if got, want := res.Status, http.StatusText(400); got != want {
+	if got, want := res.Status, http.StatusText(http.StatusBadRequest); got != want {
 		t.Errorf("res.Status: got %q, want %q", got, want)
 	}
 }
