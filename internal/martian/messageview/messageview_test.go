@@ -28,9 +28,15 @@ import (
 	"github.com/saucelabs/forwarder/internal/martian/proxyutil"
 )
 
+const (
+	exampleHostname = "example.com"
+	exampleURL      = "http://" + exampleHostname + "/path?k=v"
+	bodyContent     = "body content"
+)
+
 func TestRequestViewHeadersOnly(t *testing.T) {
-	body := strings.NewReader("body content")
-	req, err := http.NewRequest(http.MethodGet, "http://example.com/path?k=v", body)
+	body := strings.NewReader(bodyContent)
+	req, err := http.NewRequest(http.MethodGet, exampleURL, body)
 	if err != nil {
 		t.Fatalf("http.NewRequest(): got %v, want no error", err)
 	}
@@ -48,7 +54,7 @@ func TestRequestViewHeadersOnly(t *testing.T) {
 		t.Fatalf("io.ReadAll(mv.HeaderReader()): got %v, want no error", err)
 	}
 
-	hdrwant := "GET http://example.com/path?k=v HTTP/1.1\r\n" +
+	hdrwant := "GET " + exampleURL + " HTTP/1.1\r\n" +
 		"Host: example.com\r\n" +
 		"Content-Length: 12\r\n" +
 		"Request-Header: true\r\n\r\n"
@@ -81,8 +87,10 @@ func TestRequestViewHeadersOnly(t *testing.T) {
 }
 
 func TestRequestView(t *testing.T) {
-	body := strings.NewReader("body content")
-	req, err := http.NewRequest(http.MethodGet, "http://example.com/path?k=v", body)
+	const bodyContent = "body content"
+
+	body := strings.NewReader(bodyContent)
+	req, err := http.NewRequest(http.MethodGet, exampleURL, body)
 	if err != nil {
 		t.Fatalf("http.NewRequest(): got %v, want no error", err)
 	}
@@ -102,7 +110,7 @@ func TestRequestView(t *testing.T) {
 		t.Fatalf("io.ReadAll(mv.HeaderReader()): got %v, want no error", err)
 	}
 
-	hdrwant := "GET http://example.com/path?k=v HTTP/1.1\r\n" +
+	hdrwant := "GET " + exampleURL + " HTTP/1.1\r\n" +
 		"Host: example.com\r\n" +
 		"Request-Header: true\r\n\r\n"
 
@@ -120,7 +128,7 @@ func TestRequestView(t *testing.T) {
 		t.Fatalf("io.ReadAll(mv.BodyReader()): got %v, want no error", err)
 	}
 
-	bodywant := "body content"
+	bodywant := bodyContent
 	if !bytes.Equal(got, []byte(bodywant)) {
 		t.Fatalf("mv.BodyReader(): got %q, want %q", got, bodywant)
 	}
@@ -145,7 +153,7 @@ func TestRequestView(t *testing.T) {
 }
 
 func TestRequestViewSkipBodyUnlessContentType(t *testing.T) {
-	req, err := http.NewRequest(http.MethodGet, "http://example.com", strings.NewReader("body content"))
+	req, err := http.NewRequest(http.MethodGet, "http://"+exampleHostname, strings.NewReader(bodyContent))
 	if err != nil {
 		t.Fatalf("http.NewRequest(): got %v, want no error", err)
 	}
@@ -168,7 +176,7 @@ func TestRequestViewSkipBodyUnlessContentType(t *testing.T) {
 		t.Fatalf("io.ReadAll(mv.BodyReader()): got %v, want no error", err)
 	}
 
-	bodywant := "body content"
+	bodywant := bodyContent
 	if !bytes.Equal(got, []byte(bodywant)) {
 		t.Fatalf("mv.BodyReader(): got %q, want %q", got, bodywant)
 	}
@@ -191,7 +199,7 @@ func TestRequestViewSkipBodyUnlessContentType(t *testing.T) {
 }
 
 func TestRequestViewChunkedTransferEncoding(t *testing.T) {
-	req, err := http.NewRequest(http.MethodGet, "http://example.com/path?k=v", strings.NewReader("body content"))
+	req, err := http.NewRequest(http.MethodGet, exampleURL, strings.NewReader(bodyContent))
 	if err != nil {
 		t.Fatalf("http.NewRequest(): got %v, want no error", err)
 	}
@@ -211,7 +219,7 @@ func TestRequestViewChunkedTransferEncoding(t *testing.T) {
 		t.Fatalf("io.ReadAll(mv.HeaderReader()): got %v, want no error", err)
 	}
 
-	hdrwant := "GET http://example.com/path?k=v HTTP/1.1\r\n" +
+	hdrwant := "GET " + exampleURL + " HTTP/1.1\r\n" +
 		"Host: example.com\r\n" +
 		"Transfer-Encoding: chunked\r\n" +
 		"Trailer: Trailer-Header\r\n\r\n"
@@ -230,7 +238,7 @@ func TestRequestViewChunkedTransferEncoding(t *testing.T) {
 		t.Fatalf("io.ReadAll(mv.BodyReader()): got %v, want no error", err)
 	}
 
-	bodywant := "c\r\nbody content\r\n0\r\n"
+	bodywant := "c\r\n" + bodyContent + "\r\n0\r\n"
 	if !bytes.Equal(got, []byte(bodywant)) {
 		t.Fatalf("mv.BodyReader(): got %q, want %q", got, bodywant)
 	}
@@ -267,11 +275,11 @@ func TestRequestViewChunkedTransferEncoding(t *testing.T) {
 func TestRequestViewDecodeGzipContentEncoding(t *testing.T) {
 	body := new(bytes.Buffer)
 	gw := gzip.NewWriter(body)
-	gw.Write([]byte("body content"))
+	gw.Write([]byte(bodyContent))
 	gw.Flush()
 	gw.Close()
 
-	req, err := http.NewRequest(http.MethodGet, "http://example.com/path?k=v", body)
+	req, err := http.NewRequest(http.MethodGet, exampleURL, body)
 	if err != nil {
 		t.Fatalf("http.NewRequest(): got %v, want no error", err)
 	}
@@ -288,7 +296,7 @@ func TestRequestViewDecodeGzipContentEncoding(t *testing.T) {
 		t.Fatalf("io.ReadAll(mv.HeaderReader()): got %v, want no error", err)
 	}
 
-	hdrwant := "GET http://example.com/path?k=v HTTP/1.1\r\n" +
+	hdrwant := "GET " + exampleURL + " HTTP/1.1\r\n" +
 		"Host: example.com\r\n" +
 		"Transfer-Encoding: chunked\r\n" +
 		"Content-Encoding: gzip\r\n\r\n"
@@ -307,7 +315,7 @@ func TestRequestViewDecodeGzipContentEncoding(t *testing.T) {
 		t.Fatalf("io.ReadAll(mv.BodyReader()): got %v, wt o error", err)
 	}
 
-	bodywant := "body content"
+	bodywant := bodyContent
 
 	if !bytes.Equal(got, []byte(bodywant)) {
 		t.Fatalf("mv.BodyReader(): got %q, want %q", got, bodywant)
@@ -333,11 +341,11 @@ func TestRequestViewDecodeDeflateContentEncoding(t *testing.T) {
 	if err != nil {
 		t.Fatalf("flate.NewWriter(): got %v, want no error", err)
 	}
-	dw.Write([]byte("body content"))
+	dw.Write([]byte(bodyContent))
 	dw.Flush()
 	dw.Close()
 
-	req, err := http.NewRequest(http.MethodGet, "http://example.com/path?k=v", body)
+	req, err := http.NewRequest(http.MethodGet, exampleURL, body)
 	if err != nil {
 		t.Fatalf("http.NewRequest(): got %v, want no error", err)
 	}
@@ -354,7 +362,7 @@ func TestRequestViewDecodeDeflateContentEncoding(t *testing.T) {
 		t.Fatalf("io.ReadAll(mv.HeaderReader()): got %v, want no error", err)
 	}
 
-	hdrwant := "GET http://example.com/path?k=v HTTP/1.1\r\n" +
+	hdrwant := "GET " + exampleURL + " HTTP/1.1\r\n" +
 		"Host: example.com\r\n" +
 		"Transfer-Encoding: chunked\r\n" +
 		"Content-Encoding: deflate\r\n\r\n"
@@ -373,7 +381,7 @@ func TestRequestViewDecodeDeflateContentEncoding(t *testing.T) {
 		t.Fatalf("io.ReadAll(mv.BodyReader()): got %v, want no error", err)
 	}
 
-	bodywant := "body content"
+	bodywant := bodyContent
 
 	if !bytes.Equal(got, []byte(bodywant)) {
 		t.Fatalf("mv.BodyReader(): got %q, want %q", got, bodywant)
@@ -394,7 +402,7 @@ func TestRequestViewDecodeDeflateContentEncoding(t *testing.T) {
 }
 
 func TestResponseViewHeadersOnly(t *testing.T) {
-	body := strings.NewReader("body content")
+	body := strings.NewReader(bodyContent)
 	res := proxyutil.NewResponse(200, body, nil)
 	res.ContentLength = 12
 	res.Header.Set("Response-Header", "true")
@@ -442,7 +450,7 @@ func TestResponseViewHeadersOnly(t *testing.T) {
 }
 
 func TestResponseView(t *testing.T) {
-	body := strings.NewReader("body content")
+	body := strings.NewReader(bodyContent)
 	res := proxyutil.NewResponse(200, body, nil)
 	res.ContentLength = 12
 	res.Header.Set("Response-Header", "true")
@@ -475,7 +483,7 @@ func TestResponseView(t *testing.T) {
 		t.Fatalf("io.ReadAll(mv.BodyReader()): got %v, want no error", err)
 	}
 
-	bodywant := "body content"
+	bodywant := bodyContent
 	if !bytes.Equal(got, []byte(bodywant)) {
 		t.Fatalf("mv.BodyReader(): got %q, want %q", got, bodywant)
 	}
@@ -500,7 +508,7 @@ func TestResponseView(t *testing.T) {
 }
 
 func TestResponseViewSkipBodyUnlessContentType(t *testing.T) {
-	res := proxyutil.NewResponse(200, strings.NewReader("body content"), nil)
+	res := proxyutil.NewResponse(200, strings.NewReader(bodyContent), nil)
 	res.ContentLength = 12
 	res.Header.Set("Content-Type", "text/plain; charset=utf-8")
 
@@ -520,7 +528,7 @@ func TestResponseViewSkipBodyUnlessContentType(t *testing.T) {
 		t.Fatalf("io.ReadAll(mv.BodyReader()): got %v, want no error", err)
 	}
 
-	bodywant := "body content"
+	bodywant := bodyContent
 	if !bytes.Equal(got, []byte(bodywant)) {
 		t.Fatalf("mv.BodyReader(): got %q, want %q", got, bodywant)
 	}
@@ -543,7 +551,7 @@ func TestResponseViewSkipBodyUnlessContentType(t *testing.T) {
 }
 
 func TestResponseViewChunkedTransferEncoding(t *testing.T) {
-	body := strings.NewReader("body content")
+	body := strings.NewReader(bodyContent)
 	res := proxyutil.NewResponse(200, body, nil)
 	res.TransferEncoding = []string{"chunked"}
 	res.Header.Set("Trailer", "Trailer-Header")
@@ -579,7 +587,7 @@ func TestResponseViewChunkedTransferEncoding(t *testing.T) {
 		t.Fatalf("io.ReadAll(mv.BodyReader()): got %v, want no error", err)
 	}
 
-	bodywant := "c\r\nbody content\r\n0\r\n"
+	bodywant := "c\r\n" + bodyContent + "\r\n0\r\n"
 	if !bytes.Equal(got, []byte(bodywant)) {
 		t.Fatalf("mv.BodyReader(): got %q, want %q", got, bodywant)
 	}
@@ -616,7 +624,7 @@ func TestResponseViewChunkedTransferEncoding(t *testing.T) {
 func TestResponseViewDecodeGzipContentEncoding(t *testing.T) {
 	body := new(bytes.Buffer)
 	gw := gzip.NewWriter(body)
-	gw.Write([]byte("body content"))
+	gw.Write([]byte(bodyContent))
 	gw.Flush()
 	gw.Close()
 
@@ -652,7 +660,7 @@ func TestResponseViewDecodeGzipContentEncoding(t *testing.T) {
 		t.Fatalf("io.ReadAll(mv.BodyReader()): got %v, wt o error", err)
 	}
 
-	bodywant := "body content"
+	bodywant := bodyContent
 
 	if !bytes.Equal(got, []byte(bodywant)) {
 		t.Fatalf("mv.BodyReader(): got %q, want %q", got, bodywant)
@@ -702,7 +710,7 @@ func TestResponseViewDecodeDeflateContentEncoding(t *testing.T) {
 	if err != nil {
 		t.Fatalf("flate.NewWriter(): got %v, want no error", err)
 	}
-	dw.Write([]byte("body content"))
+	dw.Write([]byte(bodyContent))
 	dw.Flush()
 	dw.Close()
 
@@ -738,7 +746,7 @@ func TestResponseViewDecodeDeflateContentEncoding(t *testing.T) {
 		t.Fatalf("io.ReadAll(mv.BodyReader()): got %v, wt o error", err)
 	}
 
-	bodywant := "body content"
+	bodywant := bodyContent
 
 	if !bytes.Equal(got, []byte(bodywant)) {
 		t.Fatalf("mv.BodyReader(): got %q, want %q", got, bodywant)

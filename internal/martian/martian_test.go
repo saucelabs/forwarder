@@ -22,15 +22,17 @@ import (
 )
 
 func TestModifierFuncs(t *testing.T) {
+	const value = "true"
+
 	reqmod := RequestModifierFunc(
 		func(req *http.Request) error {
-			req.Header.Set("Request-Modified", "true")
+			req.Header.Set("Request-Modified", value)
 			return nil
 		})
 
 	resmod := ResponseModifierFunc(
 		func(res *http.Response) error {
-			res.Header.Set("Response-Modified", "true")
+			res.Header.Set("Response-Modified", value)
 			return nil
 		})
 
@@ -42,7 +44,7 @@ func TestModifierFuncs(t *testing.T) {
 	if err := reqmod.ModifyRequest(req); err != nil {
 		t.Fatalf("reqmod.ModifyRequest(): got %v, want no error", err)
 	}
-	if got, want := req.Header.Get("Request-Modified"), "true"; got != want {
+	if got, want := req.Header.Get("Request-Modified"), value; got != want {
 		t.Errorf("req.Header.Get(%q): got %q, want %q", "Request-Modified", got, want)
 	}
 
@@ -51,7 +53,7 @@ func TestModifierFuncs(t *testing.T) {
 	if err := resmod.ModifyResponse(res); err != nil {
 		t.Fatalf("resmod.ModifyResponse(): got %v, want no error", err)
 	}
-	if got, want := res.Header.Get("Response-Modified"), "true"; got != want {
+	if got, want := res.Header.Get("Response-Modified"), value; got != want {
 		t.Errorf("res.Header.Get(%q): got %q, want %q", "Response-Modified", got, want)
 	}
 }

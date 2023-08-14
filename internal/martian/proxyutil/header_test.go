@@ -20,8 +20,13 @@ import (
 	"testing"
 )
 
+const (
+	exampleHostname = "example.com"
+	headerValue     = "true"
+)
+
 func TestRequestHeader(t *testing.T) {
-	req, err := http.NewRequest(http.MethodGet, "http://example.com", http.NoBody)
+	req, err := http.NewRequest(http.MethodGet, "http://"+exampleHostname, http.NoBody)
 	if err != nil {
 		t.Fatalf("http.NewRequest(): got %v, want no error", err)
 	}
@@ -38,7 +43,7 @@ func TestRequestHeader(t *testing.T) {
 		},
 		{
 			name:  "Test-Header",
-			value: "true",
+			value: headerValue,
 		},
 		{
 			name:  "Content-Length",
@@ -56,10 +61,10 @@ func TestRequestHeader(t *testing.T) {
 		}
 	}
 
-	if got, want := req.Host, "example.com"; got != want {
+	if got, want := req.Host, exampleHostname; got != want {
 		t.Errorf("req.Host: got %q, want %q", got, want)
 	}
-	if got, want := req.Header.Get("Test-Header"), "true"; got != want {
+	if got, want := req.Header.Get("Test-Header"), headerValue; got != want {
 		t.Errorf("req.Header.Get(%q): got %q, want %q", "Test-Header", got, want)
 	}
 	if got, want := req.ContentLength, int64(100); got != want {
@@ -83,7 +88,7 @@ func TestRequestHeader(t *testing.T) {
 		case "Transfer-Encoding":
 			want = "chunked"
 		case "Test-Header":
-			want = "true"
+			want = headerValue
 		default:
 			t.Errorf("h.Map(): got unexpected %s header", n)
 		}
@@ -139,7 +144,7 @@ func TestRequestHeader(t *testing.T) {
 }
 
 func TestRequestHeaderAdd(t *testing.T) {
-	req, err := http.NewRequest(http.MethodGet, "http://example.com", http.NoBody)
+	req, err := http.NewRequest(http.MethodGet, "http://"+exampleHostname, http.NoBody)
 	if err != nil {
 		t.Fatalf("http.NewRequest(): got %v, want no error", err)
 	}
@@ -154,7 +159,7 @@ func TestRequestHeaderAdd(t *testing.T) {
 	}{
 		{
 			name:             "Host",
-			values:           []string{"example.com", "invalid.com"},
+			values:           []string{exampleHostname, "invalid.com"},
 			errOnSecondValue: true,
 		},
 		{
@@ -181,7 +186,7 @@ func TestRequestHeaderAdd(t *testing.T) {
 		}
 	}
 
-	if got, want := req.Host, "example.com"; got != want {
+	if got, want := req.Host, exampleHostname; got != want {
 		t.Errorf("req.Host: got %q, want %q", got, want)
 	}
 	if got, want := req.Header["Test-Header"], []string{"first", "second"}; !reflect.DeepEqual(got, want) {
@@ -206,7 +211,7 @@ func TestResponseHeader(t *testing.T) {
 	}{
 		{
 			name:  "Test-Header",
-			value: "true",
+			value: headerValue,
 		},
 		{
 			name:  "Content-Length",
@@ -224,7 +229,7 @@ func TestResponseHeader(t *testing.T) {
 		}
 	}
 
-	if got, want := res.Header.Get("Test-Header"), "true"; got != want {
+	if got, want := res.Header.Get("Test-Header"), headerValue; got != want {
 		t.Errorf("res.Header.Get(%q): got %q, want %q", "Test-Header", got, want)
 	}
 	if got, want := res.ContentLength, int64(100); got != want {
@@ -246,7 +251,7 @@ func TestResponseHeader(t *testing.T) {
 		case "Transfer-Encoding":
 			want = "chunked"
 		case "Test-Header":
-			want = "true"
+			want = headerValue
 		default:
 			t.Errorf("h.Map(): got unexpected %s header", n)
 		}
