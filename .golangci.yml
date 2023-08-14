@@ -101,6 +101,11 @@ issues:
         - nakedret
         - nosprintfhostport
 
+    - path: e2e/run.go
+      linters:
+        - forbidigo
+      text: use of `fmt.Print
+
     - path: internal/version/version.go
       linters:
         - gochecknoglobals

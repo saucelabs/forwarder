@@ -8,7 +8,7 @@ package setup
 
 import (
 	"bytes"
-	"log"
+	"fmt"
 	"os"
 	"os/exec"
 	"strings"
@@ -37,12 +37,15 @@ func makeTestCallback(run string, debug bool) func() error {
 		}
 
 		if stderr.Len() > 0 {
+			fmt.Fprintln(os.Stderr, "stderr:")
 			stderr.WriteTo(os.Stderr)
+			fmt.Fprintln(os.Stderr)
 		}
+
 		s := strings.Split(stdout.String(), "\n")
 		for _, l := range s {
 			if strings.HasPrefix(l, "---") {
-				log.Printf("%s", l)
+				fmt.Fprintln(os.Stdout, l)
 			}
 		}
 
