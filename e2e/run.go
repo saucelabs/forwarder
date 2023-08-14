@@ -8,7 +8,8 @@ package main
 
 import (
 	"flag"
-	"log"
+	"fmt"
+	"os"
 	"regexp"
 
 	"github.com/saucelabs/forwarder/e2e/setup"
@@ -35,14 +36,15 @@ func main() {
 	}
 	r, err := setupRegexp()
 	if err != nil {
-		log.Fatalf("invalid setup regexp: %v", err)
+		fmt.Println("invalid setup regexp:", err)
+		os.Exit(1)
 	}
 
 	runner := setup.Runner{
 		Setups:      AllSetups(),
 		SetupRegexp: r,
 		Decorate: func(s *setup.Setup) {
-			log.Printf("running setup %s", s.Name)
+			fmt.Println("running setup", s.Name)
 
 			if *args.debug {
 				for _, srv := range s.Compose.Services {
@@ -55,8 +57,9 @@ func main() {
 	}
 
 	if err := runner.Run(); err != nil {
-		log.Fatalf(err.Error())
+		fmt.Println(err.Error())
+		os.Exit(1)
 	}
 
-	log.Printf("SUCCESS")
+	fmt.Println("PASS")
 }
