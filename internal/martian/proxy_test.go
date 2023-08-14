@@ -155,7 +155,7 @@ func TestIntegrationTemporaryTimeout(t *testing.T) {
 	}
 	defer conn.Close()
 
-	req, err := http.NewRequest(http.MethodGet, "http://example.com", nil)
+	req, err := http.NewRequest(http.MethodGet, "http://example.com", http.NoBody)
 	if err != nil {
 		t.Fatalf("http.NewRequest(): got %v, want no error", err)
 	}
@@ -217,7 +217,7 @@ func TestIntegrationHTTP(t *testing.T) {
 	}
 	defer conn.Close()
 
-	req, err := http.NewRequest(http.MethodGet, "http://example.com", nil)
+	req, err := http.NewRequest(http.MethodGet, "http://example.com", http.NoBody)
 	if err != nil {
 		t.Fatalf("http.NewRequest(): got %v, want no error", err)
 	}
@@ -427,7 +427,7 @@ func TestIntegrationHTTP101SwitchingProtocols(t *testing.T) {
 
 	host := sl.Addr().String()
 
-	req, err := http.NewRequest(http.MethodPost, "http://"+host, nil)
+	req, err := http.NewRequest(http.MethodPost, "http://"+host, http.NoBody)
 	if err != nil {
 		t.Fatalf("http.NewRequest(): got %v, want no error", err)
 	}
@@ -613,7 +613,7 @@ func TestIntegrationHTTPUpstreamProxy(t *testing.T) {
 	}
 	defer conn.Close()
 
-	req, err := http.NewRequest(http.MethodGet, "http://example.com", nil)
+	req, err := http.NewRequest(http.MethodGet, "http://example.com", http.NoBody)
 	if err != nil {
 		t.Fatalf("http.NewRequest(): got %v, want no error", err)
 	}
@@ -663,7 +663,7 @@ func TestIntegrationHTTPUpstreamProxyError(t *testing.T) {
 	}
 	defer conn.Close()
 
-	req, err := http.NewRequest(http.MethodConnect, "//example.com:443", nil)
+	req, err := http.NewRequest(http.MethodConnect, "//example.com:443", http.NoBody)
 	if err != nil {
 		t.Fatalf("http.NewRequest(): got %v, want no error", err)
 	}
@@ -735,7 +735,7 @@ func TestIntegrationTLSHandshakeErrorCallback(t *testing.T) {
 	}
 	defer conn.Close()
 
-	req, err := http.NewRequest(http.MethodConnect, "//example.com:443", nil)
+	req, err := http.NewRequest(http.MethodConnect, "//example.com:443", http.NoBody)
 	if err != nil {
 		t.Fatalf("http.NewRequest(): got %v, want no error", err)
 	}
@@ -761,7 +761,7 @@ func TestIntegrationTLSHandshakeErrorCallback(t *testing.T) {
 	})
 	defer tlsconn.Close()
 
-	req, err = http.NewRequest(http.MethodGet, "https://example.com", nil)
+	req, err = http.NewRequest(http.MethodGet, "https://example.com", http.NoBody)
 	if err != nil {
 		t.Fatalf("http.NewRequest(): got %v, want no error", err)
 	}
@@ -831,7 +831,7 @@ func TestIntegrationConnect(t *testing.T) {
 	}
 	defer conn.Close()
 
-	req, err := http.NewRequest(http.MethodConnect, "//example.com:443", nil)
+	req, err := http.NewRequest(http.MethodConnect, "//example.com:443", http.NoBody)
 	if err != nil {
 		t.Fatalf("http.NewRequest(): got %v, want no error", err)
 	}
@@ -873,12 +873,13 @@ func TestIntegrationConnect(t *testing.T) {
 	})
 	defer tlsconn.Close()
 
-	req, err = http.NewRequest(http.MethodGet, "https://example.com", nil)
+	req, err = http.NewRequest(http.MethodGet, "https://example.com", http.NoBody)
 	if err != nil {
 		t.Fatalf("http.NewRequest(): got %v, want no error", err)
 	}
 	req.Header.Set("Connection", "close")
 
+	//
 	// GET / HTTP/1.1
 	// Host: example.com
 	// Connection: close
@@ -950,7 +951,7 @@ func TestIntegrationConnectUpstreamProxy(t *testing.T) {
 	}
 	defer conn.Close()
 
-	req, err := http.NewRequest(http.MethodConnect, "//example.com:443", nil)
+	req, err := http.NewRequest(http.MethodConnect, "//example.com:443", http.NoBody)
 	if err != nil {
 		t.Fatalf("http.NewRequest(): got %v, want no error", err)
 	}
@@ -983,11 +984,12 @@ func TestIntegrationConnectUpstreamProxy(t *testing.T) {
 	})
 	defer tlsconn.Close()
 
-	req, err = http.NewRequest(http.MethodGet, "https://example.com", nil)
+	req, err = http.NewRequest(http.MethodGet, "https://example.com", http.NoBody)
 	if err != nil {
 		t.Fatalf("http.NewRequest(): got %v, want no error", err)
 	}
 
+	//
 	// GET / HTTP/1.1
 	// Host: example.com
 	if err := req.Write(tlsconn); err != nil {
@@ -1036,7 +1038,7 @@ func TestIntegrationConnectPassthrough(t *testing.T) {
 	}
 	defer conn.Close()
 
-	req, err := http.NewRequest(http.MethodConnect, "//example.com:80", nil)
+	req, err := http.NewRequest(http.MethodConnect, "//example.com:80", http.NoBody)
 	if err != nil {
 		t.Fatalf("http.NewRequest(): got %v, want no error", err)
 	}
@@ -1123,7 +1125,7 @@ func TestIntegrationMITM(t *testing.T) {
 	}
 	defer conn.Close()
 
-	req, err := http.NewRequest(http.MethodConnect, "//example.com:443", nil)
+	req, err := http.NewRequest(http.MethodConnect, "//example.com:443", http.NoBody)
 	if err != nil {
 		t.Fatalf("http.NewRequest(): got %v, want no error", err)
 	}
@@ -1155,7 +1157,7 @@ func TestIntegrationMITM(t *testing.T) {
 	})
 	defer tlsconn.Close()
 
-	req, err = http.NewRequest(http.MethodGet, "https://example.com", nil)
+	req, err = http.NewRequest(http.MethodGet, "https://example.com", http.NoBody)
 	if err != nil {
 		t.Fatalf("http.NewRequest(): got %v, want no error", err)
 	}
@@ -1212,7 +1214,7 @@ func TestIntegrationTransparentHTTP(t *testing.T) {
 	}
 	defer conn.Close()
 
-	req, err := http.NewRequest(http.MethodGet, "http://example.com", nil)
+	req, err := http.NewRequest(http.MethodGet, "http://example.com", http.NoBody)
 	if err != nil {
 		t.Fatalf("http.NewRequest(): got %v, want no error", err)
 	}
@@ -1302,7 +1304,7 @@ func TestIntegrationTransparentMITM(t *testing.T) {
 	}
 	defer tlsconn.Close()
 
-	req, err := http.NewRequest(http.MethodGet, "https://example.com", nil)
+	req, err := http.NewRequest(http.MethodGet, "https://example.com", http.NoBody)
 	if err != nil {
 		t.Fatalf("http.NewRequest(): got %v, want no error", err)
 	}
@@ -1356,7 +1358,7 @@ func TestIntegrationFailedRoundTrip(t *testing.T) {
 	}
 	defer conn.Close()
 
-	req, err := http.NewRequest(http.MethodGet, "http://example.com", nil)
+	req, err := http.NewRequest(http.MethodGet, "http://example.com", http.NoBody)
 	if err != nil {
 		t.Fatalf("http.NewRequest(): got %v, want no error", err)
 	}
@@ -1411,7 +1413,7 @@ func TestIntegrationSkipRoundTrip(t *testing.T) {
 	}
 	defer conn.Close()
 
-	req, err := http.NewRequest(http.MethodGet, "http://example.com", nil)
+	req, err := http.NewRequest(http.MethodGet, "http://example.com", http.NoBody)
 	if err != nil {
 		t.Fatalf("http.NewRequest(): got %v, want no error", err)
 	}
@@ -1471,7 +1473,7 @@ func TestHTTPThroughConnectWithMITM(t *testing.T) {
 	}
 	defer conn.Close()
 
-	req, err := http.NewRequest(http.MethodConnect, "//example.com:80", nil)
+	req, err := http.NewRequest(http.MethodConnect, "//example.com:80", http.NoBody)
 	if err != nil {
 		t.Fatalf("http.NewRequest(): got %v, want no error", err)
 	}
@@ -1493,7 +1495,7 @@ func TestHTTPThroughConnectWithMITM(t *testing.T) {
 		t.Errorf("res.StatusCode: got %d, want %d", got, want)
 	}
 
-	req, err = http.NewRequest(http.MethodGet, "http://example.com", nil)
+	req, err = http.NewRequest(http.MethodGet, "http://example.com", http.NoBody)
 	if err != nil {
 		t.Fatalf("http.NewRequest(): got %v, want no error", err)
 	}
@@ -1515,7 +1517,7 @@ func TestHTTPThroughConnectWithMITM(t *testing.T) {
 		t.Errorf("res.StatusCode: got %d, want %d", got, want)
 	}
 
-	req, err = http.NewRequest(http.MethodGet, "http://example.com", nil)
+	req, err = http.NewRequest(http.MethodGet, "http://example.com", http.NoBody)
 	if err != nil {
 		t.Fatalf("http.NewRequest(): got %v, want no error", err)
 	}
@@ -1604,7 +1606,7 @@ func TestServerClosesConnection(t *testing.T) {
 	}
 	defer conn.Close()
 
-	req, err := http.NewRequest(http.MethodConnect, fmt.Sprintf("//%s", dstl.Addr().String()), nil)
+	req, err := http.NewRequest(http.MethodConnect, fmt.Sprintf("//%s", dstl.Addr().String()), http.NoBody)
 	if err != nil {
 		t.Fatalf("http.NewRequest(): got %v, want no error", err)
 	}
@@ -1636,7 +1638,7 @@ func TestServerClosesConnection(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error while ReadAll: %v", err)
 	}
-	defer res.Body.Close()
+	res.Body.Close()
 }
 
 // TestRacyClose checks that creating a proxy, serving from it, and closing

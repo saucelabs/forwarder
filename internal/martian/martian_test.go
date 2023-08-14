@@ -34,7 +34,7 @@ func TestModifierFuncs(t *testing.T) {
 			return nil
 		})
 
-	req, err := http.NewRequest(http.MethodGet, "http://example.com", nil)
+	req, err := http.NewRequest(http.MethodGet, "http://example.com", http.NoBody)
 	if err != nil {
 		t.Fatalf("http.NewRequest(): got %v, want no error", err)
 	}

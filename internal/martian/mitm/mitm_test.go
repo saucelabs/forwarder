@@ -175,7 +175,7 @@ func TestCert(t *testing.T) {
 	}
 
 	after := time.Now().Add(2 * time.Hour)
-	if got := x509c.NotAfter; !after.After(got) {
+	if got := x509c.NotAfter; after.Before(got) {
 		t.Errorf("x509c.NotAfter: got %v, want before %v", got, want)
 	}
 

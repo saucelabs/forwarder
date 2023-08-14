@@ -25,7 +25,7 @@ import (
 
 func TestViaModifier(t *testing.T) {
 	m := NewViaModifier("martian")
-	req, err := http.NewRequest(http.MethodGet, "/", nil)
+	req, err := http.NewRequest(http.MethodGet, "/", http.NoBody)
 	if err != nil {
 		t.Fatalf("http.NewRequest(): got %v, want no error", err)
 	}

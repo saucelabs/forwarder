@@ -38,7 +38,7 @@ func TestModifier(t *testing.T) {
 		resrun = true
 	})
 
-	req, err := http.NewRequest(http.MethodGet, "http://example.com", nil)
+	req, err := http.NewRequest(http.MethodGet, "http://example.com", http.NoBody)
 	if err != nil {
 		t.Fatalf("http.NewRequest(): got %v, want no error", err)
 	}
@@ -56,7 +56,7 @@ func TestModifier(t *testing.T) {
 		t.Error("reqrun: got false, want true")
 	}
 
-	res := proxyutil.NewResponse(200, nil, req)
+	res := proxyutil.NewResponse(200, http.NoBody, req)
 
 	if err := tm.ModifyResponse(res); !errors.Is(err, moderr) {
 		t.Fatalf("tm.ModifyResponse(): got %v, want %v", err, moderr)

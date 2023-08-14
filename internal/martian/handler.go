@@ -127,7 +127,7 @@ func (p proxyHandler) handleConnectRequest(ctx *Context, rw http.ResponseWriter,
 			cw = pw
 
 			if res.StatusCode/100 == 2 {
-				res = proxyutil.NewResponse(200, nil, req)
+				res = proxyutil.NewResponse(200, http.NoBody, req)
 			}
 		}
 	} else {
