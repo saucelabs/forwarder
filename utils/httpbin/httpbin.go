@@ -113,7 +113,7 @@ func streamBytesHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/octet-stream")
 	w.WriteHeader(http.StatusOK)
 
-	io.CopyBuffer(w, &patternReader{
+	io.CopyBuffer(w, &patternReader{ //nolint:errcheck // best effort
 		Pattern: []byte("SauceLabs"),
 		N:       int64(n),
 	}, make([]byte, chunkSize))
