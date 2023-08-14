@@ -157,7 +157,7 @@ func (r *relay) relayFrames(closing chan bool) error {
 	readerDone := make(chan struct{})
 	defer func() { readerDone <- struct{}{} }()
 
-	// Communicates errors occuring on the writer goroutine to the reader goroutine.
+	// Communicates errors occurring on the writer goroutine to the reader goroutine.
 	writerErr := make(chan error, 1)
 
 	// This writer goroutine consumes the strictly ordered frames in `r.output` and delivers them.
