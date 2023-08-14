@@ -83,6 +83,6 @@ func newClient(t *testing.T, baseURL string, opts ...func(tr *http.Transport)) *
 	}
 
 	c := httpexpect.NewClient(t, baseURL, tr)
-	//c.Trace(true)
+	// c.Trace(true)
 	return c
 }
