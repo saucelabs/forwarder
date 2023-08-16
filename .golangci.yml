@@ -121,6 +121,7 @@ issues:
       linters:
         - goheader
         - gochecknoglobals
+        - errcheck
 
     - linters:
         - thelper
