@@ -126,7 +126,7 @@ func forwardPreface(server io.Writer, client io.Reader) error {
 		return fmt.Errorf("client sent unexpected preface: %s", hex.Dump(preface))
 	}
 	for m := len(connectionPreface); m > 0; {
-		n, err := server.Write([]byte(preface))
+		n, err := server.Write(preface)
 		if err != nil {
 			return fmt.Errorf("writing preface: %w", err)
 		}
