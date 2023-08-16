@@ -36,7 +36,7 @@ func (merr *MultiError) Error() string {
 	merr.mu.RLock()
 	defer merr.mu.RUnlock()
 
-	var errs []string
+	errs := make([]string, 0, len(merr.errs))
 	for _, err := range merr.errs {
 		errs = append(errs, err.Error())
 	}
