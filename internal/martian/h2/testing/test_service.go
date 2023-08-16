@@ -28,7 +28,7 @@ type Server struct {
 }
 
 // Echo handles TestService.Echo RPCs.
-func (s *Server) Echo(ctx context.Context, in *tspb.EchoRequest) (*tspb.EchoResponse, error) {
+func (s *Server) Echo(_ context.Context, in *tspb.EchoRequest) (*tspb.EchoResponse, error) {
 	return &tspb.EchoResponse{
 		Payload: in.GetPayload(),
 	}, nil
