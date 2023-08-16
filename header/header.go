@@ -41,7 +41,7 @@ var (
 func ParseHeader(val string) (Header, error) {
 	var h Header
 
-	if strings.HasPrefix(val, "-") { //nolint:nestif // the branches are very similar
+	if strings.HasPrefix(val, "-") {
 		if strings.HasSuffix(val, "*") {
 			h.Name = val[1 : len(val)-1]
 			h.Action = RemoveByPrefix

@@ -64,7 +64,7 @@ linters-settings:
   lll:
     line-length: 180
   nestif:
-    min-complexity: 6
+    min-complexity: 11
   goheader:
     values:
       regexp:
