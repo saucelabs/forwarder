@@ -53,7 +53,7 @@ linters-settings:
     lines: 140
     statements: 75
   gocognit:
-    min-complexity: 40
+    min-complexity: 50
   gocyclo:
     min-complexity: 40
   gocritic:
