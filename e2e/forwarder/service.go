@@ -71,8 +71,8 @@ func (s *Service) WithProtocol(protocol string) *Service {
 	s.Environment["FORWARDER_PROTOCOL"] = protocol
 
 	if protocol == "https" || protocol == "h2" {
-		s.Environment["FORWARDER_CERT_FILE"] = "/etc/forwarder/certs/" + s.Name + ".crt"
-		s.Environment["FORWARDER_KEY_FILE"] = "/etc/forwarder/private/" + s.Name + ".key"
+		s.Environment["FORWARDER_TLS_CERT_FILE"] = "/etc/forwarder/certs/" + s.Name + ".crt"
+		s.Environment["FORWARDER_TLS_KEY_FILE"] = "/etc/forwarder/private/" + s.Name + ".key"
 		s.Volumes = append(s.Volumes,
 			"./certs/"+s.Name+".crt:/etc/forwarder/certs/"+s.Name+".crt:ro",
 			"./certs/"+s.Name+".key:/etc/forwarder/private/"+s.Name+".key:ro",
