@@ -51,7 +51,6 @@ type Config struct {
 	validity               time.Duration
 	org                    string
 	h2Config               *h2.Config
-	getCertificate         func(*tls.ClientHelloInfo) (*tls.Certificate, error)
 	roots                  *x509.CertPool
 	skipVerify             bool
 	handshakeErrorCallback func(*http.Request, error)
