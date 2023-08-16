@@ -87,6 +87,7 @@ issues:
     - "string `https?` has \\d+ occurrences"
     - "context-keys-type: should not use basic type string as key in context.WithValue"
     - "SA1029: should not use built-in type string as key for value; define your own type to avoid collisions"
+    - "importShadow: shadow of imported package 'url'"
   exclude-rules:
     - path: cmd/forwarder/version/version.go
       linters:
