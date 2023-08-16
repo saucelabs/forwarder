@@ -51,11 +51,11 @@ type Session struct {
 	vals     map[string]any
 }
 
-const marianKey string = "martian.Context"
+const martianKey string = "martian.Context"
 
 // NewContext returns a context for the in-flight HTTP request.
 func NewContext(req *http.Request) *Context {
-	v := req.Context().Value(marianKey)
+	v := req.Context().Value(martianKey)
 	if v == nil {
 		return nil
 	}
@@ -178,7 +178,7 @@ func (ctx *Context) addToContext(rctx context.Context) context.Context {
 	if rctx == nil {
 		rctx = context.Background()
 	}
-	return context.WithValue(rctx, marianKey, ctx)
+	return context.WithValue(rctx, martianKey, ctx)
 }
 
 // Session returns the session for the context.
