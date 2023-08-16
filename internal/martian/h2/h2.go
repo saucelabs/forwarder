@@ -150,5 +150,5 @@ func (s *streamProcessors) Get(id uint32, dir Direction) Processor {
 	if !ok {
 		value, _ = s.processors.LoadOrStore(id, s.create(id))
 	}
-	return value.(*Processors).ForDirection(dir)
+	return value.(*Processors).ForDirection(dir) //nolint:forcetypeassert // The value is always a *Processors.
 }

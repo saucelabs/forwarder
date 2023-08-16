@@ -80,7 +80,7 @@ func (m *ViaModifier) ModifyResponse(res *http.Response) error {
 		res.StatusCode = 400
 		res.Status = http.StatusText(http.StatusBadRequest)
 
-		return err.(error)
+		return err.(error) //nolint:forcetypeassert // viaLoopKey is always an error.
 	}
 
 	return nil

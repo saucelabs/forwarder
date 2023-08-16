@@ -59,7 +59,7 @@ func NewContext(req *http.Request) *Context {
 	if v == nil {
 		return nil
 	}
-	return v.(*Context)
+	return v.(*Context) //nolint:forcetypeassert // We know the type.
 }
 
 // TestContext builds a new session and associated context and returns the context.

@@ -549,7 +549,7 @@ type outputBuffer struct {
 // This is not thread-safe. The caller should be holding `relay.flowMu`.
 func (w *outputBuffer) emitEligibleFrames(output chan queuedFrame, connectionWindowSize *int) {
 	for e := w.queue.Front(); e != nil; {
-		f := e.Value.(queuedFrame)
+		f := e.Value.(queuedFrame) //nolint:forcetypeassert // e.Value is always a queuedFrame.
 		if f.flowControlSize() > *connectionWindowSize || f.flowControlSize() > w.windowSize {
 			break
 		}
