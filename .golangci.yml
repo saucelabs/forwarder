@@ -122,6 +122,7 @@ issues:
         - goheader
         - gochecknoglobals
         - errcheck
+        - gosec
 
     - linters:
         - thelper
