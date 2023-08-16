@@ -94,7 +94,7 @@ func New(spf []h2.StreamProcessorFactory) (*Fixture, error) {
 			if err != nil {
 				return nil, fmt.Errorf("creating listener for proxy; %w", err)
 			}
-			proxyPort = f.proxyListener.Addr().(*net.TCPAddr).Port
+			proxyPort = f.proxyListener.Addr().(*net.TCPAddr).Port //nolint:forcetypeassert // It's a TCPAddr.
 		}
 		proxyTarget := hostname + ":" + strconv.Itoa(proxyPort)
 		// Sets the HTTPS_PROXY environment variable so that http requests will go through the proxy.
@@ -118,7 +118,7 @@ func New(spf []h2.StreamProcessorFactory) (*Fixture, error) {
 		f.proxy.Serve(f.proxyListener)
 	}()
 
-	port := lis.Addr().(*net.TCPAddr).Port
+	port := lis.Addr().(*net.TCPAddr).Port //nolint:forcetypeassert // It's a TCPAddr.
 	target := hostname + ":" + strconv.Itoa(port)
 
 	fmt.Printf("server at %s\n", target)

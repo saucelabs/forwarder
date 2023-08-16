@@ -568,7 +568,7 @@ var copyBufPool = sync.Pool{
 }
 
 func copySync(name string, w io.Writer, r io.Reader, donec chan<- bool) {
-	bufp := copyBufPool.Get().(*[]byte)
+	bufp := copyBufPool.Get().(*[]byte) //nolint:forcetypeassert // It's *[]byte.
 	buf := *bufp
 	defer copyBufPool.Put(bufp)
 

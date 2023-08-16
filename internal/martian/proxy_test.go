@@ -203,7 +203,7 @@ func TestIntegrationHTTP(t *testing.T) {
 		ctx := NewContext(res.Request)
 		v, _ := ctx.Get("martian.test")
 
-		res.Header.Set("Martian-Test", v.(string))
+		res.Header.Set("Martian-Test", v.(string)) //nolint:forcetypeassert // Test only.
 	})
 
 	p.SetRequestModifier(tm)
