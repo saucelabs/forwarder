@@ -150,16 +150,6 @@ func (s *Session) Hijacked() bool {
 	return s.hijacked
 }
 
-// setConn resets the underlying connection and bufio.ReadWriter of the
-// session. Used by the proxy when the connection is upgraded to TLS.
-func (s *Session) setConn(conn net.Conn, brw *bufio.ReadWriter) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	s.conn = conn
-	s.brw = brw
-}
-
 // Get takes key and returns the associated value from the session.
 func (s *Session) Get(key string) (any, bool) {
 	s.mu.RLock()
