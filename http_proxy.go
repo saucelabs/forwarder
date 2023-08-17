@@ -16,6 +16,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"regexp"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -27,6 +28,7 @@ import (
 	"github.com/saucelabs/forwarder/log"
 	"github.com/saucelabs/forwarder/middleware"
 	"github.com/saucelabs/forwarder/pac"
+	"github.com/saucelabs/forwarder/regex"
 )
 
 type ProxyLocalhostMode string
@@ -73,6 +75,8 @@ type HTTPProxyConfig struct {
 	ResponseModifiers  []martian.ResponseModifier
 	ConnectPassthrough bool
 	CloseAfterReply    bool
+	DenyDomains        []*regexp.Regexp
+	DenyDomainsExclude []*regexp.Regexp
 
 	// TestingHTTPHandler uses Martian's [http.Handler] implementation
 	// over [http.Server] instead of the default TCP server.
@@ -272,6 +276,10 @@ func (hp *HTTPProxy) middlewareStack() martian.RequestResponseModifier {
 	if hp.config.ProxyLocalhost == DenyProxyLocalhost {
 		topg.AddRequestModifier(hp.denyLocalhost())
 	}
+	if len(hp.config.DenyDomains) != 0 || len(hp.config.DenyDomainsExclude) != 0 {
+		ruleSet := regex.NewRuleSet(hp.config.DenyDomains, hp.config.DenyDomainsExclude)
+		topg.AddRequestModifier(hp.denyDomains(ruleSet))
+	}
 
 	// stack contains the request/response modifiers in the order they are applied.
 	// fg is the inner stack that is executed after the core request modifiers and before the core response modifiers.
@@ -385,6 +393,14 @@ func (hp *HTTPProxy) denyLocalhost() martian.RequestModifier {
 	return hp.abortIf(hp.isLocalhost, func(req *http.Request) *http.Response {
 		return errorResponse(req, ErrProxyLocalhost)
 	}, errors.New("localhost access denied"))
+}
+
+func (hp *HTTPProxy) denyDomains(ruleSet *regex.RuleSet) martian.RequestModifier {
+	return hp.abortIf(func(req *http.Request) bool {
+		return ruleSet.Match(req.URL.Hostname())
+	}, func(req *http.Request) *http.Response {
+		return errorResponse(req, ErrProxyDenied)
+	}, errors.New("domain access denied"))
 }
 
 func (hp *HTTPProxy) directLocalhost(fn ProxyFunc) ProxyFunc {

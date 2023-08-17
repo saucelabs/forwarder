@@ -24,7 +24,10 @@ type denyError struct {
 // ErrorHeader is the header that is set on error responses with the error message.
 const ErrorHeader = "X-Forwarder-Error"
 
-var ErrProxyLocalhost = denyError{errors.New("localhost proxying is disabled")}
+var (
+	ErrProxyLocalhost = denyError{errors.New("localhost proxying is disabled")}
+	ErrProxyDenied    = denyError{errors.New("proxying denied")}
+)
 
 func errorResponse(req *http.Request, err error) *http.Response {
 	handlers := []errorHandler{
