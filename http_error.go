@@ -100,7 +100,7 @@ func handleTLSCertificateError(_ *http.Request, err error) (code int, msg string
 func handleDenyError(req *http.Request, err error) (code int, msg string) {
 	var denyErr denyError
 	if errors.As(err, &denyErr) {
-		code = http.StatusBadGateway
+		code = http.StatusForbidden
 		msg = fmt.Sprintf("proxying is denied to host %q", req.Host)
 	}
 

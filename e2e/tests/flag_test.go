@@ -27,7 +27,7 @@ func TestFlagProxyLocalhost(t *testing.T) {
 	})
 	t.Run("deny", func(t *testing.T) {
 		for _, h := range hosts {
-			newClient(t, "http://"+net.JoinHostPort(h, "10000")).GET("/version").ExpectStatus(http.StatusBadGateway)
+			newClient(t, "http://"+net.JoinHostPort(h, "10000")).GET("/version").ExpectStatus(http.StatusForbidden)
 		}
 	})
 }
