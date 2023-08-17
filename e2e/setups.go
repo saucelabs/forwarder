@@ -39,6 +39,7 @@ func AllSetups() []setup.Setup {
 	SetupFlagDNSServer(l)
 	SetupFlagInsecure(l)
 	SetupFlagMITM(l)
+	SetupFlagDenyDomain(l)
 	SetupSC2450(l)
 
 	return l.Build()
@@ -327,6 +328,47 @@ func SetupFlagMITM(l *setupList) {
 			Run: run,
 		})
 	}
+}
+
+func SetupFlagDenyDomain(l *setupList) {
+	const run = "^TestFlagDenyDomain$"
+
+	l.Add(
+		setup.Setup{
+			Name: "flag-deny-domain",
+			Compose: compose.NewBuilder().
+				AddService(
+					forwarder.HttpbinService()).
+				AddService(
+					forwarder.ProxyService().
+						WithDenyDomain("\\.com")).
+				MustBuild(),
+			Run: run,
+		},
+		setup.Setup{
+			Name: "flag-deny-domain-exclude",
+			Compose: compose.NewBuilder().
+				AddService(
+					forwarder.HttpbinService()).
+				AddService(
+					forwarder.ProxyService().
+						WithDenyDomain("google", "httpbin").
+						WithDenyDomainExclude("httpbin")).
+				MustBuild(),
+			Run: run,
+		},
+		setup.Setup{
+			Name: "flag-deny-domain-only-exclude",
+			Compose: compose.NewBuilder().
+				AddService(
+					forwarder.HttpbinService()).
+				AddService(
+					forwarder.ProxyService().
+						WithDenyDomainExclude("httpbin")).
+				MustBuild(),
+			Run: run,
+		},
+	)
 }
 
 func SetupSC2450(l *setupList) {
