@@ -11,6 +11,7 @@ import (
 	"net/netip"
 	"net/url"
 	"os"
+	"regexp"
 	"strings"
 
 	"github.com/mmatczuk/anyflag"
@@ -107,6 +108,20 @@ func HTTPProxyConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPProxyConfig, lcfg *lo
 	fs.StringVar(&cfg.Name, "name", cfg.Name, "<string>"+
 		"Name of this proxy instance. This value is used in the Via header in requests. "+
 		"The name value in Via header is extended with a random string to avoid collisions when several proxies are chained. ")
+
+	fs.Var(anyflag.NewSliceValue[*regexp.Regexp](cfg.DenyDomains, &cfg.DenyDomains, regexp.Compile),
+		"deny-domain", "<regexp>"+
+			"Deny requests to the specified domains. "+
+			"Use this flag multiple times to specify multiple deny domains. "+
+			"Use --deny-domain-exclude to exclude requests to certain domains from being denied.")
+
+	fs.Var(anyflag.NewSliceValue[*regexp.Regexp](cfg.DenyDomainsExclude, &cfg.DenyDomainsExclude, regexp.Compile),
+		"deny-domain-exclude", "<regexp>"+
+			"Exclude requests to the specified domains from being denied. "+
+			"Use this flag multiple times to specify multiple deny domain excludes. "+
+			"This flag takes precedence over deny-domain. "+
+			"When --deny-domain-exclude is specified and --deny-domain is not, "+
+			"all requests to domains that do not match any of the deny-domain-exclude patterns will be denied. ")
 }
 
 func MITMConfig(fs *pflag.FlagSet, mitm *bool, cfg *forwarder.MITMConfig) {

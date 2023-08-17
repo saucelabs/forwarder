@@ -64,6 +64,12 @@ func rootCommand() *cobra.Command {
 			},
 		},
 		{
+			Name: "Domain options",
+			Prefix: []string{
+				"deny-domain",
+			},
+		},
+		{
 			Name:   "API server options",
 			Prefix: []string{"api"},
 		},
