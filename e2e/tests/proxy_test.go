@@ -15,12 +15,14 @@ import (
 	"math/rand"
 	"net/http"
 	"net/url"
+	"os"
 	"runtime"
 	"strings"
 	"sync"
 	"testing"
 
 	"github.com/gorilla/websocket"
+	"github.com/saucelabs/forwarder/e2e/forwarder"
 	"github.com/saucelabs/forwarder/utils/httpexpect"
 )
 
@@ -241,4 +243,40 @@ func TestProxyBadGateway(t *testing.T) {
 
 func TestProxyGoogleCom(t *testing.T) {
 	newClient(t, "https://www.google.com").HEAD("/").ExpectStatus(http.StatusOK)
+}
+
+func TestProxyUpstream(t *testing.T) {
+	if os.Getenv("FORWARDER_PROXY") == "" {
+		t.Skip("FORWARDER_PROXY not set")
+	}
+	if os.Getenv("HTTPBIN_PROTOCOL") != "http" {
+		t.Skip("HTTPBIN_PROTOCOL not set to http")
+	}
+
+	res := string(newClient(t, httpbin).GET("/header/via/").ExpectStatus(http.StatusNotFound).Body)
+	_, viaHeader, ok := strings.Cut(res, "=")
+	if !ok {
+		t.Fatalf("unexpected response: %q", res)
+	}
+
+	l := len("1.1 ")
+	filter := func(s string) string {
+		i := strings.LastIndex(s, "-")
+		if i < l {
+			t.Errorf("unexpected via header: %q", s)
+			return ""
+		}
+		return s[l:i]
+	}
+
+	var success bool
+	for _, via := range strings.Split(viaHeader, ", ") {
+		if forwarder.UpstreamProxyServiceName == filter(via) {
+			success = true
+		}
+	}
+
+	if !success {
+		t.Fatalf("%s via header not found", forwarder.UpstreamProxyServiceName)
+	}
 }

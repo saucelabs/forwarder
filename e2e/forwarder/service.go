@@ -44,6 +44,7 @@ func UpstreamProxyService() *Service {
 		Image: Image,
 		Environment: map[string]string{
 			"FORWARDER_API_ADDRESS": ":10000",
+			"FORWARDER_NAME":        UpstreamProxyServiceName,
 		},
 		Ports: []string{
 			"10001:10000",
