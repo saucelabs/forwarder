@@ -88,9 +88,11 @@ func NewHTTPTransport(cfg *HTTPTransportConfig) (*http.Transport, error) {
 		TLSClientConfig:       tlsCfg,
 		TLSHandshakeTimeout:   cfg.TLSClientConfig.HandshakeTimeout,
 		MaxIdleConns:          cfg.MaxIdleConns,
+		MaxIdleConnsPerHost:   cfg.MaxIdleConnsPerHost,
+		MaxConnsPerHost:       cfg.MaxConnsPerHost,
 		IdleConnTimeout:       cfg.IdleConnTimeout,
+		ResponseHeaderTimeout: cfg.ResponseHeaderTimeout,
 		ExpectContinueTimeout: cfg.ExpectContinueTimeout,
 		ForceAttemptHTTP2:     true,
-		MaxIdleConnsPerHost:   cfg.MaxIdleConnsPerHost,
 	}, nil
 }
