@@ -36,8 +36,6 @@ type Context struct {
 	mu            sync.RWMutex
 	vals          map[string]any
 	skipRoundTrip bool
-	skipLogging   bool
-	apiRequest    bool
 }
 
 // Session provides information and storage about a connection.
@@ -229,40 +227,6 @@ func (ctx *Context) SkippingRoundTrip() bool {
 	defer ctx.mu.RUnlock()
 
 	return ctx.skipRoundTrip
-}
-
-// SkipLogging skips logging by Martian loggers for the current request.
-func (ctx *Context) SkipLogging() {
-	ctx.mu.Lock()
-	defer ctx.mu.Unlock()
-
-	ctx.skipLogging = true
-}
-
-// SkippingLogging returns whether the current request / response pair will be logged.
-func (ctx *Context) SkippingLogging() bool {
-	ctx.mu.RLock()
-	defer ctx.mu.RUnlock()
-
-	return ctx.skipLogging
-}
-
-// APIRequest marks the requests as a request to the proxy API.
-func (ctx *Context) APIRequest() {
-	ctx.mu.Lock()
-	defer ctx.mu.Unlock()
-
-	ctx.apiRequest = true
-}
-
-// IsAPIRequest returns true when the request patterns matches a pattern in the proxy
-// mux. The mux is usually defined as a parameter to the api.Forwarder, which uses
-// http.DefaultServeMux by default.
-func (ctx *Context) IsAPIRequest() bool {
-	ctx.mu.RLock()
-	defer ctx.mu.RUnlock()
-
-	return ctx.apiRequest
 }
 
 // newSession builds a new session from a [net.Conn].
