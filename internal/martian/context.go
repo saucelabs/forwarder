@@ -186,7 +186,7 @@ func (ctx *Context) Session() *Session {
 
 // ID returns the context ID.
 func (ctx *Context) ID() string {
-	return strconv.FormatUint(ctx.id, 16)
+	return strconv.FormatUint(ctx.id, 10)
 }
 
 // Get takes key and returns the associated value from the context.
