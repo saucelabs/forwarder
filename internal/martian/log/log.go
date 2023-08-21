@@ -16,48 +16,16 @@
 package log
 
 import (
-	"fmt"
-	"log"
-	"sync"
+	"github.com/saucelabs/forwarder/log"
 )
 
-const (
-	// Silent is a level that logs nothing.
-	Silent int = iota
-	// Error is a level that logs error logs.
-	Error
-	// Info is a level that logs error, and info logs.
-	Info
-	// Debug is a level that logs error, info, and debug logs.
-	Debug
-)
-
-// Default log level is Error.
-var (
-	level      = Error
-	lock       sync.Mutex
-	currLogger Logger = &logger{}
-)
-
-type Logger interface {
-	Infof(format string, args ...any)
-	Debugf(format string, args ...any)
-	Errorf(format string, args ...any)
-}
+var currLogger log.Logger = log.NopLogger
 
 // SetLogger changes the default logger. This must be called very first,
 // before interacting with rest of the martian package. Changing it at
 // runtime is not supported.
-func SetLogger(l Logger) {
+func SetLogger(l log.Logger) {
 	currLogger = l
-}
-
-// SetLevel sets the global log level.
-func SetLevel(l int) {
-	lock.Lock()
-	defer lock.Unlock()
-
-	level = l
 }
 
 // Infof logs an info message.
@@ -73,54 +41,4 @@ func Debugf(format string, args ...any) {
 // Errorf logs an error message.
 func Errorf(format string, args ...any) {
 	currLogger.Errorf(format, args...)
-}
-
-type logger struct{}
-
-func (l *logger) Infof(format string, args ...any) {
-	lock.Lock()
-	defer lock.Unlock()
-
-	if level < Info {
-		return
-	}
-
-	msg := fmt.Sprintf("INFO: %s", format)
-	if len(args) > 0 {
-		msg = fmt.Sprintf(msg, args...)
-	}
-
-	log.Println(msg)
-}
-
-func (l *logger) Debugf(format string, args ...any) {
-	lock.Lock()
-	defer lock.Unlock()
-
-	if level < Debug {
-		return
-	}
-
-	msg := fmt.Sprintf("DEBUG: %s", format)
-	if len(args) > 0 {
-		msg = fmt.Sprintf(msg, args...)
-	}
-
-	log.Println(msg)
-}
-
-func (l *logger) Errorf(format string, args ...any) {
-	lock.Lock()
-	defer lock.Unlock()
-
-	if level < Error {
-		return
-	}
-
-	msg := fmt.Sprintf("ERROR: %s", format)
-	if len(args) > 0 {
-		msg = fmt.Sprintf(msg, args...)
-	}
-
-	log.Println(msg)
 }
