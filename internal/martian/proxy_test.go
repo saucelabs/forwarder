@@ -1647,7 +1647,6 @@ func TestServerClosesConnection(t *testing.T) {
 func TestRacyClose(t *testing.T) {
 	t.Parallel()
 
-	log.SetLevel(log.Silent) // avoid "failed to accept" messages because we close l
 	openAndConnect := func() {
 		l, err := net.Listen("tcp", "[::]:0")
 		if err != nil {
