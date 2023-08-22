@@ -8,8 +8,12 @@ package golden
 
 import (
 	"bytes"
+	"io"
+	"net/http"
+	"net/url"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/prometheus/client_golang/prometheus"
@@ -34,6 +38,24 @@ func DiffPrometheusMetrics(t *testing.T, p prometheus.Gatherer, filter ...func(*
 			t.Fatal(err)
 		}
 	}
+}
+
+func DiffPrometheusMetricsHTTP(t *testing.T, u *url.URL, filter ...func(*dto.MetricFamily) bool) {
+	t.Helper()
+
+	http.DefaultClient.Timeout = 30 * time.Second
+	res, err := http.DefaultClient.Get(u.String()) //nolint:noctx // The timeout is set above.
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer res.Body.Close()
+
+	g, err := parseMetricFamilies(res.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	DiffPrometheusMetrics(t, g, filter...)
 }
 
 func dumpPrometheusMetrics(t *testing.T, p prometheus.Gatherer, filters ...func(*dto.MetricFamily) bool) string {
@@ -62,4 +84,26 @@ func dumpPrometheusMetrics(t *testing.T, p prometheus.Gatherer, filters ...func(
 		}
 	}
 	return buf.String()
+}
+
+func parseMetricFamilies(reader io.Reader) (*gatherer, error) {
+	var parser expfmt.TextParser
+	mf, err := parser.TextToMetricFamilies(reader)
+	if err != nil {
+		return nil, err
+	}
+
+	return &gatherer{mf: mf}, nil
+}
+
+type gatherer struct {
+	mf map[string]*dto.MetricFamily
+}
+
+func (g *gatherer) Gather() ([]*dto.MetricFamily, error) {
+	res := make([]*dto.MetricFamily, 0, len(g.mf))
+	for _, mf := range g.mf {
+		res = append(res, mf)
+	}
+	return res, nil
 }
