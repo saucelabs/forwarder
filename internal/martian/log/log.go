@@ -42,3 +42,9 @@ func Debugf(format string, args ...any) {
 func Errorf(format string, args ...any) {
 	currLogger.Errorf(format, args...)
 }
+
+const traceIDKey = "trace"
+
+func WithTraceID(value string) log.Logger {
+	return currLogger.WithValue(traceIDKey, value)
+}
