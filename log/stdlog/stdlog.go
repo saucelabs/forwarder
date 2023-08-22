@@ -14,26 +14,26 @@ import (
 	flog "github.com/saucelabs/forwarder/log"
 )
 
-func Default() StdLogger {
-	return StdLogger{
+func Default() Logger {
+	return Logger{
 		log:   log.Default(),
 		level: flog.InfoLevel,
 	}
 }
 
-func New(cfg *flog.Config) StdLogger {
+func New(cfg *flog.Config) Logger {
 	var w io.Writer = os.Stdout
 	if cfg.File != nil {
 		w = cfg.File
 	}
-	return StdLogger{
+	return Logger{
 		log:   log.New(w, "", log.Ldate|log.Ltime|log.LUTC),
 		level: cfg.Level,
 	}
 }
 
-// StdLogger implements the forwarder.Logger interface using the standard log package.
-type StdLogger struct {
+// Logger implements the forwarder.Logger interface using the standard log package.
+type Logger struct {
 	log   *log.Logger
 	name  string
 	level flog.Level
@@ -42,7 +42,7 @@ type StdLogger struct {
 	Decorate func(string) string
 }
 
-func (sl StdLogger) Named(name string) StdLogger {
+func (sl Logger) Named(name string) Logger {
 	if name != "" {
 		name = "[" + name + "] "
 	}
@@ -50,7 +50,7 @@ func (sl StdLogger) Named(name string) StdLogger {
 	return sl
 }
 
-func (sl StdLogger) Errorf(format string, args ...interface{}) {
+func (sl Logger) Errorf(format string, args ...interface{}) {
 	if sl.level < flog.ErrorLevel {
 		return
 	}
@@ -60,7 +60,7 @@ func (sl StdLogger) Errorf(format string, args ...interface{}) {
 	sl.log.Printf(sl.name+"ERROR: "+format, args...)
 }
 
-func (sl StdLogger) Infof(format string, args ...interface{}) {
+func (sl Logger) Infof(format string, args ...interface{}) {
 	if sl.level < flog.InfoLevel {
 		return
 	}
@@ -70,7 +70,7 @@ func (sl StdLogger) Infof(format string, args ...interface{}) {
 	sl.log.Printf(sl.name+"INFO: "+format, args...)
 }
 
-func (sl StdLogger) Debugf(format string, args ...interface{}) {
+func (sl Logger) Debugf(format string, args ...interface{}) {
 	if sl.level < flog.DebugLevel {
 		return
 	}
@@ -81,6 +81,6 @@ func (sl StdLogger) Debugf(format string, args ...interface{}) {
 }
 
 // Unwrap returns the underlying log.Logger pointer.
-func (sl StdLogger) Unwrap() *log.Logger {
+func (sl Logger) Unwrap() *log.Logger {
 	return sl.log
 }
