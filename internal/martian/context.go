@@ -23,7 +23,6 @@ import (
 	"strconv"
 	"sync"
 	"sync/atomic"
-	"time"
 )
 
 // Context provides information and storage for a single request/response pair.
@@ -252,10 +251,6 @@ func newSessionWithResponseWriter(rw http.ResponseWriter) *Session {
 }
 
 var nextID atomic.Uint64
-
-func init() {
-	nextID.Store(uint64(time.Now().UnixMilli()))
-}
 
 // withSession builds a new context from an existing session.
 // Session must be non-nil.
