@@ -8,9 +8,9 @@ package log
 
 // Logger is the logger used by the forwarder package.
 type Logger interface {
-	Errorf(format string, args ...interface{})
-	Infof(format string, args ...interface{})
-	Debugf(format string, args ...interface{})
+	Errorf(format string, args ...any)
+	Infof(format string, args ...any)
+	Debugf(format string, args ...any)
 	WithValue(key, value string) Logger
 }
 
@@ -19,13 +19,13 @@ var NopLogger = nopLogger{} //nolint:gochecknoglobals // nop implementation
 
 type nopLogger struct{}
 
-func (l nopLogger) Errorf(_ string, _ ...interface{}) {
+func (l nopLogger) Errorf(_ string, _ ...any) {
 }
 
-func (l nopLogger) Infof(_ string, _ ...interface{}) {
+func (l nopLogger) Infof(_ string, _ ...any) {
 }
 
-func (l nopLogger) Debugf(_ string, _ ...interface{}) {
+func (l nopLogger) Debugf(_ string, _ ...any) {
 }
 
 func (l nopLogger) WithValue(_, _ string) Logger {

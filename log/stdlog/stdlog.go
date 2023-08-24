@@ -58,7 +58,7 @@ func (sl Logger) WithValue(key, value string) flog.Logger {
 	return sl
 }
 
-func (sl Logger) Errorf(format string, args ...interface{}) {
+func (sl Logger) Errorf(format string, args ...any) {
 	if sl.level < flog.ErrorLevel {
 		return
 	}
@@ -68,7 +68,7 @@ func (sl Logger) Errorf(format string, args ...interface{}) {
 	sl.log.Printf(sl.name+"ERROR: "+sl.values+format, args...)
 }
 
-func (sl Logger) Infof(format string, args ...interface{}) {
+func (sl Logger) Infof(format string, args ...any) {
 	if sl.level < flog.InfoLevel {
 		return
 	}
@@ -78,7 +78,7 @@ func (sl Logger) Infof(format string, args ...interface{}) {
 	sl.log.Printf(sl.name+"INFO: "+sl.values+format, args...)
 }
 
-func (sl Logger) Debugf(format string, args ...interface{}) {
+func (sl Logger) Debugf(format string, args ...any) {
 	if sl.level < flog.DebugLevel {
 		return
 	}
