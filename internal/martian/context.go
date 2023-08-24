@@ -53,13 +53,18 @@ type contextKey string
 
 const martianKey contextKey = "martian.Context"
 
-// NewContext returns a context for the in-flight HTTP request.
-func NewContext(req *http.Request) *Context {
-	v := req.Context().Value(martianKey)
+func FromContext(ctx context.Context) *Context {
+	v := ctx.Value(martianKey)
 	if v == nil {
 		return nil
 	}
+
 	return v.(*Context) //nolint:forcetypeassert // We know the type.
+}
+
+// NewContext returns a context for the in-flight HTTP request.
+func NewContext(req *http.Request) *Context {
+	return FromContext(req.Context())
 }
 
 // TestContext builds a new session and associated context and returns the context.
