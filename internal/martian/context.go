@@ -49,7 +49,9 @@ type Session struct {
 	vals     map[string]any
 }
 
-const martianKey string = "martian.Context"
+type contextKey string
+
+const martianKey contextKey = "martian.Context"
 
 // NewContext returns a context for the in-flight HTTP request.
 func NewContext(req *http.Request) *Context {
