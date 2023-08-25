@@ -43,7 +43,10 @@ type command struct {
 }
 
 func (c *command) RunE(cmd *cobra.Command, _ []string) error {
-	config := bind.DescribeFlags(cmd.Flags())
+	config, err := bind.DescribeFlags(cmd.Flags(), false, bind.Plain)
+	if err != nil {
+		return err
+	}
 
 	if f := c.logConfig.File; f != nil {
 		defer f.Close()

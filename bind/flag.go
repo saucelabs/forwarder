@@ -7,7 +7,6 @@
 package bind
 
 import (
-	"fmt"
 	"net/netip"
 	"net/url"
 	"os"
@@ -326,15 +325,4 @@ func MarkFlagFilename(cmd *cobra.Command, names ...string) {
 			panic(err)
 		}
 	}
-}
-
-func DescribeFlags(fs *pflag.FlagSet) string {
-	var b strings.Builder
-	fs.VisitAll(func(flag *pflag.Flag) {
-		if flag.Hidden || flag.Name == "help" {
-			return
-		}
-		b.WriteString(fmt.Sprintf("%s=%s\n", flag.Name, strings.Trim(flag.Value.String(), "[]")))
-	})
-	return b.String()
 }
