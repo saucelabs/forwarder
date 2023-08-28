@@ -52,21 +52,21 @@ func (l *Logger) LogFunc() middleware.Logger {
 		return func(e middleware.LogEntry) {
 			var w logWriter
 			w.Line(e)
-			l.log(w.String())
+			l.log("%s", w.String())
 		}
 	case Headers:
 		return func(e middleware.LogEntry) {
 			var w logWriter
 			w.Line(e)
 			w.Dump(e)
-			l.log(w.String())
+			l.log("%s", w.String())
 		}
 	case Body:
 		return func(e middleware.LogEntry) {
 			w := logWriter{body: true}
 			w.Line(e)
 			w.Dump(e)
-			l.log(w.String())
+			l.log("%s", w.String())
 		}
 	case Errors:
 		return func(e middleware.LogEntry) {
@@ -77,7 +77,7 @@ func (l *Logger) LogFunc() middleware.Logger {
 			var w logWriter
 			w.Line(e)
 			w.Dump(e)
-			l.log(w.String())
+			l.log("%s", w.String())
 		}
 	default:
 		panic(fmt.Sprintf("unknown log mode %s", l.mode))
