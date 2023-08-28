@@ -33,12 +33,12 @@ func (m Mode) String() string {
 }
 
 type Logger struct {
-	log  func(format string, args ...interface{})
+	log  func(format string, args ...any)
 	mode Mode
 }
 
 // NewLogger returns a logger that logs HTTP requests and responses.
-func NewLogger(logFunc func(format string, args ...interface{}), mode Mode) *Logger {
+func NewLogger(logFunc func(format string, args ...any), mode Mode) *Logger {
 	return &Logger{
 		log:  logFunc,
 		mode: mode,
