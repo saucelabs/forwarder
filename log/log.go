@@ -11,6 +11,7 @@ type Logger interface {
 	Errorf(format string, args ...interface{})
 	Infof(format string, args ...interface{})
 	Debugf(format string, args ...interface{})
+	WithValue(key, value string) Logger
 }
 
 // NopLogger is a logger that does nothing.
@@ -25,4 +26,8 @@ func (l nopLogger) Infof(_ string, _ ...interface{}) {
 }
 
 func (l nopLogger) Debugf(_ string, _ ...interface{}) {
+}
+
+func (l nopLogger) WithValue(_, _ string) Logger {
+	return l
 }
