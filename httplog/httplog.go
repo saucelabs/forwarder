@@ -21,6 +21,7 @@ type Mode string
 
 const (
 	None    Mode = "none"
+	Route   Mode = "route"
 	URL     Mode = "url"
 	Headers Mode = "headers"
 	Body    Mode = "body"
@@ -48,23 +49,29 @@ func (l *Logger) LogFunc() middleware.Logger {
 	switch l.mode {
 	case "", None:
 		return func(e middleware.LogEntry) {}
+	case Route:
+		return func(e middleware.LogEntry) {
+			var w logWriter
+			w.RouteLine(e)
+			l.log("%s", w.String())
+		}
 	case URL:
 		return func(e middleware.LogEntry) {
 			var w logWriter
-			w.Line(e)
+			w.URLLine(e)
 			l.log("%s", w.String())
 		}
 	case Headers:
 		return func(e middleware.LogEntry) {
 			var w logWriter
-			w.Line(e)
+			w.RouteLine(e)
 			w.Dump(e)
 			l.log("%s", w.String())
 		}
 	case Body:
 		return func(e middleware.LogEntry) {
 			w := logWriter{body: true}
-			w.Line(e)
+			w.RouteLine(e)
 			w.Dump(e)
 			l.log("%s", w.String())
 		}
@@ -75,7 +82,7 @@ func (l *Logger) LogFunc() middleware.Logger {
 			}
 
 			var w logWriter
-			w.Line(e)
+			w.RouteLine(e)
 			w.Dump(e)
 			l.log("%s", w.String())
 		}
@@ -93,11 +100,21 @@ func (w *logWriter) String() string {
 	return w.b.String()
 }
 
-func (w *logWriter) Line(e middleware.LogEntry) {
+func (w *logWriter) URLLine(e middleware.LogEntry) {
 	w.trace(e)
 	fmt.Fprintf(&w.b, "%s %s status=%v duration=%s\n",
 		e.Request.Method,
 		e.Request.URL.Redacted(),
+		e.Status,
+		e.Duration,
+	)
+}
+
+func (w *logWriter) RouteLine(e middleware.LogEntry) {
+	w.trace(e)
+	fmt.Fprintf(&w.b, "%s %s status=%v duration=%s\n",
+		e.Request.Method,
+		e.Request.URL.Host+e.Request.URL.Path,
 		e.Status,
 		e.Duration,
 	)
