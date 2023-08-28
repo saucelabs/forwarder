@@ -12,6 +12,7 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/saucelabs/forwarder/internal/martian"
 	"github.com/saucelabs/forwarder/internal/martian/messageview"
 	"github.com/saucelabs/forwarder/middleware"
 )
@@ -93,12 +94,19 @@ func (w *logWriter) String() string {
 }
 
 func (w *logWriter) Line(e middleware.LogEntry) {
+	w.trace(e)
 	fmt.Fprintf(&w.b, "%s %s status=%v duration=%s\n",
 		e.Request.Method,
 		e.Request.URL.Redacted(),
 		e.Status,
 		e.Duration,
 	)
+}
+
+func (w *logWriter) trace(e middleware.LogEntry) {
+	if ctx := martian.FromContext(e.Request.Context()); ctx != nil {
+		fmt.Fprintf(&w.b, "trace=%s ", ctx.ID())
+	}
 }
 
 func (w *logWriter) Dump(e middleware.LogEntry) {
