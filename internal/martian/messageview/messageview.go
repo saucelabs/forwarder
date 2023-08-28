@@ -77,7 +77,7 @@ func (mv *MessageView) SnapshotRequest(req *http.Request) error {
 	buf := new(bytes.Buffer)
 
 	fmt.Fprintf(buf, "%s %s HTTP/%d.%d\r\n", req.Method,
-		req.URL, req.ProtoMajor, req.ProtoMinor)
+		req.URL.Redacted(), req.ProtoMajor, req.ProtoMinor)
 
 	if req.Host != "" {
 		fmt.Fprintf(buf, "Host: %s\r\n", req.Host)
