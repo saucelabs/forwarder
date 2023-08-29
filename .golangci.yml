@@ -85,8 +85,6 @@ issues:
     - "missing cases in switch of type Scheme: TunnelScheme"
     - "shadow of imported from 'github.com/saucelabs/forwarder/log' package 'log'"
     - "string `https?` has \\d+ occurrences"
-    - "context-keys-type: should not use basic type string as key in context.WithValue"
-    - "SA1029: should not use built-in type string as key for value; define your own type to avoid collisions"
     - "importShadow: shadow of imported package 'url'"
     - "commentedOutCode: may want to remove commented-out code"
   exclude-rules:
