@@ -18,7 +18,7 @@ type command struct {
 	apiAddr string
 }
 
-func (c *command) RunE(cmd *cobra.Command, _ []string) error {
+func (c *command) runE(cmd *cobra.Command, _ []string) error {
 	resp, err := http.Get("http://" + c.apiAddr + "/readyz") //nolint:noctx // net/http.Get must not be called
 	if err != nil {
 		return err
@@ -53,7 +53,7 @@ func Command() (cmd *cobra.Command) {
 		Use:   "ready [--api-address <host:port>] [flags]",
 		Short: "Readiness probe for the Forwarder",
 		Long:  long,
-		RunE:  c.RunE,
+		RunE:  c.runE,
 	}
 }
 

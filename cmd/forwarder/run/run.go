@@ -42,7 +42,7 @@ type command struct {
 	goleak              bool
 }
 
-func (c *command) RunE(cmd *cobra.Command, _ []string) error {
+func (c *command) runE(cmd *cobra.Command, _ []string) error {
 	config, err := bind.DescribeFlags(cmd.Flags(), false, bind.Plain)
 	if err != nil {
 		return err
@@ -184,7 +184,7 @@ func Command() (cmd *cobra.Command) {
 		Short:   "Start HTTP (forward) proxy server",
 		Long:    long,
 		Example: example,
-		RunE:    c.RunE,
+		RunE:    c.runE,
 	}
 }
 
