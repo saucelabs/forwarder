@@ -30,7 +30,7 @@ type command struct {
 	logConfig           *log.Config
 }
 
-func (c *command) RunE(cmd *cobra.Command, _ []string) error {
+func (c *command) runE(cmd *cobra.Command, _ []string) error {
 	config, err := bind.DescribeFlags(cmd.Flags(), false, bind.Plain)
 	if err != nil {
 		return err
@@ -111,7 +111,7 @@ func Command() (cmd *cobra.Command) {
 		Use:     "server --pac <file|url> [--protocol <http|https|h2>] [--address <host:port>] [flags]",
 		Short:   "Start HTTP server that serves a PAC file",
 		Long:    long,
-		RunE:    c.RunE,
+		RunE:    c.runE,
 		Example: example,
 	}
 }

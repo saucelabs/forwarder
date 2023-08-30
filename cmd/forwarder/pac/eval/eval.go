@@ -24,7 +24,7 @@ type command struct {
 	httpTransportConfig *forwarder.HTTPTransportConfig
 }
 
-func (c *command) RunE(cmd *cobra.Command, args []string) error {
+func (c *command) runE(cmd *cobra.Command, args []string) error {
 	if len(c.dnsConfig.Servers) > 0 {
 		if err := osdns.Configure(c.dnsConfig); err != nil {
 			return fmt.Errorf("configure DNS: %w", err)
@@ -85,7 +85,7 @@ func Command() (cmd *cobra.Command) {
 		Use:     "eval --pac <file|url> [flags] <url>...",
 		Short:   "Evaluate a PAC file for given URL (or URLs)",
 		Long:    long,
-		RunE:    c.RunE,
+		RunE:    c.runE,
 		Example: example,
 	}
 }

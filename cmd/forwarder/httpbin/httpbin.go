@@ -23,7 +23,7 @@ type command struct {
 	logConfig        *log.Config
 }
 
-func (c *command) RunE(cmd *cobra.Command, _ []string) error {
+func (c *command) runE(cmd *cobra.Command, _ []string) error {
 	config, err := bind.DescribeFlags(cmd.Flags(), false, bind.Plain)
 	if err != nil {
 		return err
@@ -68,7 +68,7 @@ func Command() (cmd *cobra.Command) {
 	return &cobra.Command{
 		Use:    "httpbin [--protocol <http|https|h2>] [--address <host:port>] [flags]",
 		Short:  "Start HTTP(S) server that serves httpbin.org API",
-		RunE:   c.RunE,
+		RunE:   c.runE,
 		Hidden: true,
 	}
 }
