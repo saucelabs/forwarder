@@ -194,7 +194,8 @@ func (hs *HTTPServer) BindPort() error {
 		return fmt.Errorf("HTTP server already bound to port")
 	}
 
-	_, err := hs.listener()
+	var err error
+	hs.Listener, err = hs.listener()
 	return err
 }
 
