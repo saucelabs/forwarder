@@ -189,6 +189,15 @@ func (hs *HTTPServer) configureHTTP2() error {
 	return hs.config.ConfigureTLSConfig(hs.srv.TLSConfig)
 }
 
+func (hs *HTTPServer) BindPort() error {
+	if hs.Listener != nil {
+		return fmt.Errorf("HTTP server already bound to port")
+	}
+
+	_, err := hs.listener()
+	return err
+}
+
 func (hs *HTTPServer) Run(ctx context.Context) error {
 	listener, err := hs.listener()
 	if err != nil {
