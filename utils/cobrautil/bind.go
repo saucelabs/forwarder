@@ -55,7 +55,11 @@ func BindAll(cmd *cobra.Command, envPrefix, configFileFlagName string) error {
 		ok = true
 		fs.VisitAll(func(f *pflag.Flag) {
 			if !f.Changed && v.IsSet(f.Name) {
-				if err := fs.Set(f.Name, fmt.Sprintf("%v", v.Get(f.Name))); err != nil {
+				s := fmt.Sprintf("%v", v.Get(f.Name))
+				s = strings.TrimPrefix(s, "[")
+				s = strings.TrimSuffix(s, "]")
+				s = strings.NewReplacer(", ", ",", " ", ",").Replace(s)
+				if err := fs.Set(f.Name, s); err != nil {
 					fmt.Fprintln(cmd.ErrOrStderr(), err.Error())
 					ok = false
 				}
