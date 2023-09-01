@@ -9,6 +9,7 @@ package bind
 import (
 	"fmt"
 	"net/url"
+	"strings"
 
 	"github.com/saucelabs/forwarder/header"
 )
@@ -29,4 +30,12 @@ func RedactUserinfo(ui *url.Userinfo) string {
 
 func RedactHeader(h header.Header) string {
 	return fmt.Sprintf("%q", h.String())
+}
+
+func RedactBase64(s string) string {
+	if strings.HasPrefix(s, "data:") {
+		return "data:xxxxx"
+	}
+
+	return s
 }
