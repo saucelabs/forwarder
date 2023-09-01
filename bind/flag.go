@@ -131,13 +131,15 @@ func MITMConfig(fs *pflag.FlagSet, mitm *bool, cfg *forwarder.MITMConfig) {
 		"If the CA certificate is not provided MITM uses a generated CA certificate. "+
 		"The CA certificate used can be retrieved from the API server .")
 
-	fs.StringVar(&cfg.CACertFile, "mitm-cacert-file", cfg.CACertFile, "<path or base64>"+
-		"CA certificate file to use for generating MITM certificates. "+
-		"If the file is not specified, a generated CA certificate will be used. "+
-		"See the documentation for the --mitm flag for more details. ")
+	fs.Var(anyflag.NewValueWithRedact[string](cfg.CACertFile, &cfg.CACertFile, func(val string) (string, error) { return val, nil }, RedactBase64),
+		"mitm-cacert-file", "<path or base64>"+
+			"CA certificate file to use for generating MITM certificates. "+
+			"If the file is not specified, a generated CA certificate will be used. "+
+			"See the documentation for the --mitm flag for more details. ")
 
-	fs.StringVar(&cfg.CAKeyFile, "mitm-cakey-file", cfg.CAKeyFile, "<path or base64>"+
-		"CA key file to use for generating MITM certificates. ")
+	fs.Var(anyflag.NewValueWithRedact[string](cfg.CAKeyFile, &cfg.CAKeyFile, func(val string) (string, error) { return val, nil }, RedactBase64),
+		"mitm-cakey-file", "<path or base64>"+
+			"CA key file to use for generating MITM certificates. ")
 
 	fs.StringVar(&cfg.Organization, "mitm-org", cfg.Organization, "<name>"+
 		"Organization name to use in the generated MITM certificates. ")
@@ -192,8 +194,8 @@ func TLSClientConfig(fs *pflag.FlagSet, cfg *forwarder.TLSClientConfig) {
 		"Don't verify the server's certificate chain and host name. "+
 			"Enable to work with self-signed certificates. ")
 
-	fs.StringSliceVar(&cfg.CACertFiles,
-		"cacert-file", cfg.CACertFiles, "<path or base64>"+
+	fs.Var(anyflag.NewSliceValueWithRedact[string](cfg.CACertFiles, &cfg.CACertFiles, func(val string) (string, error) { return val, nil }, RedactBase64),
+		"cacert-file", "<path or base64>"+
 			"Add your own CA certificates to verify against. "+
 			"The system root certificates will be used in addition to any certificates in this list. "+
 			"Can be a path to a file or \"data:\" followed by base64 encoded certificate. "+
@@ -267,13 +269,13 @@ func HTTPServerConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPServerConfig, prefix
 }
 
 func TLSServerConfig(fs *pflag.FlagSet, cfg *forwarder.TLSServerConfig, namePrefix string) {
-	fs.StringVar(&cfg.CertFile,
-		namePrefix+"tls-cert-file", cfg.CertFile, "<path or base64>"+
+	fs.Var(anyflag.NewValueWithRedact[string](cfg.CertFile, &cfg.CertFile, func(val string) (string, error) { return val, nil }, RedactBase64),
+		namePrefix+"tls-cert-file", "<path or base64>"+
 			"TLS certificate to use if the server protocol is https or h2. "+
 			"Can be a path to a file or \"data:\" followed by base64 encoded certificate. ")
 
-	fs.StringVar(&cfg.KeyFile,
-		namePrefix+"tls-key-file", cfg.KeyFile, "<path or base64>"+
+	fs.Var(anyflag.NewValueWithRedact[string](cfg.KeyFile, &cfg.KeyFile, func(val string) (string, error) { return val, nil }, RedactBase64),
+		namePrefix+"tls-key-file", "<path or base64>"+
 			"TLS private key to use if the server protocol is https or h2. "+
 			"Can be a path to a file or \"data:\" followed by base64 encoded key. ")
 }
