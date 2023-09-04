@@ -11,14 +11,14 @@ import (
 	"strings"
 )
 
-type RuleSet struct {
+type Regexp struct {
 	include *regexp.Regexp
 	exclude *regexp.Regexp
 }
 
-// NewRuleSet returns the RuleSet with given include and exclude rules.
+// NewRegexp returns the Regexp with given include and exclude rules.
 // When only the exclude rules are specified, the include rule is set to match everything.
-func NewRuleSet(include, exclude []*regexp.Regexp) *RuleSet {
+func NewRegexp(include, exclude []*regexp.Regexp) *Regexp {
 	if len(include) == 0 && len(exclude) != 0 {
 		include = []*regexp.Regexp{regexp.MustCompile(".*")}
 	}
@@ -37,7 +37,7 @@ func NewRuleSet(include, exclude []*regexp.Regexp) *RuleSet {
 		return nil
 	}
 
-	return &RuleSet{
+	return &Regexp{
 		include: build(include),
 		exclude: build(exclude),
 	}
@@ -45,7 +45,7 @@ func NewRuleSet(include, exclude []*regexp.Regexp) *RuleSet {
 
 // Match returns true if the given string matches at least one of the include rules
 // and does not match the exclude rules.
-func (r *RuleSet) Match(s string) bool {
+func (r *Regexp) Match(s string) bool {
 	if r.exclude != nil && r.exclude.MatchString(s) {
 		return false
 	}

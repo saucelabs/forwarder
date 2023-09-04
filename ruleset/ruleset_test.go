@@ -83,7 +83,7 @@ func TestRuleSet(t *testing.T) {
 	for i := range tests {
 		tc := tests[i]
 		t.Run(tc.name, func(t *testing.T) {
-			rs := NewRuleSet(tc.include, tc.exclude)
+			rs := NewRegexp(tc.include, tc.exclude)
 			for _, m := range tc.match {
 				if !rs.Match(m) {
 					t.Errorf("expected %q to match", m)
