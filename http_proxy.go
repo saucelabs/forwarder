@@ -28,7 +28,7 @@ import (
 	"github.com/saucelabs/forwarder/log"
 	"github.com/saucelabs/forwarder/middleware"
 	"github.com/saucelabs/forwarder/pac"
-	"github.com/saucelabs/forwarder/regex"
+	"github.com/saucelabs/forwarder/ruleset"
 )
 
 type ProxyLocalhostMode string
@@ -277,7 +277,7 @@ func (hp *HTTPProxy) middlewareStack() martian.RequestResponseModifier {
 		topg.AddRequestModifier(hp.denyLocalhost())
 	}
 	if len(hp.config.DenyDomains) != 0 || len(hp.config.DenyDomainsExclude) != 0 {
-		ruleSet := regex.NewRuleSet(hp.config.DenyDomains, hp.config.DenyDomainsExclude)
+		ruleSet := ruleset.NewRuleSet(hp.config.DenyDomains, hp.config.DenyDomainsExclude)
 		topg.AddRequestModifier(hp.denyDomains(ruleSet))
 	}
 
@@ -395,7 +395,7 @@ func (hp *HTTPProxy) denyLocalhost() martian.RequestModifier {
 	}, errors.New("localhost access denied"))
 }
 
-func (hp *HTTPProxy) denyDomains(ruleSet *regex.RuleSet) martian.RequestModifier {
+func (hp *HTTPProxy) denyDomains(ruleSet *ruleset.RuleSet) martian.RequestModifier {
 	return hp.abortIf(func(req *http.Request) bool {
 		return ruleSet.Match(req.URL.Hostname())
 	}, func(req *http.Request) *http.Response {
