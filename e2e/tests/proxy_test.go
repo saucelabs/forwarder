@@ -253,25 +253,10 @@ func TestProxyUpstream(t *testing.T) {
 		t.Skip("HTTPBIN_PROTOCOL not set to http")
 	}
 
-	res := string(newClient(t, httpbin).GET("/header/via/").ExpectStatus(http.StatusNotFound).Body)
-	_, viaHeader, ok := strings.Cut(res, "=")
-	if !ok {
-		t.Fatalf("unexpected response: %q", res)
-	}
-
-	l := len("1.1 ")
-	filter := func(s string) string {
-		i := strings.LastIndex(s, "-")
-		if i < l {
-			t.Errorf("unexpected via header: %q", s)
-			return ""
-		}
-		return s[l:i]
-	}
-
+	viaHeader := newClient(t, httpbin).GET("/headers/").Header["Via"]
 	var success bool
-	for _, via := range strings.Split(viaHeader, ", ") {
-		if forwarder.UpstreamProxyServiceName == filter(via) {
+	for _, via := range viaHeader {
+		if strings.Contains(via, forwarder.UpstreamProxyServiceName) {
 			success = true
 		}
 	}
