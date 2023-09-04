@@ -31,6 +31,7 @@ func Handler() http.Handler {
 	m.HandleFunc("/ws/echo", wsEcho)
 	m.HandleFunc("/ws.html", wsHTML)
 	m.HandleFunc("/header/", headerHandler)
+	m.HandleFunc("/headers/", headersHandler)
 	return m
 }
 
@@ -147,5 +148,13 @@ func headerHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte("invalid header: " + k + "=" + vv))
+	}
+}
+
+func headersHandler(w http.ResponseWriter, r *http.Request) {
+	for k, vv := range r.Header {
+		for _, v := range vv {
+			w.Header().Add(k, v)
+		}
 	}
 }
