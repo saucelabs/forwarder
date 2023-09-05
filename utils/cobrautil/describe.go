@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/spf13/pflag"
+	"golang.org/x/exp/maps"
 )
 
 type DescribeFormat int
@@ -24,13 +25,11 @@ const (
 
 func DescribeFlags(fs *pflag.FlagSet, showHidden bool, format DescribeFormat) (string, error) {
 	args := make(map[string]any, fs.NFlag())
-	keys := make([]string, 0, fs.NFlag())
 
 	fs.VisitAll(func(flag *pflag.Flag) {
 		if flag.Name == "help" {
 			return
 		}
-
 		if flag.Hidden && !showHidden {
 			return
 		}
@@ -40,14 +39,12 @@ func DescribeFlags(fs *pflag.FlagSet, showHidden bool, format DescribeFormat) (s
 		} else {
 			args[flag.Name] = strings.Trim(flag.Value.String(), "[]")
 		}
-
-		keys = append(keys, flag.Name)
 	})
-
-	sort.Strings(keys)
 
 	switch format {
 	case Plain:
+		keys := maps.Keys(args)
+		sort.Strings(keys)
 		var b strings.Builder
 		for _, name := range keys {
 			b.WriteString(fmt.Sprintf("%s=%s\n", name, args[name]))
