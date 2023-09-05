@@ -7,22 +7,20 @@
 package ruleset
 
 import (
+	"errors"
 	"regexp"
 	"testing"
 )
 
 func TestRuleSet(t *testing.T) {
 	tests := []struct {
-		name      string
-		include   []*regexp.Regexp
-		exclude   []*regexp.Regexp
-		match     []string
-		dontMatch []string
+		name          string
+		include       []*regexp.Regexp
+		exclude       []*regexp.Regexp
+		match         []string
+		dontMatch     []string
+		expectedError error
 	}{
-		{
-			name:      "empty",
-			dontMatch: []string{"foo", "bar"},
-		},
 		{
 			name:    "include all",
 			include: []*regexp.Regexp{regexp.MustCompile(".*")},
@@ -30,6 +28,7 @@ func TestRuleSet(t *testing.T) {
 		},
 		{
 			name:      "exclude all",
+			include:   []*regexp.Regexp{regexp.MustCompile("")},
 			exclude:   []*regexp.Regexp{regexp.MustCompile(".*")},
 			dontMatch: []string{"foo", "bar"},
 		},
@@ -41,6 +40,7 @@ func TestRuleSet(t *testing.T) {
 		},
 		{
 			name:      "exclude foo",
+			include:   []*regexp.Regexp{regexp.MustCompile(".*")},
 			exclude:   []*regexp.Regexp{regexp.MustCompile("foo")},
 			match:     []string{"bar"},
 			dontMatch: []string{"foo"},
@@ -56,7 +56,8 @@ func TestRuleSet(t *testing.T) {
 			dontMatch: []string{"aa", "bb"},
 		},
 		{
-			name: "many excludes",
+			name:    "many excludes",
+			include: []*regexp.Regexp{regexp.MustCompile(".*")},
 			exclude: []*regexp.Regexp{
 				regexp.MustCompile("foo"),
 				regexp.MustCompile("bar"),
@@ -78,12 +79,24 @@ func TestRuleSet(t *testing.T) {
 			match:     []string{"foo", "bar", "foobar"},
 			dontMatch: []string{"fooo", "bark", "foobarkey"},
 		},
+		{
+			name:          "no includes",
+			expectedError: ErrNoIncludeRules,
+		},
+		{
+			name:          "no includes with excludes",
+			exclude:       []*regexp.Regexp{regexp.MustCompile(".*")},
+			expectedError: ErrNoIncludeRules,
+		},
 	}
 
 	for i := range tests {
 		tc := tests[i]
 		t.Run(tc.name, func(t *testing.T) {
-			rs := NewRegexp(tc.include, tc.exclude)
+			rs, err := NewRegexp(tc.include, tc.exclude)
+			if !errors.Is(err, tc.expectedError) {
+				t.Fatalf("expected error %v, got %v", tc.expectedError, err)
+			}
 			for _, m := range tc.match {
 				if !rs.Match(m) {
 					t.Errorf("expected %q to match", m)
