@@ -119,8 +119,7 @@ func HTTPProxyConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPProxyConfig, lcfg *lo
 			"Exclude requests to the specified domains from being denied. "+
 			"Use this flag multiple times to specify multiple deny domain excludes. "+
 			"This flag takes precedence over deny-domain. "+
-			"When --deny-domain-exclude is specified and --deny-domain is not, "+
-			"all requests to domains that do not match any of the deny-domain-exclude patterns will be denied. ")
+			"Can be specified only if --deny-domain is also specified. ")
 }
 
 func MITMConfig(fs *pflag.FlagSet, mitm *bool, cfg *forwarder.MITMConfig) {
