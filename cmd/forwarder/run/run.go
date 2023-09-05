@@ -21,6 +21,7 @@ import (
 	"github.com/saucelabs/forwarder/log/stdlog"
 	"github.com/saucelabs/forwarder/pac"
 	"github.com/saucelabs/forwarder/runctx"
+	"github.com/saucelabs/forwarder/utils/cobrautil"
 	"github.com/saucelabs/forwarder/utils/osdns"
 	"github.com/spf13/cobra"
 	"go.uber.org/goleak"
@@ -43,7 +44,7 @@ type command struct {
 }
 
 func (c *command) runE(cmd *cobra.Command, _ []string) error {
-	config, err := bind.DescribeFlags(cmd.Flags(), false, bind.Plain)
+	config, err := cobrautil.DescribeFlags(cmd.Flags(), false, cobrautil.Plain)
 	if err != nil {
 		return err
 	}
