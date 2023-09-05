@@ -114,7 +114,7 @@ func TestHTTPProxyDialerDialContext(t *testing.T) {
 
 		done := make(chan struct{})
 		go func() {
-			serveOne(l, func(conn net.Conn) error { //nolint:errcheck // this function always returns nil error
+			serveOne(l, func(conn net.Conn) error {
 				cancel()
 				<-done
 				return nil

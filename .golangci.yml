@@ -95,6 +95,7 @@ issues:
     - path: _test\.go
       linters:
         - bodyclose
+        - errcheck
         - funlen
         - gochecknoglobals
         - gocognit
