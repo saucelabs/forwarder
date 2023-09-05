@@ -7,6 +7,7 @@
 package ruleset
 
 import (
+	"errors"
 	"regexp"
 	"strings"
 )
@@ -16,11 +17,12 @@ type Regexp struct {
 	exclude *regexp.Regexp
 }
 
+var ErrNoIncludeRules = errors.New("no include rules specified")
+
 // NewRegexp returns the Regexp with given include and exclude rules.
-// When only the exclude rules are specified, the include rule is set to match everything.
-func NewRegexp(include, exclude []*regexp.Regexp) *Regexp {
-	if len(include) == 0 && len(exclude) != 0 {
-		include = []*regexp.Regexp{regexp.MustCompile(".*")}
+func NewRegexp(include, exclude []*regexp.Regexp) (*Regexp, error) {
+	if len(include) == 0 {
+		return nil, ErrNoIncludeRules
 	}
 
 	build := func(rules []*regexp.Regexp) *regexp.Regexp {
@@ -40,7 +42,7 @@ func NewRegexp(include, exclude []*regexp.Regexp) *Regexp {
 	return &Regexp{
 		include: build(include),
 		exclude: build(exclude),
-	}
+	}, nil
 }
 
 // Match returns true if the given string matches at least one of the include rules
