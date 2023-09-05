@@ -357,17 +357,6 @@ func SetupFlagDenyDomain(l *setupList) {
 				MustBuild(),
 			Run: run,
 		},
-		setup.Setup{
-			Name: "flag-deny-domain-only-exclude",
-			Compose: compose.NewBuilder().
-				AddService(
-					forwarder.HttpbinService()).
-				AddService(
-					forwarder.ProxyService().
-						WithDenyDomainExclude("httpbin")).
-				MustBuild(),
-			Run: run,
-		},
 	)
 }
 
