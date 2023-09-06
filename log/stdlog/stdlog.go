@@ -32,14 +32,11 @@ func New(cfg *flog.Config) Logger {
 	}
 }
 
-var _ flog.Logger = (*Logger)(nil)
-
 // Logger implements the forwarder.Logger interface using the standard log package.
 type Logger struct {
-	log    *log.Logger
-	name   string
-	level  flog.Level
-	values string
+	log   *log.Logger
+	name  string
+	level flog.Level
 
 	// Decorate allows to modify the log message before it is written.
 	Decorate func(string) string
@@ -53,11 +50,6 @@ func (sl Logger) Named(name string) Logger {
 	return sl
 }
 
-func (sl Logger) WithValue(key, value string) flog.Logger {
-	sl.values += key + "=" + value + " "
-	return sl
-}
-
 func (sl Logger) Errorf(format string, args ...any) {
 	if sl.level < flog.ErrorLevel {
 		return
@@ -65,7 +57,7 @@ func (sl Logger) Errorf(format string, args ...any) {
 	if sl.Decorate != nil {
 		format = sl.Decorate(format)
 	}
-	sl.log.Printf(sl.name+"ERROR: "+sl.values+format, args...)
+	sl.log.Printf(sl.name+"ERROR: "+format, args...)
 }
 
 func (sl Logger) Infof(format string, args ...any) {
@@ -75,7 +67,7 @@ func (sl Logger) Infof(format string, args ...any) {
 	if sl.Decorate != nil {
 		format = sl.Decorate(format)
 	}
-	sl.log.Printf(sl.name+"INFO: "+sl.values+format, args...)
+	sl.log.Printf(sl.name+"INFO: "+format, args...)
 }
 
 func (sl Logger) Debugf(format string, args ...any) {
@@ -85,7 +77,7 @@ func (sl Logger) Debugf(format string, args ...any) {
 	if sl.Decorate != nil {
 		format = sl.Decorate(format)
 	}
-	sl.log.Printf(sl.name+"DEBUG: "+sl.values+format, args...)
+	sl.log.Printf(sl.name+"DEBUG: "+format, args...)
 }
 
 // Unwrap returns the underlying log.Logger pointer.
