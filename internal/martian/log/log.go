@@ -15,6 +15,11 @@
 // Package log provides a universal logger for martian packages.
 package log
 
+import (
+	"context"
+	"fmt"
+)
+
 type Logger interface {
 	Infof(format string, args ...any)
 	Debugf(format string, args ...any)
@@ -30,19 +35,30 @@ func SetLogger(l Logger) {
 	currLogger = l
 }
 
+type contextKey string
+
+const TraceContextKey contextKey = "trace"
+
 // Infof logs an info message.
-func Infof(format string, args ...any) {
-	currLogger.Infof(format, args...)
+func Infof(ctx context.Context, format string, args ...any) {
+	currLogger.Infof(withTrace(ctx, format), args...)
 }
 
 // Debugf logs a debug message.
-func Debugf(format string, args ...any) {
-	currLogger.Debugf(format, args...)
+func Debugf(ctx context.Context, format string, args ...any) {
+	currLogger.Debugf(withTrace(ctx, format), args...)
 }
 
 // Errorf logs an error message.
-func Errorf(format string, args ...any) {
-	currLogger.Errorf(format, args...)
+func Errorf(ctx context.Context, format string, args ...any) {
+	currLogger.Errorf(withTrace(ctx, format), args...)
+}
+
+func withTrace(ctx context.Context, format string) string {
+	if v := ctx.Value(TraceContextKey); v != nil {
+		format = fmt.Sprintf("[%s] %s", v, format)
+	}
+	return format
 }
 
 type nopLogger struct{}
