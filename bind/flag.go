@@ -254,17 +254,18 @@ func HTTPServerConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPServerConfig, prefix
 
 	httpLogModes := []httplog.Mode{
 		httplog.None,
-		httplog.Route,
+		httplog.ShortURL,
 		httplog.URL,
 		httplog.Headers,
 		httplog.Body,
 		httplog.Errors,
 	}
 	fs.Var(anyflag.NewValue[httplog.Mode](cfg.LogHTTPMode, &cfg.LogHTTPMode, anyflag.EnumParser[httplog.Mode](httpLogModes...)),
-		namePrefix+"log-http", "<none|route|url|headers|body|errors>"+
+		namePrefix+"log-http", "<none|short-url|url|headers|body|errors>"+
 			"HTTP request and response logging mode. "+
 			"By default, request line and headers are logged if response status code is greater than or equal to 500. "+
-			"Setting this to none disables logging. ")
+			"Setting this to none disables logging. "+
+			"The short-url mode logs [scheme://]host[/path] instead of the full URL. ")
 }
 
 func TLSServerConfig(fs *pflag.FlagSet, cfg *forwarder.TLSServerConfig, namePrefix string) {
