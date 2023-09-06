@@ -20,12 +20,12 @@ import (
 type Mode string
 
 const (
-	None    Mode = "none"
-	Route   Mode = "route"
-	URL     Mode = "url"
-	Headers Mode = "headers"
-	Body    Mode = "body"
-	Errors  Mode = "errors"
+	None     Mode = "none"
+	ShortURL Mode = "short-url"
+	URL      Mode = "url"
+	Headers  Mode = "headers"
+	Body     Mode = "body"
+	Errors   Mode = "errors"
 )
 
 func (m Mode) String() string {
@@ -49,10 +49,10 @@ func (l *Logger) LogFunc() middleware.Logger {
 	switch l.mode {
 	case "", None:
 		return func(e middleware.LogEntry) {}
-	case Route:
+	case ShortURL:
 		return func(e middleware.LogEntry) {
 			var w logWriter
-			w.RouteLine(e)
+			w.ShortURLLine(e)
 			l.log("%s", w.String())
 		}
 	case URL:
@@ -64,14 +64,14 @@ func (l *Logger) LogFunc() middleware.Logger {
 	case Headers:
 		return func(e middleware.LogEntry) {
 			var w logWriter
-			w.RouteLine(e)
+			w.ShortURLLine(e)
 			w.Dump(e)
 			l.log("%s", w.String())
 		}
 	case Body:
 		return func(e middleware.LogEntry) {
 			w := logWriter{body: true}
-			w.RouteLine(e)
+			w.ShortURLLine(e)
 			w.Dump(e)
 			l.log("%s", w.String())
 		}
@@ -82,7 +82,7 @@ func (l *Logger) LogFunc() middleware.Logger {
 			}
 
 			var w logWriter
-			w.RouteLine(e)
+			w.ShortURLLine(e)
 			w.Dump(e)
 			l.log("%s", w.String())
 		}
@@ -110,11 +110,21 @@ func (w *logWriter) URLLine(e middleware.LogEntry) {
 	)
 }
 
-func (w *logWriter) RouteLine(e middleware.LogEntry) {
+func (w *logWriter) ShortURLLine(e middleware.LogEntry) {
 	w.trace(e)
+
+	u := e.Request.URL
+	scheme, host, path := u.Scheme, u.Host, u.Path
+	if scheme != "" {
+		scheme += "://"
+	}
+	if len(path) > 0 && path[0] != '/' {
+		path = "/" + path
+	}
+
 	fmt.Fprintf(&w.b, "%s %s status=%v duration=%s\n",
 		e.Request.Method,
-		e.Request.URL.Host+e.Request.URL.Path,
+		scheme+host+path,
 		e.Status,
 		e.Duration,
 	)
