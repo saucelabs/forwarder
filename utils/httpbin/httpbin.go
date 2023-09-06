@@ -30,7 +30,6 @@ func Handler() http.Handler {
 	m.HandleFunc("/events.html", eventsHTML)
 	m.HandleFunc("/ws/echo", wsEcho)
 	m.HandleFunc("/ws.html", wsHTML)
-	m.HandleFunc("/header/", headerHandler)
 	m.HandleFunc("/headers/", headersHandler)
 	return m
 }
@@ -128,27 +127,6 @@ func atoi(w http.ResponseWriter, s string) (int, bool) {
 		return 0, false
 	}
 	return v, true
-}
-
-// headerHandler implements the /header/{key}/{value} endpoint.
-// It returns 200 OK if the request contains the header with the given key and value.
-// 404 Not Found when the header has a different value.
-// 400 Bad Request when the path is invalid.
-// Response will also contain the given header with its value.
-func headerHandler(w http.ResponseWriter, r *http.Request) {
-	k, v, ok := strings.Cut(r.URL.Path[len("/header/"):], "/")
-	if !ok {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("invalid path"))
-		return
-	}
-	w.Header().Set(k, v)
-	if vv := r.Header.Get(k); vv == v {
-		w.WriteHeader(http.StatusOK)
-	} else {
-		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte("invalid header: " + k + "=" + vv))
-	}
 }
 
 func headersHandler(w http.ResponseWriter, r *http.Request) {
