@@ -57,7 +57,7 @@ func (sl Logger) Errorf(format string, args ...any) {
 	if sl.Decorate != nil {
 		format = sl.Decorate(format)
 	}
-	sl.log.Printf(sl.name+"ERROR: "+format, args...)
+	sl.log.Printf(sl.name+"[ERROR] "+format, args...)
 }
 
 func (sl Logger) Infof(format string, args ...any) {
@@ -67,7 +67,7 @@ func (sl Logger) Infof(format string, args ...any) {
 	if sl.Decorate != nil {
 		format = sl.Decorate(format)
 	}
-	sl.log.Printf(sl.name+"INFO: "+format, args...)
+	sl.log.Printf(sl.name+"[INFO] "+format, args...)
 }
 
 func (sl Logger) Debugf(format string, args ...any) {
@@ -77,7 +77,7 @@ func (sl Logger) Debugf(format string, args ...any) {
 	if sl.Decorate != nil {
 		format = sl.Decorate(format)
 	}
-	sl.log.Printf(sl.name+"DEBUG: "+format, args...)
+	sl.log.Printf(sl.name+"[DEBUG] "+format, args...)
 }
 
 // Unwrap returns the underlying log.Logger pointer.
