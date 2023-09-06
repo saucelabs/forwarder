@@ -24,6 +24,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/saucelabs/forwarder/internal/martian/log"
 )
 
 // Context provides information and storage for a single request/response pair.
@@ -183,7 +185,8 @@ func (ctx *Context) addToContext(rctx context.Context) context.Context {
 	if rctx == nil {
 		rctx = context.Background()
 	}
-	return context.WithValue(rctx, martianKey, ctx)
+	mctx := context.WithValue(rctx, martianKey, ctx)
+	return context.WithValue(mctx, log.TraceContextKey, ctx.ID())
 }
 
 // Session returns the session for the context.
