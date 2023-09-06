@@ -30,7 +30,7 @@ import (
 // a single connection.
 type Context struct {
 	session *Session
-	id      string
+	id      uint64
 
 	mu            sync.RWMutex
 	vals          map[string]any
@@ -192,7 +192,7 @@ func (ctx *Context) Session() *Session {
 
 // ID returns the context ID.
 func (ctx *Context) ID() string {
-	return ctx.id
+	return strconv.FormatUint(ctx.id, 10)
 }
 
 // Get takes key and returns the associated value from the context.
@@ -257,6 +257,6 @@ var nextID atomic.Uint64
 func withSession(s *Session) *Context {
 	return &Context{
 		session: s,
-		id:      strconv.FormatUint(nextID.Add(1), 10),
+		id:      nextID.Add(1),
 	}
 }
