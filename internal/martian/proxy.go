@@ -186,15 +186,15 @@ func (p *Proxy) SetDialContext(dial func(context.Context, string, string) (net.C
 // finishes processing any inflight requests, and closes existing connections without
 // reading anymore requests from them.
 func (p *Proxy) Close() {
-	log.Infof("martian: closing down proxy")
+	log.Infof(context.TODO(), "martian: closing down proxy")
 
 	close(p.closing)
 
-	log.Infof("martian: waiting for connections to close")
+	log.Infof(context.TODO(), "martian: waiting for connections to close")
 	p.connsMu.Lock()
 	p.conns.Wait()
 	p.connsMu.Unlock()
-	log.Infof("martian: all connections closed")
+	log.Infof(context.TODO(), "martian: all connections closed")
 }
 
 // Closing returns whether the proxy is in the closing state.
@@ -249,21 +249,21 @@ func (p *Proxy) Serve(l net.Listener) error {
 					delay = max
 				}
 
-				log.Debugf("martian: temporary error on accept: %v", err)
+				log.Debugf(context.TODO(), "martian: temporary error on accept: %v", err)
 				time.Sleep(delay)
 				continue
 			}
 
 			if errors.Is(err, net.ErrClosed) {
-				log.Debugf("martian: listener closed, returning")
+				log.Debugf(context.TODO(), "martian: listener closed, returning")
 				return err
 			}
 
-			log.Errorf("martian: failed to accept: %v", err)
+			log.Errorf(context.TODO(), "martian: failed to accept: %v", err)
 			return err
 		}
 		delay = 0
-		log.Debugf("martian: accepted connection from %s", conn.RemoteAddr())
+		log.Debugf(context.TODO(), "martian: accepted connection from %s", conn.RemoteAddr())
 
 		if tconn, ok := conn.(*net.TCPConn); ok {
 			tconn.SetKeepAlive(true)
@@ -295,13 +295,13 @@ func (p *Proxy) handleLoop(conn net.Conn) {
 	for {
 		if err := p.handle(ctx, conn, brw); err != nil {
 			if isCloseable(err) {
-				log.Debugf("martian: closing connection: %v", conn.RemoteAddr())
+				log.Debugf(context.TODO(), "martian: closing connection: %v", conn.RemoteAddr())
 				return
 			}
 
 			errorsN++
 			if errorsN >= maxConsecutiveErrors {
-				log.Errorf("martian: closing connection after %d consecutive errors: %v", errorsN, err)
+				log.Errorf(context.TODO(), "martian: closing connection after %d consecutive errors: %v", errorsN, err)
 				return
 			}
 		} else {
@@ -309,7 +309,7 @@ func (p *Proxy) handleLoop(conn net.Conn) {
 		}
 
 		if s.Hijacked() {
-			log.Debugf("martian: closing connection: %v", conn.RemoteAddr())
+			log.Debugf(context.TODO(), "martian: closing connection: %v", conn.RemoteAddr())
 			return
 		}
 	}
@@ -336,15 +336,15 @@ func (p *Proxy) readRequest(ctx *Context, conn net.Conn, brw *bufio.ReadWriter) 
 	}
 
 	if deadlineErr := conn.SetReadDeadline(hdrDeadline); deadlineErr != nil {
-		log.Errorf("martian: can't set read header deadline: %v", deadlineErr)
+		log.Errorf(context.TODO(), "martian: can't set read header deadline: %v", deadlineErr)
 	}
 
 	req, err = http.ReadRequest(brw.Reader)
 	if err != nil {
 		if isCloseable(err) {
-			log.Debugf("martian: connection closed prematurely: %v", err)
+			log.Debugf(context.TODO(), "martian: connection closed prematurely: %v", err)
 		} else {
-			log.Errorf("martian: failed to read request: %v", err)
+			log.Errorf(context.TODO(), "martian: failed to read request: %v", err)
 		}
 		if cw, ok := asCloseWriter(conn); ok {
 			cw.CloseWrite()
@@ -362,7 +362,7 @@ func (p *Proxy) readRequest(ctx *Context, conn net.Conn, brw *bufio.ReadWriter) 
 	// Adjust the read deadline if necessary.
 	if !hdrDeadline.Equal(wholeReqDeadline) {
 		if deadlineErr := conn.SetReadDeadline(wholeReqDeadline); deadlineErr != nil {
-			log.Errorf("martian: can't set read deadline: %v", deadlineErr)
+			log.Errorf(context.TODO(), "martian: can't set read deadline: %v", deadlineErr)
 		}
 	}
 
@@ -371,40 +371,40 @@ func (p *Proxy) readRequest(ctx *Context, conn net.Conn, brw *bufio.ReadWriter) 
 
 func (p *Proxy) handleConnectRequest(ctx *Context, req *http.Request, session *Session, brw *bufio.ReadWriter, conn net.Conn) error {
 	if err := p.reqmod.ModifyRequest(req); err != nil {
-		log.Errorf("martian: error modifying CONNECT request: %v", err)
+		log.Errorf(req.Context(), "martian: error modifying CONNECT request: %v", err)
 		p.warning(req.Header, err)
 	}
 	if session.Hijacked() {
-		log.Debugf("martian: connection hijacked by request modifier")
+		log.Debugf(req.Context(), "martian: connection hijacked by request modifier")
 		return nil
 	}
 
 	if p.mitm != nil {
-		log.Debugf("martian: attempting MITM for connection: %s / %s", req.Host, req.URL.String())
+		log.Debugf(req.Context(), "martian: attempting MITM for connection: %s / %s", req.Host, req.URL.String())
 
 		res := proxyutil.NewResponse(200, nil, req)
 
 		if err := p.resmod.ModifyResponse(res); err != nil {
-			log.Errorf("martian: error modifying CONNECT response: %v", err)
+			log.Errorf(req.Context(), "martian: error modifying CONNECT response: %v", err)
 			p.warning(res.Header, err)
 		}
 		if session.Hijacked() {
-			log.Debugf("martian: connection hijacked by response modifier")
+			log.Debugf(req.Context(), "martian: connection hijacked by response modifier")
 			return nil
 		}
 
 		if err := res.Write(brw); err != nil {
-			log.Errorf("martian: got error while writing response back to client: %v", err)
+			log.Errorf(req.Context(), "martian: got error while writing response back to client: %v", err)
 		}
 		if err := brw.Flush(); err != nil {
-			log.Errorf("martian: got error while flushing response back to client: %v", err)
+			log.Errorf(req.Context(), "martian: got error while flushing response back to client: %v", err)
 		}
 
-		log.Debugf("martian: completed MITM for connection: %s", req.Host)
+		log.Debugf(req.Context(), "martian: completed MITM for connection: %s", req.Host)
 
 		b := make([]byte, 1)
 		if _, err := brw.Read(b); err != nil {
-			log.Errorf("martian: error peeking message through CONNECT tunnel to determine type: %v", err)
+			log.Errorf(req.Context(), "martian: error peeking message through CONNECT tunnel to determine type: %v", err)
 		}
 
 		// Drain all of the rest of the buffered data.
@@ -436,7 +436,7 @@ func (p *Proxy) handleConnectRequest(ctx *Context, req *http.Request, session *S
 		return p.handle(ctx, conn, brw)
 	}
 
-	log.Debugf("martian: attempting to establish CONNECT tunnel: %s", req.URL.Host)
+	log.Debugf(req.Context(), "martian: attempting to establish CONNECT tunnel: %s", req.URL.Host)
 	var (
 		res  *http.Response
 		cr   io.Reader
@@ -470,31 +470,31 @@ func (p *Proxy) handleConnectRequest(ctx *Context, req *http.Request, session *S
 	}
 
 	if cerr != nil {
-		log.Errorf("martian: failed to CONNECT: %v", cerr)
+		log.Errorf(req.Context(), "martian: failed to CONNECT: %v", cerr)
 		res = p.errorResponse(req, cerr)
 		p.warning(res.Header, cerr)
 	}
 	defer res.Body.Close()
 
 	if err := p.resmod.ModifyResponse(res); err != nil {
-		log.Errorf("martian: error modifying CONNECT response: %v", err)
+		log.Errorf(req.Context(), "martian: error modifying CONNECT response: %v", err)
 		p.warning(res.Header, err)
 	}
 	if session.Hijacked() {
-		log.Debugf("martian: connection hijacked by response modifier")
+		log.Debugf(req.Context(), "martian: connection hijacked by response modifier")
 		return nil
 	}
 
 	if res.StatusCode != http.StatusOK {
 		if cerr == nil {
-			log.Errorf("martian: CONNECT rejected with status code: %d", res.StatusCode)
+			log.Errorf(req.Context(), "martian: CONNECT rejected with status code: %d", res.StatusCode)
 		}
 		if err := res.Write(brw); err != nil {
-			log.Errorf("martian: got error while writing response back to client: %v", err)
+			log.Errorf(req.Context(), "martian: got error while writing response back to client: %v", err)
 		}
 		err := brw.Flush()
 		if err != nil {
-			log.Errorf("martian: got error while flushing response back to client: %v", err)
+			log.Errorf(req.Context(), "martian: got error while flushing response back to client: %v", err)
 		}
 		return err
 	}
@@ -502,7 +502,7 @@ func (p *Proxy) handleConnectRequest(ctx *Context, req *http.Request, session *S
 	res.ContentLength = -1
 
 	if err := p.tunnel("CONNECT", res, brw, conn, cw, cr); err != nil {
-		log.Errorf("martian: CONNECT tunnel: %w", err)
+		log.Errorf(req.Context(), "martian: CONNECT tunnel: %w", err)
 	}
 
 	return errClose
@@ -513,14 +513,14 @@ func (p *Proxy) handleUpgradeResponse(res *http.Response, brw *bufio.ReadWriter,
 
 	uconn, ok := res.Body.(io.ReadWriteCloser)
 	if !ok {
-		log.Errorf("martian: internal error: switching protocols response with non-writable body")
+		log.Errorf(res.Request.Context(), "martian: internal error: switching protocols response with non-writable body")
 		return errClose
 	}
 
 	res.Body = nil
 
 	if err := p.tunnel(resUpType, res, brw, conn, uconn, uconn); err != nil {
-		log.Errorf("martian: %s tunnel: %w", resUpType, err)
+		log.Errorf(res.Request.Context(), "martian: %s tunnel: %w", resUpType, err)
 	}
 
 	return errClose
@@ -537,14 +537,15 @@ func (p *Proxy) tunnel(name string, res *http.Response, brw *bufio.ReadWriter, c
 		return fmt.Errorf("got error while draining read buffer: %w", err)
 	}
 
+	ctx := res.Request.Context()
 	donec := make(chan bool, 2)
-	go copySync("outbound "+name, cw, conn, donec)
-	go copySync("inbound "+name, conn, cr, donec)
+	go copySync(ctx, "outbound "+name, cw, conn, donec)
+	go copySync(ctx, "inbound "+name, conn, cr, donec)
 
-	log.Debugf("martian: switched protocols, proxying %s traffic", name)
+	log.Debugf(ctx, "martian: switched protocols, proxying %s traffic", name)
 	<-donec
 	<-donec
-	log.Debugf("martian: closed %s tunnel", name)
+	log.Debugf(ctx, "martian: closed %s tunnel", name)
 
 	return nil
 }
@@ -567,28 +568,28 @@ var copyBufPool = sync.Pool{
 	},
 }
 
-func copySync(name string, w io.Writer, r io.Reader, donec chan<- bool) {
+func copySync(ctx context.Context, name string, w io.Writer, r io.Reader, donec chan<- bool) {
 	bufp := copyBufPool.Get().(*[]byte) //nolint:forcetypeassert // It's *[]byte.
 	buf := *bufp
 	defer copyBufPool.Put(bufp)
 
 	if _, err := io.CopyBuffer(w, r, buf); err != nil && !errors.Is(err, io.EOF) {
-		log.Errorf("martian: failed to copy %s tunnel: %v", name, err)
+		log.Errorf(ctx, "martian: failed to copy %s tunnel: %v", name, err)
 	}
 	if cw, ok := asCloseWriter(w); ok {
 		cw.CloseWrite()
 	} else if pw, ok := w.(*io.PipeWriter); ok {
 		pw.Close()
 	} else {
-		log.Errorf("martian: cannot close write side of %s tunnel (%T)", name, w)
+		log.Errorf(ctx, "martian: cannot close write side of %s tunnel (%T)", name, w)
 	}
 
-	log.Debugf("martian: %s tunnel finished copying", name)
+	log.Debugf(ctx, "martian: %s tunnel finished copying", name)
 	donec <- true
 }
 
 func (p *Proxy) handle(ctx *Context, conn net.Conn, brw *bufio.ReadWriter) error {
-	log.Debugf("martian: waiting for request: %v", conn.RemoteAddr())
+	log.Debugf(context.TODO(), "martian: waiting for request: %v", conn.RemoteAddr())
 
 	session := ctx.Session()
 	ctx = withSession(session)
@@ -622,21 +623,21 @@ func (p *Proxy) handle(ctx *Context, conn net.Conn, brw *bufio.ReadWriter) error
 		}
 	} else if req.URL.Scheme == "http" {
 		if session.IsSecure() && !p.AllowHTTP {
-			log.Infof("martian: forcing HTTPS inside secure session")
+			log.Infof(req.Context(), "martian: forcing HTTPS inside secure session")
 			req.URL.Scheme = "https"
 		}
 	}
 
 	reqUpType := upgradeType(req.Header)
 	if reqUpType != "" {
-		log.Debugf("martian: upgrade request: %s", reqUpType)
+		log.Debugf(req.Context(), "martian: upgrade request: %s", reqUpType)
 	}
 	if err := p.reqmod.ModifyRequest(req); err != nil {
-		log.Errorf("martian: error modifying request: %v", err)
+		log.Errorf(req.Context(), "martian: error modifying request: %v", err)
 		p.warning(req.Header, err)
 	}
 	if session.Hijacked() {
-		log.Debugf("martian: connection hijacked by request modifier")
+		log.Debugf(req.Context(), "martian: connection hijacked by request modifier")
 		return nil
 	}
 
@@ -650,7 +651,7 @@ func (p *Proxy) handle(ctx *Context, conn net.Conn, brw *bufio.ReadWriter) error
 	// perform the HTTP roundtrip
 	res, err := p.roundTrip(ctx, req)
 	if err != nil {
-		log.Errorf("martian: failed to round trip: %v", err)
+		log.Errorf(req.Context(), "martian: failed to round trip: %v", err)
 		res = p.errorResponse(req, err)
 		p.warning(res.Header, err)
 	}
@@ -662,14 +663,14 @@ func (p *Proxy) handle(ctx *Context, conn net.Conn, brw *bufio.ReadWriter) error
 
 	resUpType := upgradeType(res.Header)
 	if resUpType != "" {
-		log.Debugf("martian: upgrade response: %s", resUpType)
+		log.Debugf(req.Context(), "martian: upgrade response: %s", resUpType)
 	}
 	if err := p.resmod.ModifyResponse(res); err != nil {
-		log.Errorf("martian: error modifying response: %v", err)
+		log.Errorf(req.Context(), "martian: error modifying response: %v", err)
 		p.warning(res.Header, err)
 	}
 	if session.Hijacked() {
-		log.Debugf("martian: connection hijacked by response modifier")
+		log.Debugf(req.Context(), "martian: connection hijacked by response modifier")
 		return nil
 	}
 
@@ -682,7 +683,7 @@ func (p *Proxy) handle(ctx *Context, conn net.Conn, brw *bufio.ReadWriter) error
 
 	var closing error
 	if !req.ProtoAtLeast(1, 1) || req.Close || res.Close || p.Closing() {
-		log.Debugf("martian: received close request: %v", req.RemoteAddr)
+		log.Debugf(req.Context(), "martian: received close request: %v", req.RemoteAddr)
 		res.Close = true
 		closing = errClose
 	}
@@ -694,7 +695,7 @@ func (p *Proxy) handle(ctx *Context, conn net.Conn, brw *bufio.ReadWriter) error
 
 	if p.WriteTimeout > 0 {
 		if deadlineErr := conn.SetWriteDeadline(time.Now().Add(p.WriteTimeout)); deadlineErr != nil {
-			log.Errorf("martian: can't set write deadline: %v", deadlineErr)
+			log.Errorf(req.Context(), "martian: can't set write deadline: %v", deadlineErr)
 		}
 	}
 
@@ -714,14 +715,14 @@ func (p *Proxy) handle(ctx *Context, conn net.Conn, brw *bufio.ReadWriter) error
 		}
 	}
 	if err != nil {
-		log.Errorf("martian: got error while writing response back to client: %v", err)
+		log.Errorf(req.Context(), "martian: got error while writing response back to client: %v", err)
 		if errors.Is(err, io.ErrUnexpectedEOF) {
 			closing = errClose
 		}
 	}
 	err = brw.Flush()
 	if err != nil {
-		log.Errorf("martian: got error while flushing response back to client: %v", err)
+		log.Errorf(req.Context(), "martian: got error while flushing response back to client: %v", err)
 	}
 
 	if p.CloseAfterReply {
@@ -744,7 +745,7 @@ func (c *peekedConn) Read(buf []byte) (int, error) { return c.r.Read(buf) }
 
 func (p *Proxy) roundTrip(ctx *Context, req *http.Request) (*http.Response, error) {
 	if ctx.SkippingRoundTrip() {
-		log.Debugf("martian: skipping round trip")
+		log.Debugf(req.Context(), "martian: skipping round trip")
 		return proxyutil.NewResponse(200, http.NoBody, req), nil
 	}
 
@@ -776,7 +777,7 @@ func (p *Proxy) connect(req *http.Request) (*http.Response, net.Conn, error) {
 	}
 
 	if proxyURL == nil {
-		log.Debugf("martian: CONNECT to host directly: %s", req.URL.Host)
+		log.Debugf(req.Context(), "martian: CONNECT to host directly: %s", req.URL.Host)
 
 		conn, err := p.dial(req.Context(), "tcp", req.URL.Host)
 		if err != nil {
@@ -797,7 +798,7 @@ func (p *Proxy) connect(req *http.Request) (*http.Response, net.Conn, error) {
 }
 
 func (p *Proxy) connectHTTP(req *http.Request, proxyURL *url.URL) (res *http.Response, conn net.Conn, err error) {
-	log.Debugf("martian: CONNECT with upstream HTTP proxy: %s", proxyURL.Host)
+	log.Debugf(req.Context(), "martian: CONNECT with upstream HTTP proxy: %s", proxyURL.Host)
 
 	if proxyURL.Scheme == "https" {
 		d := dialvia.HTTPSProxy(p.dial, proxyURL, p.clientTLSConfig())
@@ -830,7 +831,7 @@ func (p *Proxy) clientTLSConfig() *tls.Config {
 }
 
 func (p *Proxy) connectSOCKS5(req *http.Request, proxyURL *url.URL) (*http.Response, net.Conn, error) {
-	log.Debugf("martian: CONNECT with upstream SOCKS5 proxy: %s", proxyURL.Host)
+	log.Debugf(req.Context(), "martian: CONNECT with upstream SOCKS5 proxy: %s", proxyURL.Host)
 
 	d := dialvia.SOCKS5Proxy(p.dial, proxyURL)
 
