@@ -25,7 +25,6 @@ import (
 
 	"github.com/saucelabs/forwarder/internal/martian/log"
 	"github.com/saucelabs/forwarder/internal/martian/proxyutil"
-	forwarderlog "github.com/saucelabs/forwarder/log"
 )
 
 func copyHeader(dst, src http.Header) {
@@ -103,18 +102,17 @@ func (p proxyHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 
 func (p proxyHandler) handleConnectRequest(ctx *Context, rw http.ResponseWriter, req *http.Request) {
 	session := ctx.Session()
-	tracedLog := log.WithTraceID(ctx.ID())
 
 	if err := p.reqmod.ModifyRequest(req); err != nil {
-		tracedLog.Errorf("martian: error modifying CONNECT request: %v", err)
+		log.Errorf("martian: error modifying CONNECT request: %v", err)
 		p.warning(req.Header, err)
 	}
 	if session.Hijacked() {
-		tracedLog.Debugf("martian: connection hijacked by request modifier")
+		log.Debugf("martian: connection hijacked by request modifier")
 		return
 	}
 
-	tracedLog.Debugf("martian: attempting to establish CONNECT tunnel: %s", req.URL.Host)
+	log.Debugf("martian: attempting to establish CONNECT tunnel: %s", req.URL.Host)
 	var (
 		res  *http.Response
 		cr   io.Reader
@@ -138,7 +136,7 @@ func (p proxyHandler) handleConnectRequest(ctx *Context, rw http.ResponseWriter,
 		}
 	} else {
 		var cconn net.Conn
-		res, cconn, cerr = p.connect(ctx, req)
+		res, cconn, cerr = p.connect(req)
 
 		if cconn != nil {
 			defer cconn.Close()
@@ -148,26 +146,26 @@ func (p proxyHandler) handleConnectRequest(ctx *Context, rw http.ResponseWriter,
 	}
 
 	if cerr != nil {
-		tracedLog.Errorf("martian: failed to CONNECT: %v", cerr)
+		log.Errorf("martian: failed to CONNECT: %v", cerr)
 		res = p.errorResponse(req, cerr)
 		p.warning(res.Header, cerr)
 	}
 	defer res.Body.Close()
 
 	if err := p.resmod.ModifyResponse(res); err != nil {
-		tracedLog.Errorf("martian: error modifying CONNECT response: %v", err)
+		log.Errorf("martian: error modifying CONNECT response: %v", err)
 		p.warning(res.Header, err)
 	}
 	if session.Hijacked() {
-		tracedLog.Debugf("martian: connection hijacked by response modifier")
+		log.Debugf("martian: connection hijacked by response modifier")
 		return
 	}
 
 	if res.StatusCode != http.StatusOK {
 		if cerr == nil {
-			tracedLog.Errorf("martian: CONNECT rejected with status code: %d", res.StatusCode)
+			log.Errorf("martian: CONNECT rejected with status code: %d", res.StatusCode)
 		}
-		writeResponse(rw, res, tracedLog)
+		writeResponse(rw, res)
 		return
 	}
 
@@ -175,34 +173,33 @@ func (p proxyHandler) handleConnectRequest(ctx *Context, rw http.ResponseWriter,
 		res.ContentLength = -1
 	}
 
-	if err := p.tunnel(ctx, "CONNECT", rw, req, res, cw, cr); err != nil {
-		tracedLog.Errorf("martian: CONNECT tunnel: %v", err)
+	if err := p.tunnel("CONNECT", rw, req, res, cw, cr); err != nil {
+		log.Errorf("martian: CONNECT tunnel: %v", err)
 		panic(http.ErrAbortHandler)
 	}
 }
 
-func (p proxyHandler) handleUpgradeResponse(ctx *Context, rw http.ResponseWriter, req *http.Request, res *http.Response) {
+func (p proxyHandler) handleUpgradeResponse(rw http.ResponseWriter, req *http.Request, res *http.Response) {
 	resUpType := upgradeType(res.Header)
 
 	uconn, ok := res.Body.(io.ReadWriteCloser)
 	if !ok {
-		log.WithTraceID(ctx.ID()).Errorf("martian: %s tunnel: internal error: switching protocols response with non-ReadWriteCloser body", resUpType)
+		log.Errorf("martian: %s tunnel: internal error: switching protocols response with non-ReadWriteCloser body", resUpType)
 		panic(http.ErrAbortHandler)
 	}
 
 	res.Body = nil
 
-	if err := p.tunnel(ctx, resUpType, rw, req, res, uconn, uconn); err != nil {
-		log.WithTraceID(ctx.ID()).Errorf("martian: %s tunnel: %w", resUpType, err)
+	if err := p.tunnel(resUpType, rw, req, res, uconn, uconn); err != nil {
+		log.Errorf("martian: %s tunnel: %w", resUpType, err)
 		panic(http.ErrAbortHandler)
 	}
 }
 
-func (p proxyHandler) tunnel(ctx *Context, name string, rw http.ResponseWriter, req *http.Request, res *http.Response, cw io.WriteCloser, cr io.Reader) error {
+func (p proxyHandler) tunnel(name string, rw http.ResponseWriter, req *http.Request, res *http.Response, cw io.WriteCloser, cr io.Reader) error {
 	var (
-		rc        = http.NewResponseController(rw)
-		donec     = make(chan bool, 2)
-		tracedLog = log.WithTraceID(ctx.ID())
+		rc    = http.NewResponseController(rw)
+		donec = make(chan bool, 2)
 	)
 	switch req.ProtoMajor {
 	case 1:
@@ -222,8 +219,8 @@ func (p proxyHandler) tunnel(ctx *Context, name string, rw http.ResponseWriter, 
 			return fmt.Errorf("got error while draining buffer: %w", err)
 		}
 
-		go copySync(tracedLog, "outbound "+name, cw, conn, donec)
-		go copySync(tracedLog, "inbound "+name, conn, cr, donec)
+		go copySync("outbound "+name, cw, conn, donec)
+		go copySync("inbound "+name, conn, cr, donec)
 	case 2:
 		copyHeader(rw.Header(), res.Header)
 		rw.WriteHeader(res.StatusCode)
@@ -232,16 +229,16 @@ func (p proxyHandler) tunnel(ctx *Context, name string, rw http.ResponseWriter, 
 			return fmt.Errorf("got error while flushing response back to client: %w", err)
 		}
 
-		go copySync(tracedLog, "outbound "+name, cw, req.Body, donec)
-		go copySync(tracedLog, "inbound "+name, tracedWriteFlusher{rw, rc, tracedLog}, cr, donec)
+		go copySync("outbound "+name, cw, req.Body, donec)
+		go copySync("inbound "+name, writeFlusher{rw, rc}, cr, donec)
 	default:
 		return fmt.Errorf("unsupported protocol version: %d", req.ProtoMajor)
 	}
 
-	tracedLog.Debugf("martian: established %s tunnel, proxying traffic", name)
+	log.Debugf("martian: established %s tunnel, proxying traffic", name)
 	<-donec
 	<-donec
-	tracedLog.Debugf("martian: closed %s tunnel", name)
+	log.Debugf("martian: closed %s tunnel", name)
 
 	return nil
 }
@@ -256,8 +253,6 @@ func (p proxyHandler) handleRequest(ctx *Context, rw http.ResponseWriter, req *h
 		return
 	}
 
-	tracedLog := log.WithTraceID(ctx.ID())
-
 	req.Proto = "HTTP/1.1"
 	req.ProtoMajor = 1
 	req.ProtoMinor = 1
@@ -270,21 +265,21 @@ func (p proxyHandler) handleRequest(ctx *Context, rw http.ResponseWriter, req *h
 		}
 	} else if req.URL.Scheme == "http" {
 		if session.IsSecure() && !p.AllowHTTP {
-			tracedLog.Infof("martian: forcing HTTPS inside secure session")
+			log.Infof("martian: forcing HTTPS inside secure session")
 			req.URL.Scheme = "https"
 		}
 	}
 
 	reqUpType := upgradeType(req.Header)
 	if reqUpType != "" {
-		tracedLog.Debugf("martian: upgrade request: %s", reqUpType)
+		log.Debugf("martian: upgrade request: %s", reqUpType)
 	}
 	if err := p.reqmod.ModifyRequest(req); err != nil {
-		tracedLog.Errorf("martian: error modifying request: %v", err)
+		log.Errorf("martian: error modifying request: %v", err)
 		p.warning(req.Header, err)
 	}
 	if session.Hijacked() {
-		tracedLog.Debugf("martian: connection hijacked by request modifier")
+		log.Debugf("martian: connection hijacked by request modifier")
 		return
 	}
 
@@ -298,7 +293,7 @@ func (p proxyHandler) handleRequest(ctx *Context, rw http.ResponseWriter, req *h
 	// perform the HTTP roundtrip
 	res, err := p.roundTrip(ctx, req)
 	if err != nil {
-		tracedLog.Errorf("martian: failed to round trip: %v", err)
+		log.Errorf("martian: failed to round trip: %v", err)
 		res = p.errorResponse(req, err)
 		p.warning(res.Header, err)
 	}
@@ -310,14 +305,14 @@ func (p proxyHandler) handleRequest(ctx *Context, rw http.ResponseWriter, req *h
 
 	resUpType := upgradeType(res.Header)
 	if resUpType != "" {
-		tracedLog.Debugf("martian: upgrade response: %s", resUpType)
+		log.Debugf("martian: upgrade response: %s", resUpType)
 	}
 	if err := p.resmod.ModifyResponse(res); err != nil {
-		tracedLog.Errorf("martian: error modifying response: %v", err)
+		log.Errorf("martian: error modifying response: %v", err)
 		p.warning(res.Header, err)
 	}
 	if session.Hijacked() {
-		tracedLog.Debugf("martian: connection hijacked by response modifier")
+		log.Debugf("martian: connection hijacked by response modifier")
 		return
 	}
 
@@ -329,7 +324,7 @@ func (p proxyHandler) handleRequest(ctx *Context, rw http.ResponseWriter, req *h
 	}
 
 	if !req.ProtoAtLeast(1, 1) || req.Close || res.Close || p.Closing() {
-		tracedLog.Debugf("martian: received close request: %v", req.RemoteAddr)
+		log.Debugf("martian: received close request: %v", req.RemoteAddr)
 		res.Close = true
 	}
 	if p.CloseAfterReply {
@@ -338,45 +333,43 @@ func (p proxyHandler) handleRequest(ctx *Context, rw http.ResponseWriter, req *h
 
 	// deal with 101 Switching Protocols responses: (WebSocket, h2c, etc)
 	if res.StatusCode == http.StatusSwitchingProtocols {
-		p.handleUpgradeResponse(ctx, rw, req, res)
+		p.handleUpgradeResponse(rw, req, res)
 	} else {
-		writeResponse(rw, res, tracedLog)
+		writeResponse(rw, res)
 	}
 }
 
-func newTracedWriteFlusher(rw http.ResponseWriter, tracedLog forwarderlog.Logger) tracedWriteFlusher {
-	return tracedWriteFlusher{
-		rw:  rw,
-		rc:  http.NewResponseController(rw),
-		log: tracedLog,
+func newWriteFlusher(rw http.ResponseWriter) writeFlusher {
+	return writeFlusher{
+		rw: rw,
+		rc: http.NewResponseController(rw),
 	}
 }
 
-type tracedWriteFlusher struct {
-	rw  io.Writer
-	rc  *http.ResponseController
-	log forwarderlog.Logger
+type writeFlusher struct {
+	rw io.Writer
+	rc *http.ResponseController
 }
 
-func (w tracedWriteFlusher) Write(p []byte) (n int, err error) {
+func (w writeFlusher) Write(p []byte) (n int, err error) {
 	n, err = w.rw.Write(p)
 
 	if n > 0 {
 		if err := w.rc.Flush(); err != nil {
-			w.log.Errorf("martian: got error while flushing response back to client: %v", err)
+			log.Errorf("martian: got error while flushing response back to client: %v", err)
 		}
 	}
 
 	return
 }
 
-func (w tracedWriteFlusher) CloseWrite() error {
+func (w writeFlusher) CloseWrite() error {
 	// This is a nop implementation of closeWriter.
 	// It avoids printing the error log "cannot close write side of inbound CONNECT tunnel".
 	return nil
 }
 
-func writeResponse(rw http.ResponseWriter, res *http.Response, tracedLog forwarderlog.Logger) {
+func writeResponse(rw http.ResponseWriter, res *http.Response) {
 	copyHeader(rw.Header(), res.Header)
 	if res.Close {
 		res.Header.Set("Connection", "close")
@@ -392,12 +385,12 @@ func writeResponse(rw http.ResponseWriter, res *http.Response, tracedLog forward
 
 	var err error
 	if shouldFlush(res) {
-		err = copyBody(newTracedWriteFlusher(rw, tracedLog), res.Body)
+		err = copyBody(newWriteFlusher(rw), res.Body)
 	} else {
 		err = copyBody(rw, res.Body)
 	}
 	if err != nil {
-		tracedLog.Errorf("martian: got error while writing response back to client: %v", err)
+		log.Errorf("martian: got error while writing response back to client: %v", err)
 		panic(http.ErrAbortHandler)
 	}
 
