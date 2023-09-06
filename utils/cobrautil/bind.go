@@ -55,11 +55,7 @@ func BindAll(cmd *cobra.Command, envPrefix, configFileFlagName string) error {
 		ok = true
 		fs.VisitAll(func(f *pflag.Flag) {
 			if !f.Changed && v.IsSet(f.Name) {
-				s := fmt.Sprintf("%v", v.Get(f.Name))
-				s = strings.TrimPrefix(s, "[")
-				s = strings.TrimSuffix(s, "]")
-				s = strings.NewReplacer(", ", ",", " ", ",").Replace(s)
-				if err := fs.Set(f.Name, s); err != nil {
+				if err := setFlagFromViper(f, fs, v.Get(f.Name)); err != nil {
 					fmt.Fprintln(cmd.ErrOrStderr(), err.Error())
 					ok = false
 				}
@@ -77,4 +73,13 @@ func BindAll(cmd *cobra.Command, envPrefix, configFileFlagName string) error {
 	}
 
 	return nil
+}
+
+func setFlagFromViper(f *pflag.Flag, fs *pflag.FlagSet, v any) error {
+	s := fmt.Sprintf("%v", v)
+	s = strings.TrimPrefix(s, "[")
+	s = strings.TrimSuffix(s, "]")
+	s = strings.NewReplacer(", ", ",", " ", ",").Replace(s)
+
+	return fs.Set(f.Name, s)
 }
