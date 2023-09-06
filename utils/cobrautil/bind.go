@@ -43,7 +43,6 @@ func BindAll(cmd *cobra.Command, envPrefix, configFileFlagName string) error {
 	// Config file
 	if configFileFlagName != "" {
 		if f := v.GetString(configFileFlagName); f != "" {
-			v.SetConfigType("yaml")
 			v.SetConfigFile(f)
 			if err := v.ReadInConfig(); err != nil {
 				return err
