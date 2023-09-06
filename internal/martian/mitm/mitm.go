@@ -19,6 +19,7 @@ package mitm
 
 import (
 	"bytes"
+	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha1"
@@ -244,7 +245,7 @@ func (c *Config) cert(hostname string) (*tls.Certificate, error) {
 	c.certmu.RUnlock()
 
 	if ok {
-		log.Debugf("mitm: cache hit for %s", hostname)
+		log.Debugf(context.TODO(), "mitm: cache hit for %s", hostname)
 
 		// Check validity of the certificate for hostname match, expiry, etc. In
 		// particular, if the cached certificate has expired, create a new one.
@@ -255,10 +256,10 @@ func (c *Config) cert(hostname string) (*tls.Certificate, error) {
 			return tlsc, nil
 		}
 
-		log.Debugf("mitm: invalid certificate in cache for %s", hostname)
+		log.Debugf(context.TODO(), "mitm: invalid certificate in cache for %s", hostname)
 	}
 
-	log.Debugf("mitm: cache miss for %s", hostname)
+	log.Debugf(context.TODO(), "mitm: cache miss for %s", hostname)
 
 	serial, err := rand.Int(rand.Reader, MaxSerialNumber)
 	if err != nil {
