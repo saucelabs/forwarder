@@ -17,6 +17,7 @@ package h2
 
 import (
 	"bytes"
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/hex"
@@ -54,7 +55,7 @@ type Config struct {
 // h2 is being used. Since no browsers use h2c, it's safe to assume all traffic uses TLS.
 func (c *Config) Proxy(closing chan bool, cc io.ReadWriter, url *url.URL) error {
 	if c.EnableDebugLogs {
-		log.Infof("\u001b[1;35mProxying %v with HTTP/2\u001b[0m", url)
+		log.Infof(context.TODO(), "\u001b[1;35mProxying %v with HTTP/2\u001b[0m", url)
 	}
 	sc, err := tls.Dial("tcp", url.Host, &tls.Config{
 		RootCAs:    c.RootCAs,
@@ -103,13 +104,13 @@ func (c *Config) Proxy(closing chan bool, cc io.ReadWriter, url *url.URL) error 
 	go func() { // Forwards frames from client to server.
 		defer wg.Done()
 		if err := cToS.relayFrames(closing); err != nil {
-			log.Errorf("relaying frame from client to %v: %v", url, err)
+			log.Errorf(context.TODO(), "relaying frame from client to %v: %v", url, err)
 		}
 	}()
 	go func() { // Forwards frames from server to client.
 		defer wg.Done()
 		if err := sToC.relayFrames(closing); err != nil {
-			log.Errorf("relaying frame from %v to client: %v", url, err)
+			log.Errorf(context.TODO(), "relaying frame from %v to client: %v", url, err)
 		}
 	}()
 	wg.Wait()

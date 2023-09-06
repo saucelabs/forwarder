@@ -17,6 +17,7 @@ package h2
 import (
 	"bytes"
 	"container/list"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -205,7 +206,7 @@ func (r *relay) relayFrames(closing chan bool) error {
 				return fmt.Errorf("processing frame: %w", err)
 			}
 			if *r.enableDebugLogs {
-				log.Infof("%s--%v-->%s", r.srcLabel, frame, r.destLabel)
+				log.Infof(context.TODO(), "%s--%v-->%s", r.srcLabel, frame, r.destLabel)
 			}
 		case err := <-writerErr:
 			return fmt.Errorf("sending frame: %w", err)
@@ -531,7 +532,7 @@ func (r *relay) encodeFull(headers []hpack.HeaderField) ([]byte, error) {
 		}
 	}
 	if *r.enableDebugLogs {
-		log.Infof("sending headers %s -> %s:\n%s", r.srcLabel, r.destLabel, buf.Bytes())
+		log.Infof(context.TODO(), "sending headers %s -> %s:\n%s", r.srcLabel, r.destLabel, buf.Bytes())
 	}
 	return r.reencoded.Bytes(), nil
 }

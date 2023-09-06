@@ -4,6 +4,7 @@
 package nosigpipe
 
 import (
+	"context"
 	"net"
 	"syscall"
 
@@ -22,16 +23,16 @@ func IgnoreSIGPIPE(c net.Conn) {
 	}
 	r, e := s.SyscallConn()
 	if e != nil {
-		log.Errorf("Failed to get SyscallConn: %s", e)
+		log.Errorf(context.TODO(), "Failed to get SyscallConn: %s", e)
 		return
 	}
 	e = r.Control(func(fd uintptr) {
 		intfd := int(fd)
 		if e := syscall.SetsockoptInt(intfd, syscall.SOL_SOCKET, syscall.SO_NOSIGPIPE, 1); e != nil {
-			log.Errorf("Failed to set SO_NOSIGPIPE: %s", e)
+			log.Errorf(context.TODO(), "Failed to set SO_NOSIGPIPE: %s", e)
 		}
 	})
 	if e != nil {
-		log.Errorf("Failed to set SO_NOSIGPIPE: %s", e)
+		log.Errorf(context.TODO(), "Failed to set SO_NOSIGPIPE: %s", e)
 	}
 }
