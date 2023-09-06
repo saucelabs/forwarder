@@ -15,16 +15,18 @@
 // Package log provides a universal logger for martian packages.
 package log
 
-import (
-	"github.com/saucelabs/forwarder/log"
-)
+type Logger interface {
+	Infof(format string, args ...any)
+	Debugf(format string, args ...any)
+	Errorf(format string, args ...any)
+}
 
-var currLogger log.Logger = log.NopLogger
+var currLogger Logger = nopLogger{}
 
 // SetLogger changes the default logger. This must be called very first,
 // before interacting with rest of the martian package. Changing it at
 // runtime is not supported.
-func SetLogger(l log.Logger) {
+func SetLogger(l Logger) {
 	currLogger = l
 }
 
@@ -43,8 +45,10 @@ func Errorf(format string, args ...any) {
 	currLogger.Errorf(format, args...)
 }
 
-const traceIDKey = "trace"
+type nopLogger struct{}
 
-func WithTraceID(value string) log.Logger {
-	return currLogger.WithValue(traceIDKey, value)
-}
+func (nopLogger) Infof(_ string, _ ...any) {}
+
+func (nopLogger) Debugf(_ string, _ ...any) {}
+
+func (nopLogger) Errorf(_ string, _ ...any) {}
