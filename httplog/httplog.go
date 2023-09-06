@@ -12,7 +12,7 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/saucelabs/forwarder/internal/martian"
+	"github.com/saucelabs/forwarder/internal/martian/log"
 	"github.com/saucelabs/forwarder/internal/martian/messageview"
 	"github.com/saucelabs/forwarder/middleware"
 )
@@ -121,8 +121,8 @@ func (w *logWriter) RouteLine(e middleware.LogEntry) {
 }
 
 func (w *logWriter) trace(e middleware.LogEntry) {
-	if ctx := martian.FromContext(e.Request.Context()); ctx != nil {
-		fmt.Fprintf(&w.b, "trace=%s ", ctx.ID())
+	if trace := e.Request.Context().Value(log.TraceContextKey); trace != nil {
+		fmt.Fprintf(&w.b, "[%s] ", trace)
 	}
 }
 
