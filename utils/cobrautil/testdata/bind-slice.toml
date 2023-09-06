@@ -1,0 +1,4 @@
+strings = ["a", "b", "c"]
+ints = [1, 2, 3]
+bools = [true, false]
+ips = ["127.0.0.1", "127.0.0.2"]

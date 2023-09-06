@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/spf13/cast"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -55,8 +56,8 @@ func BindAll(cmd *cobra.Command, envPrefix, configFileFlagName string) error {
 		ok = true
 		fs.VisitAll(func(f *pflag.Flag) {
 			if !f.Changed && v.IsSet(f.Name) {
-				if err := setFlagFromViper(f, fs, v.Get(f.Name)); err != nil {
-					fmt.Fprintln(cmd.ErrOrStderr(), err.Error())
+				if err := setFlagFromViper(f, v.Get(f.Name)); err != nil {
+					fmt.Fprintf(cmd.ErrOrStderr(), "%s: %s\n", f.Name, err)
 					ok = false
 				}
 			}
@@ -75,11 +76,22 @@ func BindAll(cmd *cobra.Command, envPrefix, configFileFlagName string) error {
 	return nil
 }
 
-func setFlagFromViper(f *pflag.Flag, fs *pflag.FlagSet, v any) error {
-	s := fmt.Sprintf("%v", v)
-	s = strings.TrimPrefix(s, "[")
-	s = strings.TrimSuffix(s, "]")
-	s = strings.NewReplacer(", ", ",", " ", ",").Replace(s)
+func setFlagFromViper(f *pflag.Flag, v any) error {
+	if vs, ok := v.([]interface{}); ok {
+		sr, ok := f.Value.(sliceReplacer)
+		if !ok {
+			return fmt.Errorf("trying to set list to %s", f.Value.Type())
+		}
+		ss, err := cast.ToStringSliceE(vs)
+		if err != nil {
+			return err
+		}
+		return sr.Replace(ss)
+	}
 
-	return fs.Set(f.Name, s)
+	return f.Value.Set(fmt.Sprintf("%v", v))
+}
+
+type sliceReplacer interface {
+	Replace(val []string) error
 }
