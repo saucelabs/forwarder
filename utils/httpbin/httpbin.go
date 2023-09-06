@@ -18,8 +18,6 @@ import (
 )
 
 // Handler returns http.Handler that implements elements of httpbin.org API.
-// The implemented endpoints are:
-// `/basic-auth/{user}/{passwd}`, `/delay/{seconds}`, `/status/{code}`, `/stream-bytes/{bytes}`.
 func Handler() http.Handler {
 	m := http.NewServeMux()
 	m.HandleFunc("/basic-auth/", basicAuthHandler)
