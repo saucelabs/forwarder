@@ -57,9 +57,6 @@ func (c *command) runE(cmd *cobra.Command, _ []string) error {
 
 	// Google Martian uses a global logger package.
 	ml := logger.Named("proxy")
-	ml.Decorate = func(format string) string {
-		return strings.TrimPrefix(format, "martian: ")
-	}
 	martianlog.SetLogger(ml)
 
 	if len(c.dnsConfig.Servers) > 0 {
