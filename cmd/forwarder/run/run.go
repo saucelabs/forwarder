@@ -170,6 +170,7 @@ func Command() (cmd *cobra.Command) {
 		bind.HTTPProxyConfig(fs, c.httpProxyConfig, c.logConfig)
 		bind.MITMConfig(fs, &c.mitm, c.mitmConfig)
 		bind.HTTPServerConfig(fs, c.apiServerConfig, "api", forwarder.HTTPScheme)
+		bind.PromNamespace(fs, &c.httpProxyConfig.PromNamespace)
 		bind.AutoMarkFlagFilename(cmd)
 		cmd.MarkFlagsMutuallyExclusive("proxy", "pac")
 
