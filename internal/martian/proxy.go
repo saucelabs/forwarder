@@ -323,6 +323,14 @@ func (p *Proxy) readHeaderTimeout() time.Duration {
 }
 
 func (p *Proxy) readRequest(ctx *Context, conn net.Conn, brw *bufio.ReadWriter) (req *http.Request, err error) {
+	// Wait for the connection to become readable before trying to
+	// read the next request. This prevents a ReadHeaderTimeout or
+	// ReadTimeout from starting until the first bytes of the next request
+	// have been received.
+	if _, err := brw.Peek(1); err != nil {
+		return nil, err
+	}
+
 	var (
 		wholeReqDeadline time.Time // or zero if none
 		hdrDeadline      time.Time // or zero if none
