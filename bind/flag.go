@@ -280,6 +280,12 @@ func TLSServerConfig(fs *pflag.FlagSet, cfg *forwarder.TLSServerConfig, namePref
 			"Can be a path to a file or \"data:\" followed by base64 encoded key. ")
 }
 
+func PromNamespace(fs *pflag.FlagSet, promNamespace *string) {
+	fs.StringVar(promNamespace, "prom-namespace", *promNamespace, "<string>"+
+		"Prometheus namespace to use for metrics. "+
+		"The metrics are available at /metrics endpoint in the API server. ")
+}
+
 func LogConfig(fs *pflag.FlagSet, cfg *log.Config) {
 	fs.VarP(anyflag.NewValue[*os.File](nil, &cfg.File,
 		forwarder.OpenFileParser(os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600, 0o700)),
