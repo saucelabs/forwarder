@@ -105,15 +105,15 @@ func (p proxyHandler) handleConnectRequest(ctx *Context, rw http.ResponseWriter,
 	session := ctx.Session()
 
 	if err := p.reqmod.ModifyRequest(req); err != nil {
-		log.Errorf(req.Context(), "martian: error modifying CONNECT request: %v", err)
+		log.Errorf(req.Context(), "error modifying CONNECT request: %v", err)
 		p.warning(req.Header, err)
 	}
 	if session.Hijacked() {
-		log.Debugf(req.Context(), "martian: connection hijacked by request modifier")
+		log.Debugf(req.Context(), "connection hijacked by request modifier")
 		return
 	}
 
-	log.Debugf(req.Context(), "martian: attempting to establish CONNECT tunnel: %s", req.URL.Host)
+	log.Debugf(req.Context(), "attempting to establish CONNECT tunnel: %s", req.URL.Host)
 	var (
 		res  *http.Response
 		cr   io.Reader
@@ -147,24 +147,24 @@ func (p proxyHandler) handleConnectRequest(ctx *Context, rw http.ResponseWriter,
 	}
 
 	if cerr != nil {
-		log.Errorf(req.Context(), "martian: failed to CONNECT: %v", cerr)
+		log.Errorf(req.Context(), "failed to CONNECT: %v", cerr)
 		res = p.errorResponse(req, cerr)
 		p.warning(res.Header, cerr)
 	}
 	defer res.Body.Close()
 
 	if err := p.resmod.ModifyResponse(res); err != nil {
-		log.Errorf(req.Context(), "martian: error modifying CONNECT response: %v", err)
+		log.Errorf(req.Context(), "error modifying CONNECT response: %v", err)
 		p.warning(res.Header, err)
 	}
 	if session.Hijacked() {
-		log.Debugf(req.Context(), "martian: connection hijacked by response modifier")
+		log.Debugf(req.Context(), "connection hijacked by response modifier")
 		return
 	}
 
 	if res.StatusCode != http.StatusOK {
 		if cerr == nil {
-			log.Errorf(req.Context(), "martian: CONNECT rejected with status code: %d", res.StatusCode)
+			log.Errorf(req.Context(), "CONNECT rejected with status code: %d", res.StatusCode)
 		}
 		writeResponse(rw, res)
 		return
@@ -175,7 +175,7 @@ func (p proxyHandler) handleConnectRequest(ctx *Context, rw http.ResponseWriter,
 	}
 
 	if err := p.tunnel("CONNECT", rw, req, res, cw, cr); err != nil {
-		log.Errorf(req.Context(), "martian: CONNECT tunnel: %v", err)
+		log.Errorf(req.Context(), "CONNECT tunnel: %v", err)
 		panic(http.ErrAbortHandler)
 	}
 }
@@ -185,14 +185,14 @@ func (p proxyHandler) handleUpgradeResponse(rw http.ResponseWriter, req *http.Re
 
 	uconn, ok := res.Body.(io.ReadWriteCloser)
 	if !ok {
-		log.Errorf(req.Context(), "martian: %s tunnel: internal error: switching protocols response with non-ReadWriteCloser body", resUpType)
+		log.Errorf(req.Context(), "%s tunnel: internal error: switching protocols response with non-ReadWriteCloser body", resUpType)
 		panic(http.ErrAbortHandler)
 	}
 
 	res.Body = nil
 
 	if err := p.tunnel(resUpType, rw, req, res, uconn, uconn); err != nil {
-		log.Errorf(req.Context(), "martian: %s tunnel: %w", resUpType, err)
+		log.Errorf(req.Context(), "%s tunnel: %w", resUpType, err)
 		panic(http.ErrAbortHandler)
 	}
 }
@@ -236,10 +236,10 @@ func (p proxyHandler) tunnel(name string, rw http.ResponseWriter, req *http.Requ
 		return fmt.Errorf("unsupported protocol version: %d", req.ProtoMajor)
 	}
 
-	log.Debugf(req.Context(), "martian: established %s tunnel, proxying traffic", name)
+	log.Debugf(req.Context(), "established %s tunnel, proxying traffic", name)
 	<-donec
 	<-donec
-	log.Debugf(req.Context(), "martian: closed %s tunnel", name)
+	log.Debugf(req.Context(), "closed %s tunnel", name)
 
 	return nil
 }
@@ -266,21 +266,21 @@ func (p proxyHandler) handleRequest(ctx *Context, rw http.ResponseWriter, req *h
 		}
 	} else if req.URL.Scheme == "http" {
 		if session.IsSecure() && !p.AllowHTTP {
-			log.Infof(req.Context(), "martian: forcing HTTPS inside secure session")
+			log.Infof(req.Context(), "forcing HTTPS inside secure session")
 			req.URL.Scheme = "https"
 		}
 	}
 
 	reqUpType := upgradeType(req.Header)
 	if reqUpType != "" {
-		log.Debugf(req.Context(), "martian: upgrade request: %s", reqUpType)
+		log.Debugf(req.Context(), "upgrade request: %s", reqUpType)
 	}
 	if err := p.reqmod.ModifyRequest(req); err != nil {
-		log.Errorf(req.Context(), "martian: error modifying request: %v", err)
+		log.Errorf(req.Context(), "error modifying request: %v", err)
 		p.warning(req.Header, err)
 	}
 	if session.Hijacked() {
-		log.Debugf(req.Context(), "martian: connection hijacked by request modifier")
+		log.Debugf(req.Context(), "connection hijacked by request modifier")
 		return
 	}
 
@@ -294,7 +294,7 @@ func (p proxyHandler) handleRequest(ctx *Context, rw http.ResponseWriter, req *h
 	// perform the HTTP roundtrip
 	res, err := p.roundTrip(ctx, req)
 	if err != nil {
-		log.Errorf(req.Context(), "martian: failed to round trip: %v", err)
+		log.Errorf(req.Context(), "failed to round trip: %v", err)
 		res = p.errorResponse(req, err)
 		p.warning(res.Header, err)
 	}
@@ -306,14 +306,14 @@ func (p proxyHandler) handleRequest(ctx *Context, rw http.ResponseWriter, req *h
 
 	resUpType := upgradeType(res.Header)
 	if resUpType != "" {
-		log.Debugf(req.Context(), "martian: upgrade response: %s", resUpType)
+		log.Debugf(req.Context(), "upgrade response: %s", resUpType)
 	}
 	if err := p.resmod.ModifyResponse(res); err != nil {
-		log.Errorf(req.Context(), "martian: error modifying response: %v", err)
+		log.Errorf(req.Context(), "error modifying response: %v", err)
 		p.warning(res.Header, err)
 	}
 	if session.Hijacked() {
-		log.Debugf(req.Context(), "martian: connection hijacked by response modifier")
+		log.Debugf(req.Context(), "connection hijacked by response modifier")
 		return
 	}
 
@@ -325,7 +325,7 @@ func (p proxyHandler) handleRequest(ctx *Context, rw http.ResponseWriter, req *h
 	}
 
 	if !req.ProtoAtLeast(1, 1) || req.Close || res.Close || p.Closing() {
-		log.Debugf(req.Context(), "martian: received close request: %v", req.RemoteAddr)
+		log.Debugf(req.Context(), "received close request: %v", req.RemoteAddr)
 		res.Close = true
 	}
 	if p.CloseAfterReply {
@@ -357,7 +357,7 @@ func (w writeFlusher) Write(p []byte) (n int, err error) {
 
 	if n > 0 {
 		if err := w.rc.Flush(); err != nil {
-			log.Errorf(context.TODO(), "martian: got error while flushing response back to client: %v", err)
+			log.Errorf(context.TODO(), "got error while flushing response back to client: %v", err)
 		}
 	}
 
@@ -391,7 +391,7 @@ func writeResponse(rw http.ResponseWriter, res *http.Response) {
 		err = copyBody(rw, res.Body)
 	}
 	if err != nil {
-		log.Errorf(res.Request.Context(), "martian: got error while writing response back to client: %v", err)
+		log.Errorf(res.Request.Context(), "got error while writing response back to client: %v", err)
 		panic(http.ErrAbortHandler)
 	}
 

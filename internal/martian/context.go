@@ -116,7 +116,7 @@ func (s *Session) Hijack() (conn net.Conn, brw *bufio.ReadWriter, err error) {
 	defer s.mu.Unlock()
 
 	if s.hijacked {
-		return nil, nil, fmt.Errorf("martian: session has already been hijacked")
+		return nil, nil, fmt.Errorf("session has already been hijacked")
 	}
 	defer func() {
 		s.hijacked = err == nil
@@ -129,7 +129,7 @@ func (s *Session) Hijack() (conn net.Conn, brw *bufio.ReadWriter, err error) {
 		return http.NewResponseController(s.rw).Hijack()
 	}
 
-	panic("martian: session has no connection or response writer")
+	panic("session has no connection or response writer")
 }
 
 // HijackResponseWriter takes control of the response writer from the proxy.
@@ -138,7 +138,7 @@ func (s *Session) HijackResponseWriter() (http.ResponseWriter, error) {
 	defer s.mu.Unlock()
 
 	if s.hijacked {
-		return nil, fmt.Errorf("martian: session has already been hijacked")
+		return nil, fmt.Errorf("session has already been hijacked")
 	}
 
 	if s.rw != nil {
@@ -146,7 +146,7 @@ func (s *Session) HijackResponseWriter() (http.ResponseWriter, error) {
 		return s.rw, nil
 	}
 
-	return nil, fmt.Errorf("martian: session has no response writer")
+	return nil, fmt.Errorf("session has no response writer")
 }
 
 // Hijacked returns whether the connection has been hijacked.
