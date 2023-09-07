@@ -1694,11 +1694,14 @@ func TestReadHeaderTimeout(t *testing.T) {
 	}
 	defer conn.Close()
 
-	// Wait for the connection to timeout on reading header.
+	if _, err := conn.Write([]byte("GET / HTTP/1.1\r\n")); err != nil {
+		t.Fatalf("conn.Write(): got %v, want no error", err)
+	}
 	time.Sleep(200 * time.Millisecond)
-
-	_, err = conn.Read([]byte("test"))
-	if !errors.Is(err, io.EOF) {
-		t.Fatalf("conn.Write(): got %v, want EOF", err)
+	if _, err = conn.Write([]byte("Host: example.com\r\n\r\n")); err != nil {
+		t.Fatalf("conn.Write(): got %v, want no error", err)
+	}
+	if _, err = conn.Read(make([]byte, 1)); !errors.Is(err, io.EOF) {
+		t.Fatalf("conn.Read(): got %v, want io.EOF", err)
 	}
 }
