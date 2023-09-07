@@ -48,7 +48,7 @@ bench: RUN ?= .
 bench: TMPDIR := $(shell mktemp -d -t "com.saucelabs.Forwarder.XXXXXX")
 bench:
 	@echo ">>> Profiling enabled output in ${TMPDIR}"
-	@curl -sS "http://localhost:10000/debug/pprof/profile?seconds=${PROFILE}" -o "${TMPDIR}/cpu"
+	@curl -sS "http://localhost:10000/debug/pprof/profile?seconds=${PROFILE}" -o "${TMPDIR}/cpu" &
 	@ARGS="-test.bench ${RUN} -test.benchtime ${PROFILE}s" RUN=^XXX make test
 	@curl -sS "http://localhost:10000/debug/pprof/allocs" -o "${TMPDIR}/allocs"
 	@curl -sS "http://localhost:10000/debug/pprof/heap" -o "${TMPDIR}/heap"
