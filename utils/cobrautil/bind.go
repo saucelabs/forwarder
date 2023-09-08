@@ -76,7 +76,7 @@ func BindAll(cmd *cobra.Command, envPrefix, configFileFlagName string) error {
 }
 
 func setFlagFromViper(f *pflag.Flag, v any) error {
-	if vs, ok := v.([]interface{}); ok {
+	if vs, ok := v.([]any); ok {
 		sr, ok := f.Value.(sliceReplacer)
 		if !ok {
 			return fmt.Errorf("trying to set list to %s", f.Value.Type())
