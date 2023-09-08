@@ -812,15 +812,14 @@ func (p *Proxy) connect(req *http.Request) (*http.Response, net.Conn, error) {
 func (p *Proxy) connectHTTP(req *http.Request, proxyURL *url.URL) (res *http.Response, conn net.Conn, err error) {
 	log.Debugf(req.Context(), "CONNECT with upstream HTTP proxy: %s", proxyURL.Host)
 
+	var d *dialvia.HTTPProxyDialer
 	if proxyURL.Scheme == "https" {
-		d := dialvia.HTTPSProxy(p.dial, proxyURL, p.clientTLSConfig())
-		d.ConnectRequestModifier = p.ConnectRequestModifier
-		res, conn, err = d.DialContextR(req.Context(), "tcp", req.URL.Host)
+		d = dialvia.HTTPSProxy(p.dial, proxyURL, p.clientTLSConfig())
 	} else {
-		d := dialvia.HTTPProxy(p.dial, proxyURL)
-		d.ConnectRequestModifier = p.ConnectRequestModifier
-		res, conn, err = d.DialContextR(req.Context(), "tcp", req.URL.Host)
+		d = dialvia.HTTPProxy(p.dial, proxyURL)
 	}
+	d.ConnectRequestModifier = p.ConnectRequestModifier
+	res, conn, err = d.DialContextR(req.Context(), "tcp", req.URL.Host)
 
 	if res != nil {
 		if res.StatusCode/100 == 2 {
