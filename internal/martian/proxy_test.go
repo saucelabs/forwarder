@@ -1705,3 +1705,63 @@ func TestReadHeaderTimeout(t *testing.T) {
 		t.Fatalf("conn.Read(): got %v, want io.EOF", err)
 	}
 }
+
+func TestConnectRequestModifier(t *testing.T) {
+	t.Parallel()
+
+	l := newListener(t)
+	p := NewProxy()
+	defer p.Close()
+
+	tr := martiantest.NewTransport()
+	p.SetRoundTripper(tr)
+
+	headerName, headerValue := "X-Request-ID", "12345"
+	p.ConnectRequestModifier = func(req *http.Request) error {
+		if req.Header == nil {
+			req.Header = http.Header{}
+		}
+		req.Header.Set(headerName, headerValue)
+		return nil
+	}
+
+	tl, err := net.Listen("tcp", "[::]:0")
+	if err != nil {
+		t.Fatalf("net.Listen(): got %v, want no error", err)
+	}
+	go http.Serve(tl, http.HandlerFunc(
+		func(rw http.ResponseWriter, req *http.Request) {
+			if v := req.Header.Get(headerName); v != headerValue {
+				t.Errorf("req.Header.Get(%q): got %q, want %q", headerName, v, headerValue)
+			}
+		}))
+
+	p.SetUpstreamProxy(&url.URL{
+		Scheme: "http",
+		Host:   tl.Addr().String(),
+	})
+	go p.Serve(newTimeoutListener(l, 0))
+
+	conn, err := l.dial()
+	if err != nil {
+		t.Fatalf("net.Dial(): got %v, want no error", err)
+	}
+	defer conn.Close()
+
+	req, err := http.NewRequest(http.MethodConnect, "foobar:80", http.NoBody)
+	if err != nil {
+		t.Fatalf("http.NewRequest(): got %v, want no error", err)
+	}
+	if err := req.Write(conn); err != nil {
+		t.Fatalf("req.Write(): got %v, want no error", err)
+	}
+	res, err := http.ReadResponse(bufio.NewReader(conn), req)
+	if err != nil {
+		t.Fatalf("http.ReadResponse(): got %v, want no error", err)
+	}
+	res.Body.Close()
+
+	if got, want := res.StatusCode, 200; got != want {
+		t.Errorf("res.StatusCode: got %d, want %d", got, want)
+	}
+}
