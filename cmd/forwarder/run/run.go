@@ -43,7 +43,7 @@ type command struct {
 	goleak              bool
 }
 
-func (c *command) runE(cmd *cobra.Command, _ []string) error {
+func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 	config, err := cobrautil.DescribeFlags(cmd.Flags(), false, cobrautil.Plain)
 	if err != nil {
 		return err
@@ -54,6 +54,13 @@ func (c *command) runE(cmd *cobra.Command, _ []string) error {
 	}
 	logger := stdlog.New(c.logConfig)
 	logger.Debugf("configuration\n%s", config)
+
+	defer func() {
+		if cmdErr != nil {
+			logger.Errorf("fatal error exiting: %s", cmdErr)
+			cmd.SilenceErrors = true
+		}
+	}()
 
 	// Google Martian uses a global logger package.
 	ml := logger.Named("proxy")

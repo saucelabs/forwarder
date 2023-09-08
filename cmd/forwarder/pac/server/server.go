@@ -31,7 +31,7 @@ type command struct {
 	logConfig           *log.Config
 }
 
-func (c *command) runE(cmd *cobra.Command, _ []string) error {
+func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 	config, err := cobrautil.DescribeFlags(cmd.Flags(), false, cobrautil.Plain)
 	if err != nil {
 		return err
@@ -42,6 +42,13 @@ func (c *command) runE(cmd *cobra.Command, _ []string) error {
 	}
 	logger := stdlog.New(c.logConfig)
 	logger.Debugf("configuration\n%s", config)
+
+	defer func() {
+		if cmdErr != nil {
+			logger.Errorf("fatal error exiting: %s", cmdErr)
+			cmd.SilenceErrors = true
+		}
+	}()
 
 	if len(c.dnsConfig.Servers) > 0 {
 		s := strings.ReplaceAll(fmt.Sprintf("%s", c.dnsConfig.Servers), " ", ", ")
