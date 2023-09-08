@@ -66,6 +66,10 @@ type Proxy struct {
 	// and uses the response body as the connection.
 	ConnectPassthrough bool
 
+	// ConnectRequestModifier modifies CONNECT requests to upstream proxy.
+	// If ConnectPassthrough is enabled, this is ignored.
+	ConnectRequestModifier func(*http.Request) error
+
 	// WithoutWarning disables the warning header added to requests and responses when modifier errors occur.
 	WithoutWarning bool
 
@@ -810,9 +814,11 @@ func (p *Proxy) connectHTTP(req *http.Request, proxyURL *url.URL) (res *http.Res
 
 	if proxyURL.Scheme == "https" {
 		d := dialvia.HTTPSProxy(p.dial, proxyURL, p.clientTLSConfig())
+		d.ConnectRequestModifier = p.ConnectRequestModifier
 		res, conn, err = d.DialContextR(req.Context(), "tcp", req.URL.Host)
 	} else {
 		d := dialvia.HTTPProxy(p.dial, proxyURL)
+		d.ConnectRequestModifier = p.ConnectRequestModifier
 		res, conn, err = d.DialContextR(req.Context(), "tcp", req.URL.Host)
 	}
 
