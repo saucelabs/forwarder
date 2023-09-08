@@ -59,6 +59,13 @@ func PAC(fs *pflag.FlagSet, pac **url.URL) {
 			"The data URI scheme is supported, the format is data:base64,<encoded data>. ")
 }
 
+func ProxyHeaders(fs *pflag.FlagSet, headers *[]header.Header) {
+	fs.Var(anyflag.NewSliceValueWithRedact[header.Header](*headers, headers, header.ParseHeader, RedactHeader),
+		"proxy-header", "<header>"+
+			"Add or remove HTTP headers on the CONNECT request to the upstream proxy. "+
+			"See the documentation for the -H, --header flag for more details on the format. ")
+}
+
 func RequestHeaders(fs *pflag.FlagSet, headers *[]header.Header) {
 	fs.VarP(anyflag.NewSliceValueWithRedact[header.Header](*headers, headers, header.ParseHeader, RedactHeader),
 		"header", "H", "<header>"+

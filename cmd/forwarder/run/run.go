@@ -178,6 +178,7 @@ func Command() (cmd *cobra.Command) {
 		bind.HTTPTransportConfig(fs, c.httpTransportConfig)
 		bind.PAC(fs, &c.pac)
 		bind.Credentials(fs, &c.credentials)
+		bind.ProxyHeaders(fs, &c.proxyHeaders)
 		bind.RequestHeaders(fs, &c.requestHeaders)
 		bind.ResponseHeaders(fs, &c.responseHeaders)
 		bind.HTTPProxyConfig(fs, c.httpProxyConfig, c.logConfig)
