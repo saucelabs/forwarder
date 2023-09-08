@@ -55,9 +55,21 @@ func BindAll(cmd *cobra.Command, envPrefix, configFileFlagName string) error {
 		ok = true
 		fs.VisitAll(func(f *pflag.Flag) {
 			if !f.Changed && v.IsSet(f.Name) {
-				if err := setFlagFromViper(f, v.Get(f.Name)); err != nil {
-					fmt.Fprintf(cmd.ErrOrStderr(), "%s: %s\n", f.Name, err)
+				value := v.Get(f.Name)
+				if err := setFlagFromViper(f, value); err != nil {
+					var flagName string
+					if f.Shorthand != "" && f.ShorthandDeprecated == "" {
+						flagName = fmt.Sprintf("-%s, --%s", f.Shorthand, f.Name)
+					} else {
+						flagName = fmt.Sprintf("--%s", f.Name)
+					}
+					fmt.Fprintf(cmd.ErrOrStderr(), "invalid argument %q for %q flag: %v", value, flagName, err)
 					ok = false
+				} else {
+					if f.Deprecated != "" {
+						fmt.Fprintf(cmd.ErrOrStderr(), "Flag --%s has been deprecated, %s\n", f.Name, f.Deprecated)
+					}
+					f.Changed = true
 				}
 			}
 		})
