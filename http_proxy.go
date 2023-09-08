@@ -66,17 +66,18 @@ type ProxyFunc func(*http.Request) (*url.URL, error)
 
 type HTTPProxyConfig struct {
 	HTTPServerConfig
-	Name               string
-	MITM               *MITMConfig
-	ProxyLocalhost     ProxyLocalhostMode
-	UpstreamProxy      *url.URL
-	UpstreamProxyFunc  ProxyFunc
-	RequestModifiers   []martian.RequestModifier
-	ResponseModifiers  []martian.ResponseModifier
-	ConnectPassthrough bool
-	CloseAfterReply    bool
-	DenyDomains        []*regexp.Regexp
-	DenyDomainsExclude []*regexp.Regexp
+	Name                   string
+	MITM                   *MITMConfig
+	ProxyLocalhost         ProxyLocalhostMode
+	UpstreamProxy          *url.URL
+	UpstreamProxyFunc      ProxyFunc
+	RequestModifiers       []martian.RequestModifier
+	ResponseModifiers      []martian.ResponseModifier
+	ConnectRequestModifier func(*http.Request) error
+	ConnectPassthrough     bool
+	CloseAfterReply        bool
+	DenyDomains            []*regexp.Regexp
+	DenyDomainsExclude     []*regexp.Regexp
 
 	// TestingHTTPHandler uses Martian's [http.Handler] implementation
 	// over [http.Server] instead of the default TCP server.
@@ -189,6 +190,7 @@ func (hp *HTTPProxy) configureProxy() error {
 	}
 
 	hp.proxy.AllowHTTP = true
+	hp.proxy.ConnectRequestModifier = hp.config.ConnectRequestModifier
 	hp.proxy.ConnectPassthrough = hp.config.ConnectPassthrough
 	hp.proxy.WithoutWarning = true
 	hp.proxy.ErrorResponse = errorResponse
