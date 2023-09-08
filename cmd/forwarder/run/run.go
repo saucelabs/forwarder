@@ -33,6 +33,7 @@ type command struct {
 	httpTransportConfig *forwarder.HTTPTransportConfig
 	pac                 *url.URL
 	credentials         []*forwarder.HostPortUser
+	proxyHeaders        []header.Header
 	requestHeaders      []header.Header
 	responseHeaders     []header.Header
 	httpProxyConfig     *forwarder.HTTPProxyConfig
@@ -103,6 +104,18 @@ func (c *command) runE(cmd *cobra.Command, _ []string) error {
 	cm, err := forwarder.NewCredentialsMatcher(c.credentials, logger.Named("credentials"))
 	if err != nil {
 		return fmt.Errorf("credentials: %w", err)
+	}
+
+	if len(c.proxyHeaders) > 0 {
+		c.httpProxyConfig.ConnectRequestModifier = func(req *http.Request) error {
+			if req.Header == nil {
+				req.Header = http.Header{}
+			}
+			for _, h := range c.proxyHeaders {
+				h.Apply(req.Header)
+			}
+			return nil
+		}
 	}
 
 	if len(c.requestHeaders) > 0 {
