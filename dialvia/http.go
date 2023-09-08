@@ -22,6 +22,8 @@ type HTTPProxyDialer struct {
 	dial      ContextDialerFunc
 	proxyURL  *url.URL
 	tlsConfig *tls.Config
+
+	ConnectRequestModifier func(req *http.Request) error
 }
 
 func HTTPProxy(dial ContextDialerFunc, proxyURL *url.URL) *HTTPProxyDialer {
@@ -115,6 +117,12 @@ func (d *HTTPProxyDialer) DialContextR(ctx context.Context, network, addr string
 	if d.proxyURL.User != nil {
 		req.Header = make(http.Header, 1)
 		req.Header.Add("Proxy-Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(d.proxyURL.User.String())))
+	}
+	if cm := d.ConnectRequestModifier; cm != nil {
+		if err := cm(&req); err != nil {
+			conn.Close()
+			return nil, nil, err
+		}
 	}
 
 	if err := req.Write(pbw); err != nil {
