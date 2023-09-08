@@ -47,12 +47,14 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 	if err != nil {
 		return err
 	}
+	defer s.Close()
 
 	r := prometheus.NewRegistry()
 	a, err := forwarder.NewHTTPServer(c.apiServerConfig, forwarder.NewAPIHandler(r, s.Ready, config, ""), logger.Named("api"))
 	if err != nil {
 		return err
 	}
+	defer a.Close()
 
 	return runctx.NewGroup(s.Run, a.Run).Run()
 }

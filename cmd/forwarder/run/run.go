@@ -152,6 +152,7 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 		if err != nil {
 			return err
 		}
+		defer a.Close()
 		g.Add(a.Run)
 	}
 
