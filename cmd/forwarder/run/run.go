@@ -140,14 +140,17 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 	}
 
 	var g runctx.Group
-	p, err := forwarder.NewHTTPProxy(c.httpProxyConfig, pr, cm, rt, logger.Named("proxy"))
-	if err != nil {
-		return err
+	{
+		p, err := forwarder.NewHTTPProxy(c.httpProxyConfig, pr, cm, rt, logger.Named("proxy"))
+		if err != nil {
+			return err
+		}
+		defer p.Close()
+		g.Add(p.Run)
 	}
-	g.Add(p.Run)
 
 	if c.apiServerConfig.Addr != "" {
-		h := forwarder.NewAPIHandler(c.promReg, p.Ready, config, script)
+		h := forwarder.NewAPIHandler(c.promReg, nil, config, script)
 		a, err := forwarder.NewHTTPServer(c.apiServerConfig, h, logger.Named("api"))
 		if err != nil {
 			return err

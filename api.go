@@ -73,7 +73,7 @@ func (h *APIHandler) healthz(w http.ResponseWriter, _ *http.Request) {
 }
 
 func (h *APIHandler) readyz(w http.ResponseWriter, r *http.Request) {
-	if h.ready(r.Context()) {
+	if h.ready == nil || h.ready(r.Context()) {
 		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "text/plain")
 		w.Write([]byte("OK"))

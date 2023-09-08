@@ -50,7 +50,7 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 	defer s.Close()
 
 	r := prometheus.NewRegistry()
-	a, err := forwarder.NewHTTPServer(c.apiServerConfig, forwarder.NewAPIHandler(r, s.Ready, config, ""), logger.Named("api"))
+	a, err := forwarder.NewHTTPServer(c.apiServerConfig, forwarder.NewAPIHandler(r, nil, config, ""), logger.Named("api"))
 	if err != nil {
 		return err
 	}
