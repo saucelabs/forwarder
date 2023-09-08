@@ -18,7 +18,6 @@ import (
 	"net/url"
 	"regexp"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/saucelabs/forwarder/httplog"
@@ -121,11 +120,13 @@ type HTTPProxy struct {
 	log       log.Logger
 	proxy     *martian.Proxy
 	proxyFunc ProxyFunc
-	addr      atomic.Pointer[string]
+	listener  net.Listener
 
 	TLSConfig *tls.Config
 }
 
+// NewHTTPProxy creates a new HTTP proxy.
+// It is the caller's responsibility to call Close on the returned server.
 func NewHTTPProxy(cfg *HTTPProxyConfig, pr PACResolver, cm *CredentialsMatcher, rt http.RoundTripper, log log.Logger) (*HTTPProxy, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, err
@@ -159,6 +160,12 @@ func NewHTTPProxy(cfg *HTTPProxyConfig, pr PACResolver, cm *CredentialsMatcher, 
 	if err := hp.configureProxy(); err != nil {
 		return nil, err
 	}
+
+	l, err := hp.listen()
+	if err != nil {
+		return nil, err
+	}
+	hp.listener = l
 
 	return hp, nil
 }
@@ -472,15 +479,7 @@ func (hp *HTTPProxy) Handler() http.Handler {
 }
 
 func (hp *HTTPProxy) Run(ctx context.Context) error {
-	listener, err := hp.listener()
-	if err != nil {
-		return err
-	}
-	defer listener.Close()
-
-	addr := listener.Addr().String()
-	hp.addr.Store(&addr)
-	hp.log.Infof("server listen address=%s protocol=%s", addr, hp.config.Protocol)
+	var srv *http.Server
 
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -489,22 +488,27 @@ func (hp *HTTPProxy) Run(ctx context.Context) error {
 		defer wg.Done()
 
 		<-ctx.Done()
-		hp.proxy.Close()
-		listener.Close()
+		if srv != nil {
+			if err := srv.Shutdown(context.Background()); err != nil {
+				hp.log.Errorf("failed to shutdown server error=%s", err)
+			}
+		} else {
+			hp.Close()
+		}
 	}()
 
 	var srvErr error
 	if hp.config.TestingHTTPHandler {
 		hp.log.Infof("using http handler")
-		s := http.Server{
+		srv = &http.Server{
 			Handler:           hp.Handler(),
 			ReadTimeout:       hp.config.ReadTimeout,
 			ReadHeaderTimeout: hp.config.ReadHeaderTimeout,
 			WriteTimeout:      hp.config.WriteTimeout,
 		}
-		srvErr = s.Serve(listener)
+		srvErr = srv.Serve(hp.listener)
 	} else {
-		srvErr = hp.proxy.Serve(listener)
+		srvErr = hp.proxy.Serve(hp.listener)
 	}
 	if srvErr != nil {
 		if errors.Is(srvErr, net.ErrClosed) {
@@ -517,7 +521,7 @@ func (hp *HTTPProxy) Run(ctx context.Context) error {
 	return nil
 }
 
-func (hp *HTTPProxy) listener() (net.Listener, error) {
+func (hp *HTTPProxy) listen() (net.Listener, error) {
 	listener, err := net.Listen("tcp", hp.config.Addr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open listener on address %s: %w", hp.config.Addr, err)
@@ -534,16 +538,15 @@ func (hp *HTTPProxy) listener() (net.Listener, error) {
 	}
 }
 
-// Addr returns the address the server is listening on or an empty string if the server is not running.
+// Addr returns the address the server is listening on.
 func (hp *HTTPProxy) Addr() string {
-	addr := hp.addr.Load()
-	if addr == nil {
-		return ""
-	}
-	return *addr
+	return hp.listener.Addr().String()
 }
 
-// Ready returns true if the server is running and ready to accept requests.
-func (hp *HTTPProxy) Ready(_ context.Context) bool {
-	return hp.Addr() != ""
+func (hp *HTTPProxy) Close() error {
+	err := hp.listener.Close()
+	if !hp.proxy.Closing() {
+		hp.proxy.Close()
+	}
+	return err
 }
