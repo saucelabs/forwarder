@@ -29,6 +29,7 @@ func TestAbortIf(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer p.Close()
 
 	check := func(t *testing.T, rt http.RoundTripper) {
 		t.Helper()
@@ -93,9 +94,7 @@ func TestNopDialer(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := p.configureProxy(); err != nil {
-		t.Fatal(err)
-	}
+	defer p.Close()
 
 	req := &http.Request{
 		Method: http.MethodGet,
