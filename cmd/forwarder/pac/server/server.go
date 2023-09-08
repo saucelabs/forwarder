@@ -68,6 +68,7 @@ func (c *command) runE(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return err
 	}
+	defer s.Close()
 
 	return runctx.NewGroup(s.Run).Run()
 }

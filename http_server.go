@@ -15,13 +15,13 @@ import (
 	"net/http"
 	"net/url"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/saucelabs/forwarder/httplog"
 	"github.com/saucelabs/forwarder/log"
 	"github.com/saucelabs/forwarder/middleware"
+	"go.uber.org/multierr"
 )
 
 type Scheme string
@@ -105,12 +105,14 @@ func (c *HTTPServerConfig) Validate() error {
 }
 
 type HTTPServer struct {
-	config HTTPServerConfig
-	log    log.Logger
-	srv    *http.Server
-	addr   atomic.Pointer[string]
+	config   HTTPServerConfig
+	log      log.Logger
+	srv      *http.Server
+	listener net.Listener
 }
 
+// NewHTTPServer creates a new HTTP server.
+// It is the caller's responsibility to call Close on the returned server.
 func NewHTTPServer(cfg *HTTPServerConfig, h http.Handler, log log.Logger) (*HTTPServer, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, err
@@ -140,6 +142,14 @@ func NewHTTPServer(cfg *HTTPServerConfig, h http.Handler, log log.Logger) (*HTTP
 			return nil, err
 		}
 	}
+
+	l, err := hs.listen()
+	if err != nil {
+		return nil, err
+	}
+	hs.listener = l
+
+	hs.log.Infof("HTTP server listen address=%s protocol=%s", l.Addr(), hs.config.Protocol)
 
 	return hs, nil
 }
@@ -188,16 +198,6 @@ func (hs *HTTPServer) configureHTTP2() error {
 }
 
 func (hs *HTTPServer) Run(ctx context.Context) error {
-	listener, err := hs.listener()
-	if err != nil {
-		return err
-	}
-	defer listener.Close()
-
-	addr := listener.Addr().String()
-	hs.addr.Store(&addr)
-	hs.log.Infof("HTTP server listen address=%s protocol=%s", addr, hs.config.Protocol)
-
 	var wg sync.WaitGroup
 	wg.Add(1)
 
@@ -213,9 +213,9 @@ func (hs *HTTPServer) Run(ctx context.Context) error {
 	var srvErr error
 	switch hs.config.Protocol {
 	case HTTPScheme:
-		srvErr = hs.srv.Serve(listener)
+		srvErr = hs.srv.Serve(hs.listener)
 	case HTTP2Scheme, HTTPSScheme:
-		srvErr = hs.srv.ServeTLS(listener, "", "")
+		srvErr = hs.srv.ServeTLS(hs.listener, "", "")
 	default:
 		return fmt.Errorf("invalid protocol %q", hs.config.Protocol)
 	}
@@ -231,7 +231,7 @@ func (hs *HTTPServer) Run(ctx context.Context) error {
 	return nil
 }
 
-func (hs *HTTPServer) listener() (net.Listener, error) {
+func (hs *HTTPServer) listen() (net.Listener, error) {
 	switch hs.config.Protocol {
 	case HTTPScheme, HTTPSScheme, HTTP2Scheme:
 		listener, err := net.Listen("tcp", hs.srv.Addr)
@@ -244,16 +244,11 @@ func (hs *HTTPServer) listener() (net.Listener, error) {
 	}
 }
 
-// Addr returns the address the server is listening on or an empty string if the server is not running.
+// Addr returns the address the server is listening on.
 func (hs *HTTPServer) Addr() string {
-	addr := hs.addr.Load()
-	if addr == nil {
-		return ""
-	}
-	return *addr
+	return hs.listener.Addr().String()
 }
 
-// Ready returns true if the server is running and ready to accept requests.
-func (hs *HTTPServer) Ready(_ context.Context) bool {
-	return hs.Addr() != ""
+func (hs *HTTPServer) Close() error {
+	return multierr.Combine(hs.listener.Close(), hs.srv.Close())
 }
