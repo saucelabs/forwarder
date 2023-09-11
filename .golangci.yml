@@ -77,6 +77,7 @@ issues:
     - "Error return value of `cmd.MarkFlag.+` is not checked"
     - "Error return value of `net.SplitHostPort` is not checked"
     - "Error return value of `w.Write` is not checked"
+    - "Limiter.WaitN` is not checked"
     - "Function 'runE' has too many statements"
     - "Function 'runE' is too long"
     - "Temporary has been deprecated since Go 1.18 because it shouldn't be used"
