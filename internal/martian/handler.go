@@ -89,7 +89,7 @@ func (p proxyHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	}
 	ctx := withSession(session)
 
-	outreq := req.Clone(ctx.addToContext(req.Context()))
+	outreq := req.Clone(p.requestContext(ctx, req))
 	if req.ContentLength == 0 {
 		outreq.Body = http.NoBody
 	}
