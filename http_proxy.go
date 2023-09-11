@@ -100,7 +100,7 @@ func (c *HTTPProxyConfig) Validate() error {
 	if err := c.HTTPServerConfig.Validate(); err != nil {
 		return err
 	}
-	if c.Protocol != HTTPScheme && c.Protocol != HTTPSScheme && c.Protocol != TunnelScheme {
+	if c.Protocol != HTTPScheme && c.Protocol != HTTPSScheme {
 		return fmt.Errorf("unsupported protocol: %s", c.Protocol)
 	}
 	if !c.ProxyLocalhost.isValid() {

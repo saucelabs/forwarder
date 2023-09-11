@@ -27,10 +27,9 @@ import (
 type Scheme string
 
 const (
-	HTTPScheme   Scheme = "http"
-	HTTPSScheme  Scheme = "https"
-	HTTP2Scheme  Scheme = "h2"
-	TunnelScheme Scheme = "tunnel"
+	HTTPScheme  Scheme = "http"
+	HTTPSScheme Scheme = "https"
+	HTTP2Scheme Scheme = "h2"
 )
 
 func (s Scheme) String() string {
