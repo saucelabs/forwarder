@@ -280,8 +280,10 @@ func (hp *HTTPProxy) upstreamProxyURL() *url.URL {
 	proxyURL := new(url.URL)
 	*proxyURL = *hp.config.UpstreamProxy
 
-	if u := hp.creds.MatchURL(proxyURL); u != nil {
-		proxyURL.User = u
+	if proxyURL.User == nil {
+		if u := hp.creds.MatchURL(proxyURL); u != nil {
+			proxyURL.User = u
+		}
 	}
 
 	return proxyURL
