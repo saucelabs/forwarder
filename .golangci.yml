@@ -25,6 +25,7 @@ linters:
     - exhaustive
     - exhaustivestruct
     - exhaustruct
+    - gochecknoglobals
     - gochecknoinits
     - godox
     - goerr113
@@ -90,16 +91,11 @@ issues:
     - "importShadow: shadow of imported package 'url'"
     - "commentedOutCode: may want to remove commented-out code"
   exclude-rules:
-    - path: cmd/forwarder/version/version.go
-      linters:
-        - gochecknoglobals
-
     - path: _test\.go
       linters:
         - bodyclose
         - errcheck
         - funlen
-        - gochecknoglobals
         - gocognit
         - gomnd
         - gosec
@@ -109,7 +105,6 @@ issues:
 
     - path: e2e/
       linters:
-        - gochecknoglobals
         - prealloc
         - nakedret
         - nosprintfhostport
@@ -119,14 +114,9 @@ issues:
         - forbidigo
       text: use of `fmt.Print
 
-    - path: internal/version/version.go
-      linters:
-        - gochecknoglobals
-
     - path: internal/martian
       linters:
         - goheader
-        - gochecknoglobals
         - errcheck
         - gosec
 
@@ -138,14 +128,6 @@ issues:
     - linters:
         - thelper
       source: "configure: func\\(t \\*testing.T"
-
-    - linters:
-        - gochecknoglobals
-      source: "(nil)"
-
-    - linters:
-        - gochecknoglobals
-      source: "Default"
 
     - linters:
         - gocritic
