@@ -129,6 +129,37 @@ type HTTPProxy struct {
 // NewHTTPProxy creates a new HTTP proxy.
 // It is the caller's responsibility to call Close on the returned server.
 func NewHTTPProxy(cfg *HTTPProxyConfig, pr PACResolver, cm *CredentialsMatcher, rt http.RoundTripper, log log.Logger) (*HTTPProxy, error) {
+	hp, err := newHTTPProxy(cfg, pr, cm, rt, log)
+	if err != nil {
+		return nil, err
+	}
+
+	if hp.config.Protocol == HTTPSScheme {
+		if err := hp.configureHTTPS(); err != nil {
+			return nil, err
+		}
+	}
+
+	l, err := hp.listen()
+	if err != nil {
+		return nil, err
+	}
+	hp.listener = l
+
+	return hp, nil
+}
+
+// NewHTTPProxyHandler is like NewHTTPProxy but returns http.Handler instead of *HTTPProxy.
+func NewHTTPProxyHandler(cfg *HTTPProxyConfig, pr PACResolver, cm *CredentialsMatcher, rt http.RoundTripper, log log.Logger) (http.Handler, error) {
+	hp, err := newHTTPProxy(cfg, pr, cm, rt, log)
+	if err != nil {
+		return nil, err
+	}
+
+	return hp.handler(), nil
+}
+
+func newHTTPProxy(cfg *HTTPProxyConfig, pr PACResolver, cm *CredentialsMatcher, rt http.RoundTripper, log log.Logger) (*HTTPProxy, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, err
 	}
@@ -153,20 +184,9 @@ func NewHTTPProxy(cfg *HTTPProxyConfig, pr PACResolver, cm *CredentialsMatcher, 
 		log:       log,
 	}
 
-	if hp.config.Protocol == HTTPSScheme {
-		if err := hp.configureHTTPS(); err != nil {
-			return nil, err
-		}
-	}
 	if err := hp.configureProxy(); err != nil {
 		return nil, err
 	}
-
-	l, err := hp.listen()
-	if err != nil {
-		return nil, err
-	}
-	hp.listener = l
 
 	return hp, nil
 }
