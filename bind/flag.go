@@ -98,7 +98,8 @@ func HTTPProxyConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPProxyConfig, lcfg *lo
 			"No protocol specified will be treated as HTTP proxy. "+
 			"If the port number is not specified, it is assumed to be 1080. "+
 			"The basic authentication username and password can be specified in the host string e.g. user:pass@host:port. "+
-			"Alternatively, you can use the -c, --credentials flag to specify the credentials. ")
+			"Alternatively, you can use the -c, --credentials flag to specify the credentials. "+
+			"If both are specified, the proxy flag takes precedence. ")
 
 	proxyLocalhostValues := []forwarder.ProxyLocalhostMode{
 		forwarder.DenyProxyLocalhost,
