@@ -48,7 +48,7 @@ func TestAbortIf(t *testing.T) {
 	}
 
 	t.Run("http", func(t *testing.T) {
-		s := httptest.NewServer(p.Handler())
+		s := httptest.NewServer(p.handler())
 		defer s.Close()
 
 		tr := &http.Transport{
@@ -66,7 +66,7 @@ func TestAbortIf(t *testing.T) {
 
 		var s http2.Server
 		go s.ServeConn(c1, &http2.ServeConnOpts{
-			Handler: p.Handler(),
+			Handler: p.handler(),
 		})
 
 		var tr http2.Transport

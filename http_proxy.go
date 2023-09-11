@@ -476,7 +476,7 @@ func (hp *HTTPProxy) ProxyFunc() ProxyFunc {
 	return hp.proxyFunc
 }
 
-func (hp *HTTPProxy) Handler() http.Handler {
+func (hp *HTTPProxy) handler() http.Handler {
 	return hp.proxy.Handler()
 }
 
@@ -503,7 +503,7 @@ func (hp *HTTPProxy) Run(ctx context.Context) error {
 	if hp.config.TestingHTTPHandler {
 		hp.log.Infof("using http handler")
 		srv = &http.Server{
-			Handler:           hp.Handler(),
+			Handler:           hp.handler(),
 			ReadTimeout:       hp.config.ReadTimeout,
 			ReadHeaderTimeout: hp.config.ReadHeaderTimeout,
 			WriteTimeout:      hp.config.WriteTimeout,
