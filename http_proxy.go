@@ -63,6 +63,15 @@ func (m ProxyLocalhostMode) isValid() bool {
 
 type ProxyFunc func(*http.Request) (*url.URL, error)
 
+// Alias all martian types to avoid exposing them.
+type (
+	RequestModifier         = martian.RequestModifier
+	ResponseModifier        = martian.ResponseModifier
+	RequestResponseModifier = martian.RequestResponseModifier
+	RequestModifierFunc     = martian.RequestModifierFunc
+	ResponseModifierFunc    = martian.ResponseModifierFunc
+)
+
 type HTTPProxyConfig struct {
 	HTTPServerConfig
 	Name                   string
@@ -70,8 +79,8 @@ type HTTPProxyConfig struct {
 	ProxyLocalhost         ProxyLocalhostMode
 	UpstreamProxy          *url.URL
 	UpstreamProxyFunc      ProxyFunc
-	RequestModifiers       []martian.RequestModifier
-	ResponseModifiers      []martian.ResponseModifier
+	RequestModifiers       []RequestModifier
+	ResponseModifiers      []ResponseModifier
 	ConnectRequestModifier func(*http.Request) error
 	ConnectPassthrough     bool
 	CloseAfterReply        bool
