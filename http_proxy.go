@@ -162,11 +162,13 @@ func NewHTTPProxy(cfg *HTTPProxyConfig, pr PACResolver, cm *CredentialsMatcher, 
 		return nil, err
 	}
 
-	l, err := hp.listen()
-	if err != nil {
-		return nil, err
+	if cfg.Addr != "" {
+		l, err := hp.listen()
+		if err != nil {
+			return nil, err
+		}
+		hp.listener = l
 	}
-	hp.listener = l
 
 	return hp, nil
 }
@@ -481,9 +483,15 @@ func (hp *HTTPProxy) Handler() http.Handler {
 }
 
 func (hp *HTTPProxy) Run(ctx context.Context) error {
-	var srv *http.Server
+	if hp.listener == nil {
+		return fmt.Errorf("no address configured")
+	}
 
-	var wg sync.WaitGroup
+	var (
+		srv *http.Server
+		wg  sync.WaitGroup
+	)
+
 	wg.Add(1)
 
 	go func() {
@@ -542,10 +550,18 @@ func (hp *HTTPProxy) listen() (net.Listener, error) {
 
 // Addr returns the address the server is listening on.
 func (hp *HTTPProxy) Addr() string {
+	if hp.listener == nil {
+		return ""
+	}
+
 	return hp.listener.Addr().String()
 }
 
 func (hp *HTTPProxy) Close() error {
+	if hp.listener == nil {
+		return nil
+	}
+
 	err := hp.listener.Close()
 	if !hp.proxy.Closing() {
 		hp.proxy.Close()
