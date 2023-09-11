@@ -26,6 +26,7 @@ import (
 	"github.com/saucelabs/forwarder/log"
 	"github.com/saucelabs/forwarder/middleware"
 	"github.com/saucelabs/forwarder/pac"
+	"github.com/saucelabs/forwarder/ratelimit"
 	"github.com/saucelabs/forwarder/ruleset"
 )
 
@@ -85,6 +86,8 @@ type HTTPProxyConfig struct {
 	ConnectRequestModifier func(*http.Request) error
 	ConnectPassthrough     bool
 	CloseAfterReply        bool
+	ReadLimit              SizeSuffix
+	WriteLimit             SizeSuffix
 
 	// TestingHTTPHandler uses Martian's [http.Handler] implementation
 	// over [http.Server] instead of the default TCP server.
@@ -552,6 +555,13 @@ func (hp *HTTPProxy) listen() (net.Listener, error) {
 	listener, err := net.Listen("tcp", hp.config.Addr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open listener on address %s: %w", hp.config.Addr, err)
+	}
+
+	if rl, wl := int64(hp.config.ReadLimit), int64(hp.config.WriteLimit); rl > 0 || wl > 0 {
+		// Notice that the ReadLimit stands for the read limit *from* a proxy, and the WriteLimit
+		// stands for the write limit *to* a proxy, thus the ReadLimit is in fact
+		// a txBandwidth and the WriteLimit is a rxBandwidth.
+		listener = ratelimit.NewListener(listener, wl, rl)
 	}
 
 	switch hp.config.Protocol {
