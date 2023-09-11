@@ -62,6 +62,11 @@ type Proxy struct {
 	// AllowHTTP disables automatic HTTP to HTTPS upgrades when the listener is TLS.
 	AllowHTTP bool
 
+	// RequestIDHeader specifies a special header name that the proxy will use to identify requests.
+	// If the header is present in the request, the proxy will associate the value with the request in the logs.
+	// If empty, no action is taken, and the proxy will generate a new request ID.
+	RequestIDHeader string
+
 	// ConnectPassthrough passes CONNECT requests to the RoundTripper,
 	// and uses the response body as the connection.
 	ConnectPassthrough bool
@@ -368,7 +373,7 @@ func (p *Proxy) readRequest(ctx *Context, conn net.Conn, brw *bufio.ReadWriter) 
 		default:
 		}
 
-		req = req.WithContext(ctx.addToContext(req.Context()))
+		req = req.WithContext(p.requestContext(ctx, req))
 	}
 
 	// Adjust the read deadline if necessary.
@@ -379,6 +384,19 @@ func (p *Proxy) readRequest(ctx *Context, conn net.Conn, brw *bufio.ReadWriter) 
 	}
 
 	return req, err
+}
+
+func (p *Proxy) requestContext(mctx *Context, req *http.Request) context.Context {
+	ctx := req.Context()
+	ctx = mctx.addToContext(ctx)
+
+	if h := p.RequestIDHeader; h != "" {
+		if id := req.Header.Get(h); id != "" {
+			ctx = context.WithValue(ctx, log.TraceContextKey, id)
+		}
+	}
+
+	return ctx
 }
 
 func (p *Proxy) handleConnectRequest(ctx *Context, req *http.Request, session *Session, brw *bufio.ReadWriter, conn net.Conn) error {
