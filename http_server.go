@@ -117,6 +117,9 @@ func NewHTTPServer(cfg *HTTPServerConfig, h http.Handler, log log.Logger) (*HTTP
 	if err := cfg.Validate(); err != nil {
 		return nil, err
 	}
+	if cfg.Addr == "" {
+		return nil, errors.New("address must be set")
+	}
 
 	hs := &HTTPServer{
 		config: *cfg,
