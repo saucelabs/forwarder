@@ -120,6 +120,14 @@ func HTTPProxyConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPProxyConfig, lcfg *lo
 		"<name>"+
 			"If the header is present in the request, "+
 			"the proxy will associate the value with the request in the logs. ")
+
+	fs.Var(&cfg.ReadLimit, "read-limit", "<bandwidth>"+
+		"Global read rate limit in bytes per second i.e. how many bytes per second you can receive from a proxy. "+
+		"Accepts binary format (e.g. 1.5Ki, 1Mi, 3.6Gi). ")
+
+	fs.Var(&cfg.WriteLimit, "write-limit", "<bandwidth>"+
+		"Global write rate limit in bytes per second i.e. how many bytes per second you can send to proxy. "+
+		"Accepts binary format (e.g. 1.5Ki, 1Mi, 3.6Gi). ")
 }
 
 func DenyDomains(fs *pflag.FlagSet, cfg *[]ruleset.RegexpListItem) {
