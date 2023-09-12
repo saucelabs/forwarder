@@ -32,7 +32,12 @@ type APIHandler struct {
 	patterns []string
 }
 
-func NewAPIHandler(r prometheus.Gatherer, ready func(ctx context.Context) bool, config, pac string) *APIHandler {
+type APIEndpoint struct {
+	Path    string
+	Handler http.Handler
+}
+
+func NewAPIHandler(r prometheus.Gatherer, ready func(ctx context.Context) bool, config, pac string, extraEndpoints ...APIEndpoint) *APIHandler {
 	m := http.NewServeMux()
 	a := &APIHandler{
 		mux:    m,
@@ -53,6 +58,10 @@ func NewAPIHandler(r prometheus.Gatherer, ready func(ctx context.Context) bool, 
 	handleFunc("/configz", a.configz)
 	handleFunc("/pac", a.pac)
 	handleFunc("/version", a.version)
+
+	for _, e := range extraEndpoints {
+		handleFunc(e.Path, e.Handler.ServeHTTP)
+	}
 
 	handleFunc("/debug/pprof/", pprof.Index)
 	m.HandleFunc("/debug/pprof/profile", pprof.Profile)
