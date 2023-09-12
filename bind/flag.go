@@ -128,6 +128,11 @@ func HTTPProxyConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPProxyConfig, lcfg *lo
 			"Use this flag multiple times to specify multiple deny domain excludes. "+
 			"This flag takes precedence over deny-domain. "+
 			"Can be specified only if --deny-domain is also specified. ")
+
+	fs.StringVar(&cfg.RequestIDHeader, "log-http-request-id-header", cfg.RequestIDHeader,
+		"<name>"+
+			"If the header is present in the request, "+
+			"the proxy will associate the value with the request in the logs. ")
 }
 
 func MITMConfig(fs *pflag.FlagSet, mitm *bool, cfg *forwarder.MITMConfig) {
