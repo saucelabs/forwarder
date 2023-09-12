@@ -9,26 +9,22 @@ package forwarder
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"net/http"
 	"net/http/pprof"
-	"runtime"
 	"sort"
 	"text/template"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/saucelabs/forwarder/internal/version"
 )
 
 // APIHandler serves API endpoints.
 // It provides health and readiness endpoints prometheus metrics, and pprof debug endpoints.
 type APIHandler struct {
-	mux    *http.ServeMux
-	ready  func(ctx context.Context) bool
-	config string
-	script string
+	mux   *http.ServeMux
+	ready func(ctx context.Context) bool
 
+	title    string
 	patterns []string
 }
 
@@ -37,13 +33,12 @@ type APIEndpoint struct {
 	Handler http.Handler
 }
 
-func NewAPIHandler(r prometheus.Gatherer, ready func(ctx context.Context) bool, config, pac string, extraEndpoints ...APIEndpoint) *APIHandler {
+func NewAPIHandler(title string, r prometheus.Gatherer, ready func(ctx context.Context) bool, extraEndpoints ...APIEndpoint) *APIHandler {
 	m := http.NewServeMux()
 	a := &APIHandler{
-		mux:    m,
-		ready:  ready,
-		config: config,
-		script: pac,
+		mux:   m,
+		ready: ready,
+		title: title,
 	}
 
 	var indexPatterns []string
@@ -55,9 +50,6 @@ func NewAPIHandler(r prometheus.Gatherer, ready func(ctx context.Context) bool, 
 	handleFunc("/metrics", promhttp.HandlerFor(r, promhttp.HandlerOpts{}).ServeHTTP)
 	handleFunc("/healthz", a.healthz)
 	handleFunc("/readyz", a.readyz)
-	handleFunc("/configz", a.configz)
-	handleFunc("/pac", a.pac)
-	handleFunc("/version", a.version)
 
 	for _, e := range extraEndpoints {
 		handleFunc(e.Path, e.Handler.ServeHTTP)
@@ -93,46 +85,13 @@ func (h *APIHandler) readyz(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *APIHandler) configz(w http.ResponseWriter, _ *http.Request) {
-	w.WriteHeader(http.StatusOK)
-	w.Header().Set("Content-Type", "text/plain")
-	w.Write([]byte(h.config))
-}
-
-func (h *APIHandler) pac(w http.ResponseWriter, _ *http.Request) {
-	w.Header().Set("Content-Type", "application/x-ns-proxy-autoconfig")
-	w.Write([]byte(h.script))
-}
-
-func (h *APIHandler) version(w http.ResponseWriter, _ *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	v := struct {
-		Version string `json:"version"`
-		Time    string `json:"time"`
-		Commit  string `json:"commit"`
-
-		GoArch    string `json:"go_arch"`
-		GOOS      string `json:"go_os"`
-		GoVersion string `json:"go_version"`
-	}{
-		Version: version.Version,
-		Time:    version.Time,
-		Commit:  version.Commit,
-
-		GoArch:    runtime.GOARCH,
-		GOOS:      runtime.GOOS,
-		GoVersion: runtime.Version(),
-	}
-	json.NewEncoder(w).Encode(v) //nolint // ignore error
-}
-
 const indexTemplate = `<!DOCTYPE html>
 <html>
 <head>
-<title>Forwarder {{.Version}}</title>
+<title>{{.Title}}</title>
 </head>
 <body>
-<h1>Forwarder {{.Version}}</h1>
+<h1>{{.Title}}</h1>
 <ul>
 {{range .Patterns}}
 <li><a href="{{.}}">{{.}}</a></li>
@@ -154,10 +113,10 @@ func (h *APIHandler) index(w http.ResponseWriter, _ *http.Request) {
 
 	var buf bytes.Buffer
 	if err := t.Execute(&buf, struct {
-		Version  string
+		Title    string
 		Patterns []string
 	}{
-		Version:  version.Version,
+		Title:    h.title,
 		Patterns: h.patterns,
 	}); err != nil {
 		w.Write([]byte(err.Error()))
