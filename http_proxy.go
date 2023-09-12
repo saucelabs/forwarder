@@ -79,6 +79,7 @@ type HTTPProxyConfig struct {
 	ProxyLocalhost         ProxyLocalhostMode
 	UpstreamProxy          *url.URL
 	UpstreamProxyFunc      ProxyFunc
+	RequestIDHeader        string
 	RequestModifiers       []RequestModifier
 	ResponseModifiers      []ResponseModifier
 	ConnectRequestModifier func(*http.Request) error
@@ -100,8 +101,9 @@ func DefaultHTTPProxyConfig() *HTTPProxyConfig {
 			ReadHeaderTimeout: 1 * time.Minute,
 			LogHTTPMode:       httplog.Errors,
 		},
-		Name:           "forwarder",
-		ProxyLocalhost: DenyProxyLocalhost,
+		Name:            "forwarder",
+		ProxyLocalhost:  DenyProxyLocalhost,
+		RequestIDHeader: "X-Request-Id",
 	}
 }
 
@@ -225,6 +227,7 @@ func (hp *HTTPProxy) configureProxy() error {
 	}
 
 	hp.proxy.AllowHTTP = true
+	hp.proxy.RequestIDHeader = hp.config.RequestIDHeader
 	hp.proxy.ConnectRequestModifier = hp.config.ConnectRequestModifier
 	hp.proxy.ConnectPassthrough = hp.config.ConnectPassthrough
 	hp.proxy.WithoutWarning = true
