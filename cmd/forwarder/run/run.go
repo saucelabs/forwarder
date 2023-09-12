@@ -17,11 +17,13 @@ import (
 	"github.com/saucelabs/forwarder/bind"
 	"github.com/saucelabs/forwarder/header"
 	martianlog "github.com/saucelabs/forwarder/internal/martian/log"
+	"github.com/saucelabs/forwarder/internal/version"
 	"github.com/saucelabs/forwarder/log"
 	"github.com/saucelabs/forwarder/log/stdlog"
 	"github.com/saucelabs/forwarder/pac"
 	"github.com/saucelabs/forwarder/runctx"
 	"github.com/saucelabs/forwarder/utils/cobrautil"
+	"github.com/saucelabs/forwarder/utils/httphandler"
 	"github.com/saucelabs/forwarder/utils/osdns"
 	"github.com/spf13/cobra"
 	"go.uber.org/goleak"
@@ -63,9 +65,7 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 		}
 	}()
 
-	// Google Martian uses a global logger package.
-	ml := logger.Named("proxy")
-	martianlog.SetLogger(ml)
+	martianlog.SetLogger(logger.Named("proxy"))
 
 	if len(c.dnsConfig.Servers) > 0 {
 		s := strings.ReplaceAll(fmt.Sprintf("%s", c.dnsConfig.Servers), " ", ", ")
@@ -76,9 +76,8 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 	}
 
 	var (
-		script string
-		pr     forwarder.PACResolver
-		rt     http.RoundTripper
+		pr forwarder.PACResolver
+		rt http.RoundTripper
 	)
 
 	{
@@ -89,13 +88,14 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 		}
 	}
 
+	var pacScript string
 	if c.pac != nil {
 		var err error
-		script, err = forwarder.ReadURLString(c.pac, rt)
+		pacScript, err = forwarder.ReadURLString(c.pac, rt)
 		if err != nil {
 			return fmt.Errorf("read PAC file: %w", err)
 		}
-		pr, err = pac.NewProxyResolverPool(&pac.ProxyResolverConfig{Script: script}, nil)
+		pr, err = pac.NewProxyResolverPool(&pac.ProxyResolverConfig{Script: pacScript}, nil)
 		if err != nil {
 			return err
 		}
@@ -150,7 +150,22 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 	}
 
 	if c.apiServerConfig.Addr != "" {
-		h := forwarder.NewAPIHandler(c.promReg, nil, config, script)
+		apiEndpoints := []forwarder.APIEndpoint{
+			{
+				Path:    "/configz",
+				Handler: httphandler.SendFileString("text/plain", config),
+			},
+			{
+				Path:    "/pac",
+				Handler: httphandler.SendFileString("application/x-ns-proxy-autoconfig", pacScript),
+			},
+			{
+				Path:    "/version",
+				Handler: httphandler.Version(version.Version, version.Time, version.Commit),
+			},
+		}
+
+		h := forwarder.NewAPIHandler("Forwarder "+version.Version, c.promReg, nil, apiEndpoints...)
 		a, err := forwarder.NewHTTPServer(c.apiServerConfig, h, logger.Named("api"))
 		if err != nil {
 			return err
