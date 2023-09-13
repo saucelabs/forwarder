@@ -25,6 +25,7 @@ import (
 	"sync"
 
 	"github.com/saucelabs/forwarder/internal/martian"
+	"go.uber.org/multierr"
 )
 
 type group struct {
@@ -38,23 +39,16 @@ type group struct {
 // aggregateErrors is set to true, the errors returned by each modifier in the group are
 // aggregated.
 func (g *group) ModifyRequest(req *http.Request) error {
-	var merr *martian.MultiError
+	var merr error
 	for _, reqmod := range g.reqmods {
 		if err := reqmod.ModifyRequest(req); err != nil {
 			if g.aggregateErrors {
-				if merr == nil {
-					merr = martian.NewMultiError()
-				}
-				merr.Add(err)
+				merr = multierr.Append(merr, err)
 				continue
 			}
 
 			return err
 		}
-	}
-
-	if merr == nil || merr.Empty() {
-		return nil
 	}
 
 	return merr
@@ -65,23 +59,16 @@ func (g *group) ModifyRequest(req *http.Request) error {
 // aggregateErrors is set to true, the errors returned by each modifier in the group are
 // aggregated.
 func (g *group) ModifyResponse(res *http.Response) error {
-	var merr *martian.MultiError
+	var merr error
 	for _, resmod := range g.resmods {
 		if err := resmod.ModifyResponse(res); err != nil {
 			if g.aggregateErrors {
-				if merr == nil {
-					merr = martian.NewMultiError()
-				}
-				merr.Add(err)
+				merr = multierr.Append(merr, err)
 				continue
 			}
 
 			return err
 		}
-	}
-
-	if merr == nil || merr.Empty() {
-		return nil
 	}
 
 	return merr

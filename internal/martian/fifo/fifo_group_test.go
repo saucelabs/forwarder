@@ -23,6 +23,7 @@ import (
 	_ "github.com/saucelabs/forwarder/internal/martian/header"
 	"github.com/saucelabs/forwarder/internal/martian/martiantest"
 	"github.com/saucelabs/forwarder/internal/martian/proxyutil"
+	"go.uber.org/multierr"
 )
 
 func TestModifyRequest(t *testing.T) {
@@ -86,9 +87,7 @@ func TestModifyRequestAggregatesErrors(t *testing.T) {
 		t.Fatalf("http.NewRequest(): got %v, want no error", err)
 	}
 
-	merr := martian.NewMultiError()
-	merr.Add(reqerr1)
-	merr.Add(reqerr2)
+	merr := multierr.Combine(reqerr1, reqerr2)
 
 	if err := fg.ModifyRequest(req); err == nil {
 		t.Fatalf("fg.ModifyRequest(): got %v, want not nil", err)
@@ -97,7 +96,7 @@ func TestModifyRequestAggregatesErrors(t *testing.T) {
 		t.Fatalf("fg.ModifyRequest(): got %v, want %v", err, merr)
 	}
 
-	if err, want := fg.ModifyRequest(req), "1. request error\n2. request error"; err.Error() != want {
+	if err, want := fg.ModifyRequest(req), "1. request error; 2. request error"; err.Error() != want {
 		t.Fatalf("fg.ModifyRequest(): got %v, want %v", err, want)
 	}
 }
@@ -160,9 +159,7 @@ func TestModifyResponseAggregatesErrors(t *testing.T) {
 
 	res := proxyutil.NewResponse(200, nil, req)
 
-	merr := martian.NewMultiError()
-	merr.Add(reserr1)
-	merr.Add(reserr2)
+	merr := multierr.Combine(reserr1, reserr2)
 
 	if err := fg.ModifyResponse(res); err == nil {
 		t.Fatalf("fg.ModifyResponse(): got %v, want %v", err, merr)
@@ -211,10 +208,7 @@ func TestModifyResponseInlineGroupsAggregateErrors(t *testing.T) {
 
 	res := proxyutil.NewResponse(200, nil, req)
 
-	merr := martian.NewMultiError()
-	merr.Add(reserr1)
-	merr.Add(reserr2)
-	merr.Add(reserr3)
+	merr := multierr.Combine(reserr1, reserr2, reserr3)
 
 	if err := ig.ModifyResponse(res); err == nil {
 		t.Fatalf("ig.ModifyResponse(): got %v, want %v", err, merr)
@@ -260,10 +254,7 @@ func TestModifyRequestInlineGroupsAggregateErrors(t *testing.T) {
 		t.Fatalf("http.NewRequest(): got %v, want no error", err)
 	}
 
-	merr := martian.NewMultiError()
-	merr.Add(reqerr1)
-	merr.Add(reqerr2)
-	merr.Add(reqerr3)
+	merr := multierr.Combine(reqerr1, reqerr2, reqerr3)
 
 	if err := ig.ModifyRequest(req); err == nil {
 		t.Fatalf("ig.ModifyRequest(): got %v, want not nil", err)
@@ -271,8 +262,7 @@ func TestModifyRequestInlineGroupsAggregateErrors(t *testing.T) {
 	if err := ig.ModifyRequest(req); err.Error() != merr.Error() {
 		t.Fatalf("ig.ModifyRequest(): got %v, want %v", err, merr)
 	}
-
-	if err, want := ig.ModifyRequest(req), "1. request error\n2. request error\n3. request error"; err.Error() != want {
+	if err, want := ig.ModifyRequest(req), "1. request error; 2. request error; 3. request error"; err.Error() != want {
 		t.Fatalf("ig.ModifyRequest(): got %v, want %v", err, want)
 	}
 }
