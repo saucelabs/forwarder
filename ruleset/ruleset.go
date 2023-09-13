@@ -53,3 +53,24 @@ func (r *Regexp) Match(s string) bool {
 	}
 	return r.include != nil && r.include.MatchString(s)
 }
+
+// ParseRegexp parses the given rules into a Regexp.
+// Rules that start with "-" are treated as exclude rules.
+func ParseRegexp(in []string) (*Regexp, error) {
+	var include, exclude []*regexp.Regexp
+	for _, rule := range in {
+		rule, ex := strings.CutPrefix(rule, "-")
+		reg, err := regexp.Compile(rule)
+		if err != nil {
+			return nil, err
+		}
+
+		if ex {
+			exclude = append(exclude, reg)
+		} else {
+			include = append(include, reg)
+		}
+	}
+
+	return NewRegexp(include, exclude)
+}
