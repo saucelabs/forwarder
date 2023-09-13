@@ -11,6 +11,7 @@ run:
     - middleware/delegator.go
     - utils/cobrautil/templates
     - utils/cobrautil/term
+    - sizesuffix
   silent: true
 
 linters:
