@@ -40,6 +40,7 @@ func AllSetups() []setup.Setup {
 	SetupFlagInsecure(l)
 	SetupFlagMITM(l)
 	SetupFlagDenyDomain(l)
+	SetupFlagRateLimit(l)
 	SetupSC2450(l)
 
 	return l.Build()
@@ -355,6 +356,23 @@ func SetupFlagDenyDomain(l *setupList) {
 						WithDenyDomains("google", "httpbin", "-httpbin")).
 				MustBuild(),
 			Run: run,
+		},
+	)
+}
+
+func SetupFlagRateLimit(l *setupList) {
+	l.Add(
+		setup.Setup{
+			Name: "flag-read-write-limit",
+			Compose: compose.NewBuilder().
+				AddService(
+					forwarder.HttpbinService()).
+				AddService(
+					forwarder.ProxyService().
+						WithReadLimit("1M").
+						WithWriteLimit("1M")).
+				MustBuild(),
+			Run: "^TestFlag(Read|Write)Limit$",
 		},
 	)
 }

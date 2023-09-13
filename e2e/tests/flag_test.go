@@ -9,9 +9,13 @@
 package tests
 
 import (
+	"bytes"
+	"fmt"
 	"net"
 	"net/http"
+	"sync"
 	"testing"
+	"time"
 )
 
 func TestFlagProxyLocalhost(t *testing.T) {
@@ -93,4 +97,64 @@ func TestFlagMITM(t *testing.T) {
 func TestFlagDenyDomain(t *testing.T) {
 	newClient(t, "https://www.google.com").GET("/").ExpectStatus(http.StatusForbidden)
 	newClient(t, httpbin).GET("/status/200").ExpectStatus(http.StatusOK)
+}
+
+func TestFlagReadLimit(t *testing.T) {
+	const (
+		// It streams 2 * 5MiB, the read limit is 1MiB/s, but minimum burst is 4MiB, so it should take approximately 6 seconds.
+		connections  = 2
+		size         = 5 * 1024 * 1024 // 5MiB
+		expectedTime = 6 * time.Second
+		epsilon      = expectedTime * 5 / 100 // 5%
+	)
+
+	testRateLimitHelper(t, connections, expectedTime, epsilon, func() {
+		c := newClient(t, httpbin)
+		c.GET(fmt.Sprintf("/stream-bytes/%d", size)).ExpectStatus(http.StatusOK).ExpectBodySize(size)
+	})
+}
+
+func TestFlagWriteLimit(t *testing.T) {
+	const (
+		// It streams 2 * 5MiB, the write limit is 1MiB/s, but minimum burst is 4MiB, so it should take approximately 6 seconds.
+		connections  = 2
+		size         = 5 * 1024 * 1024 // 5MiB
+		expectedTime = 6 * time.Second
+		epsilon      = expectedTime * 5 / 100 // 5%
+	)
+
+	testRateLimitHelper(t, connections, expectedTime, epsilon, func() {
+		c := newClient(t, httpbin)
+		c.GET("/count-bytes/", func(req *http.Request) {
+			req.Header.Set("Content-Type", "application/octet-stream")
+			req.Body = &bytesReaderCloser{bytes.NewReader(make([]byte, size))}
+		}).ExpectStatus(http.StatusOK).ExpectHeader("body-size", fmt.Sprintf("%d", size))
+	})
+}
+
+type bytesReaderCloser struct {
+	*bytes.Reader
+}
+
+func (b *bytesReaderCloser) Close() error {
+	return nil
+}
+
+func testRateLimitHelper(t *testing.T, workers int, expectedTime, epsilon time.Duration, cb func()) {
+	t.Helper()
+
+	var wg sync.WaitGroup
+
+	ts := time.Now()
+	for i := 0; i < workers; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			cb()
+		}()
+	}
+	wg.Wait()
+	if elapsed := time.Since(ts); elapsed < expectedTime-epsilon || elapsed > expectedTime+epsilon {
+		t.Fatalf("Expected request to take approximately %s, took %s", expectedTime, elapsed)
+	}
 }

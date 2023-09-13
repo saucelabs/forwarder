@@ -176,6 +176,16 @@ func (s *Service) WithDenyDomains(domains ...string) *Service {
 	return s
 }
 
+func (s *Service) WithReadLimit(limit string) *Service {
+	s.Environment["FORWARDER_READ_LIMIT"] = limit
+	return s
+}
+
+func (s *Service) WithWriteLimit(limit string) *Service {
+	s.Environment["FORWARDER_WRITE_LIMIT"] = limit
+	return s
+}
+
 func (s *Service) Service() *compose.Service {
 	return (*compose.Service)(s)
 }
