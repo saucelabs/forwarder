@@ -352,8 +352,7 @@ func SetupFlagDenyDomain(l *setupList) {
 					forwarder.HttpbinService()).
 				AddService(
 					forwarder.ProxyService().
-						WithDenyDomain("google", "httpbin").
-						WithDenyDomainExclude("httpbin")).
+						WithDenyDomain("google", "httpbin", "-httpbin")).
 				MustBuild(),
 			Run: run,
 		},

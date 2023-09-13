@@ -176,11 +176,6 @@ func (s *Service) WithDenyDomain(domains ...string) *Service {
 	return s
 }
 
-func (s *Service) WithDenyDomainExclude(domains ...string) *Service {
-	s.Environment["FORWARDER_DENY_DOMAIN_EXCLUDE"] = strings.Join(domains, ",")
-	return s
-}
-
 func (s *Service) Service() *compose.Service {
 	return (*compose.Service)(s)
 }
