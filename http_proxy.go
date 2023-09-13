@@ -16,7 +16,6 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"regexp"
 	"sync"
 	"time"
 
@@ -85,8 +84,7 @@ type HTTPProxyConfig struct {
 	ConnectRequestModifier func(*http.Request) error
 	ConnectPassthrough     bool
 	CloseAfterReply        bool
-	DenyDomains            []*regexp.Regexp
-	DenyDomainsExclude     []*regexp.Regexp
+	DenyDomains            []string
 
 	// TestingHTTPHandler uses Martian's [http.Handler] implementation
 	// over [http.Server] instead of the default TCP server.
@@ -321,8 +319,8 @@ func (hp *HTTPProxy) middlewareStack() (martian.RequestResponseModifier, error) 
 	if hp.config.ProxyLocalhost == DenyProxyLocalhost {
 		topg.AddRequestModifier(hp.denyLocalhost())
 	}
-	if len(hp.config.DenyDomains) != 0 || len(hp.config.DenyDomainsExclude) != 0 {
-		r, err := ruleset.NewRegexp(hp.config.DenyDomains, hp.config.DenyDomainsExclude)
+	if dd := hp.config.DenyDomains; dd != nil {
+		r, err := ruleset.ParseRegexp(dd)
 		if err != nil {
 			return nil, fmt.Errorf("deny domains: %w", err)
 		}
