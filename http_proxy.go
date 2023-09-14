@@ -80,6 +80,7 @@ type HTTPProxyConfig struct {
 	UpstreamProxy          *url.URL
 	UpstreamProxyFunc      ProxyFunc
 	DenyDomains            *ruleset.RegexpMatcher
+	DirectDomains          *ruleset.RegexpMatcher
 	RequestIDHeader        string
 	RequestModifiers       []RequestModifier
 	ResponseModifiers      []ResponseModifier
@@ -264,6 +265,10 @@ func (hp *HTTPProxy) configureProxy() error {
 		hp.log.Infof("no upstream proxy specified")
 	}
 
+	if hp.config.DirectDomains != nil {
+		hp.proxyFunc = hp.directDomains(hp.proxyFunc)
+	}
+
 	hp.log.Infof("localhost proxying mode=%s", hp.config.ProxyLocalhost)
 	if hp.config.ProxyLocalhost == DirectProxyLocalhost {
 		hp.proxyFunc = hp.directLocalhost(hp.proxyFunc)
@@ -443,6 +448,19 @@ func (hp *HTTPProxy) denyDomains(r *ruleset.RegexpMatcher) martian.RequestModifi
 	}, func(req *http.Request) *http.Response {
 		return errorResponse(req, ErrProxyDenied)
 	}, errors.New("domain access denied"))
+}
+
+func (hp *HTTPProxy) directDomains(fn ProxyFunc) ProxyFunc {
+	if fn == nil {
+		return nil
+	}
+
+	return func(req *http.Request) (*url.URL, error) {
+		if hp.config.DirectDomains.Match(req.URL.Hostname()) {
+			return nil, nil
+		}
+		return fn(req)
+	}
 }
 
 func (hp *HTTPProxy) directLocalhost(fn ProxyFunc) ProxyFunc {
