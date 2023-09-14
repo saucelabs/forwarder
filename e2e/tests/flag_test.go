@@ -13,9 +13,12 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"strings"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/saucelabs/forwarder/e2e/forwarder"
 )
 
 func TestFlagProxyLocalhost(t *testing.T) {
@@ -97,6 +100,20 @@ func TestFlagMITM(t *testing.T) {
 func TestFlagDenyDomain(t *testing.T) {
 	newClient(t, "https://www.google.com").GET("/").ExpectStatus(http.StatusForbidden)
 	newClient(t, httpbin).GET("/status/200").ExpectStatus(http.StatusOK)
+}
+
+func TestFlagDirectDomain(t *testing.T) {
+	viaHeader := newClient(t, httpbin).GET("/headers/").Header["Via"]
+	var success bool
+	for _, via := range viaHeader {
+		if strings.Contains(via, forwarder.UpstreamProxyServiceName) {
+			success = true
+		}
+	}
+
+	if success {
+		t.Fatalf("%s via header found", forwarder.UpstreamProxyServiceName)
+	}
 }
 
 func TestFlagReadLimit(t *testing.T) {
