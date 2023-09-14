@@ -40,6 +40,7 @@ func AllSetups() []setup.Setup {
 	SetupFlagInsecure(l)
 	SetupFlagMITM(l)
 	SetupFlagDenyDomain(l)
+	SetupFlagDirectDomain(l)
 	SetupFlagRateLimit(l)
 	SetupSC2450(l)
 
@@ -358,6 +359,23 @@ func SetupFlagDenyDomain(l *setupList) {
 			Run: run,
 		},
 	)
+}
+
+func SetupFlagDirectDomain(l *setupList) {
+	l.Add(setup.Setup{
+		Name: "flag-direct-domain",
+		Compose: compose.NewBuilder().
+			AddService(
+				forwarder.HttpbinService()).
+			AddService(
+				forwarder.ProxyService().
+					WithUpstream(forwarder.UpstreamProxyServiceName, "http").
+					WithDirectDomains("httpbin")).
+			AddService(
+				forwarder.UpstreamProxyService()).
+			MustBuild(),
+		Run: "TestFlagDirectDomain",
+	})
 }
 
 func SetupFlagRateLimit(l *setupList) {

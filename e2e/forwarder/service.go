@@ -176,6 +176,11 @@ func (s *Service) WithDenyDomains(domains ...string) *Service {
 	return s
 }
 
+func (s *Service) WithDirectDomains(domains ...string) *Service {
+	s.Environment["FORWARDER_DIRECT_DOMAINS"] = strings.Join(domains, ",")
+	return s
+}
+
 func (s *Service) WithReadLimit(limit string) *Service {
 	s.Environment["FORWARDER_READ_LIMIT"] = limit
 	return s
