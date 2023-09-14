@@ -10,7 +10,6 @@ import (
 	"net/netip"
 	"net/url"
 	"os"
-	"regexp"
 	"strings"
 
 	"github.com/mmatczuk/anyflag"
@@ -19,6 +18,7 @@ import (
 	"github.com/saucelabs/forwarder/header"
 	"github.com/saucelabs/forwarder/httplog"
 	"github.com/saucelabs/forwarder/log"
+	"github.com/saucelabs/forwarder/ruleset"
 	"github.com/saucelabs/forwarder/utils/osdns"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -116,23 +116,18 @@ func HTTPProxyConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPProxyConfig, lcfg *lo
 		"Name of this proxy instance. This value is used in the Via header in requests. "+
 		"The name value in Via header is extended with a random string to avoid collisions when several proxies are chained. ")
 
-	fs.Var(anyflag.NewSliceValue[*regexp.Regexp](cfg.DenyDomains, &cfg.DenyDomains, regexp.Compile),
-		"deny-domain", "<regexp>"+
-			"Deny requests to the specified domains. "+
-			"Use this flag multiple times to specify multiple deny domains. "+
-			"Use --deny-domain-exclude to exclude requests to certain domains from being denied.")
-
-	fs.Var(anyflag.NewSliceValue[*regexp.Regexp](cfg.DenyDomainsExclude, &cfg.DenyDomainsExclude, regexp.Compile),
-		"deny-domain-exclude", "<regexp>"+
-			"Exclude requests to the specified domains from being denied. "+
-			"Use this flag multiple times to specify multiple deny domain excludes. "+
-			"This flag takes precedence over deny-domain. "+
-			"Can be specified only if --deny-domain is also specified. ")
-
 	fs.StringVar(&cfg.RequestIDHeader, "log-http-request-id-header", cfg.RequestIDHeader,
 		"<name>"+
 			"If the header is present in the request, "+
 			"the proxy will associate the value with the request in the logs. ")
+}
+
+func DenyDomains(fs *pflag.FlagSet, cfg *[]ruleset.RegexpListItem) {
+	fs.Var(anyflag.NewSliceValue[ruleset.RegexpListItem](*cfg, cfg, ruleset.ParseRegexpListItem),
+		"deny-domains", "[-]<regexp>,..."+
+			"Deny requests to the specified domains. "+
+			"Prefix domains with '-' to exclude requests to certain domains from being denied.",
+	)
 }
 
 func MITMConfig(fs *pflag.FlagSet, mitm *bool, cfg *forwarder.MITMConfig) {
