@@ -7,6 +7,7 @@
 package forwarder
 
 import (
+	"os"
 	"strings"
 	"time"
 
@@ -181,10 +182,18 @@ func (s *Service) Service() *compose.Service {
 }
 
 func healthCheck() *compose.HealthCheck {
-	return &compose.HealthCheck{
+	hc := &compose.HealthCheck{
 		Test:     []string{"CMD", "forwarder", "ready"},
 		Interval: time.Second,
 		Timeout:  time.Second,
 		Retries:  10,
 	}
+
+	if os.Getenv("CI") != "" {
+		hc.StartPeriod = time.Second
+		hc.Timeout = 5 * time.Second
+		hc.Retries = 60
+	}
+
+	return hc
 }
