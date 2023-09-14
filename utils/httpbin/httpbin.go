@@ -24,6 +24,7 @@ func Handler() http.Handler {
 	m.HandleFunc("/delay/", delayHandler)
 	m.HandleFunc("/status/", statusHandler)
 	m.HandleFunc("/stream-bytes/", streamBytesHandler)
+	m.HandleFunc("/count-bytes/", countBytesHandler)
 	m.HandleFunc("/events/", events)
 	m.HandleFunc("/events.html", eventsHTML)
 	m.HandleFunc("/ws/echo", wsEcho)
@@ -115,6 +116,14 @@ func streamBytesHandler(w http.ResponseWriter, r *http.Request) {
 		Pattern: []byte("SauceLabs"),
 		N:       int64(n),
 	}, make([]byte, chunkSize))
+}
+
+// countBytesHandler implements the /count-bytes/ endpoint.
+// It reads the request body and sends back the number of bytes read in a `Body-Size` header.
+func countBytesHandler(w http.ResponseWriter, r *http.Request) {
+	n, _ := io.Copy(io.Discard, r.Body) //nolint:errcheck // best effort
+	w.Header().Set("body-size", strconv.FormatInt(n, 10))
+	w.WriteHeader(http.StatusOK)
 }
 
 func atoi(w http.ResponseWriter, s string) (int, bool) {
