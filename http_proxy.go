@@ -16,7 +16,6 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"regexp"
 	"sync"
 	"time"
 
@@ -79,14 +78,13 @@ type HTTPProxyConfig struct {
 	ProxyLocalhost         ProxyLocalhostMode
 	UpstreamProxy          *url.URL
 	UpstreamProxyFunc      ProxyFunc
+	DenyDomains            *ruleset.RegexpMatcher
 	RequestIDHeader        string
 	RequestModifiers       []RequestModifier
 	ResponseModifiers      []ResponseModifier
 	ConnectRequestModifier func(*http.Request) error
 	ConnectPassthrough     bool
 	CloseAfterReply        bool
-	DenyDomains            []*regexp.Regexp
-	DenyDomainsExclude     []*regexp.Regexp
 
 	// TestingHTTPHandler uses Martian's [http.Handler] implementation
 	// over [http.Server] instead of the default TCP server.
@@ -269,10 +267,7 @@ func (hp *HTTPProxy) configureProxy() error {
 	}
 	hp.proxy.SetUpstreamProxyFunc(hp.proxyFunc)
 
-	mw, err := hp.middlewareStack()
-	if err != nil {
-		return fmt.Errorf("middleware stack: %w", err)
-	}
+	mw := hp.middlewareStack()
 	hp.proxy.SetRequestModifier(mw)
 	hp.proxy.SetResponseModifier(mw)
 
@@ -311,7 +306,7 @@ func (hp *HTTPProxy) pacProxy(r *http.Request) (*url.URL, error) {
 	return proxyURL, nil
 }
 
-func (hp *HTTPProxy) middlewareStack() (martian.RequestResponseModifier, error) {
+func (hp *HTTPProxy) middlewareStack() martian.RequestResponseModifier {
 	// Wrap stack in a group so that we can run security checks before the httpspec modifiers.
 	topg := fifo.NewGroup()
 	if hp.config.BasicAuth != nil {
@@ -321,12 +316,8 @@ func (hp *HTTPProxy) middlewareStack() (martian.RequestResponseModifier, error) 
 	if hp.config.ProxyLocalhost == DenyProxyLocalhost {
 		topg.AddRequestModifier(hp.denyLocalhost())
 	}
-	if len(hp.config.DenyDomains) != 0 || len(hp.config.DenyDomainsExclude) != 0 {
-		r, err := ruleset.NewRegexp(hp.config.DenyDomains, hp.config.DenyDomainsExclude)
-		if err != nil {
-			return nil, fmt.Errorf("deny domains: %w", err)
-		}
-		topg.AddRequestModifier(hp.denyDomains(r))
+	if hp.config.DenyDomains != nil {
+		topg.AddRequestModifier(hp.denyDomains(hp.config.DenyDomains))
 	}
 
 	// stack contains the request/response modifiers in the order they are applied.
@@ -358,7 +349,7 @@ func (hp *HTTPProxy) middlewareStack() (martian.RequestResponseModifier, error) 
 	fg.AddRequestModifier(martian.RequestModifierFunc(hp.setBasicAuth))
 	fg.AddRequestModifier(martian.RequestModifierFunc(setEmptyUserAgent))
 
-	return topg.ToImmutable(), nil
+	return topg.ToImmutable()
 }
 
 func (hp *HTTPProxy) abortIf(condition func(r *http.Request) bool, response func(*http.Request) *http.Response, returnErr error) martian.RequestModifier {
@@ -443,7 +434,7 @@ func (hp *HTTPProxy) denyLocalhost() martian.RequestModifier {
 	}, errors.New("localhost access denied"))
 }
 
-func (hp *HTTPProxy) denyDomains(r *ruleset.Regexp) martian.RequestModifier {
+func (hp *HTTPProxy) denyDomains(r *ruleset.RegexpMatcher) martian.RequestModifier {
 	return hp.abortIf(func(req *http.Request) bool {
 		return r.Match(req.URL.Hostname())
 	}, func(req *http.Request) *http.Response {

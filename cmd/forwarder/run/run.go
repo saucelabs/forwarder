@@ -21,6 +21,7 @@ import (
 	"github.com/saucelabs/forwarder/log"
 	"github.com/saucelabs/forwarder/log/stdlog"
 	"github.com/saucelabs/forwarder/pac"
+	"github.com/saucelabs/forwarder/ruleset"
 	"github.com/saucelabs/forwarder/runctx"
 	"github.com/saucelabs/forwarder/utils/cobrautil"
 	"github.com/saucelabs/forwarder/utils/httphandler"
@@ -35,6 +36,7 @@ type command struct {
 	httpTransportConfig *forwarder.HTTPTransportConfig
 	pac                 *url.URL
 	credentials         []*forwarder.HostPortUser
+	denyDomains         []ruleset.RegexpListItem
 	proxyHeaders        []header.Header
 	requestHeaders      []header.Header
 	responseHeaders     []header.Header
@@ -111,6 +113,14 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 	cm, err := forwarder.NewCredentialsMatcher(c.credentials, logger.Named("credentials"))
 	if err != nil {
 		return fmt.Errorf("credentials: %w", err)
+	}
+
+	if len(c.denyDomains) > 0 {
+		dd, err := ruleset.NewRegexpMatcherFromList(c.denyDomains)
+		if err != nil {
+			return fmt.Errorf("deny domains: %w", err)
+		}
+		c.httpProxyConfig.DenyDomains = dd
 	}
 
 	if len(c.proxyHeaders) > 0 {
@@ -204,6 +214,7 @@ func Command() (cmd *cobra.Command) {
 		bind.HTTPTransportConfig(fs, c.httpTransportConfig)
 		bind.PAC(fs, &c.pac)
 		bind.Credentials(fs, &c.credentials)
+		bind.DenyDomains(fs, &c.denyDomains)
 		bind.ProxyHeaders(fs, &c.proxyHeaders)
 		bind.RequestHeaders(fs, &c.requestHeaders)
 		bind.ResponseHeaders(fs, &c.responseHeaders)
