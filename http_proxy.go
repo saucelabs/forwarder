@@ -572,8 +572,6 @@ func (hp *HTTPProxy) Addr() string {
 
 func (hp *HTTPProxy) Close() error {
 	err := hp.listener.Close()
-	if !hp.proxy.Closing() {
-		hp.proxy.Close()
-	}
+	hp.proxy.Close()
 	return err
 }
