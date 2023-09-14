@@ -134,8 +134,15 @@ func DenyDomains(fs *pflag.FlagSet, cfg *[]ruleset.RegexpListItem) {
 	fs.Var(anyflag.NewSliceValue[ruleset.RegexpListItem](*cfg, cfg, ruleset.ParseRegexpListItem),
 		"deny-domains", "[-]<regexp>,..."+
 			"Deny requests to the specified domains. "+
-			"Prefix domains with '-' to exclude requests to certain domains from being denied.",
-	)
+			"Prefix domains with '-' to exclude requests to certain domains from being denied.")
+}
+
+func DirectDomains(fs *pflag.FlagSet, cfg *[]ruleset.RegexpListItem) {
+	fs.Var(anyflag.NewSliceValue[ruleset.RegexpListItem](*cfg, cfg, ruleset.ParseRegexpListItem),
+		"direct-domains", "[-]<regexp>,..."+
+			"Connect directly to the specified domains without using the upstream proxy. "+
+			"Prefix domains with '-' to exclude requests to certain domains from being directed."+
+			"This flag takes precedence over the PAC script.")
 }
 
 func MITMConfig(fs *pflag.FlagSet, mitm *bool, cfg *forwarder.MITMConfig) {
