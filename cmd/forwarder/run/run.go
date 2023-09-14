@@ -37,6 +37,7 @@ type command struct {
 	pac                 *url.URL
 	credentials         []*forwarder.HostPortUser
 	denyDomains         []ruleset.RegexpListItem
+	directDomains       []ruleset.RegexpListItem
 	proxyHeaders        []header.Header
 	requestHeaders      []header.Header
 	responseHeaders     []header.Header
@@ -121,6 +122,14 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 			return fmt.Errorf("deny domains: %w", err)
 		}
 		c.httpProxyConfig.DenyDomains = dd
+	}
+
+	if len(c.directDomains) > 0 {
+		dd, err := ruleset.NewRegexpMatcherFromList(c.directDomains)
+		if err != nil {
+			return fmt.Errorf("direct domains: %w", err)
+		}
+		c.httpProxyConfig.DirectDomains = dd
 	}
 
 	if len(c.proxyHeaders) > 0 {
@@ -215,6 +224,7 @@ func Command() (cmd *cobra.Command) {
 		bind.PAC(fs, &c.pac)
 		bind.Credentials(fs, &c.credentials)
 		bind.DenyDomains(fs, &c.denyDomains)
+		bind.DirectDomains(fs, &c.directDomains)
 		bind.ProxyHeaders(fs, &c.proxyHeaders)
 		bind.RequestHeaders(fs, &c.requestHeaders)
 		bind.ResponseHeaders(fs, &c.responseHeaders)
