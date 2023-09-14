@@ -12,15 +12,15 @@ import (
 	"strings"
 )
 
-type Regexp struct {
+type RegexpMatcher struct {
 	include *regexp.Regexp
 	exclude *regexp.Regexp
 }
 
 var ErrNoIncludeRules = errors.New("no include rules specified")
 
-// NewRegexp returns the Regexp with given include and exclude rules.
-func NewRegexp(include, exclude []*regexp.Regexp) (*Regexp, error) {
+// NewRegexpMatcher returns the RegexpMatcher with given include and exclude rules.
+func NewRegexpMatcher(include, exclude []*regexp.Regexp) (*RegexpMatcher, error) {
 	if len(include) == 0 {
 		return nil, ErrNoIncludeRules
 	}
@@ -39,7 +39,7 @@ func NewRegexp(include, exclude []*regexp.Regexp) (*Regexp, error) {
 		return nil
 	}
 
-	return &Regexp{
+	return &RegexpMatcher{
 		include: build(include),
 		exclude: build(exclude),
 	}, nil
@@ -47,9 +47,35 @@ func NewRegexp(include, exclude []*regexp.Regexp) (*Regexp, error) {
 
 // Match returns true if the given string matches at least one of the include rules
 // and does not match the exclude rules.
-func (r *Regexp) Match(s string) bool {
+func (r *RegexpMatcher) Match(s string) bool {
 	if r.exclude != nil && r.exclude.MatchString(s) {
 		return false
 	}
 	return r.include != nil && r.include.MatchString(s)
+}
+
+type RegexpListItem struct {
+	*regexp.Regexp
+	exclude bool
+}
+
+func ParseRegexpListItem(val string) (RegexpListItem, error) {
+	val, exclude := strings.CutPrefix(val, "-")
+	r, err := regexp.Compile(val)
+	if err != nil {
+		return RegexpListItem{}, err
+	}
+	return RegexpListItem{r, exclude}, nil
+}
+
+func NewRegexpMatcherFromList(l []RegexpListItem) (*RegexpMatcher, error) {
+	var include, exclude []*regexp.Regexp
+	for i := range l {
+		if l[i].exclude {
+			exclude = append(exclude, l[i].Regexp)
+		} else {
+			include = append(include, l[i].Regexp)
+		}
+	}
+	return NewRegexpMatcher(include, exclude)
 }

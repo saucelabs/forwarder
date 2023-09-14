@@ -12,7 +12,7 @@ import (
 	"testing"
 )
 
-func TestRuleSet(t *testing.T) {
+func TestRegexpMatcher(t *testing.T) {
 	tests := []struct {
 		name          string
 		include       []*regexp.Regexp
@@ -93,7 +93,7 @@ func TestRuleSet(t *testing.T) {
 	for i := range tests {
 		tc := tests[i]
 		t.Run(tc.name, func(t *testing.T) {
-			rs, err := NewRegexp(tc.include, tc.exclude)
+			rs, err := NewRegexpMatcher(tc.include, tc.exclude)
 			if !errors.Is(err, tc.expectedError) {
 				t.Fatalf("expected error %v, got %v", tc.expectedError, err)
 			}
@@ -106,6 +106,46 @@ func TestRuleSet(t *testing.T) {
 				if rs.Match(m) {
 					t.Errorf("expected %q to not match", m)
 				}
+			}
+		})
+	}
+}
+
+func TestParseRegexpListItem(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected RegexpListItem
+	}{
+		{
+			name:  "include",
+			input: "foo",
+			expected: RegexpListItem{
+				Regexp: regexp.MustCompile("foo"),
+			},
+		},
+		{
+			name:  "exclude",
+			input: "-foo",
+			expected: RegexpListItem{
+				Regexp:  regexp.MustCompile("foo"),
+				exclude: true,
+			},
+		},
+	}
+
+	for i := range tests {
+		tc := tests[i]
+		t.Run(tc.name, func(t *testing.T) {
+			r, err := ParseRegexpListItem(tc.input)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if r.Regexp.String() != tc.expected.Regexp.String() {
+				t.Errorf("expected regexp %q, got %q", tc.expected.Regexp.String(), r.Regexp.String())
+			}
+			if r.exclude != tc.expected.exclude {
+				t.Errorf("expected exclude %v, got %v", tc.expected.exclude, r.exclude)
 			}
 		})
 	}
