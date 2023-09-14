@@ -116,6 +116,7 @@ type Proxy struct {
 	conns        sync.WaitGroup
 	connsMu      sync.Mutex // protects conns.Add/Wait from concurrent access
 	closing      chan bool
+	closeOnce    sync.Once
 
 	reqmod RequestModifier
 	resmod ResponseModifier
@@ -195,15 +196,17 @@ func (p *Proxy) SetDialContext(dial func(context.Context, string, string) (net.C
 // finishes processing any inflight requests, and closes existing connections without
 // reading anymore requests from them.
 func (p *Proxy) Close() {
-	log.Infof(context.TODO(), "closing down proxy")
+	p.closeOnce.Do(func() {
+		log.Infof(context.TODO(), "closing down proxy")
 
-	close(p.closing)
+		close(p.closing)
 
-	log.Infof(context.TODO(), "waiting for connections to close")
-	p.connsMu.Lock()
-	p.conns.Wait()
-	p.connsMu.Unlock()
-	log.Infof(context.TODO(), "all connections closed")
+		log.Infof(context.TODO(), "waiting for connections to close")
+		p.connsMu.Lock()
+		p.conns.Wait()
+		p.connsMu.Unlock()
+		log.Infof(context.TODO(), "all connections closed")
+	})
 }
 
 // Closing returns whether the proxy is in the closing state.
