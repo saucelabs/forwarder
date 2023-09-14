@@ -131,7 +131,7 @@ func validateProxyURL(u *url.URL) error {
 			"https",
 			"socks5",
 		}
-		if !slices.Contains[string](supportedSchemes, u.Scheme) {
+		if !slices.Contains(supportedSchemes, u.Scheme) {
 			return fmt.Errorf("unsupported scheme %q, supported schemes are: %s", u.Scheme, strings.Join(supportedSchemes, ", "))
 		}
 	}

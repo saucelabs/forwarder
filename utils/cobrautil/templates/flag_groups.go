@@ -41,8 +41,8 @@ func (g FlagGroups) splitFlagSet(f *pflag.FlagSet) []*pflag.FlagSet {
 			prefix = append(prefix, prefixFlagSet{p, result[i]})
 		}
 	}
-	slices.SortFunc[prefixFlagSet](prefix, func(a, b prefixFlagSet) bool {
-		return len(a.value) > len(b.value)
+	slices.SortFunc(prefix, func(a, b prefixFlagSet) int {
+		return len(b.value) - len(a.value)
 	})
 
 	f.VisitAll(func(f *pflag.Flag) {
