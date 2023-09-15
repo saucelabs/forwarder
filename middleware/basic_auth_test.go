@@ -14,15 +14,30 @@ import (
 
 func TestBasicAuth(t *testing.T) {
 	ba := NewBasicAuth()
-	r := httptest.NewRequest(http.MethodGet, "/", http.NoBody)
-	r.SetBasicAuth("user", "pass")
 
-	if user, pass, ok := ba.BasicAuth(r); !ok || user != "user" || pass != "pass" {
-		t.Errorf("BasicAuth failed, got %v %v %v", user, pass, ok)
-	}
-	if !ba.AuthenticatedRequest(r, "user", "pass") {
-		t.Errorf("AuthenticatedRequest failed")
-	}
+	t.Run("basic auth", func(t *testing.T) {
+		r := httptest.NewRequest(http.MethodGet, "/", http.NoBody)
+		r.SetBasicAuth("user", "pass")
+
+		if user, pass, ok := ba.BasicAuth(r); !ok || user != "user" || pass != "pass" {
+			t.Errorf("BasicAuth failed, got %v %v %v", user, pass, ok)
+		}
+		if !ba.AuthenticatedRequest(r, "user", "pass") {
+			t.Errorf("AuthenticatedRequest failed")
+		}
+	})
+
+	t.Run("url encoded", func(t *testing.T) {
+		r := httptest.NewRequest(http.MethodGet, "/", http.NoBody)
+		r.SetBasicAuth("user%3f", "p%2fass")
+
+		if user, pass, ok := ba.BasicAuth(r); !ok || user != "user?" || pass != "p/ass" {
+			t.Errorf("BasicAuth failed, got %v %v %v", user, pass, ok)
+		}
+		if !ba.AuthenticatedRequest(r, "user?", "p/ass") {
+			t.Errorf("AuthenticatedRequest failed")
+		}
+	})
 }
 
 func TestBasicAuthWrap(t *testing.T) {

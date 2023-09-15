@@ -10,6 +10,7 @@ import (
 	"crypto/subtle"
 	"encoding/base64"
 	"net/http"
+	"net/url"
 	"strings"
 )
 
@@ -77,6 +78,15 @@ func parseBasicAuth(auth string) (username, password string, ok bool) {
 	if !ok {
 		return "", "", false
 	}
+	username, err = url.PathUnescape(username)
+	if err != nil {
+		return "", "", false
+	}
+	password, err = url.PathUnescape(password)
+	if err != nil {
+		return "", "", false
+	}
+
 	return username, password, true
 }
 
