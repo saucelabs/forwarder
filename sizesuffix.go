@@ -26,6 +26,7 @@ const (
 	Pebi
 	Exbi
 )
+
 const (
 	// SizeSuffixMax is the largest SizeSuffix multiplier
 	SizeSuffixMax = Exbi
