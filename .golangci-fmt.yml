@@ -5,6 +5,8 @@
 ---
 run:
   deadline: 5m
+  build-tags:
+    - e2e
   tests: true
   skip-files:
     - mock_.*\\.go
