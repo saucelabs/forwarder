@@ -5,9 +5,12 @@ ifndef FORWARDER_VERSION
 export FORWARDER_VERSION := devel
 endif
 
+E2E_TEST_IMAGE ?= gcr.io/distroless/static:nonroot
+
 .PHONY: run-e2e
 run-e2e: SETUP ?= .
 run-e2e:
+	@docker pull $(E2E_TEST_IMAGE) > /dev/null 2> /dev/null || true # Best effort to pre-pull image.
 	@go run . -setup "$(SETUP)" $(SETUP_ARGS)
 
 .PHONY: up
@@ -36,7 +39,7 @@ test: e2e.test
 	-i --read-only --rm \
 	$(shell docker inspect forwarder-e2e-proxy-1 --format='{{ range .Config.Env }}{{ if eq "FORWARDER" (slice . 0 9) }} -e "{{.}}"{{end}}{{end}}') \
 	$(shell docker inspect forwarder-e2e-httpbin-1 --format='{{ range .Config.Env }}{{ if eq "FORWARDER" (slice . 0 9) }} -e "HTTPBIN{{slice . 9}}"{{end}}{{end}}' 2> /dev/null) \
-	gcr.io/distroless/static:nonroot e2e.test -test.run "$(RUN)" -test.v $(ARGS)
+	$(E2E_TEST_IMAGE) e2e.test -test.run "$(RUN)" -test.v $(ARGS)
 
 .PHONY: e2e.test
 e2e.test:
