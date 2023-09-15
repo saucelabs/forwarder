@@ -40,6 +40,7 @@ func makeTestCallback(run string, debug bool) func() error {
 			fmt.Fprintln(os.Stderr, "stderr:")
 			stderr.WriteTo(os.Stderr)
 			fmt.Fprintln(os.Stderr)
+			return fmt.Errorf("unexpected stderr")
 		}
 
 		s := strings.Split(stdout.String(), "\n")
