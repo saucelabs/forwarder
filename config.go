@@ -33,11 +33,11 @@ func ParseUserInfo(val string) (*url.Userinfo, error) {
 	}
 
 	// URL decode the username and password
-	u, err := url.QueryUnescape(u)
+	u, err := url.PathUnescape(u)
 	if err != nil {
 		return nil, err
 	}
-	p, err = url.QueryUnescape(p)
+	p, err = url.PathUnescape(p)
 	if err != nil {
 		return nil, err
 	}
