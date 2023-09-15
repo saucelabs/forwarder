@@ -45,7 +45,7 @@ func makeTestCallback(run string, debug bool) func() error {
 
 		s := strings.Split(stdout.String(), "\n")
 		for _, l := range s {
-			if strings.HasPrefix(l, "---") {
+			if strings.HasPrefix(l, "---") || strings.Contains(l, "SKIP:") {
 				fmt.Fprintln(os.Stdout, l)
 			}
 		}
