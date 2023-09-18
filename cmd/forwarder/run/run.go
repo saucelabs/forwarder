@@ -44,6 +44,7 @@ type command struct {
 	httpProxyConfig     *forwarder.HTTPProxyConfig
 	mitm                bool
 	mitmConfig          *forwarder.MITMConfig
+	mitmDomains         []ruleset.RegexpListItem
 	apiServerConfig     *forwarder.HTTPServerConfig
 	logConfig           *log.Config
 	goleak              bool
@@ -151,11 +152,16 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 		c.httpProxyConfig.ResponseModifiers = append(c.httpProxyConfig.ResponseModifiers, header.Headers(c.responseHeaders))
 	}
 
-	if c.mitmConfig.CACertFile != "" {
-		c.mitm = true
-	}
-	if c.mitm {
+	if c.mitm || c.mitmConfig.CACertFile != "" || len(c.mitmDomains) > 0 {
 		c.httpProxyConfig.MITM = c.mitmConfig
+
+		if len(c.mitmDomains) > 0 {
+			dd, err := ruleset.NewRegexpMatcherFromList(c.mitmDomains)
+			if err != nil {
+				return fmt.Errorf("mitm domains: %w", err)
+			}
+			c.httpProxyConfig.MITMDomains = dd
+		}
 	}
 
 	var g runctx.Group
@@ -230,6 +236,7 @@ func Command() (cmd *cobra.Command) {
 		bind.ResponseHeaders(fs, &c.responseHeaders)
 		bind.HTTPProxyConfig(fs, c.httpProxyConfig, c.logConfig)
 		bind.MITMConfig(fs, &c.mitm, c.mitmConfig)
+		bind.MITMDomains(fs, &c.mitmDomains)
 		bind.HTTPServerConfig(fs, c.apiServerConfig, "api", forwarder.HTTPScheme)
 		bind.PromNamespace(fs, &c.httpProxyConfig.PromNamespace)
 		bind.AutoMarkFlagFilename(cmd)
