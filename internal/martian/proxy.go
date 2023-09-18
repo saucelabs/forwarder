@@ -75,6 +75,9 @@ type Proxy struct {
 	// If ConnectPassthrough is enabled, this is ignored.
 	ConnectRequestModifier func(*http.Request) error
 
+	// MITMFilter specifies a function to determine whether a CONNECT request should be MITMed.
+	MITMFilter func(*http.Request) bool
+
 	// WithoutWarning disables the warning header added to requests and responses when modifier errors occur.
 	WithoutWarning bool
 
@@ -402,6 +405,18 @@ func (p *Proxy) requestContext(mctx *Context, req *http.Request) context.Context
 	return ctx
 }
 
+func (p *Proxy) shouldMITM(req *http.Request) bool {
+	if p.mitm == nil {
+		return false
+	}
+
+	if p.MITMFilter != nil {
+		return p.MITMFilter(req)
+	}
+
+	return true
+}
+
 func (p *Proxy) handleConnectRequest(ctx *Context, req *http.Request, session *Session, brw *bufio.ReadWriter, conn net.Conn) error {
 	if err := p.reqmod.ModifyRequest(req); err != nil {
 		log.Errorf(req.Context(), "error modifying CONNECT request: %v", err)
@@ -412,7 +427,7 @@ func (p *Proxy) handleConnectRequest(ctx *Context, req *http.Request, session *S
 		return nil
 	}
 
-	if p.mitm != nil {
+	if p.shouldMITM(req) {
 		log.Debugf(req.Context(), "attempting MITM for connection: %s / %s", req.Host, req.URL.String())
 
 		res := proxyutil.NewResponse(200, nil, req)
