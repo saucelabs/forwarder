@@ -170,6 +170,13 @@ func MITMConfig(fs *pflag.FlagSet, mitm *bool, cfg *forwarder.MITMConfig) {
 		"Validity period of the generated MITM certificates. ")
 }
 
+func MITMDomains(fs *pflag.FlagSet, cfg *[]ruleset.RegexpListItem) {
+	fs.Var(anyflag.NewSliceValue[ruleset.RegexpListItem](*cfg, cfg, ruleset.ParseRegexpListItem),
+		"mitm-domains", "[-]<regexp>,..."+
+			"Limit MITM to the specified domains. "+
+			"Prefix domains with '-' to exclude requests to certain domains from being MITMed.")
+}
+
 func Credentials(fs *pflag.FlagSet, credentials *[]*forwarder.HostPortUser) {
 	fs.VarP(anyflag.NewSliceValueWithRedact[*forwarder.HostPortUser](*credentials, credentials, forwarder.ParseHostPortUser, forwarder.RedactHostPortUser),
 		"credentials", "s", "<username:password@host:port>"+
