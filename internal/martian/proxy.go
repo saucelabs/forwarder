@@ -435,8 +435,8 @@ func (p *Proxy) handleConnectRequest(ctx *Context, req *http.Request, session *S
 
 		log.Debugf(req.Context(), "completed MITM for connection: %s", req.Host)
 
-		b := make([]byte, 1)
-		if _, err := brw.Read(b); err != nil {
+		b, err := brw.Peek(1)
+		if err != nil {
 			log.Errorf(req.Context(), "error peeking message through CONNECT tunnel to determine type: %v", err)
 		}
 
@@ -447,9 +447,11 @@ func (p *Proxy) handleConnectRequest(ctx *Context, req *http.Request, session *S
 		// 22 is the TLS handshake.
 		// https://tools.ietf.org/html/rfc5246#section-6.2.1
 		if b[0] == 22 {
-			// Prepend the previously read data to be read again by
-			// http.ReadRequest.
-			tlsconn := tls.Server(&peekedConn{conn, io.MultiReader(bytes.NewReader(b), bytes.NewReader(buf), conn)}, p.mitm.TLSForHost(req.Host))
+			// Prepend the previously read data to be read again by http.ReadRequest.
+			tlsconn := tls.Server(&peekedConn{
+				conn,
+				io.MultiReader(bytes.NewReader(buf), conn),
+			}, p.mitm.TLSForHost(req.Host))
 
 			if err := tlsconn.Handshake(); err != nil {
 				p.mitm.HandshakeErrorCallback(req, err)
@@ -465,7 +467,7 @@ func (p *Proxy) handleConnectRequest(ctx *Context, req *http.Request, session *S
 		}
 
 		// Prepend the previously read data to be read again by http.ReadRequest.
-		brw.Reader.Reset(io.MultiReader(bytes.NewReader(b), bytes.NewReader(buf), conn))
+		brw.Reader.Reset(io.MultiReader(bytes.NewReader(buf), conn))
 		return p.handle(ctx, conn, brw)
 	}
 
