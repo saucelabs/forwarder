@@ -159,6 +159,8 @@ func NewHTTPProxy(cfg *HTTPProxyConfig, pr PACResolver, cm *CredentialsMatcher, 
 	}
 	hp.listener = l
 
+	hp.log.Infof("PROXY server listen address=%s protocol=%s", l.Addr(), hp.config.Protocol)
+
 	return hp, nil
 }
 
