@@ -76,6 +76,7 @@ type HTTPProxyConfig struct {
 	HTTPServerConfig
 	Name                   string
 	MITM                   *MITMConfig
+	MITMDomains            *ruleset.RegexpMatcher
 	ProxyLocalhost         ProxyLocalhostMode
 	UpstreamProxy          *url.URL
 	UpstreamProxyFunc      ProxyFunc
@@ -228,6 +229,12 @@ func (hp *HTTPProxy) configureProxy() error {
 			return fmt.Errorf("mitm: %w", err)
 		}
 		hp.proxy.SetMITM(mc)
+
+		if hp.config.MITMDomains != nil {
+			hp.proxy.MITMFilter = func(req *http.Request) bool {
+				return hp.config.MITMDomains.Match(req.URL.Hostname())
+			}
+		}
 	}
 
 	hp.proxy.AllowHTTP = true
