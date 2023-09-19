@@ -23,18 +23,8 @@ func TestParseUserInfo(t *testing.T) {
 			input: "user:pass",
 		},
 		{
-			name:  "URL encoded",
+			name:  "not URL encoded",
 			input: "%40:%3A",
-		},
-		{
-			name:  "no password",
-			input: "user",
-			err:   "expected username:password",
-		},
-		{
-			name:  "empty password",
-			input: "user:",
-			err:   "password cannot be empty",
 		},
 		{
 			name:  "no user",
@@ -44,6 +34,11 @@ func TestParseUserInfo(t *testing.T) {
 		{
 			name:  "empty",
 			input: "",
+			err:   "expected username[:password]",
+		},
+		{
+			name:  "two colons",
+			input: "user:pass:pass",
 		},
 	}
 
@@ -51,25 +46,19 @@ func TestParseUserInfo(t *testing.T) {
 		tc := &tests[i]
 		t.Run(tc.name, func(t *testing.T) {
 			ui, err := ParseUserInfo(tc.input)
-			if err != nil {
-				if tc.err == "" {
+			if tc.err == "" {
+				if err != nil {
 					t.Fatalf("expected success, got %q", err)
 				}
-
-				t.Logf("got error: %s", err)
-
-				if !strings.Contains(err.Error(), tc.err) {
-					t.Fatalf("expected error to contain %q, got %q", tc.err, err)
+				pass, ok := ui.Password()
+				if ok {
+					pass = ":" + pass
 				}
-				return
-			}
-
-			if tc.err != "" {
-				t.Fatalf("expected error %q, got success", tc.err)
-			}
-
-			if ui.String() != tc.input {
-				t.Errorf("expected %q, got %q", tc.input, ui.String())
+				if ui.Username()+pass != tc.input {
+					t.Errorf("expected %q, got %q", tc.input, ui.String())
+				}
+			} else if !strings.Contains(err.Error(), tc.err) {
+				t.Fatalf("expected error to contain %q, got %q", tc.err, err)
 			}
 		})
 	}
