@@ -30,6 +30,7 @@ func serviceScheme(envVar string) string {
 
 var (
 	proxy     = serviceScheme("FORWARDER_PROTOCOL") + "://proxy:3128"
+	proxyAPI  = serviceScheme("FORWARDER_API_PROTOCOL") + "://proxy:10000"
 	httpbin   = serviceScheme("HTTPBIN_PROTOCOL") + "://httpbin:8080"
 	basicAuth = os.Getenv("FORWARDER_BASIC_AUTH")
 )

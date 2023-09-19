@@ -10,6 +10,7 @@ package tests
 
 import (
 	"bytes"
+	"crypto/x509"
 	"fmt"
 	"net"
 	"net/http"
@@ -94,6 +95,26 @@ func TestFlagInsecure(t *testing.T) {
 
 func TestFlagMITM(t *testing.T) {
 	newClient(t, httpbin).GET("/status/200").ExpectStatus(http.StatusOK).
+		ExpectHeader("test-resp-add", "test-resp-value")
+}
+
+func TestFlagMITMGenCA(t *testing.T) {
+	r := newClient(t, proxyAPI, func(tr *http.Transport) {
+		tr.Proxy = nil
+	}).GET("/cacert").ExpectStatus(http.StatusOK)
+
+	pool, err := x509.SystemCertPool()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if ok := pool.AppendCertsFromPEM(r.Body); !ok {
+		t.Fatal("failed to append cert from response")
+	}
+
+	newClient(t, httpbin, func(tr *http.Transport) {
+		tr.TLSClientConfig.RootCAs = pool
+	}).GET("/status/200").
+		ExpectStatus(http.StatusOK).
 		ExpectHeader("test-resp-add", "test-resp-value")
 }
 
