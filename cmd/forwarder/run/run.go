@@ -82,6 +82,7 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 	var (
 		pr forwarder.PACResolver
 		rt http.RoundTripper
+		ep []forwarder.APIEndpoint
 	)
 
 	{
@@ -92,14 +93,12 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 		}
 	}
 
-	var pacScript string
 	if c.pac != nil {
-		var err error
-		pacScript, err = forwarder.ReadURLString(c.pac, rt)
+		script, err := forwarder.ReadURLString(c.pac, rt)
 		if err != nil {
 			return fmt.Errorf("read PAC file: %w", err)
 		}
-		pr, err = pac.NewProxyResolverPool(&pac.ProxyResolverConfig{Script: pacScript}, nil)
+		pr, err = pac.NewProxyResolverPool(&pac.ProxyResolverConfig{Script: script}, nil)
 		if err != nil {
 			return err
 		}
@@ -110,6 +109,11 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 			Resolver: pr,
 			Logger:   logger.Named("pac"),
 		}
+
+		ep = append(ep, forwarder.APIEndpoint{
+			Path:    "/pac",
+			Handler: httphandler.SendFileString("application/x-ns-proxy-autoconfig", script),
+		})
 	}
 
 	cm, err := forwarder.NewCredentialsMatcher(c.credentials, logger.Named("credentials"))
@@ -175,22 +179,18 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 	}
 
 	if c.apiServerConfig.Addr != "" {
-		apiEndpoints := []forwarder.APIEndpoint{
+		ep := append([]forwarder.APIEndpoint{
 			{
 				Path:    "/configz",
 				Handler: httphandler.SendFileString("text/plain", config),
 			},
 			{
-				Path:    "/pac",
-				Handler: httphandler.SendFileString("application/x-ns-proxy-autoconfig", pacScript),
-			},
-			{
 				Path:    "/version",
 				Handler: httphandler.Version(version.Version, version.Time, version.Commit),
 			},
-		}
+		}, ep...)
 
-		h := forwarder.NewAPIHandler("Forwarder "+version.Version, c.promReg, nil, apiEndpoints...)
+		h := forwarder.NewAPIHandler("Forwarder "+version.Version, c.promReg, nil, ep...)
 		a, err := forwarder.NewHTTPServer(c.apiServerConfig, h, logger.Named("api"))
 		if err != nil {
 			return err
