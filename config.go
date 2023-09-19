@@ -60,9 +60,25 @@ func wildcardPortTo0(val string) string {
 }
 
 // ParseHostPortUser parses a user:password@host:port string into HostUser.
-// User and password cannot be empty.
 func ParseHostPortUser(val string) (*HostPortUser, error) {
-	u, err := url.Parse("http://" + wildcardPortTo0(val))
+	if val == "" {
+		return nil, fmt.Errorf("expected user[:password]@host:port")
+	}
+	if strings.Index(val, "@") != strings.LastIndex(val, "@") {
+		return nil, fmt.Errorf("only one '@' is allowed")
+	}
+
+	up, hp, ok := strings.Cut(val, "@")
+	if !ok {
+		return nil, fmt.Errorf("expected user[:password]@host:port")
+	}
+
+	ui, err := ParseUserinfo(up)
+	if err != nil {
+		return nil, err
+	}
+
+	u, err := url.Parse("http://" + wildcardPortTo0(hp))
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +86,7 @@ func ParseHostPortUser(val string) (*HostPortUser, error) {
 	hpi := &HostPortUser{
 		Host:     u.Hostname(),
 		Port:     u.Port(),
-		Userinfo: u.User,
+		Userinfo: ui,
 	}
 	if err := hpi.Validate(); err != nil {
 		return nil, err
