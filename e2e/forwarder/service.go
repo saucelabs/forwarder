@@ -104,6 +104,11 @@ func (s *Service) WithMITMCacert() *Service {
 	return s
 }
 
+func (s *Service) WithMITMDomains(domains ...string) *Service {
+	s.Environment["FORWARDER_MITM_DOMAINS"] = strings.Join(domains, ",")
+	return s
+}
+
 func (s *Service) WithUpstream(name, protocol string) *Service {
 	s.Environment["FORWARDER_PROXY"] = protocol + "://" + name + ":3128"
 	if protocol == "https" {

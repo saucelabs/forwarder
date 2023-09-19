@@ -39,6 +39,7 @@ func AllSetups() []setup.Setup {
 	SetupFlagDNSServer(l)
 	SetupFlagInsecure(l)
 	SetupFlagMITM(l)
+	SetupFlagMITMDomains(l)
 	SetupFlagDenyDomain(l)
 	SetupFlagDirectDomain(l)
 	SetupFlagRateLimit(l)
@@ -295,7 +296,7 @@ func SetupFlagInsecure(l *setupList) {
 }
 
 func SetupFlagMITM(l *setupList) {
-	const run = "^Test(FlagMITM|Proxy)"
+	const run = "^Test(FlagMITM|Proxy.*)$"
 
 	l.Add(setup.Setup{
 		Name: "flag-mitm-cacert",
@@ -330,6 +331,25 @@ func SetupFlagMITM(l *setupList) {
 			Run: run,
 		})
 	}
+}
+
+func SetupFlagMITMDomains(l *setupList) {
+	const run = "^TestFlagMITMDomains$"
+
+	l.Add(setup.Setup{
+		Name: "flag-mitm-domains",
+		Compose: compose.NewBuilder().
+			AddService(
+				forwarder.HttpbinService().WithProtocol("https")).
+			AddService(
+				forwarder.ProxyService().
+					WithResponseHeader("test-resp-add:test-resp-value").
+					WithMITMCacert().
+					WithMITMDomains("google", "httpbin", "-httpbin").
+					Insecure()).
+			MustBuild(),
+		Run: run,
+	})
 }
 
 func SetupFlagDenyDomain(l *setupList) {

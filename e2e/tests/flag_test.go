@@ -97,6 +97,26 @@ func TestFlagMITM(t *testing.T) {
 		ExpectHeader("test-resp-add", "test-resp-value")
 }
 
+func TestFlagMITMDomains(t *testing.T) {
+	t.Run("include(google)", func(t *testing.T) {
+		newClient(t, "https://www.google.com").GET("/").
+			ExpectStatus(http.StatusOK).
+			ExpectHeader("test-resp-add", "test-resp-value")
+	})
+
+	t.Run("exclude implicitly(httpbin)", func(t *testing.T) {
+		newClient(t, httpbin).GET("/status/200").
+			ExpectStatus(http.StatusOK).
+			ExpectHeader("test-resp-add", "")
+	})
+
+	t.Run("exclude(amazon)", func(t *testing.T) {
+		newClient(t, "https://www.amazon.com").GET("/").
+			ExpectStatus(http.StatusOK).
+			ExpectHeader("test-resp-add", "")
+	})
+}
+
 func TestFlagDenyDomain(t *testing.T) {
 	newClient(t, "https://www.google.com").GET("/").ExpectStatus(http.StatusForbidden)
 	newClient(t, httpbin).GET("/status/200").ExpectStatus(http.StatusOK)
