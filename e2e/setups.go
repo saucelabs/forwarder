@@ -98,7 +98,7 @@ func SetupAuth(l *setupList) {
 							WithProtocol(httpbinScheme)).
 					AddService(
 						forwarder.ProxyService().
-							WithBasicAuth("u1:p1")).
+							WithBasicAuth("u1:p1!#$%^&*()_{};'?")).
 					MustBuild(),
 				Run: run,
 			},
@@ -110,12 +110,12 @@ func SetupAuth(l *setupList) {
 							WithProtocol(httpbinScheme)).
 					AddService(
 						forwarder.ProxyService().
-							WithBasicAuth("u1:p1").
+							WithBasicAuth("u1:p1!#$%^&*()_{};'?").
 							WithUpstream(forwarder.UpstreamProxyServiceName, "http").
-							WithCredentials("u2:p2", forwarder.UpstreamProxyServiceName+":3128")).
+							WithCredentials("u2:p2!#$%^&*()_{};'?", forwarder.UpstreamProxyServiceName+":3128")).
 					AddService(
 						forwarder.UpstreamProxyService().
-							WithBasicAuth("u2:p2")).
+							WithBasicAuth("u2:p2!#$%^&*()_{};'?")).
 					MustBuild(),
 				Run: run,
 			},
