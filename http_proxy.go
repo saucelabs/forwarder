@@ -10,6 +10,7 @@ import (
 	"bufio"
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"errors"
 	"fmt"
 	"io"
@@ -128,14 +129,15 @@ func (c *HTTPProxyConfig) Validate() error {
 }
 
 type HTTPProxy struct {
-	config    HTTPProxyConfig
-	pac       PACResolver
-	creds     *CredentialsMatcher
-	transport http.RoundTripper
-	log       log.Logger
-	proxy     *martian.Proxy
-	proxyFunc ProxyFunc
-	listener  net.Listener
+	config     HTTPProxyConfig
+	pac        PACResolver
+	creds      *CredentialsMatcher
+	transport  http.RoundTripper
+	log        log.Logger
+	proxy      *martian.Proxy
+	mitmCACert *x509.Certificate
+	proxyFunc  ProxyFunc
+	listener   net.Listener
 
 	TLSConfig *tls.Config
 }
@@ -229,6 +231,7 @@ func (hp *HTTPProxy) configureProxy() error {
 			return fmt.Errorf("mitm: %w", err)
 		}
 		hp.proxy.SetMITM(mc)
+		hp.mitmCACert = mc.CACert()
 
 		if hp.config.MITMDomains != nil {
 			hp.proxy.MITMFilter = func(req *http.Request) bool {
@@ -525,6 +528,10 @@ func setEmptyUserAgent(req *http.Request) error {
 		req.Header.Set("User-Agent", "")
 	}
 	return nil
+}
+
+func (hp *HTTPProxy) MITMCACert() *x509.Certificate {
+	return hp.mitmCACert
 }
 
 func (hp *HTTPProxy) ProxyFunc() ProxyFunc {
