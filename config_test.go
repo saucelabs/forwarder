@@ -114,7 +114,7 @@ func TestParseProxyURL(t *testing.T) {
 		},
 		{
 			name:  "user info",
-			input: "http://user:pass@1.2.3.4:1080",
+			input: "http://user%:pass!@1.2.3.4:1080",
 		},
 	}
 
