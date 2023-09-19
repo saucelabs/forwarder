@@ -21,28 +21,18 @@ import (
 )
 
 // ParseUserInfo parses a user:password string into *url.Userinfo.
-// Username and password cannot be empty.
 func ParseUserInfo(val string) (*url.Userinfo, error) {
 	if val == "" {
-		return nil, nil //nolint:nilnil // nil is a valid value for Userinfo in URL
+		return nil, fmt.Errorf("expected username[:password]")
 	}
 
+	var ui *url.Userinfo
 	u, p, ok := strings.Cut(val, ":")
 	if !ok {
-		return nil, fmt.Errorf("expected username:password")
+		ui = url.User(u)
+	} else {
+		ui = url.UserPassword(u, p)
 	}
-
-	// URL decode the username and password
-	u, err := url.QueryUnescape(u)
-	if err != nil {
-		return nil, err
-	}
-	p, err = url.QueryUnescape(p)
-	if err != nil {
-		return nil, err
-	}
-
-	ui := url.UserPassword(u, p)
 	if err := validatedUserInfo(ui); err != nil {
 		return nil, err
 	}
@@ -56,9 +46,6 @@ func validatedUserInfo(ui *url.Userinfo) error {
 	}
 	if ui.Username() == "" {
 		return fmt.Errorf("username cannot be empty")
-	}
-	if p, _ := ui.Password(); p == "" {
-		return fmt.Errorf("password cannot be empty")
 	}
 
 	return nil
