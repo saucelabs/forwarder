@@ -190,6 +190,11 @@ func (c *Config) HandshakeErrorCallback(r *http.Request, err error) {
 	}
 }
 
+// CACert returns the CA certificate used to sign the on-the-fly certificates.
+func (c *Config) CACert() *x509.Certificate {
+	return c.ca
+}
+
 // TLS returns a *tls.Config that will generate certificates on-the-fly using
 // the SNI extension in the TLS ClientHello.
 func (c *Config) TLS() *tls.Config {
