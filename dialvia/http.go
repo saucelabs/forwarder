@@ -118,8 +118,10 @@ func (d *HTTPProxyDialer) DialContextR(ctx context.Context, network, addr string
 
 	// Don't send the default Go HTTP client User-Agent.
 	req.Header.Add("User-Agent", "")
-	if d.proxyURL.User != nil {
-		req.Header.Add("Proxy-Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(d.proxyURL.User.String())))
+	if u := d.proxyURL.User; u != nil {
+		pass, _ := u.Password()
+		auth := u.Username() + ":" + pass
+		req.Header.Add("Proxy-Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(auth)))
 	}
 
 	if cm := d.ConnectRequestModifier; cm != nil {
