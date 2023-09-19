@@ -12,7 +12,7 @@ import (
 	"testing"
 )
 
-func TestParseUserInfo(t *testing.T) {
+func TestParseUserinfo(t *testing.T) {
 	tests := []struct {
 		name  string
 		input string
@@ -45,7 +45,7 @@ func TestParseUserInfo(t *testing.T) {
 	for i := range tests {
 		tc := &tests[i]
 		t.Run(tc.name, func(t *testing.T) {
-			ui, err := ParseUserInfo(tc.input)
+			ui, err := ParseUserinfo(tc.input)
 			if tc.err == "" {
 				if err != nil {
 					t.Fatalf("expected success, got %q", err)
