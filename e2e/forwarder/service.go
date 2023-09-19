@@ -93,6 +93,11 @@ func (s *Service) Insecure() *Service {
 	return s
 }
 
+func (s *Service) WithMITM() *Service {
+	s.Environment["FORWARDER_MITM"] = "true"
+	return s
+}
+
 func (s *Service) WithMITMCacert() *Service {
 	s.Environment["FORWARDER_MITM_CACERT_FILE"] = "/etc/forwarder/certs/mitm-ca.crt"
 	s.Environment["FORWARDER_MITM_CAKEY_FILE"] = "/etc/forwarder/private/mitm-ca.key"
