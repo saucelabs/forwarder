@@ -176,6 +176,13 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 		}
 		defer p.Close()
 		g.Add(p.Run)
+
+		if ca := p.MITMCACert(); ca != nil {
+			ep = append(ep, forwarder.APIEndpoint{
+				Path:    "/cacert",
+				Handler: httphandler.SendCACert(ca),
+			})
+		}
 	}
 
 	if c.apiServerConfig.Addr != "" {
