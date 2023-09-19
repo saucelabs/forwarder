@@ -307,7 +307,7 @@ func SetupFlagMITMCACert(l *setupList) {
 			AddService(
 				forwarder.ProxyService().
 					WithResponseHeader("test-resp-add:test-resp-value").
-					WithMITMCacert().
+					WithMITMCACert().
 					Insecure()).
 			MustBuild(),
 		Run: run,
@@ -322,7 +322,7 @@ func SetupFlagMITMCACert(l *setupList) {
 				AddService(
 					forwarder.ProxyService().
 						WithResponseHeader("test-resp-add:test-resp-value").
-						WithMITMCacert().
+						WithMITMCACert().
 						Insecure().
 						WithUpstream(forwarder.UpstreamProxyServiceName, upstreamProxyScheme)).
 				AddService(
@@ -363,7 +363,7 @@ func SetupFlagMITMDomains(l *setupList) {
 			AddService(
 				forwarder.ProxyService().
 					WithResponseHeader("test-resp-add:test-resp-value").
-					WithMITMCacert().
+					WithMITMCACert().
 					WithMITMDomains("google", "httpbin", "-httpbin").
 					Insecure()).
 			MustBuild(),

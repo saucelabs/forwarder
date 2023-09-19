@@ -98,7 +98,7 @@ func (s *Service) WithMITM() *Service {
 	return s
 }
 
-func (s *Service) WithMITMCacert() *Service {
+func (s *Service) WithMITMCACert() *Service {
 	s.Environment["FORWARDER_MITM_CACERT_FILE"] = "/etc/forwarder/certs/mitm-ca.crt"
 	s.Environment["FORWARDER_MITM_CAKEY_FILE"] = "/etc/forwarder/private/mitm-ca.key"
 	s.Volumes = append(s.Volumes,
