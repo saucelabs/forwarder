@@ -7,10 +7,20 @@
 package httphandler
 
 import (
+	"crypto/x509"
 	"encoding/json"
+	"encoding/pem"
 	"net/http"
 	"runtime"
 )
+
+func SendCACert(ca *x509.Certificate) http.Handler {
+	b := pem.EncodeToMemory(&pem.Block{
+		Type:  "CERTIFICATE",
+		Bytes: ca.Raw,
+	})
+	return SendFile("application/x-x509-ca-cert", b)
+}
 
 func SendFile(contentType string, content []byte) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
