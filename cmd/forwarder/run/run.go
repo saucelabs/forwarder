@@ -258,10 +258,7 @@ func Command() *cobra.Command {
 const long = `Start HTTP (forward) proxy server.
 You can start HTTP or HTTPS server.
 If you start an HTTPS server and you don't provide a certificate, the server will generate a self-signed certificate on startup.
-
 The server may be protected by basic authentication.
-Whenever applicable, username and password are URL decoded.
-This allows you to pass in special characters such as @ by using %%40 or pass in a colon with %%3a.
 `
 
 const example = `  # HTTP proxy with upstream proxy
