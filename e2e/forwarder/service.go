@@ -23,6 +23,8 @@ const (
 	HttpbinServiceName       = "httpbin"
 )
 
+const enabled = "true"
+
 func ProxyService() *Service {
 	return &Service{
 		Name:  ProxyServiceName,
@@ -89,12 +91,12 @@ func (s *Service) WithSelfSigned(protocol string) *Service {
 }
 
 func (s *Service) Insecure() *Service {
-	s.Environment["FORWARDER_INSECURE"] = "true"
+	s.Environment["FORWARDER_INSECURE"] = enabled
 	return s
 }
 
 func (s *Service) WithMITM() *Service {
-	s.Environment["FORWARDER_MITM"] = "true"
+	s.Environment["FORWARDER_MITM"] = enabled
 	return s
 }
 
@@ -155,7 +157,7 @@ func (s *Service) WithResponseHeader(header string) *Service {
 }
 
 func (s *Service) WithGoleak() *Service {
-	s.Environment["FORWARDER_GOLEAK"] = "true"
+	s.Environment["FORWARDER_GOLEAK"] = enabled
 	return s
 }
 
