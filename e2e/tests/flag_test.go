@@ -117,12 +117,19 @@ func TestFlagMITMDomains(t *testing.T) {
 	})
 }
 
-func TestFlagDenyDomain(t *testing.T) {
-	newClient(t, "https://www.google.com").GET("/").ExpectStatus(http.StatusForbidden)
-	newClient(t, httpbin).GET("/status/200").ExpectStatus(http.StatusOK)
+func TestFlagDenyDomains(t *testing.T) {
+	t.Run("include(google)", func(t *testing.T) {
+		newClient(t, "https://www.google.com").GET("/").
+			ExpectStatus(http.StatusForbidden)
+	})
+
+	t.Run("exclude(httpbin)", func(t *testing.T) {
+		newClient(t, httpbin).GET("/status/200").
+			ExpectStatus(http.StatusOK)
+	})
 }
 
-func TestFlagDirectDomain(t *testing.T) {
+func TestFlagDirectDomains(t *testing.T) {
 	viaHeader := newClient(t, httpbin).GET("/headers/").Header["Via"]
 	var success bool
 	for _, via := range viaHeader {

@@ -40,8 +40,8 @@ func AllSetups() []setup.Setup {
 	SetupFlagInsecure(l)
 	SetupFlagMITM(l)
 	SetupFlagMITMDomains(l)
-	SetupFlagDenyDomain(l)
-	SetupFlagDirectDomain(l)
+	SetupFlagDenyDomains(l)
+	SetupFlagDirectDomains(l)
 	SetupFlagRateLimit(l)
 	SetupSC2450(l)
 
@@ -352,12 +352,12 @@ func SetupFlagMITMDomains(l *setupList) {
 	})
 }
 
-func SetupFlagDenyDomain(l *setupList) {
-	const run = "^TestFlagDenyDomain$"
+func SetupFlagDenyDomains(l *setupList) {
+	const run = "^TestFlagDenyDomains$"
 
 	l.Add(
 		setup.Setup{
-			Name: "flag-deny-domain",
+			Name: "flag-deny-domains",
 			Compose: compose.NewBuilder().
 				AddService(
 					forwarder.HttpbinService()).
@@ -368,7 +368,7 @@ func SetupFlagDenyDomain(l *setupList) {
 			Run: run,
 		},
 		setup.Setup{
-			Name: "flag-deny-domain-exclude",
+			Name: "flag-deny-domains-exclude",
 			Compose: compose.NewBuilder().
 				AddService(
 					forwarder.HttpbinService()).
@@ -381,9 +381,9 @@ func SetupFlagDenyDomain(l *setupList) {
 	)
 }
 
-func SetupFlagDirectDomain(l *setupList) {
+func SetupFlagDirectDomains(l *setupList) {
 	l.Add(setup.Setup{
-		Name: "flag-direct-domain",
+		Name: "flag-direct-domains",
 		Compose: compose.NewBuilder().
 			AddService(
 				forwarder.HttpbinService()).
@@ -394,7 +394,7 @@ func SetupFlagDirectDomain(l *setupList) {
 			AddService(
 				forwarder.UpstreamProxyService()).
 			MustBuild(),
-		Run: "TestFlagDirectDomain",
+		Run: "^TestFlagDirectDomains$",
 	})
 }
 
