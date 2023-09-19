@@ -96,26 +96,35 @@ func ParseHostPortUser(val string) (*HostPortUser, error) {
 }
 
 func ParseProxyURL(val string) (*url.URL, error) {
-	scheme, hostport, ok := strings.Cut(val, "://")
+	scheme, hpu, ok := strings.Cut(val, "://")
 	if !ok {
 		scheme = "http"
-		hostport = val
-	}
-	u := &url.URL{
-		Scheme: scheme,
-		Host:   hostport,
+		hpu = val
 	}
 
-	creds, hostport, ok := strings.Cut(hostport, "@")
+	if strings.Index(hpu, "@") != strings.LastIndex(hpu, "@") {
+		return nil, fmt.Errorf("only one '@' is allowed")
+	}
+
+	var (
+		ui  *url.Userinfo
+		err error
+	)
+	up, hp, ok := strings.Cut(hpu, "@")
 	if ok {
-		ui, err := ParseUserinfo(creds)
+		ui, err = ParseUserinfo(up)
 		if err != nil {
 			return nil, err
 		}
-		u.User = ui
-		u.Host = hostport
+	} else {
+		hp = hpu
 	}
 
+	u := &url.URL{
+		Scheme: scheme,
+		Host:   hp,
+		User:   ui,
+	}
 	if err := validateProxyURL(u); err != nil {
 		return nil, err
 	}
@@ -143,15 +152,15 @@ func validateProxyURL(u *url.URL) error {
 		if err := validatedUserInfo(u.User); err != nil {
 			return err
 		}
-		host := u.Host
-		if u.User != nil {
-			host = u.User.String() + "@" + host
-		}
-		c, err := url.Parse(fmt.Sprintf("%s://%s", u.Scheme, host))
+
+		c, err := url.Parse(fmt.Sprintf("%s://%s", u.Scheme, u.Host))
 		if err != nil {
 			return err
 		}
-		if u.String() != c.String() {
+
+		uu := *u
+		uu.User = nil
+		if uu.String() != c.String() {
 			return fmt.Errorf("unsupported URL elements, format: [<protocol>://]<host>:<port>")
 		}
 	}
