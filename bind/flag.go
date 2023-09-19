@@ -278,9 +278,7 @@ func HTTPServerConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPServerConfig, prefix
 
 	fs.VarP(anyflag.NewValueWithRedact[*url.Userinfo](cfg.BasicAuth, &cfg.BasicAuth, forwarder.ParseUserinfo, RedactUserinfo),
 		namePrefix+"basic-auth", "", "<username:password>"+
-			"Basic authentication credentials to protect the server. "+
-			"Username and password are URL decoded. "+
-			"This allows you to pass in special characters such as @ by using %%40 or pass in a colon with %%3a. ")
+			"Basic authentication credentials to protect the server. ")
 
 	httpLogModes := []httplog.Mode{
 		httplog.None,
