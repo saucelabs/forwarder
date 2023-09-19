@@ -179,7 +179,7 @@ func MITMDomains(fs *pflag.FlagSet, cfg *[]ruleset.RegexpListItem) {
 
 func Credentials(fs *pflag.FlagSet, credentials *[]*forwarder.HostPortUser) {
 	fs.VarP(anyflag.NewSliceValueWithRedact[*forwarder.HostPortUser](*credentials, credentials, forwarder.ParseHostPortUser, forwarder.RedactHostPortUser),
-		"credentials", "s", "<username:password@host:port>"+
+		"credentials", "s", "username[:password]@host:port"+
 			"Site or upstream proxy basic authentication credentials. "+
 			"The host and port can be set to \"*\" to match all hosts and ports respectively. "+
 			"The flag can be specified multiple times to add multiple credentials. ")
@@ -277,7 +277,7 @@ func HTTPServerConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPServerConfig, prefix
 		"The amount of time allowed to read request headers.")
 
 	fs.VarP(anyflag.NewValueWithRedact[*url.Userinfo](cfg.BasicAuth, &cfg.BasicAuth, forwarder.ParseUserinfo, RedactUserinfo),
-		namePrefix+"basic-auth", "", "<username:password>"+
+		namePrefix+"basic-auth", "", "username[:password]"+
 			"Basic authentication credentials to protect the server. ")
 
 	httpLogModes := []httplog.Mode{
