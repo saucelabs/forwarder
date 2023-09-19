@@ -20,8 +20,8 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-// ParseUserInfo parses a user:password string into *url.Userinfo.
-func ParseUserInfo(val string) (*url.Userinfo, error) {
+// ParseUserinfo parses a user:password string into *url.Userinfo.
+func ParseUserinfo(val string) (*url.Userinfo, error) {
 	if val == "" {
 		return nil, fmt.Errorf("expected username[:password]")
 	}
@@ -92,7 +92,7 @@ func ParseProxyURL(val string) (*url.URL, error) {
 
 	creds, hostport, ok := strings.Cut(hostport, "@")
 	if ok {
-		ui, err := ParseUserInfo(creds)
+		ui, err := ParseUserinfo(creds)
 		if err != nil {
 			return nil, err
 		}

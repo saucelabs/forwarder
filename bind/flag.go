@@ -276,7 +276,7 @@ func HTTPServerConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPServerConfig, prefix
 		namePrefix+"read-header-timeout", cfg.ReadHeaderTimeout,
 		"The amount of time allowed to read request headers.")
 
-	fs.VarP(anyflag.NewValueWithRedact[*url.Userinfo](cfg.BasicAuth, &cfg.BasicAuth, forwarder.ParseUserInfo, RedactUserinfo),
+	fs.VarP(anyflag.NewValueWithRedact[*url.Userinfo](cfg.BasicAuth, &cfg.BasicAuth, forwarder.ParseUserinfo, RedactUserinfo),
 		namePrefix+"basic-auth", "", "<username:password>"+
 			"Basic authentication credentials to protect the server. "+
 			"Username and password are URL decoded. "+
