@@ -60,7 +60,7 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 	return runctx.NewGroup(s.Run, a.Run).Run()
 }
 
-func Command() (cmd *cobra.Command) {
+func Command() *cobra.Command {
 	c := command{
 		httpServerConfig: forwarder.DefaultHTTPServerConfig(),
 		apiServerConfig:  forwarder.DefaultHTTPServerConfig(),
@@ -68,18 +68,19 @@ func Command() (cmd *cobra.Command) {
 	}
 	c.apiServerConfig.Addr = "localhost:10000"
 
-	defer func() {
-		fs := cmd.Flags()
-		bind.HTTPServerConfig(fs, c.httpServerConfig, "")
-		bind.HTTPServerConfig(fs, c.apiServerConfig, "api", forwarder.HTTPScheme)
-		bind.LogConfig(fs, c.logConfig)
-
-		bind.AutoMarkFlagFilename(cmd)
-	}()
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:    "httpbin [--protocol <http|https|h2>] [--address <host:port>] [flags]",
 		Short:  "Start HTTP(S) server that serves httpbin.org API",
 		RunE:   c.runE,
 		Hidden: true,
 	}
+
+	fs := cmd.Flags()
+	bind.HTTPServerConfig(fs, c.httpServerConfig, "")
+	bind.HTTPServerConfig(fs, c.apiServerConfig, "api", forwarder.HTTPScheme)
+	bind.LogConfig(fs, c.logConfig)
+
+	bind.AutoMarkFlagFilename(cmd)
+
+	return cmd
 }

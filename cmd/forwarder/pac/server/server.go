@@ -96,7 +96,7 @@ func servePAC(script string) http.Handler {
 	})
 }
 
-func Command() (cmd *cobra.Command) {
+func Command() *cobra.Command {
 	c := command{
 		pac:                 &url.URL{Scheme: "file", Path: "pac.js"},
 		dnsConfig:           osdns.DefaultConfig(),
@@ -105,24 +105,24 @@ func Command() (cmd *cobra.Command) {
 		logConfig:           log.DefaultConfig(),
 	}
 
-	defer func() {
-		fs := cmd.Flags()
-
-		bind.PAC(fs, &c.pac)
-		bind.DNSConfig(fs, c.dnsConfig)
-		bind.HTTPServerConfig(fs, c.httpServerConfig, "")
-		bind.LogConfig(fs, c.logConfig)
-		bind.HTTPTransportConfig(fs, c.httpTransportConfig)
-
-		bind.AutoMarkFlagFilename(cmd)
-	}()
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:     "server --pac <file|url> [--protocol <http|https|h2>] [--address <host:port>] [flags]",
 		Short:   "Start HTTP server that serves a PAC file",
 		Long:    long,
 		RunE:    c.runE,
 		Example: example,
 	}
+
+	fs := cmd.Flags()
+	bind.PAC(fs, &c.pac)
+	bind.DNSConfig(fs, c.dnsConfig)
+	bind.HTTPServerConfig(fs, c.httpServerConfig, "")
+	bind.LogConfig(fs, c.logConfig)
+	bind.HTTPTransportConfig(fs, c.httpTransportConfig)
+
+	bind.AutoMarkFlagFilename(cmd)
+
+	return cmd
 }
 
 const long = `Start HTTP server that serves a PAC file.

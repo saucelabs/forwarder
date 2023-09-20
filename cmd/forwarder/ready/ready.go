@@ -40,21 +40,22 @@ func (c *command) runE(cmd *cobra.Command, _ []string) error {
 	return nil
 }
 
-func Command() (cmd *cobra.Command) {
+func Command() *cobra.Command {
 	c := command{
 		apiAddr: "localhost:10000",
 	}
 
-	defer func() {
-		fs := cmd.Flags()
-		bindAPIAddr(fs, &c.apiAddr)
-	}()
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:   "ready [--api-address <host:port>] [flags]",
 		Short: "Readiness probe for the Forwarder",
 		Long:  long,
 		RunE:  c.runE,
 	}
+
+	fs := cmd.Flags()
+	bindAPIAddr(fs, &c.apiAddr)
+
+	return cmd
 }
 
 const long = `Readiness probe for the Forwarder.
