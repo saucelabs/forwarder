@@ -210,7 +210,7 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 	return g.Run()
 }
 
-func Command() (cmd *cobra.Command) {
+func Command() *cobra.Command {
 	c := command{
 		promReg:             prometheus.NewRegistry(),
 		dnsConfig:           osdns.DefaultConfig(),
@@ -223,36 +223,36 @@ func Command() (cmd *cobra.Command) {
 	c.httpProxyConfig.PromRegistry = c.promReg
 	c.apiServerConfig.Addr = "localhost:10000"
 
-	defer func() {
-		fs := cmd.Flags()
-		bind.DNSConfig(fs, c.dnsConfig)
-		bind.HTTPTransportConfig(fs, c.httpTransportConfig)
-		bind.PAC(fs, &c.pac)
-		bind.Credentials(fs, &c.credentials)
-		bind.DenyDomains(fs, &c.denyDomains)
-		bind.DirectDomains(fs, &c.directDomains)
-		bind.ProxyHeaders(fs, &c.proxyHeaders)
-		bind.RequestHeaders(fs, &c.requestHeaders)
-		bind.ResponseHeaders(fs, &c.responseHeaders)
-		bind.HTTPProxyConfig(fs, c.httpProxyConfig, c.logConfig)
-		bind.MITMConfig(fs, &c.mitm, c.mitmConfig)
-		bind.MITMDomains(fs, &c.mitmDomains)
-		bind.HTTPServerConfig(fs, c.apiServerConfig, "api", forwarder.HTTPScheme)
-		bind.PromNamespace(fs, &c.httpProxyConfig.PromNamespace)
-		bind.AutoMarkFlagFilename(cmd)
-		cmd.MarkFlagsMutuallyExclusive("proxy", "pac")
-
-		fs.BoolVar(&c.goleak, "goleak", false, "enable goleak")
-		bind.MarkFlagHidden(cmd, "goleak")
-	}()
-
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:     "run [--address <host:port>] [--pac <path or url>] [--credentials <username:password@host:port>]...",
 		Short:   "Start HTTP (forward) proxy server",
 		Long:    long,
 		Example: example,
 		RunE:    c.runE,
 	}
+
+	fs := cmd.Flags()
+	bind.DNSConfig(fs, c.dnsConfig)
+	bind.HTTPTransportConfig(fs, c.httpTransportConfig)
+	bind.PAC(fs, &c.pac)
+	bind.Credentials(fs, &c.credentials)
+	bind.DenyDomains(fs, &c.denyDomains)
+	bind.DirectDomains(fs, &c.directDomains)
+	bind.ProxyHeaders(fs, &c.proxyHeaders)
+	bind.RequestHeaders(fs, &c.requestHeaders)
+	bind.ResponseHeaders(fs, &c.responseHeaders)
+	bind.HTTPProxyConfig(fs, c.httpProxyConfig, c.logConfig)
+	bind.MITMConfig(fs, &c.mitm, c.mitmConfig)
+	bind.MITMDomains(fs, &c.mitmDomains)
+	bind.HTTPServerConfig(fs, c.apiServerConfig, "api", forwarder.HTTPScheme)
+	bind.PromNamespace(fs, &c.httpProxyConfig.PromNamespace)
+	bind.AutoMarkFlagFilename(cmd)
+	cmd.MarkFlagsMutuallyExclusive("proxy", "pac")
+
+	fs.BoolVar(&c.goleak, "goleak", false, "enable goleak")
+	bind.MarkFlagHidden(cmd, "goleak")
+
+	return cmd
 }
 
 const long = `Start HTTP (forward) proxy server.
