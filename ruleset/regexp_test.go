@@ -97,6 +97,10 @@ func TestRegexpMatcher(t *testing.T) {
 			if !errors.Is(err, tc.expectedError) {
 				t.Fatalf("expected error %v, got %v", tc.expectedError, err)
 			}
+			if err != nil {
+				return
+			}
+
 			for _, m := range tc.match {
 				if !rs.Match(m) {
 					t.Errorf("expected %q to match", m)
@@ -104,7 +108,19 @@ func TestRegexpMatcher(t *testing.T) {
 			}
 			for _, m := range tc.dontMatch {
 				if rs.Match(m) {
-					t.Errorf("expected %q to not match", m)
+					t.Errorf("expected %q not to match", m)
+				}
+			}
+
+			rsi := rs.Inverse()
+			for _, m := range tc.match {
+				if rsi.Match(m) {
+					t.Errorf("expected %q not to match", m)
+				}
+			}
+			for _, m := range tc.dontMatch {
+				if !rsi.Match(m) {
+					t.Errorf("expected %q to match", m)
 				}
 			}
 		})
