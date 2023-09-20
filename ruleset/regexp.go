@@ -15,6 +15,7 @@ import (
 type RegexpMatcher struct {
 	include *regexp.Regexp
 	exclude *regexp.Regexp
+	inverse bool
 }
 
 var ErrNoIncludeRules = errors.New("no include rules specified")
@@ -45,9 +46,26 @@ func NewRegexpMatcher(include, exclude []*regexp.Regexp) (*RegexpMatcher, error)
 	}, nil
 }
 
+// Inverse returns a new RegexpMatcher that inverts the match result.
+func (r *RegexpMatcher) Inverse() *RegexpMatcher {
+	return &RegexpMatcher{
+		include: r.include,
+		exclude: r.exclude,
+		inverse: !r.inverse,
+	}
+}
+
 // Match returns true if the given string matches at least one of the include rules
 // and does not match the exclude rules.
 func (r *RegexpMatcher) Match(s string) bool {
+	m := r.match(s)
+	if r.inverse {
+		m = !m
+	}
+	return m
+}
+
+func (r *RegexpMatcher) match(s string) bool {
 	if r.exclude != nil && r.exclude.MatchString(s) {
 		return false
 	}
