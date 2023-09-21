@@ -22,10 +22,18 @@ const (
 	Add
 )
 
+var (
+	DefaultAddRequestFunc  = map[string]func(*http.Request) string{}
+	DefaultAddResponseFunc = map[string]func(*http.Response) string{}
+)
+
 type Header struct {
 	Name   string
 	Action Action
 	Value  *string
+
+	AddRequestFunc  map[string]func(*http.Request) string
+	AddResponseFunc map[string]func(*http.Response) string
 }
 
 var (
@@ -58,6 +66,8 @@ func ParseHeader(val string) (Header, error) {
 				h.Name = m[1]
 				h.Value = &m[2]
 				h.Action = Add
+				h.AddRequestFunc = DefaultAddRequestFunc
+				h.AddResponseFunc = DefaultAddResponseFunc
 			} else {
 				return Header{}, errors.New("invalid header value")
 			}
@@ -71,7 +81,8 @@ func ParseHeader(val string) (Header, error) {
 	return h, nil
 }
 
-func (h *Header) Apply(hh http.Header) {
+func (h *Header) ApplyToRequest(req *http.Request) error {
+	hh := req.Header
 	switch h.Action {
 	case Remove:
 		hh.Del(h.Name)
@@ -80,8 +91,49 @@ func (h *Header) Apply(hh http.Header) {
 	case Empty:
 		hh.Set(h.Name, "")
 	case Add:
+		if f, ok := isTemplateAddFunc(*h.Value); ok {
+			if ff, ok := h.AddRequestFunc[f]; ok {
+				hh.Set(h.Name, ff(req))
+				return nil
+			}
+			return errors.New("add request func not found")
+		}
 		hh.Add(h.Name, *h.Value)
 	}
+
+	return nil
+}
+
+func (h *Header) ApplyToResponse(res *http.Response) error {
+	hh := res.Header
+	switch h.Action {
+	case Remove:
+		hh.Del(h.Name)
+	case RemoveByPrefix:
+		removeHeadersByPrefix(hh, h.Name)
+	case Empty:
+		hh.Set(h.Name, "")
+	case Add:
+		if f, ok := isTemplateAddFunc(*h.Value); ok {
+			if ff, ok := h.AddResponseFunc[f]; ok {
+				hh.Set(h.Name, ff(res))
+				return nil
+			}
+			return errors.New("add response func not found")
+		}
+		hh.Add(h.Name, *h.Value)
+	}
+
+	return nil
+}
+
+func isTemplateAddFunc(s string) (string, bool) {
+	if v, ok := strings.CutPrefix(s, "{{"); ok {
+		if v, ok := strings.CutSuffix(v, "}}"); ok {
+			return v, true
+		}
+	}
+	return "", false
 }
 
 func removeHeadersByPrefix(h http.Header, prefix string) {
@@ -114,14 +166,18 @@ type Headers []Header
 
 func (s Headers) ModifyRequest(req *http.Request) error {
 	for _, h := range s {
-		h.Apply(req.Header)
+		if err := h.ApplyToRequest(req); err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
 func (s Headers) ModifyResponse(res *http.Response) error {
 	for _, h := range s {
-		h.Apply(res.Header)
+		if err := h.ApplyToResponse(res); err != nil {
+			return err
+		}
 	}
 	return nil
 }
