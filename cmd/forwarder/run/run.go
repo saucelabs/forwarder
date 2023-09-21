@@ -139,7 +139,9 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 				req.Header = http.Header{}
 			}
 			for _, h := range c.proxyHeaders {
-				h.Apply(req.Header)
+				if err := h.ApplyToRequest(req); err != nil {
+					return err
+				}
 			}
 			return nil
 		}
@@ -222,6 +224,15 @@ func Command() *cobra.Command {
 	}
 	c.httpProxyConfig.PromRegistry = c.promReg
 	c.apiServerConfig.Addr = "localhost:10000"
+
+	header.DefaultAddRequestFunc = map[string]func(*http.Request) string{
+		"id": func(req *http.Request) string {
+			if v := req.Context().Value(martianlog.TraceContextKey); v != nil {
+				return fmt.Sprintf("%s", v)
+			}
+			return ""
+		},
+	}
 
 	cmd := &cobra.Command{
 		Use:     "run [--address <host:port>] [--pac <path or url>] [--credentials <username:password@host:port>]...",
