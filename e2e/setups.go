@@ -238,7 +238,7 @@ func SetupFlagDNSServer(l *setupList) {
 					forwarder.ProxyService().
 						WithIP(networkName, proxyIPAddr).
 						WithDNSServer(s.servers...).
-						WithHTTPDialTimeout(15 * time.Second)).
+						WithDNSTimeout(1 * time.Second)).
 				AddService(
 					dns.Service().
 						WithIP(networkName, dnsIPAddr)).
