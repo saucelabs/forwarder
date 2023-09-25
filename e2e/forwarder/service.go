@@ -171,6 +171,11 @@ func (s *Service) WithDNSServer(servers ...string) *Service {
 	return s
 }
 
+func (s *Service) WithDNSTimeout(timeout time.Duration) *Service {
+	s.Environment["FORWARDER_DNS_TIMEOUT"] = timeout.String()
+	return s
+}
+
 func (s *Service) WithHTTPDialTimeout(timeout time.Duration) *Service {
 	s.Environment["FORWARDER_HTTP_DIAL_TIMEOUT"] = timeout.String()
 	return s
