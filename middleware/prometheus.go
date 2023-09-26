@@ -8,7 +8,6 @@ package middleware
 
 import (
 	"fmt"
-	"net"
 	"net/http"
 	"strconv"
 	"time"
@@ -52,7 +51,7 @@ func NewPrometheus(r prometheus.Registerer, namespace string) *Prometheus {
 		r = prometheus.NewRegistry() // This registry will be discarded.
 	}
 	f := promauto.With(r)
-	l := []string{"code", "method", "host", "source"}
+	l := []string{"code", "method"}
 
 	return &Prometheus{
 		requestsTotal: f.NewCounterVec(prometheus.CounterOpts{
@@ -89,9 +88,7 @@ func (p *Prometheus) Wrap(h http.Handler) http.Handler {
 		d := newDelegator(w, nil)
 		h.ServeHTTP(d, r)
 		elapsed := float64(time.Since(start)) / float64(time.Second)
-
-		src, _, _ := net.SplitHostPort(r.RemoteAddr)
-		lv := [4]string{strconv.Itoa(d.Status()), r.Method, r.Host, src}
+		lv := [2]string{strconv.Itoa(d.Status()), r.Method}
 
 		p.requestsTotal.WithLabelValues(lv[:]...).Inc()
 		p.requestDuration.WithLabelValues(lv[:]...).Observe(elapsed)
@@ -145,9 +142,7 @@ func (p *Prometheus) ModifyResponse(res *http.Response) error {
 	}
 
 	reqSize := computeApproximateRequestSize(r)
-
-	src, _, _ := net.SplitHostPort(r.RemoteAddr)
-	lv := [4]string{strconv.Itoa(res.StatusCode), r.Method, r.Host, src}
+	lv := [2]string{strconv.Itoa(res.StatusCode), r.Method}
 
 	p.requestsTotal.WithLabelValues(lv[:]...).Inc()
 	p.requestDuration.WithLabelValues(lv[:]...).Observe(elapsed)

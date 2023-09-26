@@ -1,49 +1,49 @@
 # HELP test_http_request_duration_seconds The HTTP request latencies in seconds.
 # TYPE test_http_request_duration_seconds histogram
-test_http_request_duration_seconds_bucket{code="200",host="example.com",method="GET",source="localhost",le="0.005"} 0
-test_http_request_duration_seconds_bucket{code="200",host="example.com",method="GET",source="localhost",le="0.01"} 0
-test_http_request_duration_seconds_bucket{code="200",host="example.com",method="GET",source="localhost",le="0.025"} 1
-test_http_request_duration_seconds_bucket{code="200",host="example.com",method="GET",source="localhost",le="0.05"} 1
-test_http_request_duration_seconds_bucket{code="200",host="example.com",method="GET",source="localhost",le="0.1"} 1
-test_http_request_duration_seconds_bucket{code="200",host="example.com",method="GET",source="localhost",le="0.25"} 2
-test_http_request_duration_seconds_bucket{code="200",host="example.com",method="GET",source="localhost",le="0.5"} 2
-test_http_request_duration_seconds_bucket{code="200",host="example.com",method="GET",source="localhost",le="1"} 3
-test_http_request_duration_seconds_bucket{code="200",host="example.com",method="GET",source="localhost",le="2.5"} 4
-test_http_request_duration_seconds_bucket{code="200",host="example.com",method="GET",source="localhost",le="5"} 4
-test_http_request_duration_seconds_bucket{code="200",host="example.com",method="GET",source="localhost",le="10"} 4
-test_http_request_duration_seconds_bucket{code="200",host="example.com",method="GET",source="localhost",le="+Inf"} 4
-test_http_request_duration_seconds_sum{code="200",host="example.com",method="GET",source="localhost"} 0
-test_http_request_duration_seconds_count{code="200",host="example.com",method="GET",source="localhost"} 4
+test_http_request_duration_seconds_bucket{code="200",method="GET",le="0.005"} 0
+test_http_request_duration_seconds_bucket{code="200",method="GET",le="0.01"} 0
+test_http_request_duration_seconds_bucket{code="200",method="GET",le="0.025"} 1
+test_http_request_duration_seconds_bucket{code="200",method="GET",le="0.05"} 1
+test_http_request_duration_seconds_bucket{code="200",method="GET",le="0.1"} 1
+test_http_request_duration_seconds_bucket{code="200",method="GET",le="0.25"} 2
+test_http_request_duration_seconds_bucket{code="200",method="GET",le="0.5"} 2
+test_http_request_duration_seconds_bucket{code="200",method="GET",le="1"} 3
+test_http_request_duration_seconds_bucket{code="200",method="GET",le="2.5"} 4
+test_http_request_duration_seconds_bucket{code="200",method="GET",le="5"} 4
+test_http_request_duration_seconds_bucket{code="200",method="GET",le="10"} 4
+test_http_request_duration_seconds_bucket{code="200",method="GET",le="+Inf"} 4
+test_http_request_duration_seconds_sum{code="200",method="GET"} 0
+test_http_request_duration_seconds_count{code="200",method="GET"} 4
 # HELP test_http_request_size_bytes The HTTP request sizes in bytes.
 # TYPE test_http_request_size_bytes histogram
-test_http_request_size_bytes_bucket{code="200",host="example.com",method="GET",source="localhost",le="1024"} 0
-test_http_request_size_bytes_bucket{code="200",host="example.com",method="GET",source="localhost",le="2048"} 1
-test_http_request_size_bytes_bucket{code="200",host="example.com",method="GET",source="localhost",le="5120"} 1
-test_http_request_size_bytes_bucket{code="200",host="example.com",method="GET",source="localhost",le="10240"} 2
-test_http_request_size_bytes_bucket{code="200",host="example.com",method="GET",source="localhost",le="102400"} 3
-test_http_request_size_bytes_bucket{code="200",host="example.com",method="GET",source="localhost",le="512000"} 4
-test_http_request_size_bytes_bucket{code="200",host="example.com",method="GET",source="localhost",le="1.048576e+06"} 4
-test_http_request_size_bytes_bucket{code="200",host="example.com",method="GET",source="localhost",le="2.62144e+06"} 4
-test_http_request_size_bytes_bucket{code="200",host="example.com",method="GET",source="localhost",le="5.24288e+06"} 4
-test_http_request_size_bytes_bucket{code="200",host="example.com",method="GET",source="localhost",le="1.048576e+07"} 4
-test_http_request_size_bytes_bucket{code="200",host="example.com",method="GET",source="localhost",le="+Inf"} 4
-test_http_request_size_bytes_sum{code="200",host="example.com",method="GET",source="localhost"} 0
-test_http_request_size_bytes_count{code="200",host="example.com",method="GET",source="localhost"} 4
+test_http_request_size_bytes_bucket{code="200",method="GET",le="1024"} 0
+test_http_request_size_bytes_bucket{code="200",method="GET",le="2048"} 1
+test_http_request_size_bytes_bucket{code="200",method="GET",le="5120"} 1
+test_http_request_size_bytes_bucket{code="200",method="GET",le="10240"} 2
+test_http_request_size_bytes_bucket{code="200",method="GET",le="102400"} 3
+test_http_request_size_bytes_bucket{code="200",method="GET",le="512000"} 4
+test_http_request_size_bytes_bucket{code="200",method="GET",le="1.048576e+06"} 4
+test_http_request_size_bytes_bucket{code="200",method="GET",le="2.62144e+06"} 4
+test_http_request_size_bytes_bucket{code="200",method="GET",le="5.24288e+06"} 4
+test_http_request_size_bytes_bucket{code="200",method="GET",le="1.048576e+07"} 4
+test_http_request_size_bytes_bucket{code="200",method="GET",le="+Inf"} 4
+test_http_request_size_bytes_sum{code="200",method="GET"} 0
+test_http_request_size_bytes_count{code="200",method="GET"} 4
 # HELP test_http_requests_total Total number of HTTP requests processed.
 # TYPE test_http_requests_total counter
-test_http_requests_total{code="200",host="example.com",method="GET",source="localhost"} 4
+test_http_requests_total{code="200",method="GET"} 4
 # HELP test_http_response_size_bytes The HTTP response sizes in bytes.
 # TYPE test_http_response_size_bytes histogram
-test_http_response_size_bytes_bucket{code="200",host="example.com",method="GET",source="localhost",le="1024"} 0
-test_http_response_size_bytes_bucket{code="200",host="example.com",method="GET",source="localhost",le="2048"} 1
-test_http_response_size_bytes_bucket{code="200",host="example.com",method="GET",source="localhost",le="5120"} 1
-test_http_response_size_bytes_bucket{code="200",host="example.com",method="GET",source="localhost",le="10240"} 2
-test_http_response_size_bytes_bucket{code="200",host="example.com",method="GET",source="localhost",le="102400"} 3
-test_http_response_size_bytes_bucket{code="200",host="example.com",method="GET",source="localhost",le="512000"} 4
-test_http_response_size_bytes_bucket{code="200",host="example.com",method="GET",source="localhost",le="1.048576e+06"} 4
-test_http_response_size_bytes_bucket{code="200",host="example.com",method="GET",source="localhost",le="2.62144e+06"} 4
-test_http_response_size_bytes_bucket{code="200",host="example.com",method="GET",source="localhost",le="5.24288e+06"} 4
-test_http_response_size_bytes_bucket{code="200",host="example.com",method="GET",source="localhost",le="1.048576e+07"} 4
-test_http_response_size_bytes_bucket{code="200",host="example.com",method="GET",source="localhost",le="+Inf"} 4
-test_http_response_size_bytes_sum{code="200",host="example.com",method="GET",source="localhost"} 0
-test_http_response_size_bytes_count{code="200",host="example.com",method="GET",source="localhost"} 4
+test_http_response_size_bytes_bucket{code="200",method="GET",le="1024"} 0
+test_http_response_size_bytes_bucket{code="200",method="GET",le="2048"} 1
+test_http_response_size_bytes_bucket{code="200",method="GET",le="5120"} 1
+test_http_response_size_bytes_bucket{code="200",method="GET",le="10240"} 2
+test_http_response_size_bytes_bucket{code="200",method="GET",le="102400"} 3
+test_http_response_size_bytes_bucket{code="200",method="GET",le="512000"} 4
+test_http_response_size_bytes_bucket{code="200",method="GET",le="1.048576e+06"} 4
+test_http_response_size_bytes_bucket{code="200",method="GET",le="2.62144e+06"} 4
+test_http_response_size_bytes_bucket{code="200",method="GET",le="5.24288e+06"} 4
+test_http_response_size_bytes_bucket{code="200",method="GET",le="1.048576e+07"} 4
+test_http_response_size_bytes_bucket{code="200",method="GET",le="+Inf"} 4
+test_http_response_size_bytes_sum{code="200",method="GET"} 0
+test_http_response_size_bytes_count{code="200",method="GET"} 4
