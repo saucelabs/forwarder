@@ -507,7 +507,7 @@ func (p *Proxy) handleConnectRequest(ctx *Context, req *http.Request, session *S
 		cw   io.WriteCloser
 		cerr error
 	)
-	if p.ConnectPassthrough {
+	if p.ConnectPassthrough { //nolint:nestif // to be fixed in #445
 		pr, pw := io.Pipe()
 		req.Body = pr
 		defer req.Body.Close()
