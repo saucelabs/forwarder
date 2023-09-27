@@ -149,10 +149,6 @@ issues:
         - nosnakecase
       source: "func Example"
 
-    - linters:
-        - gomnd
-      source: "Priority:"
-
     - path: utils/osdns/
       linters:
         - goheader
