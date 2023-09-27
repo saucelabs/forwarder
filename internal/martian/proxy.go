@@ -417,6 +417,65 @@ func (p *Proxy) shouldMITM(req *http.Request) bool {
 	return true
 }
 
+func (p *Proxy) handleMITM(ctx *Context, req *http.Request, session *Session, brw *bufio.ReadWriter, conn net.Conn) error {
+	log.Debugf(req.Context(), "attempting MITM for connection: %s / %s", req.Host, req.URL.String())
+
+	res := proxyutil.NewResponse(200, nil, req)
+
+	if err := p.resmod.ModifyResponse(res); err != nil {
+		log.Errorf(req.Context(), "error modifying CONNECT response: %v", err)
+		p.warning(res.Header, err)
+	}
+	if session.Hijacked() {
+		log.Debugf(req.Context(), "connection hijacked by response modifier")
+		return nil
+	}
+
+	if err := res.Write(brw); err != nil {
+		log.Errorf(req.Context(), "got error while writing response back to client: %v", err)
+	}
+	if err := brw.Flush(); err != nil {
+		log.Errorf(req.Context(), "got error while flushing response back to client: %v", err)
+	}
+
+	log.Debugf(req.Context(), "completed MITM for connection: %s", req.Host)
+
+	b, err := brw.Peek(1)
+	if err != nil {
+		log.Errorf(req.Context(), "error peeking message through CONNECT tunnel to determine type: %v", err)
+	}
+
+	// Drain all of the rest of the buffered data.
+	buf := make([]byte, brw.Reader.Buffered())
+	brw.Read(buf)
+
+	// 22 is the TLS handshake.
+	// https://tools.ietf.org/html/rfc5246#section-6.2.1
+	if b[0] == 22 {
+		// Prepend the previously read data to be read again by http.ReadRequest.
+		tlsconn := tls.Server(&peekedConn{
+			conn,
+			io.MultiReader(bytes.NewReader(buf), conn),
+		}, p.mitm.TLSForHost(req.Host))
+
+		if err := tlsconn.Handshake(); err != nil {
+			p.mitm.HandshakeErrorCallback(req, err)
+			return err
+		}
+		if tlsconn.ConnectionState().NegotiatedProtocol == "h2" {
+			return p.mitm.H2Config().Proxy(p.closing, tlsconn, req.URL)
+		}
+
+		brw.Writer.Reset(tlsconn)
+		brw.Reader.Reset(tlsconn)
+		return p.handle(ctx, tlsconn, brw)
+	}
+
+	// Prepend the previously read data to be read again by http.ReadRequest.
+	brw.Reader.Reset(io.MultiReader(bytes.NewReader(buf), conn))
+	return p.handle(ctx, conn, brw)
+}
+
 func (p *Proxy) handleConnectRequest(ctx *Context, req *http.Request, session *Session, brw *bufio.ReadWriter, conn net.Conn) error {
 	if err := p.reqmod.ModifyRequest(req); err != nil {
 		log.Errorf(req.Context(), "error modifying CONNECT request: %v", err)
@@ -428,62 +487,7 @@ func (p *Proxy) handleConnectRequest(ctx *Context, req *http.Request, session *S
 	}
 
 	if p.shouldMITM(req) {
-		log.Debugf(req.Context(), "attempting MITM for connection: %s / %s", req.Host, req.URL.String())
-
-		res := proxyutil.NewResponse(200, nil, req)
-
-		if err := p.resmod.ModifyResponse(res); err != nil {
-			log.Errorf(req.Context(), "error modifying CONNECT response: %v", err)
-			p.warning(res.Header, err)
-		}
-		if session.Hijacked() {
-			log.Debugf(req.Context(), "connection hijacked by response modifier")
-			return nil
-		}
-
-		if err := res.Write(brw); err != nil {
-			log.Errorf(req.Context(), "got error while writing response back to client: %v", err)
-		}
-		if err := brw.Flush(); err != nil {
-			log.Errorf(req.Context(), "got error while flushing response back to client: %v", err)
-		}
-
-		log.Debugf(req.Context(), "completed MITM for connection: %s", req.Host)
-
-		b, err := brw.Peek(1)
-		if err != nil {
-			log.Errorf(req.Context(), "error peeking message through CONNECT tunnel to determine type: %v", err)
-		}
-
-		// Drain all of the rest of the buffered data.
-		buf := make([]byte, brw.Reader.Buffered())
-		brw.Read(buf)
-
-		// 22 is the TLS handshake.
-		// https://tools.ietf.org/html/rfc5246#section-6.2.1
-		if b[0] == 22 {
-			// Prepend the previously read data to be read again by http.ReadRequest.
-			tlsconn := tls.Server(&peekedConn{
-				conn,
-				io.MultiReader(bytes.NewReader(buf), conn),
-			}, p.mitm.TLSForHost(req.Host))
-
-			if err := tlsconn.Handshake(); err != nil {
-				p.mitm.HandshakeErrorCallback(req, err)
-				return err
-			}
-			if tlsconn.ConnectionState().NegotiatedProtocol == "h2" {
-				return p.mitm.H2Config().Proxy(p.closing, tlsconn, req.URL)
-			}
-
-			brw.Writer.Reset(tlsconn)
-			brw.Reader.Reset(tlsconn)
-			return p.handle(ctx, tlsconn, brw)
-		}
-
-		// Prepend the previously read data to be read again by http.ReadRequest.
-		brw.Reader.Reset(io.MultiReader(bytes.NewReader(buf), conn))
-		return p.handle(ctx, conn, brw)
+		return p.handleMITM(ctx, req, session, brw, conn)
 	}
 
 	log.Debugf(req.Context(), "attempting to establish CONNECT tunnel: %s", req.URL.Host)
