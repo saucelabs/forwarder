@@ -138,6 +138,10 @@ issues:
       source: 'import _ "embed"'
 
     - linters:
+        - forcetypeassert
+      source: "http.DefaultTransport"
+
+    - linters:
         - lll
       source: "//nolint:"
 
