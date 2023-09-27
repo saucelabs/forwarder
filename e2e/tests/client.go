@@ -58,7 +58,7 @@ func defaultTLSConfig() (*tls.Config, error) {
 func newTransport(tb testing.TB) *http.Transport {
 	tb.Helper()
 
-	tr := http.DefaultTransport.(*http.Transport).Clone() //nolint:forcetypeassert // we know it's a *http.Transport
+	tr := http.DefaultTransport.(*http.Transport).Clone()
 	if tlsCfg, err := defaultTLSConfig(); err != nil {
 		tb.Fatal(err)
 	} else {
