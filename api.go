@@ -33,7 +33,7 @@ type APIEndpoint struct {
 	Handler http.Handler
 }
 
-func NewAPIHandler(title string, r prometheus.Gatherer, ready func(ctx context.Context) bool, extraEndpoints ...APIEndpoint) *APIHandler {
+func NewAPIHandler(title string, r prometheus.Gatherer, ready func(ctx context.Context) bool, customEndpoints ...APIEndpoint) *APIHandler {
 	m := http.NewServeMux()
 	a := &APIHandler{
 		mux:   m,
@@ -42,18 +42,24 @@ func NewAPIHandler(title string, r prometheus.Gatherer, ready func(ctx context.C
 	}
 
 	var indexPatterns []string
+	var patternCheck map[string]bool
 	handleFunc := func(pattern string, handler func(http.ResponseWriter, *http.Request)) {
+		if _, ok := patternCheck[pattern]; ok {
+			return
+		}
+		patternCheck[pattern] = true
 		indexPatterns = append(indexPatterns, pattern)
 		m.HandleFunc(pattern, handler)
 	}
 
+	for _, e := range customEndpoints {
+		handleFunc(e.Path, e.Handler.ServeHTTP)
+	}
+
+	// default endpoints
 	handleFunc("/metrics", promhttp.HandlerFor(r, promhttp.HandlerOpts{}).ServeHTTP)
 	handleFunc("/healthz", a.healthz)
 	handleFunc("/readyz", a.readyz)
-
-	for _, e := range extraEndpoints {
-		handleFunc(e.Path, e.Handler.ServeHTTP)
-	}
 
 	handleFunc("/debug/pprof/", pprof.Index)
 	m.HandleFunc("/debug/pprof/profile", pprof.Profile)
