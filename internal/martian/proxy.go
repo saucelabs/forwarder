@@ -25,6 +25,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -417,6 +418,15 @@ func (p *Proxy) shouldMITM(req *http.Request) bool {
 	return true
 }
 
+func shouldTerminateTLS(req *http.Request) bool {
+	h := req.Header.Get("X-Martian-Terminate-TLS")
+	if h == "" {
+		return false
+	}
+	b, _ := strconv.ParseBool(h)
+	return b
+}
+
 func (p *Proxy) handleMITM(ctx *Context, req *http.Request, session *Session, brw *bufio.ReadWriter, conn net.Conn) error {
 	log.Debugf(req.Context(), "attempting MITM for connection: %s / %s", req.Host, req.URL.String())
 
@@ -520,6 +530,18 @@ func (p *Proxy) handleConnectRequest(ctx *Context, req *http.Request, session *S
 			defer cconn.Close()
 			cr = cconn
 			cw = cconn
+
+			if shouldTerminateTLS(req) {
+				log.Debugf(req.Context(), "attempting to terminate TLS on CONNECT tunnel: %s", req.URL.Host)
+				tconn := tls.Client(cconn, p.clientTLSConfig())
+				if err := tconn.Handshake(); err == nil {
+					cr = tconn
+					cw = tconn
+				} else {
+					log.Errorf(req.Context(), "failed to terminate TLS on CONNECT tunnel: %v", err)
+					cerr = err
+				}
+			}
 		}
 	}
 
