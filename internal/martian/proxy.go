@@ -461,7 +461,7 @@ func (p *Proxy) handleMITM(ctx *Context, req *http.Request, session *Session, br
 
 	// 22 is the TLS handshake.
 	// https://tools.ietf.org/html/rfc5246#section-6.2.1
-	if b[0] == 22 {
+	if len(b) > 0 && b[0] == 22 {
 		// Prepend the previously read data to be read again by http.ReadRequest.
 		tlsconn := tls.Server(&peekedConn{
 			conn,
