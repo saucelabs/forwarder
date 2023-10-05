@@ -240,6 +240,10 @@ func (hp *HTTPProxy) configureProxy() error {
 		}
 	}
 
+	if hp.config.PromRegistry != nil {
+		hp.proxy.EnableMetrics(hp.config.PromRegistry, hp.config.PromNamespace)
+	}
+
 	hp.proxy.AllowHTTP = true
 	hp.proxy.RequestIDHeader = hp.config.RequestIDHeader
 	hp.proxy.ConnectRequestModifier = hp.config.ConnectRequestModifier
