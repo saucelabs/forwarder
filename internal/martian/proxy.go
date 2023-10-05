@@ -428,31 +428,34 @@ func shouldTerminateTLS(req *http.Request) bool {
 }
 
 func (p *Proxy) handleMITM(ctx *Context, req *http.Request, session *Session, brw *bufio.ReadWriter, conn net.Conn) error {
-	log.Debugf(req.Context(), "attempting MITM for connection: %s / %s", req.Host, req.URL.String())
+	log.Debugf(req.Context(), "mitm: attempting MITM for connection %s", req.Host)
 
 	res := proxyutil.NewResponse(200, nil, req)
 
 	if err := p.resmod.ModifyResponse(res); err != nil {
-		log.Errorf(req.Context(), "error modifying CONNECT response: %v", err)
+		log.Errorf(req.Context(), "mitm: error modifying CONNECT response: %v", err)
 		p.warning(res.Header, err)
 	}
 	if session.Hijacked() {
-		log.Debugf(req.Context(), "connection hijacked by response modifier")
+		log.Debugf(req.Context(), "mitm: connection hijacked by response modifier")
 		return nil
 	}
 
 	if err := res.Write(brw); err != nil {
-		log.Errorf(req.Context(), "got error while writing response back to client: %v", err)
+		log.Errorf(req.Context(), "mitm: got error while writing response back to client: %v", err)
 	}
 	if err := brw.Flush(); err != nil {
-		log.Errorf(req.Context(), "got error while flushing response back to client: %v", err)
+		log.Errorf(req.Context(), "mitm: got error while flushing response back to client: %v", err)
 	}
-
-	log.Debugf(req.Context(), "completed MITM for connection: %s", req.Host)
 
 	b, err := brw.Peek(1)
 	if err != nil {
-		log.Errorf(req.Context(), "error peeking message through CONNECT tunnel to determine type: %v", err)
+		if errors.Is(err, io.EOF) {
+			log.Debugf(req.Context(), "mitm: connection closed prematurely: %v", err)
+		} else {
+			log.Errorf(req.Context(), "mitm: failed to peek connection %s: %v", req.Host, err)
+		}
+		return errClose
 	}
 
 	// Drain all of the rest of the buffered data.
@@ -470,9 +473,18 @@ func (p *Proxy) handleMITM(ctx *Context, req *http.Request, session *Session, br
 
 		if err := tlsconn.Handshake(); err != nil {
 			p.mitm.HandshakeErrorCallback(req, err)
-			return err
+			if errors.Is(err, io.EOF) {
+				log.Debugf(req.Context(), "mitm: connection closed prematurely: %v", err)
+			} else {
+				log.Errorf(req.Context(), "mitm: failed to handshake connection %s: %v", req.Host, err)
+			}
+			return errClose
 		}
-		if tlsconn.ConnectionState().NegotiatedProtocol == "h2" {
+
+		cs := tlsconn.ConnectionState()
+		log.Debugf(req.Context(), "mitm: negotiated %s for connection: %s", cs.NegotiatedProtocol, req.Host)
+
+		if cs.NegotiatedProtocol == "h2" {
 			return p.mitm.H2Config().Proxy(p.closing, tlsconn, req.URL)
 		}
 
