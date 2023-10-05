@@ -18,7 +18,6 @@ Package proxyutil provides functionality for building proxies.
 package proxyutil
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"net/http"
@@ -32,15 +31,6 @@ import (
 // If body is nil, an empty byte.Buffer will be provided to be consistent with
 // the guarantees provided by http.Transport and http.Client.
 func NewResponse(code int, body io.Reader, req *http.Request) *http.Response {
-	if body == nil {
-		body = &bytes.Buffer{}
-	}
-
-	rc, ok := body.(io.ReadCloser)
-	if !ok {
-		rc = io.NopCloser(body)
-	}
-
 	res := &http.Response{
 		StatusCode: code,
 		Status:     fmt.Sprintf("%d %s", code, http.StatusText(code)),
@@ -48,8 +38,16 @@ func NewResponse(code int, body io.Reader, req *http.Request) *http.Response {
 		ProtoMajor: 1,
 		ProtoMinor: 1,
 		Header:     http.Header{},
-		Body:       rc,
+		Body:       http.NoBody,
 		Request:    req,
+	}
+
+	if body != nil {
+		rc, ok := body.(io.ReadCloser)
+		if !ok {
+			rc = io.NopCloser(body)
+		}
+		res.Body = rc
 	}
 
 	if req != nil {
