@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -33,7 +32,8 @@ import (
 // a single connection.
 type Context struct {
 	session *Session
-	id      uint64
+	n       uint64
+	hash    uint32
 
 	mu            sync.RWMutex
 	vals          map[string]any
@@ -196,7 +196,7 @@ func (ctx *Context) Session() *Session {
 
 // ID returns the context ID.
 func (ctx *Context) ID() string {
-	return strconv.FormatUint(ctx.id, 16)
+	return fmt.Sprintf("%d-%08x", ctx.n, ctx.hash)
 }
 
 // Get takes key and returns the associated value from the context.
@@ -256,15 +256,12 @@ func newSessionWithResponseWriter(rw http.ResponseWriter) *Session {
 
 var nextID atomic.Uint64
 
-func init() {
-	nextID.Store(uint64(time.Now().UnixMilli()))
-}
-
 // withSession builds a new context from an existing session.
 // Session must be non-nil.
 func withSession(s *Session) *Context {
 	return &Context{
 		session: s,
-		id:      nextID.Add(1),
+		n:       nextID.Add(1),
+		hash:    uint32(time.Now().UnixNano()),
 	}
 }
