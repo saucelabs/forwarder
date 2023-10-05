@@ -30,6 +30,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/saucelabs/forwarder/dialvia"
 	"github.com/saucelabs/forwarder/internal/martian/log"
 	"github.com/saucelabs/forwarder/internal/martian/mitm"
@@ -116,6 +117,7 @@ type Proxy struct {
 	roundTripper http.RoundTripper
 	dial         func(context.Context, string, string) (net.Conn, error)
 	mitm         *mitm.Config
+	metrics      *metrics
 	proxyURL     func(*http.Request) (*url.URL, error)
 	conns        sync.WaitGroup
 	connsMu      sync.Mutex // protects conns.Add/Wait from concurrent access
@@ -239,6 +241,10 @@ func (p *Proxy) SetResponseModifier(resmod ResponseModifier) {
 	}
 
 	p.resmod = resmod
+}
+
+func (p *Proxy) EnableMetrics(r prometheus.Registerer, namespace string) {
+	p.metrics = newMetrics(r, namespace)
 }
 
 // Serve accepts connections from the listener and handles the requests.
@@ -675,6 +681,11 @@ func (p *Proxy) handle(ctx *Context, conn net.Conn, brw *bufio.ReadWriter) error
 		return err
 	}
 	defer req.Body.Close()
+
+	if p.metrics != nil {
+		p.metrics.RequestReceived()
+		defer p.metrics.RequestDone()
+	}
 
 	if tconn, ok := conn.(*tls.Conn); ok {
 		session.MarkSecure()

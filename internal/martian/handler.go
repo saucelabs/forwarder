@@ -84,6 +84,11 @@ func (p *Proxy) Handler() http.Handler {
 }
 
 func (p proxyHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
+	if p.metrics != nil {
+		p.metrics.RequestReceived()
+		defer p.metrics.RequestDone()
+	}
+
 	session := newSessionWithResponseWriter(rw)
 	if req.TLS != nil {
 		session.MarkSecure()
