@@ -25,6 +25,7 @@ linters:
     - exhaustive
     - exhaustivestruct
     - exhaustruct
+    - funlen
     - gochecknoglobals
     - gochecknoinits
     - godox
@@ -51,9 +52,6 @@ linters:
 linters-settings:
   errcheck:
     check-blank: true
-  funlen:
-    lines: 160
-    statements: 75
   gocognit:
     min-complexity: 50
   gocyclo:
@@ -79,8 +77,6 @@ issues:
     - "Error return value of `net.SplitHostPort` is not checked"
     - "Error return value of `w.Write` is not checked"
     - "Limiter.WaitN` is not checked"
-    - "Function 'runE' has too many statements"
-    - "Function 'runE' is too long"
     - "Temporary has been deprecated since Go 1.18 because it shouldn't be used"
     - "`nop.+` is unused"
     - "can be `expvar.Var`"
@@ -95,7 +91,6 @@ issues:
       linters:
         - bodyclose
         - errcheck
-        - funlen
         - gocognit
         - gomnd
         - gosec
