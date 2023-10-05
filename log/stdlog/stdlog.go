@@ -27,7 +27,7 @@ func New(cfg *flog.Config) Logger {
 		w = cfg.File
 	}
 	return Logger{
-		log:   log.New(w, "", log.Ldate|log.Ltime|log.LUTC),
+		log:   log.New(w, "", log.Ldate|log.Ltime|log.Lmicroseconds|log.LUTC),
 		level: cfg.Level,
 	}
 }
