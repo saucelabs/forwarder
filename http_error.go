@@ -29,7 +29,7 @@ var (
 	ErrProxyDenied    = denyError{errors.New("proxying denied")}
 )
 
-func errorResponse(req *http.Request, err error) *http.Response {
+func (hp *HTTPProxy) errorResponse(req *http.Request, err error) *http.Response {
 	handlers := []errorHandler{
 		handleNetError,
 		handleTLSRecordHeader,
