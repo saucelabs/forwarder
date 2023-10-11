@@ -245,7 +245,7 @@ func (hp *HTTPProxy) configureProxy() error {
 	hp.proxy.ConnectRequestModifier = hp.config.ConnectRequestModifier
 	hp.proxy.ConnectPassthrough = hp.config.ConnectPassthrough
 	hp.proxy.WithoutWarning = true
-	hp.proxy.ErrorResponse = errorResponse
+	hp.proxy.ErrorResponse = hp.errorResponse
 	hp.proxy.CloseAfterReply = hp.config.CloseAfterReply
 	hp.proxy.ReadTimeout = hp.config.ReadTimeout
 	hp.proxy.ReadHeaderTimeout = hp.config.ReadHeaderTimeout
@@ -450,7 +450,7 @@ func (hp *HTTPProxy) basicAuth(u *url.Userinfo) martian.RequestModifier {
 
 func (hp *HTTPProxy) denyLocalhost() martian.RequestModifier {
 	return hp.abortIf(hp.isLocalhost, func(req *http.Request) *http.Response {
-		return errorResponse(req, ErrProxyLocalhost)
+		return hp.errorResponse(req, ErrProxyLocalhost)
 	}, errors.New("localhost access denied"))
 }
 
@@ -458,7 +458,7 @@ func (hp *HTTPProxy) denyDomains(r *ruleset.RegexpMatcher) martian.RequestModifi
 	return hp.abortIf(func(req *http.Request) bool {
 		return r.Match(req.URL.Hostname())
 	}, func(req *http.Request) *http.Response {
-		return errorResponse(req, ErrProxyDenied)
+		return hp.errorResponse(req, ErrProxyDenied)
 	}, errors.New("domain access denied"))
 }
 
