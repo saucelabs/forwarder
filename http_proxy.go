@@ -134,6 +134,7 @@ type HTTPProxy struct {
 	creds      *CredentialsMatcher
 	transport  http.RoundTripper
 	log        log.Logger
+	metrics    *httpProxyMetrics
 	proxy      *martian.Proxy
 	mitmCACert *x509.Certificate
 	proxyFunc  ProxyFunc
@@ -200,6 +201,7 @@ func newHTTPProxy(cfg *HTTPProxyConfig, pr PACResolver, cm *CredentialsMatcher, 
 		creds:     cm,
 		transport: rt,
 		log:       log,
+		metrics:   newMetrics(cfg.PromRegistry, cfg.PromNamespace),
 	}
 
 	if err := hp.configureProxy(); err != nil {
