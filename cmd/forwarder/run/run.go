@@ -168,7 +168,7 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 		}
 	}
 
-	var g runctx.Group
+	g := runctx.NewGroup()
 	{
 		p, err := forwarder.NewHTTPProxy(c.httpProxyConfig, pr, cm, rt, logger.Named("proxy"))
 		if err != nil {
