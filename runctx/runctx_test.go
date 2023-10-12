@@ -18,7 +18,7 @@ func TestContextCancel(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	var g Group
+	g := NewGroup()
 	g.Add(func(ctx context.Context) error {
 		<-ctx.Done()
 		return ctx.Err()
@@ -34,7 +34,7 @@ func TestContextCancel(t *testing.T) {
 }
 
 func TestSignal(t *testing.T) {
-	var g Group
+	g := NewGroup()
 	g.Add(func(ctx context.Context) error {
 		<-ctx.Done()
 		return ctx.Err()
@@ -51,7 +51,7 @@ func TestSignal(t *testing.T) {
 func TestError(t *testing.T) {
 	testErr := errors.New("test")
 
-	var g Group
+	g := NewGroup()
 	g.Add(func(ctx context.Context) error {
 		<-ctx.Done()
 		return ctx.Err()

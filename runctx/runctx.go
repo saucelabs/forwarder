@@ -32,7 +32,8 @@ type Group struct {
 
 func NewGroup(fn ...func(ctx context.Context) error) *Group {
 	return &Group{
-		funcs: fn,
+		NotifySignals: DefaultNotifySignals,
+		funcs:         fn,
 	}
 }
 
@@ -50,20 +51,19 @@ func (g *Group) Run() error {
 // It returns the first error returned by any of the functions.
 // If the context is canceled, it returns nil.
 func (g *Group) RunContext(ctx context.Context) error {
-	sigs := g.NotifySignals
-	if len(sigs) == 0 {
-		sigs = DefaultNotifySignals
-	}
-	ctx, unregisterSignals := signal.NotifyContext(ctx, sigs...)
-
 	var eg *errgroup.Group
-	eg, ctx = errgroup.WithContext(ctx)
-
-	eg.Go(func() error {
-		<-ctx.Done()
-		unregisterSignals()
-		return nil
-	})
+	if len(g.NotifySignals) > 0 {
+		var unregisterSignals context.CancelFunc
+		ctx, unregisterSignals = signal.NotifyContext(ctx, g.NotifySignals...)
+		eg, ctx = errgroup.WithContext(ctx)
+		eg.Go(func() error {
+			<-ctx.Done()
+			unregisterSignals()
+			return nil
+		})
+	} else {
+		eg, ctx = errgroup.WithContext(ctx)
+	}
 
 	for _, fn := range g.funcs {
 		fn := fn
