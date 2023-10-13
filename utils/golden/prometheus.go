@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"runtime"
 	"testing"
 	"time"
 
@@ -28,6 +29,10 @@ func DiffPrometheusMetrics(t *testing.T, p prometheus.Gatherer, filter ...func(*
 	golden, err := os.ReadFile(goldenFile)
 	if err != nil && !os.IsNotExist(err) {
 		t.Fatal(err)
+	}
+	if runtime.GOOS == "windows" {
+		// Remove carriage returns from the file on Windows.
+		golden = bytes.ReplaceAll(golden, []byte{'\r'}, nil)
 	}
 
 	got := dumpPrometheusMetrics(t, p, filter...)
