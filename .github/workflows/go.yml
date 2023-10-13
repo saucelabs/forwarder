@@ -27,7 +27,7 @@ jobs:
         with:
           version: "${{env.GOLANGCI_LINT_VERSION}}"
 
-  test:
+  test-ubuntu:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -41,6 +41,20 @@ jobs:
         uses: actions/setup-go@v4
         with:
           go-version: "${{env.GO_VERSION}}"
+
+      - name: Run unit test
+        run: make test coverage
+
+  test-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "stable" #TODO: load from dotenv file see #465
 
       - name: Run unit test
         run: make test coverage
