@@ -8,7 +8,7 @@ export PATH  := $(GOBIN):$(PATH)
 include .version
 
 ifneq ($(GO_VERSION),$(shell go version | grep -o -E '1\.[0-9\.]+'))
-$(error Go version $(GO_VERSION) is required)
+$(error Go version $(GO_VERSION) is required, got $(shell go version))
 endif
 
 .PHONY: install-dependencies
