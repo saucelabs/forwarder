@@ -8,6 +8,7 @@ package forwarder
 
 import (
 	"os"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -252,6 +253,11 @@ func TestParseFilePath(t *testing.T) {
 
 	for i := range tests {
 		tc := &tests[i]
+		if runtime.GOOS == "windows" {
+			// Windows doesn't support permissions, so we can't test this.
+			tc.err = ""
+		}
+
 		t.Run(tc.name, func(t *testing.T) {
 			f, err := OpenFileParser(os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600, 0o700)(tc.input)
 			defer func() {
