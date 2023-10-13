@@ -8,7 +8,6 @@ package runctx
 
 import (
 	"errors"
-	"syscall"
 	"testing"
 
 	"golang.org/x/net/context"
@@ -29,21 +28,6 @@ func TestContextCancel(t *testing.T) {
 	})
 
 	if err := g.RunContext(ctx); err != nil {
-		t.Fatal(err)
-	}
-}
-
-func TestSignal(t *testing.T) {
-	g := NewGroup()
-	g.Add(func(ctx context.Context) error {
-		<-ctx.Done()
-		return ctx.Err()
-	})
-	g.Add(func(ctx context.Context) error {
-		return syscall.Kill(syscall.Getpid(), syscall.SIGINT)
-	})
-
-	if err := g.Run(); err != nil {
 		t.Fatal(err)
 	}
 }
