@@ -25,6 +25,9 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"os"
+	"reflect"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -43,6 +46,46 @@ var (
 	noop     = Noop("martian")
 )
 
+func errno(v error) uintptr {
+	if rv := reflect.ValueOf(v); rv.Kind() == reflect.Uintptr {
+		return uintptr(rv.Uint())
+	}
+	return 0
+}
+
+// isClosedConnError reports whether err is an error from use of a closed network connection.
+func isClosedConnError(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	// TODO: remove this string search and be more like the Windows
+	// case below. That might involve modifying the standard library
+	// to return better error types.
+	str := err.Error()
+	if strings.Contains(str, "use of closed network connection") {
+		return true
+	}
+
+	// TODO(bradfitz): x/tools/cmd/bundle doesn't really support
+	// build tags, so I can't make an http2_windows.go file with
+	// Windows-specific stuff. Fix that and move this, once we
+	// have a way to bundle this into std's net/http somehow.
+	if runtime.GOOS == "windows" {
+		if oe, ok := err.(*net.OpError); ok && oe.Op == "read" {
+			if se, ok := oe.Err.(*os.SyscallError); ok && se.Syscall == "wsarecv" {
+				const WSAECONNABORTED = 10053
+				const WSAECONNRESET = 10054
+				if n := errno(se.Err); n == WSAECONNRESET || n == WSAECONNABORTED {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
+// isCloseable reports whether err is an error that indicates the client connection should be closed.
 func isCloseable(err error) bool {
 	var neterr net.Error
 	if ok := errors.As(err, &neterr); ok && neterr.Timeout() {
