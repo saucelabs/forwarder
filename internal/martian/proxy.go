@@ -684,7 +684,7 @@ func (p *Proxy) handle(ctx *Context, conn net.Conn, brw *bufio.ReadWriter) error
 
 	req, err := p.readRequest(ctx, conn, brw)
 	if err != nil {
-		return err
+		return errClose
 	}
 	defer req.Body.Close()
 
