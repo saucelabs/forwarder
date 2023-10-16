@@ -1825,7 +1825,7 @@ func TestReadHeaderTimeout(t *testing.T) {
 	if _, err = conn.Write([]byte("Host: example.com\r\n\r\n")); err != nil {
 		t.Fatalf("conn.Write(): got %v, want no error", err)
 	}
-	if _, err = conn.Read(make([]byte, 1)); !errors.Is(err, io.EOF) {
+	if _, err = conn.Read(make([]byte, 1)); !isClosedConnError(err) {
 		t.Fatalf("conn.Read(): got %v, want io.EOF", err)
 	}
 }
