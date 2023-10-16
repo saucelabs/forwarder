@@ -89,14 +89,15 @@ func isClosedConnError(err error) bool {
 
 // isCloseable reports whether err is an error that indicates the client connection should be closed.
 func isCloseable(err error) bool {
-	var neterr net.Error
-	if ok := errors.As(err, &neterr); ok && neterr.Timeout() {
+	if errors.Is(err, errClose) ||
+		errors.Is(err, io.EOF) ||
+		errors.Is(err, io.ErrUnexpectedEOF) ||
+		errors.Is(err, io.ErrClosedPipe) {
 		return true
 	}
 
-	if errors.Is(err, io.EOF) ||
-		errors.Is(err, io.ErrClosedPipe) ||
-		errors.Is(err, errClose) {
+	var neterr net.Error
+	if ok := errors.As(err, &neterr); ok && neterr.Timeout() {
 		return true
 	}
 
