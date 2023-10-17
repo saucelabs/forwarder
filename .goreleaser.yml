@@ -120,6 +120,7 @@ nfpms:
       deb:
         file_name_template: "{{ .ProjectName }}_{{ .Version }}.{{ .Os }}_{{ .Arch }}"
         scripts:
+          preinstall: packaging/deb/forwarder.preinst
           postinstall: packaging/deb/forwarder.postinst
           preremove: packaging/deb/forwarder.prerm
           postremove: packaging/deb/forwarder.postrm
@@ -130,6 +131,7 @@ nfpms:
           {{- else if eq .Arch "arm64" }}aarch64
           {{- else }}{{ .Arch }}{{ end }}
         scripts:
+          preinstall: packaging/rpm/forwarder.preinst
           postinstall: packaging/rpm/forwarder.postinst
           preremove: packaging/rpm/forwarder.prerm
           postremove: packaging/rpm/forwarder.postrm
