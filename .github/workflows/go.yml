@@ -42,6 +42,9 @@ jobs:
         with:
           go-version: "${{env.GO_VERSION}}"
 
+      - name: Run martian unit test
+        run: make -C internal/martian test
+
       - name: Run unit test
         run: make test coverage
 
@@ -56,8 +59,8 @@ jobs:
         with:
           go-version: "stable" #TODO: load from dotenv file see #465
 
-      - name: Run unit test
-        run: make test coverage
+      - name: Run martian unit test
+        run: make -C internal/martian test
 
   e2e:
     runs-on: ubuntu-latest
