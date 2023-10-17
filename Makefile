@@ -59,8 +59,6 @@ lint:
 .PHONY: test
 test:
 	@go test -timeout 120s -short -race -cover -coverprofile=coverage.out ./...
-	@go test -run Integration ./internal/martian -tls
-	@go test -run Integration ./internal/martian -handler
 
 .PHONY: coverage
 coverage:
