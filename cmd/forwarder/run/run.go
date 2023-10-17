@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/saucelabs/forwarder"
 	"github.com/saucelabs/forwarder/bind"
 	"github.com/saucelabs/forwarder/header"
@@ -28,6 +29,7 @@ import (
 	"github.com/saucelabs/forwarder/utils/osdns"
 	"github.com/spf13/cobra"
 	"go.uber.org/goleak"
+	"go.uber.org/multierr"
 )
 
 type command struct {
@@ -186,6 +188,10 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 	}
 
 	if c.apiServerConfig.Addr != "" {
+		if err := c.registerProcMetrics(); err != nil {
+			return fmt.Errorf("register process metrics: %w", err)
+		}
+
 		ep := append([]forwarder.APIEndpoint{
 			{
 				Path:    "/configz",
@@ -215,6 +221,15 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 	}
 
 	return g.Run()
+}
+
+func (c *command) registerProcMetrics() error {
+	return multierr.Combine(
+		// Note that ProcessCollector is only available in Linux and Windows.
+		c.promReg.Register(collectors.NewProcessCollector(
+			collectors.ProcessCollectorOpts{})),
+		c.promReg.Register(collectors.NewGoCollector()),
+	)
 }
 
 func Command() *cobra.Command {
