@@ -44,8 +44,22 @@ func rootCommand() *cobra.Command {
 
 	flagGroups := templates.FlagGroups{
 		{
-			Name:   "Options",
+			Name:   "Server options",
 			Prefix: []string{""},
+		},
+		{
+			Name: "Proxy options",
+			Prefix: []string{
+				"proxy",
+				"pac",
+
+				"direct-domains",
+				"deny-domains",
+
+				"header",
+				"proxy-header",
+				"response-header",
+			},
 		},
 		{
 			Name:   "MITM options",
@@ -64,14 +78,11 @@ func rootCommand() *cobra.Command {
 			},
 		},
 		{
-			Name: "Domain options",
+			Name: "API server options",
 			Prefix: []string{
-				"deny-domain",
+				"api",
+				"prom",
 			},
-		},
-		{
-			Name:   "API server options",
-			Prefix: []string{"api"},
 		},
 		{
 			Name:   "Logging options",
