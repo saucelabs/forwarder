@@ -694,7 +694,7 @@ func copySync(ctx context.Context, name string, w io.Writer, r io.Reader, donec 
 	buf := *bufp
 	defer copyBufPool.Put(bufp)
 
-	if _, err := io.CopyBuffer(w, r, buf); err != nil && !errors.Is(err, io.EOF) {
+	if _, err := io.CopyBuffer(w, r, buf); err != nil && !isClosedConnError(err) {
 		log.Errorf(ctx, "failed to copy %s tunnel: %v", name, err)
 	}
 	if cw, ok := asCloseWriter(w); ok {
