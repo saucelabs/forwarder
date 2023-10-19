@@ -50,6 +50,11 @@ func BindAll(cmd *cobra.Command, envPrefix, configFileFlagName string) error {
 		}
 	}
 
+	return BindFromViper(cmd, v)
+}
+
+// BindFromViper updates the given command flags with values from preconditioned Viper instance.
+func BindFromViper(cmd *cobra.Command, v *viper.Viper) error {
 	// Update cobra flags with values from viper
 	updateFs := func(fs *pflag.FlagSet) (ok bool) {
 		ok = true
