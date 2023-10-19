@@ -227,7 +227,7 @@ func (c *command) registerProcMetrics() error {
 	return multierr.Combine(
 		// Note that ProcessCollector is only available in Linux and Windows.
 		c.promReg.Register(collectors.NewProcessCollector(
-			collectors.ProcessCollectorOpts{})),
+			collectors.ProcessCollectorOpts{Namespace: c.httpProxyConfig.PromNamespace})),
 		c.promReg.Register(collectors.NewGoCollector()),
 	)
 }
