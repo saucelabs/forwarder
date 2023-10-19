@@ -88,6 +88,10 @@ func rootCommand() *cobra.Command {
 			Name:   "Logging options",
 			Prefix: []string{"log"},
 		},
+		{
+			Name:   "Options",
+			Prefix: []string{"config-file"},
+		},
 	}
 
 	templates.ActsAsRootCommand(cmd, nil, commandGroups, flagGroups, envPrefix)
