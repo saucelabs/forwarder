@@ -197,7 +197,7 @@ func TestDescribeFlagsAsJSON(t *testing.T) {
 				return fs
 			},
 			showHidden: false,
-			expected:   `{"list":"item1,item2"}`,
+			expected:   `{"list":["item1","item2"]}`,
 		},
 	}
 

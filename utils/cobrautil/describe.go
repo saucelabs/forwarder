@@ -49,7 +49,15 @@ func (d FlagsDescriber) DescribeFlags(fs *pflag.FlagSet) (string, error) {
 		if flag.Value.Type() == "bool" {
 			args[flag.Name] = flag.Value
 		} else {
-			args[flag.Name] = strings.Trim(flag.Value.String(), "[]")
+			if sv, ok := flag.Value.(sliceValue); ok {
+				if d.Format == Plain {
+					args[flag.Name] = strings.Join(sv.GetSlice(), ",")
+				} else {
+					args[flag.Name] = sv.GetSlice()
+				}
+			} else {
+				args[flag.Name] = flag.Value.String()
+			}
 		}
 	})
 
@@ -68,4 +76,8 @@ func (d FlagsDescriber) DescribeFlags(fs *pflag.FlagSet) (string, error) {
 	default:
 		return "", errors.New("unknown format")
 	}
+}
+
+type sliceValue interface {
+	GetSlice() []string
 }
