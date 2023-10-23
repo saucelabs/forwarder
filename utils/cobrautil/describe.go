@@ -7,6 +7,7 @@
 package cobrautil
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -15,6 +16,7 @@ import (
 
 	"github.com/spf13/pflag"
 	"golang.org/x/exp/maps"
+	"gopkg.in/yaml.v3"
 )
 
 type DescribeFormat int
@@ -22,6 +24,7 @@ type DescribeFormat int
 const (
 	Plain DescribeFormat = iota
 	JSON
+	YAML
 )
 
 func DescribeFlags(fs *pflag.FlagSet, format DescribeFormat) (string, error) {
@@ -73,6 +76,17 @@ func (d FlagsDescriber) DescribeFlags(fs *pflag.FlagSet) (string, error) {
 	case JSON:
 		encoded, err := json.Marshal(args)
 		return string(encoded), err
+	case YAML:
+		var buf bytes.Buffer
+		enc := yaml.NewEncoder(&buf)
+		enc.SetIndent(2)
+		if err := enc.Encode(args); err != nil {
+			return "", err
+		}
+		if err := enc.Close(); err != nil {
+			return "", err
+		}
+		return buf.String(), nil
 	default:
 		return "", errors.New("unknown format")
 	}
