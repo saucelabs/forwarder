@@ -32,7 +32,7 @@ type command struct {
 }
 
 func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
-	config, err := cobrautil.DescribeFlags(cmd.Flags(), false, cobrautil.Plain)
+	config, err := cobrautil.DescribeFlags(cmd.Flags(), cobrautil.Plain)
 	if err != nil {
 		return err
 	}
