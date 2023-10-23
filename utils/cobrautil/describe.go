@@ -41,25 +41,25 @@ type FlagsDescriber struct {
 func (d FlagsDescriber) DescribeFlags(fs *pflag.FlagSet) (string, error) {
 	args := make(map[string]any, fs.NFlag())
 
-	fs.VisitAll(func(flag *pflag.Flag) {
-		if flag.Name == "help" {
+	fs.VisitAll(func(f *pflag.Flag) {
+		if f.Name == "help" {
 			return
 		}
-		if flag.Hidden && !d.ShowHidden {
+		if f.Hidden && !d.ShowHidden {
 			return
 		}
 
-		if flag.Value.Type() == "bool" {
-			args[flag.Name] = flag.Value
+		if f.Value.Type() == "bool" {
+			args[f.Name] = f.Value
 		} else {
-			if sv, ok := flag.Value.(sliceValue); ok {
+			if sv, ok := f.Value.(sliceValue); ok {
 				if d.Format == Plain {
-					args[flag.Name] = strings.Join(sv.GetSlice(), ",")
+					args[f.Name] = strings.Join(sv.GetSlice(), ",")
 				} else {
-					args[flag.Name] = sv.GetSlice()
+					args[f.Name] = sv.GetSlice()
 				}
 			} else {
-				args[flag.Name] = flag.Value.String()
+				args[f.Name] = f.Value.String()
 			}
 		}
 	})
@@ -68,14 +68,14 @@ func (d FlagsDescriber) DescribeFlags(fs *pflag.FlagSet) (string, error) {
 	case Plain:
 		keys := maps.Keys(args)
 		sort.Strings(keys)
-		var b strings.Builder
+		var sb strings.Builder
 		for _, name := range keys {
-			b.WriteString(fmt.Sprintf("%s=%s\n", name, args[name]))
+			sb.WriteString(fmt.Sprintf("%s=%s\n", name, args[name]))
 		}
-		return b.String(), nil
+		return sb.String(), nil
 	case JSON:
-		encoded, err := json.Marshal(args)
-		return string(encoded), err
+		b, err := json.Marshal(args)
+		return string(b), err
 	case YAML:
 		var buf bytes.Buffer
 		enc := yaml.NewEncoder(&buf)
