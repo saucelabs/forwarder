@@ -7,6 +7,7 @@
 package cobrautil
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -14,11 +15,54 @@ import (
 )
 
 func TestDescribeFlagsAsPlain(t *testing.T) {
+	testDescribeFlags(t, Plain, []string{
+		`a=true
+b=false
+c=true
+d=false`,
+		`key=false`,
+		`key=val`,
+		`key=false`,
+		`key=false`,
+		``,
+		`list=item1,item2`,
+	})
+}
+
+func TestDescribeFlagsAsJSON(t *testing.T) {
+	testDescribeFlags(t, JSON, []string{
+		`{"a":true,"b":false,"c":true,"d":false}`,
+		`{"key":false}`,
+		`{"key":"val"}`,
+		`{"key":false}`,
+		`{"key":false}`,
+		`{}`,
+		`{"list":["item1","item2"]}`,
+	})
+}
+
+func TestDescribeFlagsAsYAML(t *testing.T) {
+	testDescribeFlags(t, YAML, []string{
+		`a: true
+b: false
+c: true
+d: false`,
+		`key: false`,
+		`key: val`,
+		`key: false`,
+		`key: false`,
+		`{}`,
+		`list:
+  - item1
+  - item2`,
+	})
+}
+
+func testDescribeFlags(t *testing.T, f DescribeFormat, expected []string) { //nolint:thelper // not a helper
 	tests := []struct {
 		name       string
 		flags      func() *pflag.FlagSet
 		showHidden bool
-		expected   string
 	}{
 		{
 			name: "keys are sorted",
@@ -31,7 +75,6 @@ func TestDescribeFlagsAsPlain(t *testing.T) {
 				return fs
 			},
 			showHidden: false,
-			expected:   "a=true\nb=false\nc=true\nd=false\n",
 		},
 		{
 			name: "bool is correctly formatted",
@@ -41,7 +84,6 @@ func TestDescribeFlagsAsPlain(t *testing.T) {
 				return fs
 			},
 			showHidden: false,
-			expected:   "key=false\n",
 		},
 		{
 			name: "string is correctly formatted",
@@ -51,7 +93,6 @@ func TestDescribeFlagsAsPlain(t *testing.T) {
 				return fs
 			},
 			showHidden: false,
-			expected:   "key=val\n",
 		},
 		{
 			name: "help is not shown",
@@ -62,7 +103,6 @@ func TestDescribeFlagsAsPlain(t *testing.T) {
 				return fs
 			},
 			showHidden: false,
-			expected:   "key=false\n",
 		},
 		{
 			name: "hidden is shown",
@@ -73,7 +113,6 @@ func TestDescribeFlagsAsPlain(t *testing.T) {
 				return fs
 			},
 			showHidden: true,
-			expected:   "key=false\n",
 		},
 		{
 			name: "hidden is not shown",
@@ -84,7 +123,6 @@ func TestDescribeFlagsAsPlain(t *testing.T) {
 				return fs
 			},
 			showHidden: false,
-			expected:   ``,
 		},
 		{
 			name: "list of values",
@@ -94,7 +132,6 @@ func TestDescribeFlagsAsPlain(t *testing.T) {
 				return fs
 			},
 			showHidden: false,
-			expected:   "list=item1,item2\n",
 		},
 	}
 
@@ -102,7 +139,7 @@ func TestDescribeFlagsAsPlain(t *testing.T) {
 		tc := tests[i]
 		t.Run(tc.name, func(t *testing.T) {
 			d := FlagsDescriber{
-				Format:     Plain,
+				Format:     f,
 				ShowHidden: tc.showHidden,
 			}
 
@@ -110,221 +147,8 @@ func TestDescribeFlagsAsPlain(t *testing.T) {
 			if err != nil {
 				t.Errorf("unexpected error: %v", err)
 			}
-			if diff := cmp.Diff(tc.expected, result); diff != "" {
+			if diff := cmp.Diff(expected[i], strings.TrimSpace(result)); diff != "" {
 				t.Errorf("unexpected result (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
-func TestDescribeFlagsAsJSON(t *testing.T) {
-	tests := []struct {
-		name       string
-		flags      func() *pflag.FlagSet
-		showHidden bool
-		expected   string
-	}{
-		{
-			name: "bool is not quoted",
-			flags: func() *pflag.FlagSet {
-				fs := pflag.NewFlagSet("flags", pflag.ContinueOnError)
-				fs.Bool("key", false, "")
-				return fs
-			},
-			showHidden: false,
-			expected:   `{"key":false}`,
-		},
-		{
-			name: "help is not shown",
-			flags: func() *pflag.FlagSet {
-				fs := pflag.NewFlagSet("flags", pflag.ContinueOnError)
-				fs.Bool("key", false, "")
-				fs.Bool("help", true, "")
-				return fs
-			},
-			showHidden: false,
-			expected:   `{"key":false}`,
-		},
-		{
-			name: "hidden is shown",
-			flags: func() *pflag.FlagSet {
-				fs := pflag.NewFlagSet("flags", pflag.ContinueOnError)
-				fs.Bool("key", false, "")
-				_ = fs.MarkHidden("key")
-				return fs
-			},
-			showHidden: true,
-			expected:   `{"key":false}`,
-		},
-		{
-			name: "hidden is not shown",
-			flags: func() *pflag.FlagSet {
-				fs := pflag.NewFlagSet("flags", pflag.ContinueOnError)
-				fs.Bool("key", false, "")
-				_ = fs.MarkHidden("key")
-				return fs
-			},
-			showHidden: false,
-			expected:   `{}`,
-		},
-		{
-			name: "string is quoted",
-			flags: func() *pflag.FlagSet {
-				fs := pflag.NewFlagSet("flags", pflag.ContinueOnError)
-				fs.String("key", "val", "")
-				return fs
-			},
-			showHidden: false,
-			expected:   `{"key":"val"}`,
-		},
-		{
-			name: "keys are sorted",
-			flags: func() *pflag.FlagSet {
-				fs := pflag.NewFlagSet("flags", pflag.ContinueOnError)
-				fs.Bool("c", false, "")
-				fs.String("b", "val", "")
-				fs.Bool("a", false, "")
-				fs.String("d", "val", "")
-				return fs
-			},
-			showHidden: false,
-			expected:   `{"a":false,"b":"val","c":false,"d":"val"}`,
-		},
-		{
-			name: "list of values",
-			flags: func() *pflag.FlagSet {
-				fs := pflag.NewFlagSet("flags", pflag.ContinueOnError)
-				fs.StringSlice("list", []string{"item1", "item2"}, "")
-				return fs
-			},
-			showHidden: false,
-			expected:   `{"list":["item1","item2"]}`,
-		},
-	}
-
-	for i := range tests {
-		tc := tests[i]
-		t.Run(tc.name, func(t *testing.T) {
-			d := FlagsDescriber{
-				Format:     JSON,
-				ShowHidden: tc.showHidden,
-			}
-
-			result, err := d.DescribeFlags(tc.flags())
-			if err != nil {
-				t.Errorf("unexpected error: %v", err)
-			}
-			if result != tc.expected {
-				t.Errorf("expected %s, got %s", tc.expected, result)
-			}
-		})
-	}
-}
-
-func TestDescribeFlagsAsYAML(t *testing.T) {
-	tests := []struct {
-		name       string
-		flags      func() *pflag.FlagSet
-		showHidden bool
-		expected   string
-	}{
-		{
-			name: "bool is not quoted",
-			flags: func() *pflag.FlagSet {
-				fs := pflag.NewFlagSet("flags", pflag.ContinueOnError)
-				fs.Bool("key", false, "")
-				return fs
-			},
-			showHidden: false,
-			expected:   `key: false`,
-		},
-		{
-			name: "help is not shown",
-			flags: func() *pflag.FlagSet {
-				fs := pflag.NewFlagSet("flags", pflag.ContinueOnError)
-				fs.Bool("key", false, "")
-				fs.Bool("help", true, "")
-				return fs
-			},
-			showHidden: false,
-			expected:   `key: false`,
-		},
-		{
-			name: "hidden is shown",
-			flags: func() *pflag.FlagSet {
-				fs := pflag.NewFlagSet("flags", pflag.ContinueOnError)
-				fs.Bool("key", false, "")
-				_ = fs.MarkHidden("key")
-				return fs
-			},
-			showHidden: true,
-			expected:   `key: false`,
-		},
-		{
-			name: "hidden is not shown",
-			flags: func() *pflag.FlagSet {
-				fs := pflag.NewFlagSet("flags", pflag.ContinueOnError)
-				fs.Bool("key", false, "")
-				_ = fs.MarkHidden("key")
-				return fs
-			},
-			showHidden: false,
-			expected:   "{}",
-		},
-		{
-			name: "string is quoted",
-			flags: func() *pflag.FlagSet {
-				fs := pflag.NewFlagSet("flags", pflag.ContinueOnError)
-				fs.String("key", "val", "")
-				return fs
-			},
-			showHidden: false,
-			expected:   `key: val`,
-		},
-		{
-			name: "keys are sorted",
-			flags: func() *pflag.FlagSet {
-				fs := pflag.NewFlagSet("flags", pflag.ContinueOnError)
-				fs.Bool("c", false, "")
-				fs.String("b", "val", "")
-				fs.Bool("a", false, "")
-				fs.String("d", "val", "")
-				return fs
-			},
-			showHidden: false,
-			expected: `a: false
-b: val
-c: false
-d: val`,
-		},
-		{
-			name: "list of values",
-			flags: func() *pflag.FlagSet {
-				fs := pflag.NewFlagSet("flags", pflag.ContinueOnError)
-				fs.StringSlice("list", []string{"item1", "item2"}, "")
-				return fs
-			},
-			showHidden: false,
-			expected: `list:
-  - item1
-  - item2`,
-		},
-	}
-
-	for i := range tests {
-		tc := tests[i]
-		t.Run(tc.name, func(t *testing.T) {
-			d := FlagsDescriber{
-				Format:     YAML,
-				ShowHidden: tc.showHidden,
-			}
-
-			result, err := d.DescribeFlags(tc.flags())
-			if err != nil {
-				t.Errorf("unexpected error: %v", err)
-			}
-			if result != tc.expected {
-				t.Errorf("expected %s, got %s", tc.expected, result)
 			}
 		})
 	}
