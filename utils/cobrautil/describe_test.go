@@ -100,7 +100,12 @@ func TestDescribeFlagsAsPlain(t *testing.T) {
 	for i := range tests {
 		tc := tests[i]
 		t.Run(tc.name, func(t *testing.T) {
-			result, err := DescribeFlags(tc.flags(), tc.showHidden, Plain)
+			d := FlagsDescriber{
+				Format:     Plain,
+				ShowHidden: tc.showHidden,
+			}
+
+			result, err := d.DescribeFlags(tc.flags())
 			if err != nil {
 				t.Errorf("unexpected error: %v", err)
 			}
@@ -199,7 +204,12 @@ func TestDescribeFlagsAsJSON(t *testing.T) {
 	for i := range tests {
 		tc := tests[i]
 		t.Run(tc.name, func(t *testing.T) {
-			result, err := DescribeFlags(tc.flags(), tc.showHidden, JSON)
+			d := FlagsDescriber{
+				Format:     JSON,
+				ShowHidden: tc.showHidden,
+			}
+
+			result, err := d.DescribeFlags(tc.flags())
 			if err != nil {
 				t.Errorf("unexpected error: %v", err)
 			}

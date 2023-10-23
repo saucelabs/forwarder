@@ -8,6 +8,7 @@ package cobrautil
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
@@ -23,14 +24,25 @@ const (
 	JSON
 )
 
-func DescribeFlags(fs *pflag.FlagSet, showHidden bool, format DescribeFormat) (string, error) {
+func DescribeFlags(fs *pflag.FlagSet, format DescribeFormat) (string, error) {
+	return FlagsDescriber{
+		Format: format,
+	}.DescribeFlags(fs)
+}
+
+type FlagsDescriber struct {
+	Format     DescribeFormat
+	ShowHidden bool
+}
+
+func (d FlagsDescriber) DescribeFlags(fs *pflag.FlagSet) (string, error) {
 	args := make(map[string]any, fs.NFlag())
 
 	fs.VisitAll(func(flag *pflag.Flag) {
 		if flag.Name == "help" {
 			return
 		}
-		if flag.Hidden && !showHidden {
+		if flag.Hidden && !d.ShowHidden {
 			return
 		}
 
@@ -41,7 +53,7 @@ func DescribeFlags(fs *pflag.FlagSet, showHidden bool, format DescribeFormat) (s
 		}
 	})
 
-	switch format {
+	switch d.Format {
 	case Plain:
 		keys := maps.Keys(args)
 		sort.Strings(keys)
@@ -54,6 +66,6 @@ func DescribeFlags(fs *pflag.FlagSet, showHidden bool, format DescribeFormat) (s
 		encoded, err := json.Marshal(args)
 		return string(encoded), err
 	default:
-		return "", fmt.Errorf("unknown format requested")
+		return "", errors.New("unknown format")
 	}
 }
