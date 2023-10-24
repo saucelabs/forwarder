@@ -26,16 +26,10 @@ type command struct {
 }
 
 func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
-	config, err := cobrautil.DescribeFlags(cmd.Flags(), cobrautil.Plain)
-	if err != nil {
-		return err
-	}
-
 	if f := c.logConfig.File; f != nil {
 		defer f.Close()
 	}
 	logger := stdlog.New(c.logConfig)
-	logger.Debugf("configuration\n%s", config)
 
 	defer func() {
 		if cmdErr != nil {
@@ -43,6 +37,29 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 			cmd.SilenceErrors = true
 		}
 	}()
+
+	{
+		var (
+			cfgStr string
+			err    error
+		)
+
+		d := cobrautil.FlagsDescriber{
+			Format: cobrautil.Plain,
+		}
+		cfgStr, err = d.DescribeFlags(cmd.Flags())
+		if err != nil {
+			return err
+		}
+		logger.Infof("configuration\n%s", cfgStr)
+
+		d.ShowNotChanged = true
+		cfgStr, err = d.DescribeFlags(cmd.Flags())
+		if err != nil {
+			return err
+		}
+		logger.Debugf("all configuration\n%s\n\n", cfgStr)
+	}
 
 	s, err := forwarder.NewHTTPServer(c.httpServerConfig, httpbin.Handler(), logger.Named("server"))
 	if err != nil {
