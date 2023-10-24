@@ -15,5 +15,5 @@ It provides a Dockerfile to build the container image and a run script.
 
 ### Getting started
 - `./run.sh` will build the container image, release the package and run the container.
-- If `FORCE_BUILD_IMAGE` variable is specified, the image will always be rebuilt before running.
-- If `FORCE_RELEASE` variable is specified, the package will always be released before running.
+- Use `--force-build-image` to always rebuild image before running.
+- Use `--force-release` to always release package before running.
