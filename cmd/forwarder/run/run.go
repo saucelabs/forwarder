@@ -52,17 +52,11 @@ type command struct {
 	goleak              bool
 }
 
-func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
-	config, err := cobrautil.DescribeFlags(cmd.Flags(), cobrautil.Plain)
-	if err != nil {
-		return err
-	}
-
+func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) { //nolint:maintidx // glue code
 	if f := c.logConfig.File; f != nil {
 		defer f.Close()
 	}
 	logger := stdlog.New(c.logConfig)
-	logger.Debugf("configuration\n%s", config)
 
 	defer func() {
 		if cmdErr != nil {
@@ -70,6 +64,36 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 			cmd.SilenceErrors = true
 		}
 	}()
+
+	var ep []forwarder.APIEndpoint
+
+	{
+		var (
+			cfgStr string
+			err    error
+		)
+
+		d := cobrautil.FlagsDescriber{
+			Format: cobrautil.Plain,
+		}
+		cfgStr, err = d.DescribeFlags(cmd.Flags())
+		if err != nil {
+			return err
+		}
+		logger.Infof("configuration\n%s", cfgStr)
+
+		d.ShowNotChanged = true
+		cfgStr, err = d.DescribeFlags(cmd.Flags())
+		if err != nil {
+			return err
+		}
+		logger.Debugf("all configuration\n%s\n\n", cfgStr)
+
+		ep = append(ep, forwarder.APIEndpoint{
+			Path:    "/configz",
+			Handler: httphandler.SendFileString("text/plain", cfgStr),
+		})
+	}
 
 	martianlog.SetLogger(logger.Named("proxy"))
 
@@ -84,7 +108,6 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 	var (
 		pr forwarder.PACResolver
 		rt http.RoundTripper
-		ep []forwarder.APIEndpoint
 	)
 
 	{
@@ -193,10 +216,6 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 		}
 
 		ep := append([]forwarder.APIEndpoint{
-			{
-				Path:    "/configz",
-				Handler: httphandler.SendFileString("text/plain", config),
-			},
 			{
 				Path:    "/version",
 				Handler: httphandler.Version(version.Version, version.Time, version.Commit),
