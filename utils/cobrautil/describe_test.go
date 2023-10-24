@@ -23,6 +23,7 @@ d=false`,
 		`key=false`,
 		`key=val`,
 		`key=false`,
+		`a=val`,
 		`key=false`,
 		``,
 		`list=item1,item2`,
@@ -35,6 +36,7 @@ func TestDescribeFlagsAsJSON(t *testing.T) {
 		`{"key":false}`,
 		`{"key":"val"}`,
 		`{"key":false}`,
+		`{"a":"val"}`,
 		`{"key":false}`,
 		`{}`,
 		`{"list":["item1","item2"]}`,
@@ -50,6 +52,7 @@ d: false`,
 		`key: false`,
 		`key: val`,
 		`key: false`,
+		`a: val`,
 		`key: false`,
 		`{}`,
 		`list:
@@ -101,6 +104,19 @@ func testDescribeFlags(t *testing.T, f DescribeFormat, expected []string) { //no
 			},
 		},
 		{
+			name: "not changed is not shown",
+			flags: func() *pflag.FlagSet {
+				fs := pflag.NewFlagSet("flags", pflag.ContinueOnError)
+				fs.String("a", "", "")
+				fs.String("b", "", "")
+				fs.Set("a", "val")
+				return fs
+			},
+			decorate: func(d *FlagsDescriber) {
+				d.ShowNotChanged = false
+			},
+		},
+		{
 			name: "hidden is shown",
 			flags: func() *pflag.FlagSet {
 				fs := pflag.NewFlagSet("flags", pflag.ContinueOnError)
@@ -135,7 +151,8 @@ func testDescribeFlags(t *testing.T, f DescribeFormat, expected []string) { //no
 		tc := tests[i]
 		t.Run(tc.name, func(t *testing.T) {
 			d := FlagsDescriber{
-				Format: f,
+				Format:         f,
+				ShowNotChanged: true,
 			}
 			if tc.decorate != nil {
 				tc.decorate(&d)

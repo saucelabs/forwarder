@@ -29,13 +29,15 @@ const (
 
 func DescribeFlags(fs *pflag.FlagSet, format DescribeFormat) (string, error) {
 	return FlagsDescriber{
-		Format: format,
+		Format:         format,
+		ShowNotChanged: true,
 	}.DescribeFlags(fs)
 }
 
 type FlagsDescriber struct {
-	Format     DescribeFormat
-	ShowHidden bool
+	Format         DescribeFormat
+	ShowNotChanged bool
+	ShowHidden     bool
 }
 
 func (d FlagsDescriber) DescribeFlags(fs *pflag.FlagSet) (string, error) {
@@ -45,7 +47,10 @@ func (d FlagsDescriber) DescribeFlags(fs *pflag.FlagSet) (string, error) {
 		if f.Name == "help" {
 			return
 		}
-		if f.Hidden && !d.ShowHidden {
+		if !d.ShowNotChanged && !f.Changed {
+			return
+		}
+		if !d.ShowHidden && f.Hidden {
 			return
 		}
 
