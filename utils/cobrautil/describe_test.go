@@ -60,9 +60,9 @@ d: false`,
 
 func testDescribeFlags(t *testing.T, f DescribeFormat, expected []string) { //nolint:thelper // not a helper
 	tests := []struct {
-		name       string
-		flags      func() *pflag.FlagSet
-		showHidden bool
+		name     string
+		flags    func() *pflag.FlagSet
+		decorate func(*FlagsDescriber)
 	}{
 		{
 			name: "keys are sorted",
@@ -74,7 +74,6 @@ func testDescribeFlags(t *testing.T, f DescribeFormat, expected []string) { //no
 				fs.Bool("b", false, "")
 				return fs
 			},
-			showHidden: false,
 		},
 		{
 			name: "bool is correctly formatted",
@@ -83,7 +82,6 @@ func testDescribeFlags(t *testing.T, f DescribeFormat, expected []string) { //no
 				fs.Bool("key", false, "")
 				return fs
 			},
-			showHidden: false,
 		},
 		{
 			name: "string is correctly formatted",
@@ -92,7 +90,6 @@ func testDescribeFlags(t *testing.T, f DescribeFormat, expected []string) { //no
 				fs.String("key", "val", "")
 				return fs
 			},
-			showHidden: false,
 		},
 		{
 			name: "help is not shown",
@@ -102,7 +99,6 @@ func testDescribeFlags(t *testing.T, f DescribeFormat, expected []string) { //no
 				fs.Bool("help", true, "")
 				return fs
 			},
-			showHidden: false,
 		},
 		{
 			name: "hidden is shown",
@@ -112,7 +108,9 @@ func testDescribeFlags(t *testing.T, f DescribeFormat, expected []string) { //no
 				_ = fs.MarkHidden("key")
 				return fs
 			},
-			showHidden: true,
+			decorate: func(d *FlagsDescriber) {
+				d.ShowHidden = true
+			},
 		},
 		{
 			name: "hidden is not shown",
@@ -122,7 +120,6 @@ func testDescribeFlags(t *testing.T, f DescribeFormat, expected []string) { //no
 				_ = fs.MarkHidden("key")
 				return fs
 			},
-			showHidden: false,
 		},
 		{
 			name: "list of values",
@@ -131,7 +128,6 @@ func testDescribeFlags(t *testing.T, f DescribeFormat, expected []string) { //no
 				fs.StringSlice("list", []string{"item1", "item2"}, "")
 				return fs
 			},
-			showHidden: false,
 		},
 	}
 
@@ -139,8 +135,10 @@ func testDescribeFlags(t *testing.T, f DescribeFormat, expected []string) { //no
 		tc := tests[i]
 		t.Run(tc.name, func(t *testing.T) {
 			d := FlagsDescriber{
-				Format:     f,
-				ShowHidden: tc.showHidden,
+				Format: f,
+			}
+			if tc.decorate != nil {
+				tc.decorate(&d)
 			}
 
 			result, err := d.DescribeFlags(tc.flags())
