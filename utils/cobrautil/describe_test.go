@@ -23,6 +23,10 @@ d=false`,
 		`key=false`,
 		`key=val`,
 		`key=false`,
+		`a=val
+b=redacted`,
+		`a=val
+b=val`,
 		`a=val`,
 		`key=false`,
 		``,
@@ -36,6 +40,8 @@ func TestDescribeFlagsAsJSON(t *testing.T) {
 		`{"key":false}`,
 		`{"key":"val"}`,
 		`{"key":false}`,
+		`{"a":"val","b":"redacted"}`,
+		`{"a":"val","b":"val"}`,
 		`{"a":"val"}`,
 		`{"key":false}`,
 		`{}`,
@@ -52,6 +58,10 @@ d: false`,
 		`key: false`,
 		`key: val`,
 		`key: false`,
+		`a: val
+b: redacted`,
+		`a: val
+b: val`,
 		`a: val`,
 		`key: false`,
 		`{}`,
@@ -101,6 +111,31 @@ func testDescribeFlags(t *testing.T, f DescribeFormat, expected []string) { //no
 				fs.Bool("key", false, "")
 				fs.Bool("help", true, "")
 				return fs
+			},
+		},
+		{
+			name: "value is redacted",
+			flags: func() *pflag.FlagSet {
+				fs := pflag.NewFlagSet("flags", pflag.ContinueOnError)
+				fs.String("a", "", "")
+				v := mockRedactedValue{fs.Lookup("a").Value}
+				fs.Var(&v, "b", "")
+				fs.Set("a", "val")
+				return fs
+			},
+		},
+		{
+			name: "value is unredacted",
+			flags: func() *pflag.FlagSet {
+				fs := pflag.NewFlagSet("flags", pflag.ContinueOnError)
+				fs.String("a", "", "")
+				v := mockRedactedValue{fs.Lookup("a").Value}
+				fs.Var(&v, "b", "")
+				fs.Set("a", "val")
+				return fs
+			},
+			decorate: func(d *FlagsDescriber) {
+				d.Unredacted = true
 			},
 		},
 		{
@@ -167,4 +202,16 @@ func testDescribeFlags(t *testing.T, f DescribeFormat, expected []string) { //no
 			}
 		})
 	}
+}
+
+type mockRedactedValue struct {
+	pflag.Value
+}
+
+func (v mockRedactedValue) Unredacted() pflag.Value {
+	return v.Value
+}
+
+func (v mockRedactedValue) String() string {
+	return "redacted"
 }
