@@ -36,6 +36,7 @@ func DescribeFlags(fs *pflag.FlagSet, format DescribeFormat) (string, error) {
 
 type FlagsDescriber struct {
 	Format         DescribeFormat
+	Unredacted     bool
 	ShowNotChanged bool
 	ShowHidden     bool
 }
@@ -54,17 +55,24 @@ func (d FlagsDescriber) DescribeFlags(fs *pflag.FlagSet) (string, error) {
 			return
 		}
 
-		if f.Value.Type() == "bool" {
-			args[f.Name] = f.Value
+		val := f.Value
+		if d.Unredacted {
+			if v, ok := f.Value.(redactedValue); ok {
+				val = v.Unredacted()
+			}
+		}
+
+		if val.Type() == "bool" {
+			args[f.Name] = val
 		} else {
-			if sv, ok := f.Value.(sliceValue); ok {
+			if sv, ok := val.(sliceValue); ok {
 				if d.Format == Plain {
 					args[f.Name] = strings.Join(sv.GetSlice(), ",")
 				} else {
 					args[f.Name] = sv.GetSlice()
 				}
 			} else {
-				args[f.Name] = f.Value.String()
+				args[f.Name] = val.String()
 			}
 		}
 	})
@@ -99,4 +107,8 @@ func (d FlagsDescriber) DescribeFlags(fs *pflag.FlagSet) (string, error) {
 
 type sliceValue interface {
 	GetSlice() []string
+}
+
+type redactedValue interface {
+	Unredacted() pflag.Value
 }
