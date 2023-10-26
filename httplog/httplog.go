@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/saucelabs/forwarder/internal/martian/log"
 	"github.com/saucelabs/forwarder/internal/martian/messageview"
@@ -30,6 +31,36 @@ const (
 
 func (m Mode) String() string {
 	return string(m)
+}
+
+func SplitNameMode(val string) (name string, mode Mode, err error) {
+	n, m, ok := strings.Cut(val, ":")
+	if ok {
+		name = n
+		mode = Mode(m)
+	} else {
+		name = ""
+		mode = Mode(val)
+	}
+
+	switch mode {
+	case None:
+		mode = None
+	case ShortURL:
+		mode = ShortURL
+	case URL:
+		mode = URL
+	case Headers:
+		mode = Headers
+	case Body:
+		mode = Body
+	case Errors:
+		mode = Errors
+	default:
+		return "", "", fmt.Errorf("invalid mode %q", mode)
+	}
+
+	return
 }
 
 type Logger struct {

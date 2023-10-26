@@ -7,6 +7,7 @@
 package bind
 
 import (
+	"fmt"
 	"net/netip"
 	"net/url"
 	"os"
@@ -22,6 +23,7 @@ import (
 	"github.com/saucelabs/forwarder/utils/osdns"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"golang.org/x/exp/slices"
 )
 
 func ConfigFile(fs *pflag.FlagSet, configFile *string) {
@@ -279,21 +281,47 @@ func HTTPServerConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPServerConfig, prefix
 	fs.VarP(anyflag.NewValueWithRedact[*url.Userinfo](cfg.BasicAuth, &cfg.BasicAuth, forwarder.ParseUserinfo, RedactUserinfo),
 		namePrefix+"basic-auth", "", "<username[:password]>"+
 			"Basic authentication credentials to protect the server. ")
+}
 
-	httpLogModes := []httplog.Mode{
-		httplog.None,
-		httplog.ShortURL,
-		httplog.URL,
-		httplog.Headers,
-		httplog.Body,
-		httplog.Errors,
+func HTTPLogConfig(fs *pflag.FlagSet, cfg []NamedParam[httplog.Mode]) {
+	for _, p := range cfg {
+		if p.Param == nil {
+			panic(fmt.Sprintf("httplog mode is nil for %s", p.Name))
+		}
 	}
-	fs.Var(anyflag.NewValue[httplog.Mode](cfg.LogHTTPMode, &cfg.LogHTTPMode, anyflag.EnumParser[httplog.Mode](httpLogModes...)),
-		namePrefix+"log-http", "<none|short-url|url|headers|body|errors>"+
-			"HTTP request and response logging mode. "+
-			"Setting this to none disables logging. "+
-			"The short-url mode logs [scheme://]host[/path] instead of the full URL. "+
-			"The error mode logs request line and headers if status code is greater than or equal to 500. ")
+
+	names := httplogExtractNames(cfg)
+
+	parse := func(val string) (NamedParam[httplog.Mode], error) {
+		name, mode, err := httplog.SplitNameMode(val)
+		if err != nil {
+			return NamedParam[httplog.Mode]{}, err
+		}
+		if name != "" && !slices.Contains(names, name) {
+			return NamedParam[httplog.Mode]{}, fmt.Errorf("unknown name: %s", name)
+		}
+
+		return NamedParam[httplog.Mode]{Name: name, Param: &mode}, nil
+	}
+
+	var flagValue []NamedParam[httplog.Mode]
+	f := httplogFlag{
+		SliceValue: anyflag.NewSliceValue[NamedParam[httplog.Mode]](flagValue, &flagValue, parse),
+		update: func() {
+			httplogUpdate(cfg, flagValue)
+		},
+	}
+
+	valueType := "<none|short-url|url|headers|body|errors>"
+	if ss := names; len(ss) > 1 {
+		valueType = "[" + strings.Join(ss, "|") + ":]" + valueType
+	}
+
+	fs.Var(f, "log-http", valueType+",... "+
+		"HTTP request and response logging mode. "+
+		"Setting this to none disables logging. "+
+		"The short-url mode logs [scheme://]host[/path] instead of the full URL. "+
+		"The error mode logs request line and headers if status code is greater than or equal to 500. ")
 }
 
 func TLSServerConfig(fs *pflag.FlagSet, cfg *forwarder.TLSServerConfig, namePrefix string) {

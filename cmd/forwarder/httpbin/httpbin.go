@@ -10,6 +10,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/saucelabs/forwarder"
 	"github.com/saucelabs/forwarder/bind"
+	"github.com/saucelabs/forwarder/httplog"
 	"github.com/saucelabs/forwarder/internal/version"
 	"github.com/saucelabs/forwarder/log"
 	"github.com/saucelabs/forwarder/log/stdlog"
@@ -95,6 +96,10 @@ func Command() *cobra.Command {
 	fs := cmd.Flags()
 	bind.HTTPServerConfig(fs, c.httpServerConfig, "")
 	bind.HTTPServerConfig(fs, c.apiServerConfig, "api", forwarder.HTTPScheme)
+	bind.HTTPLogConfig(fs, []bind.NamedParam[httplog.Mode]{
+		{Name: "api", Param: &c.apiServerConfig.LogHTTPMode},
+		{Name: "server", Param: &c.httpServerConfig.LogHTTPMode},
+	})
 	bind.LogConfig(fs, c.logConfig)
 
 	bind.AutoMarkFlagFilename(cmd)

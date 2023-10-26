@@ -14,6 +14,7 @@ import (
 
 	"github.com/saucelabs/forwarder"
 	"github.com/saucelabs/forwarder/bind"
+	"github.com/saucelabs/forwarder/httplog"
 	"github.com/saucelabs/forwarder/log"
 	"github.com/saucelabs/forwarder/log/stdlog"
 	"github.com/saucelabs/forwarder/pac"
@@ -134,8 +135,11 @@ func Command() *cobra.Command {
 	bind.PAC(fs, &c.pac)
 	bind.DNSConfig(fs, c.dnsConfig)
 	bind.HTTPServerConfig(fs, c.httpServerConfig, "")
-	bind.LogConfig(fs, c.logConfig)
 	bind.HTTPTransportConfig(fs, c.httpTransportConfig)
+	bind.HTTPLogConfig(fs, []bind.NamedParam[httplog.Mode]{
+		{Name: "server", Param: &c.httpServerConfig.LogHTTPMode},
+	})
+	bind.LogConfig(fs, c.logConfig)
 
 	bind.AutoMarkFlagFilename(cmd)
 

@@ -19,6 +19,7 @@ import (
 	"github.com/saucelabs/forwarder"
 	"github.com/saucelabs/forwarder/bind"
 	"github.com/saucelabs/forwarder/header"
+	"github.com/saucelabs/forwarder/httplog"
 	martianlog "github.com/saucelabs/forwarder/internal/martian/log"
 	"github.com/saucelabs/forwarder/internal/version"
 	"github.com/saucelabs/forwarder/log"
@@ -299,6 +300,10 @@ func Command() *cobra.Command {
 	bind.MITMConfig(fs, &c.mitm, c.mitmConfig)
 	bind.MITMDomains(fs, &c.mitmDomains)
 	bind.HTTPServerConfig(fs, c.apiServerConfig, "api", forwarder.HTTPScheme)
+	bind.HTTPLogConfig(fs, []bind.NamedParam[httplog.Mode]{
+		{Name: "api", Param: &c.apiServerConfig.LogHTTPMode},
+		{Name: "proxy", Param: &c.httpProxyConfig.LogHTTPMode},
+	})
 	bind.PromNamespace(fs, &c.httpProxyConfig.PromNamespace)
 	bind.AutoMarkFlagFilename(cmd)
 	cmd.MarkFlagsMutuallyExclusive("proxy", "pac")
