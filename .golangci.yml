@@ -126,6 +126,11 @@ issues:
       source: "configure: func\\(t \\*testing.T"
 
     - linters:
+        - gocognit
+        - maintidx
+      source: "func \\(c \\*command\\) runE\\(cmd \\*cobra\\.Command"
+
+    - linters:
         - gocritic
       source: "// output:"
 

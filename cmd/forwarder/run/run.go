@@ -52,7 +52,7 @@ type command struct {
 	goleak              bool
 }
 
-func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) { //nolint:maintidx // glue code
+func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 	if f := c.logConfig.File; f != nil {
 		defer f.Close()
 	}
