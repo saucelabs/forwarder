@@ -10,6 +10,8 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
+	"runtime"
 	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -64,6 +66,13 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 			cmd.SilenceErrors = true
 		}
 	}()
+
+	logger.Infof("Forwarder %s (%s)", version.Version, version.Commit)
+	if limit, ok := os.LookupEnv("GOMEMLIMIT"); ok {
+		logger.Debugf("resource limits: GOMAXPROCS=%d GOMEMLIMIT=%s", runtime.GOMAXPROCS(0), limit)
+	} else {
+		logger.Debugf("resource limits: GOMAXPROCS=%d", runtime.GOMAXPROCS(0))
+	}
 
 	var ep []forwarder.APIEndpoint
 
