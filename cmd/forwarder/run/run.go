@@ -89,7 +89,11 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 		if err != nil {
 			return err
 		}
-		logger.Infof("configuration\n%s", cfgStr)
+		if cfgStr != "" {
+			logger.Infof("configuration\n%s", cfgStr)
+		} else {
+			logger.Infof("using default configuration")
+		}
 
 		d.ShowNotChanged = true
 		cfgStr, err = d.DescribeFlags(cmd.Flags())
