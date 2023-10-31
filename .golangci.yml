@@ -28,12 +28,14 @@ linters:
     - funlen
     - gochecknoglobals
     - gochecknoinits
+    - goconst
     - godox
     - goerr113
     - golint
     - gomnd
     - gomoddirectives
     - ifshort
+    - inamedparam
     - interfacer
     - ireturn
     - maligned

@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -193,7 +194,7 @@ func TestFlagWriteLimit(t *testing.T) {
 		c.GET("/count-bytes/", func(req *http.Request) {
 			req.Header.Set("Content-Type", "application/octet-stream")
 			req.Body = &bytesReaderCloser{bytes.NewReader(make([]byte, size))}
-		}).ExpectStatus(http.StatusOK).ExpectHeader("body-size", fmt.Sprintf("%d", size))
+		}).ExpectStatus(http.StatusOK).ExpectHeader("body-size", strconv.Itoa(size))
 	})
 }
 
