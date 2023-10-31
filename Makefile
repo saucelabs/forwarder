@@ -7,6 +7,10 @@ export PATH  := $(GOBIN):$(PATH)
 
 include .version
 
+ifneq ($(shell expr $(MAKE_VERSION) \>= 4), 1)
+$(error This Makefile requires GNU Make version 4 or higher, got $(MAKE_VERSION))
+endif
+
 ifneq ($(GO_VERSION),$(shell go version | grep -o -E '1\.[0-9\.]+'))
 $(error Go version $(GO_VERSION) is required, got $(shell go version))
 endif
