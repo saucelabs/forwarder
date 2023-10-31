@@ -97,6 +97,9 @@ nfpms:
       - src: packaging/forwarder.env
         dst: /etc/default/forwarder
         type: "config|noreplace"
+      - src: packaging/forwarder.yaml
+        dst: /etc/forwarder/forwarder.yaml
+        type: "config|noreplace"
       - src: completions/forwarder.bash
         dst: /usr/share/bash-completion/completions/forwarder
         file_info:
