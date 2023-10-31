@@ -7,7 +7,6 @@ Type=simple
 User=forwarder
 Group=forwarder
 LimitCORE=infinity
-LimitNOFILE=4096:10240
 EnvironmentFile=/etc/default/forwarder
 ExecStart=/usr/bin/forwarder run
 TimeoutStartSec=900
