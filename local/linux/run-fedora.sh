@@ -5,20 +5,20 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-source ../lib.sh
+source ./lib.sh
 
 set -e -o pipefail
 
 IMG="fedora-systemd:latest"
 CONTAINER="forwarder-testing-fedora"
-DIST="../../dist/forwarder*_linux.aarch64.rpm"
+DIST="$ROOT_DIR/dist/forwarder*_linux.aarch64.rpm"
 
 process_flags "$@"
 
-build_image $IMG
-create_package $DIST forwarder.rpm
+build_image "$IMG" fedora-systemd.Dockerfile
+create_package "$DIST" forwarder.rpm
 
-podman run -p 3128:3128 -d -v ./forwarder.rpm:/forwarder.rpm --name $CONTAINER --replace $IMG
-podman exec $CONTAINER dnf -y install /forwarder.rpm
-run_interactive $CONTAINER
-podman rm --force $CONTAINER
+podman run -p 3128:3128 -d -v ./forwarder.rpm:/forwarder.rpm --name "$CONTAINER" --replace "$IMG"
+podman exec "$CONTAINER" dnf -y install /forwarder.rpm
+run_interactive "$CONTAINER"
+podman rm --force "$CONTAINER"

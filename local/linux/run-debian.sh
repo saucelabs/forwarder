@@ -5,20 +5,20 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-source ../lib.sh
+source ./lib.sh
 
 set -e -o pipefail
 
 IMG="debian-systemd:bullseye"
 CONTAINER="forwarder-testing-debian"
-DIST="../../dist/forwarder*linux_arm64.deb"
+DIST="$ROOT_DIR/dist/forwarder*linux_arm64.deb"
 
 process_flags "$@"
 
-build_image $IMG
-create_package $DIST forwarder.deb
+build_image "$IMG" debian-systemd.Dockerfile
+create_package "$DIST" forwarder.deb
 
-podman run -p 3128:3128 -d -v ./forwarder.deb:/forwarder.deb --name $CONTAINER --replace $IMG
-podman exec $CONTAINER dpkg -i /forwarder.deb
-run_interactive $CONTAINER
-podman rm --force $CONTAINER
+podman run -p 3128:3128 -d -v ./forwarder.deb:/forwarder.deb --name "$CONTAINER" --replace "$IMG"
+podman exec "$CONTAINER" dpkg --force-confdef -i /forwarder.deb
+run_interactive "$CONTAINER"
+podman rm --force "$CONTAINER"

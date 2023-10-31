@@ -9,18 +9,20 @@
 
 set -e -o pipefail
 
-force_build_image=false
-force_release=false
+export ROOT_DIR=$(git rev-parse --show-toplevel)
+
+FORCE_BUILD_IMAGE=false
+FORCE_RELEASE=false
 
 # Usage: process_flags "$@"
 process_flags() {
     while [[ $# -gt 0 ]]; do
         case "$1" in
             --force-build-image)
-                force_build_image=true
+                FORCE_BUILD_IMAGE=true
                 ;;
             --force-release)
-                force_release=true
+                FORCE_RELEASE=true
                 ;;
             *)
                 ;;
@@ -29,11 +31,12 @@ process_flags() {
     done
 }
 
-# Usage: build_image IMG_NAME
+# Usage: build_image IMG_NAME DOCKERFILE
 function build_image() {
     local img="$1"
-    if ! podman image exists "$img" || [ "$force_build_image" = true ] ; then
-        podman build --no-cache -t "$img" .
+    local dockerfile="$2"
+    if ! podman image exists "$img" || [ "$FORCE_BUILD_IMAGE" = true ] ; then
+        podman build --no-cache -t "$img" -f "$dockerfile"
     fi
 }
 
@@ -41,9 +44,9 @@ function build_image() {
 function create_package() {
     local dist="$1"
     local package_name="$2"
-    if [[ ! -f "$package_name"  ||  "$force_release" = true ]] ; then
-        (cd ../../ && ./bin/goreleaser release --snapshot --skip-docker --clean)
-        cp "$dist" "$package_name"
+    if [[ ! -f "$package_name" || "$FORCE_RELEASE" = true ]] ; then
+        make -C $ROOT_DIR dist
+        cp $dist "$package_name"
     fi
 }
 
