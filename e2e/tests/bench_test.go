@@ -9,9 +9,9 @@
 package tests
 
 import (
-	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"testing"
 )
 
@@ -42,7 +42,7 @@ func BenchmarkRespBody100k(b *testing.B) {
 
 func benchmarkStreamDataN(b *testing.B, n int64) {
 	b.Helper()
-	req, err := http.NewRequest(http.MethodGet, httpbin+"/stream-bytes/"+fmt.Sprint(n), http.NoBody)
+	req, err := http.NewRequest(http.MethodGet, httpbin+"/stream-bytes/"+strconv.FormatInt(n, 10), http.NoBody)
 	if err != nil {
 		b.Fatal(err)
 	}

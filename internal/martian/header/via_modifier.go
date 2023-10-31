@@ -16,6 +16,7 @@ package header
 
 import (
 	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"net/http"
@@ -121,5 +122,5 @@ func randomBoundary() string {
 	if err != nil {
 		panic(err)
 	}
-	return fmt.Sprintf("%x", buf[:])
+	return hex.EncodeToString(buf[:])
 }

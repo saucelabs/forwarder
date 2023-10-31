@@ -55,8 +55,8 @@ func TestPrometheusWrap(t *testing.T) {
 	}
 
 	golden.DiffPrometheusMetrics(t, r, func(mf *dto.MetricFamily) bool {
-		if int(*mf.Type) == 4 {
-			for _, m := range mf.Metric {
+		if int(mf.GetType()) == 4 {
+			for _, m := range mf.GetMetric() {
 				m.Histogram.SampleSum = nil
 			}
 		}

@@ -17,6 +17,7 @@ import (
 	"net/url"
 	"os"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -44,7 +45,7 @@ func TestProxyStatusCode(t *testing.T) {
 	c := newClient(t, httpbin)
 	for i := range validStatusCodes {
 		code := validStatusCodes[i]
-		t.Run(fmt.Sprint(code), func(t *testing.T) {
+		t.Run(strconv.Itoa(code), func(t *testing.T) {
 			t.Parallel()
 			for _, m := range methods {
 				c.Request(m, fmt.Sprintf("/status/%d", code)).ExpectStatus(code)

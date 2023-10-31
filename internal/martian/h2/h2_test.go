@@ -197,7 +197,7 @@ func (p *plusOne) Message(data []byte, streamEnded bool) error {
 	if err := proto.Unmarshal(data, msg); err != nil {
 		return fmt.Errorf("unmarshalling request: %w", err)
 	}
-	msg.Values = append(msg.Values, 1)
+	msg.Values = append(msg.Values, 1) //nolint:protogetter // synthetic data
 
 	data, err := proto.Marshal(msg)
 	if err != nil {
