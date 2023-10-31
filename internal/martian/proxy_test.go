@@ -36,6 +36,9 @@ import (
 	"github.com/saucelabs/forwarder/internal/martian/martiantest"
 	"github.com/saucelabs/forwarder/internal/martian/mitm"
 	"github.com/saucelabs/forwarder/internal/martian/proxyutil"
+	flog "github.com/saucelabs/forwarder/log"
+	"github.com/saucelabs/forwarder/log/martianlog"
+	"github.com/saucelabs/forwarder/log/stdlog"
 )
 
 type tempError struct{}
@@ -782,11 +785,49 @@ func TestIntegrationTLSHandshakeErrorCallback(t *testing.T) {
 }
 
 func TestIntegrationConnect(t *testing.T) {
-	t.Parallel()
+	ifaces, err := net.Interfaces()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, i := range ifaces {
+		a, err := i.Addrs()
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, addr := range a {
+			var ip net.IP
+			switch v := addr.(type) {
+			case *net.IPNet:
+				ip = v.IP
+			case *net.IPAddr:
+				ip = v.IP
+			}
+			if len(ip) == net.IPv6len {
+				//if ip.IsLoopback() {
+				//	continue
+				//}
 
+				addr6 := ip.String()
+				if strings.Contains(addr6, ".") {
+					continue
+				}
+				if strings.HasPrefix(addr6, "fe80") {
+					continue
+				}
+
+				fmt.Println("ADDR", addr6)
+				testIntegrationConnectHelper(t, "["+addr6+"]")
+			}
+		}
+	}
+}
+
+func testIntegrationConnectHelper(t *testing.T, addr6 string) {
 	l := newListener(t)
 	p := NewProxy()
 	defer p.Close()
+
+	martianlog.SetLogger(stdlog.New(&flog.Config{Level: flog.DebugLevel}))
 
 	// Test TLS server.
 	ca, priv, err := mitm.NewAuthority("martian.proxy", "Martian Authority", time.Hour)
@@ -798,7 +839,7 @@ func TestIntegrationConnect(t *testing.T) {
 		t.Fatalf("mitm.NewConfig(): got %v, want no error", err)
 	}
 
-	tl, err := net.Listen("tcp", "[::]:0")
+	tl, err := net.Listen("tcp6", addr6+":0")
 	if err != nil {
 		t.Fatalf("tls.Listen(): got %v, want no error", err)
 	}
@@ -815,6 +856,7 @@ func TestIntegrationConnect(t *testing.T) {
 
 	// Force the CONNECT request to dial the local TLS server.
 	tm.RequestFunc(func(req *http.Request) {
+		fmt.Println("XXXXX", tl.Addr().String())
 		req.URL.Host = tl.Addr().String()
 	})
 
