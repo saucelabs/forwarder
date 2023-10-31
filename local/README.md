@@ -10,10 +10,13 @@ It provides a Dockerfile to build the container image and a run script.
 - [Podman](https://podman.io/) installed on your system
 
 ### Supported distributions
-- `/debian` - `.deb`
-- `/fedora` - `.rpm`
+- Debian - `.deb`
+- Fedora - `.rpm`
 
 ### Getting started
 - `./run.sh` will build the container image, release the package and run the container.
 - Use `--force-build-image` to always rebuild image before running.
 - Use `--force-release` to always release package before running.
+
+### Notes
+- The scripts use bash as the shell. Make sure your bash sees other executables in the right version.
