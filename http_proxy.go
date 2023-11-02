@@ -374,7 +374,7 @@ func (hp *HTTPProxy) middlewareStack() martian.RequestResponseModifier {
 	return topg.ToImmutable()
 }
 
-func (hp *HTTPProxy) abortIf(condition func(r *http.Request) bool, response func(*http.Request) *http.Response, returnErr error) martian.RequestModifier {
+func (hp *HTTPProxy) abortIf(condition func(r *http.Request) bool, response func(*http.Request) *http.Response, returnErr func(*http.Request) error) martian.RequestModifier {
 	return martian.RequestModifierFunc(func(req *http.Request) error {
 		if !condition(req) {
 			return nil
@@ -412,7 +412,7 @@ func (hp *HTTPProxy) abortIf(condition func(r *http.Request) bool, response func
 			panic(err)
 		}
 
-		return returnErr
+		return returnErr(req)
 	})
 }
 
@@ -445,23 +445,27 @@ func (hp *HTTPProxy) basicAuth(u *url.Userinfo) martian.RequestModifier {
 	pass, _ := u.Password()
 	ba := middleware.NewProxyBasicAuth()
 
-	return hp.abortIf(func(req *http.Request) bool {
-		return !ba.AuthenticatedRequest(req, user, pass)
-	}, unauthorizedResponse, errors.New("basic auth required"))
+	return hp.abortIf(
+		func(req *http.Request) bool { return !ba.AuthenticatedRequest(req, user, pass) },
+		unauthorizedResponse,
+		func(_ *http.Request) error { return errors.New("basic auth required") },
+	)
 }
 
 func (hp *HTTPProxy) denyLocalhost() martian.RequestModifier {
-	return hp.abortIf(hp.isLocalhost, func(req *http.Request) *http.Response {
-		return hp.errorResponse(req, ErrProxyLocalhost)
-	}, errors.New("localhost access denied"))
+	return hp.abortIf(
+		hp.isLocalhost,
+		func(req *http.Request) *http.Response { return hp.errorResponse(req, ErrProxyLocalhost) },
+		func(req *http.Request) error { return errors.New("localhost access denied") },
+	)
 }
 
 func (hp *HTTPProxy) denyDomains(r *ruleset.RegexpMatcher) martian.RequestModifier {
-	return hp.abortIf(func(req *http.Request) bool {
-		return r.Match(req.URL.Hostname())
-	}, func(req *http.Request) *http.Response {
-		return hp.errorResponse(req, ErrProxyDenied)
-	}, errors.New("domain access denied"))
+	return hp.abortIf(
+		func(req *http.Request) bool { return r.Match(req.URL.Hostname()) },
+		func(req *http.Request) *http.Response { return hp.errorResponse(req, ErrProxyDenied) },
+		func(_ *http.Request) error { return errors.New("domain access denied") },
+	)
 }
 
 func (hp *HTTPProxy) directDomains(fn ProxyFunc) ProxyFunc {
