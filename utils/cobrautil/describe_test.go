@@ -197,7 +197,7 @@ func testDescribeFlags(t *testing.T, f DescribeFormat, expected []string) { //no
 			if err != nil {
 				t.Errorf("unexpected error: %v", err)
 			}
-			if diff := cmp.Diff(expected[i], strings.TrimSpace(result)); diff != "" {
+			if diff := cmp.Diff(expected[i], strings.TrimSpace(string(result))); diff != "" {
 				t.Errorf("unexpected result (-want +got):\n%s", diff)
 			}
 		})

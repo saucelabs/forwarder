@@ -78,33 +78,33 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 
 	{
 		var (
-			cfgStr string
-			err    error
+			cfg []byte
+			err error
 		)
 
 		d := cobrautil.FlagsDescriber{
 			Format: cobrautil.Plain,
 		}
-		cfgStr, err = d.DescribeFlags(cmd.Flags())
+		cfg, err = d.DescribeFlags(cmd.Flags())
 		if err != nil {
 			return err
 		}
-		if cfgStr != "" {
-			logger.Infof("configuration\n%s", cfgStr)
+		if len(cfg) > 0 {
+			logger.Infof("configuration\n%s", cfg)
 		} else {
 			logger.Infof("using default configuration")
 		}
 
 		d.ShowNotChanged = true
-		cfgStr, err = d.DescribeFlags(cmd.Flags())
+		cfg, err = d.DescribeFlags(cmd.Flags())
 		if err != nil {
 			return err
 		}
-		logger.Debugf("all configuration\n%s\n\n", cfgStr)
+		logger.Debugf("all configuration\n%s\n\n", cfg)
 
 		ep = append(ep, forwarder.APIEndpoint{
 			Path:    "/configz",
-			Handler: httphandler.SendFileString("text/plain", cfgStr),
+			Handler: httphandler.SendFile("text/plain", cfg),
 		})
 	}
 
