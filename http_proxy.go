@@ -464,7 +464,7 @@ func (hp *HTTPProxy) denyDomains(r *ruleset.RegexpMatcher) martian.RequestModifi
 	return hp.abortIf(
 		func(req *http.Request) bool { return r.Match(req.URL.Hostname()) },
 		func(req *http.Request) *http.Response { return hp.errorResponse(req, ErrProxyDenied) },
-		func(_ *http.Request) error { return errors.New("domain access denied") },
+		func(req *http.Request) error { return fmt.Errorf("access to %s denied", req.URL.Hostname()) },
 	)
 }
 
