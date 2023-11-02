@@ -40,25 +40,25 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 
 	{
 		var (
-			cfgStr string
-			err    error
+			cfg []byte
+			err error
 		)
 
 		d := cobrautil.FlagsDescriber{
 			Format: cobrautil.Plain,
 		}
-		cfgStr, err = d.DescribeFlags(cmd.Flags())
+		cfg, err = d.DescribeFlags(cmd.Flags())
 		if err != nil {
 			return err
 		}
-		logger.Infof("configuration\n%s", cfgStr)
+		logger.Infof("configuration\n%s", cfg)
 
 		d.ShowNotChanged = true
-		cfgStr, err = d.DescribeFlags(cmd.Flags())
+		cfg, err = d.DescribeFlags(cmd.Flags())
 		if err != nil {
 			return err
 		}
-		logger.Debugf("all configuration\n%s\n\n", cfgStr)
+		logger.Debugf("all configuration\n%s\n\n", cfg)
 	}
 
 	s, err := forwarder.NewHTTPServer(c.httpServerConfig, httpbin.Handler(), logger.Named("server"))

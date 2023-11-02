@@ -27,7 +27,7 @@ const (
 	YAML
 )
 
-func DescribeFlags(fs *pflag.FlagSet, format DescribeFormat) (string, error) {
+func DescribeFlags(fs *pflag.FlagSet, format DescribeFormat) ([]byte, error) {
 	return FlagsDescriber{
 		Format:         format,
 		ShowNotChanged: true,
@@ -41,7 +41,7 @@ type FlagsDescriber struct {
 	ShowHidden     bool
 }
 
-func (d FlagsDescriber) DescribeFlags(fs *pflag.FlagSet) (string, error) {
+func (d FlagsDescriber) DescribeFlags(fs *pflag.FlagSet) ([]byte, error) {
 	args := make(map[string]any, fs.NFlag())
 
 	fs.VisitAll(func(f *pflag.Flag) {
@@ -81,27 +81,26 @@ func (d FlagsDescriber) DescribeFlags(fs *pflag.FlagSet) (string, error) {
 	case Plain:
 		keys := maps.Keys(args)
 		sort.Strings(keys)
-		var sb strings.Builder
+		var buf bytes.Buffer
 		for _, name := range keys {
-			sb.WriteString(fmt.Sprintf("%s=%s\n", name, args[name]))
+			buf.WriteString(fmt.Sprintf("%s=%s\n", name, args[name]))
 		}
-		return sb.String(), nil
+		return buf.Bytes(), nil
 	case JSON:
-		b, err := json.Marshal(args)
-		return string(b), err
+		return json.Marshal(args)
 	case YAML:
 		var buf bytes.Buffer
 		enc := yaml.NewEncoder(&buf)
 		enc.SetIndent(2)
 		if err := enc.Encode(args); err != nil {
-			return "", err
+			return nil, err
 		}
 		if err := enc.Close(); err != nil {
-			return "", err
+			return nil, err
 		}
-		return buf.String(), nil
+		return buf.Bytes(), nil
 	default:
-		return "", errors.New("unknown format")
+		return nil, errors.New("unknown format")
 	}
 }
 
