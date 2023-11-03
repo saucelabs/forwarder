@@ -51,7 +51,7 @@ func httplogUpdate(dst, src []NamedParam[httplog.Mode]) {
 	}
 
 	// Find default mode if set.
-	defaultMode := httplog.Errors
+	defaultMode := httplog.DefaultMode
 	for i := range src {
 		j := len(src) - i - 1
 		if src[j].Name == "" {

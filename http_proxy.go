@@ -103,7 +103,6 @@ func DefaultHTTPProxyConfig() *HTTPProxyConfig {
 			Protocol:          HTTPScheme,
 			Addr:              ":3128",
 			ReadHeaderTimeout: 1 * time.Minute,
-			LogHTTPMode:       httplog.Errors,
 		},
 		Name:            "forwarder",
 		ProxyLocalhost:  DenyProxyLocalhost,
