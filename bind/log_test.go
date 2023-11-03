@@ -65,3 +65,52 @@ func TestHTTPLogUpdate(t *testing.T) {
 		t.Errorf("unexpected diff (-want +got):\n%s", diff)
 	}
 }
+
+func TestHTTPLogUpdateWithoutDefault(t *testing.T) {
+	ptr := func(m httplog.Mode) *httplog.Mode {
+		return &m
+	}
+
+	dst := []NamedParam[httplog.Mode]{
+		{
+			Name:  "foo",
+			Param: new(httplog.Mode),
+		},
+		{
+			Name:  "bar",
+			Param: new(httplog.Mode),
+		},
+		{
+			Name:  "baz",
+			Param: new(httplog.Mode),
+		},
+	}
+
+	src := []NamedParam[httplog.Mode]{
+		{
+			Name:  "foo",
+			Param: ptr(httplog.ShortURL),
+		},
+	}
+
+	expected := []NamedParam[httplog.Mode]{
+		{
+			Name:  "foo",
+			Param: ptr(httplog.ShortURL),
+		},
+		{
+			Name:  "bar",
+			Param: ptr(""),
+		},
+		{
+			Name:  "baz",
+			Param: ptr(""),
+		},
+	}
+
+	httplogUpdate(dst, src)
+
+	if diff := cmp.Diff(expected, dst); diff != "" {
+		t.Errorf("unexpected diff (-want +got):\n%s", diff)
+	}
+}
