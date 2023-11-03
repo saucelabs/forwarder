@@ -63,6 +63,8 @@ func SplitNameMode(val string) (name string, mode Mode, err error) {
 	return
 }
 
+var DefaultMode = Errors
+
 type Logger struct {
 	log  func(format string, args ...any)
 	mode Mode
@@ -70,6 +72,9 @@ type Logger struct {
 
 // NewLogger returns a logger that logs HTTP requests and responses.
 func NewLogger(logFunc func(format string, args ...any), mode Mode) *Logger {
+	if mode == "" {
+		mode = DefaultMode
+	}
 	return &Logger{
 		log:  logFunc,
 		mode: mode,
