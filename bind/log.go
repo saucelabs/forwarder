@@ -50,8 +50,8 @@ func httplogUpdate(dst, src []NamedParam[httplog.Mode]) {
 		}
 	}
 
-	// Find default mode if set.
-	defaultMode := httplog.DefaultMode
+	// Find default mode.
+	var defaultMode httplog.Mode
 	for i := range src {
 		j := len(src) - i - 1
 		if src[j].Name == "" {
@@ -60,10 +60,12 @@ func httplogUpdate(dst, src []NamedParam[httplog.Mode]) {
 		}
 	}
 
-	// Set default mode for unset values.
-	for i := range dst {
-		if !changed[i] {
-			*dst[i].Param = defaultMode
+	// If default mode is set, update dst with it.
+	if defaultMode != "" {
+		for i := range dst {
+			if !changed[i] {
+				*dst[i].Param = defaultMode
+			}
 		}
 	}
 }
