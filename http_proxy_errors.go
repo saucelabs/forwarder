@@ -56,10 +56,16 @@ func (hp *HTTPProxy) errorResponse(req *http.Request, err error) *http.Response 
 
 	hp.metrics.error(label)
 
-	resp := proxyutil.NewResponse(code, bytes.NewBufferString(msg+"\n"), req)
+	var body bytes.Buffer
+	body.WriteString(msg)
+	body.WriteString("\n")
+	body.WriteString(err.Error())
+	body.WriteString("\n")
+
+	resp := proxyutil.NewResponse(code, &body, req)
 	resp.Header.Set(ErrorHeader, err.Error())
 	resp.Header.Set("Content-Type", "text/plain; charset=utf-8")
-	resp.ContentLength = int64(len(msg) + 1)
+	resp.ContentLength = int64(body.Len())
 	return resp
 }
 
