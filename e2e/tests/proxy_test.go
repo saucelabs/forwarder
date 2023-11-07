@@ -235,9 +235,30 @@ func TestProxyBadGateway(t *testing.T) {
 		"httpbin:1",
 	}
 
+	var expectedErrorMessage string
+	switch {
+	case os.Getenv("FORWARDER_PROXY") != "":
+		expectedErrorMessage = forwarder.UpstreamProxyServiceName + " failed to connect to remote host"
+	case os.Getenv("FORWARDER_PAC") != "":
+		// Proxy name depends on the PAC file. Skip it for now.
+		expectedErrorMessage = "failed to connect to remote host"
+	default:
+		expectedErrorMessage = "forwarder failed to connect to remote host"
+	}
+
 	for _, scheme := range []string{"http", "https"} {
 		for _, h := range hosts {
-			newClient(t, scheme+"://"+h).GET("/status/200").ExpectStatus(http.StatusBadGateway)
+			t.Run(scheme+"_"+h, func(t *testing.T) {
+				res := newClient(t, scheme+"://"+h).GET("/status/200")
+				res.ExpectStatus(http.StatusBadGateway)
+
+				// Check if the error message is correctly propagated to the client.
+				// Especially when several proxies are chained.
+				// FIXME(hg): When HTTPS CONNECT request fails it does not propagate error message - HTTP client does not return it.
+				if scheme == "http" && !strings.Contains(string(res.Body), expectedErrorMessage) {
+					t.Fatalf("Expected valid error message, got %s", res.Body)
+				}
+			})
 		}
 	}
 }
