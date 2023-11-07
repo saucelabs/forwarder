@@ -11,16 +11,20 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"strings"
 
+	"github.com/saucelabs/forwarder/e2e/prometheus"
 	"github.com/saucelabs/forwarder/e2e/setup"
 )
 
 var args = struct {
-	setup *string
-	debug *bool
+	setup      *string
+	prometheus *bool
+	debug      *bool
 }{
-	setup: flag.String("setup", "", "Only run setups matching this regexp"),
-	debug: flag.Bool("debug", false, "Enables debug logs and preserves containers after running, this will run only the first matching setup"),
+	setup:      flag.String("setup", "", "Only run setups matching this regexp"),
+	prometheus: flag.Bool("prom", false, "Add prometheus to the setup"),
+	debug:      flag.Bool("debug", false, "Enables debug logs and preserves containers after running, this will run only the first matching setup"),
 }
 
 func setupRegexp() (*regexp.Regexp, error) {
@@ -46,10 +50,17 @@ func main() {
 		Decorate: func(s *setup.Setup) {
 			fmt.Println("running setup", s.Name)
 
+			if *args.prometheus {
+				p := prometheus.Service()
+				s.Compose.Services[p.Name] = p
+			}
+
 			if *args.debug {
 				for _, srv := range s.Compose.Services {
-					srv.Environment["FORWARDER_LOG_LEVEL"] = "debug"
-					srv.Environment["FORWARDER_LOG_HTTP"] = "headers"
+					if strings.HasPrefix(srv.Image, "saucelabs/forwarder") {
+						srv.Environment["FORWARDER_LOG_LEVEL"] = "debug"
+						srv.Environment["FORWARDER_LOG_HTTP"] = "headers"
+					}
 				}
 			}
 		},
