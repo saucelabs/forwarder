@@ -4,11 +4,10 @@
 
 1. Generate certificates `make -C certs certs`, this can be done once
 1. Build the forwarder image `make -C ../ update-devel-image`, this needs to be done after each forwarder code change
-2. Start the test runner `make run-e2e`
+1. Start the test runner `make run-e2e`
 1. The test runner will run all the tests sequentially and output the results to the console
 1. If one of the test fails, the procedure will stop, test output will be printed
-1. Environment will not be pruned once the error occurred, remember to manually clean it up with `make down`
-or use the containers to run single test and find bugs 
+1. Environment will not be pruned once the error occurred, remember to manually clean it up with `make down` or use the containers to run single test and find bugs 
 
 ### Running specific test
 
