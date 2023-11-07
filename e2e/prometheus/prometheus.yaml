@@ -1,0 +1,5 @@
+scrape_configs:
+  - job_name: forwarder
+    scrape_interval: 5s
+    static_configs:
+      - targets: ["proxy:10000", "upstream-proxy:10000"]

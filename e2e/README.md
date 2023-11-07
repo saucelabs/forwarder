@@ -40,6 +40,13 @@ The proxy service binds the following ports to the host:
 - 3128 - the proxy port, use the proxy `curl -x <proxy-scheme>://localhost:3128 http://httpbin.org/get`, for https you may nedd to add `--proxy-insecure` flag
 - 10000 - the API port, navigate to `http://localhost:10000` to see the API index page
 
+#### Prometheus metrics
+
+Start the test runner `make run-e2e SETUP=<setup> SETUP_ARGS="-debug -prom"` to enable Prometheus metrics collection.
+Prometheus server is available at `http://localhost:9090`,
+* proxy metrics have `proxy_` prefix
+* upstream proxy metrics have `upstream_` prefix.
+
 ### Testing for Go routine leaks
 
 You can kill one of the containers with `make term` ex. `SRV=forwarder-e2e-httpbin-1 make term` to kill the httpbin container and see how the proxy behaves
