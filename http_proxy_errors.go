@@ -50,7 +50,7 @@ func (hp *HTTPProxy) errorResponse(req *http.Request, err error) *http.Response 
 	}
 	if code == 0 {
 		code = http.StatusInternalServerError
-		msg = "An unexpected error occurred"
+		msg = "encountered an unexpected error"
 		label = "unexpected_error"
 	}
 
@@ -78,10 +78,10 @@ func handleNetError(_ *http.Request, err error) (code int, msg, label string) {
 	if errors.As(err, &netErr) {
 		if netErr.Timeout() {
 			code = http.StatusGatewayTimeout
-			msg = "Timed out connecting to remote host"
+			msg = "timed out connecting to remote host"
 		} else {
 			code = http.StatusBadGateway
-			msg = "Failed to connect to remote host"
+			msg = "failed to connect to remote host"
 		}
 		label = "net_" + netErr.Op
 	}
@@ -93,7 +93,7 @@ func handleTLSRecordHeader(_ *http.Request, err error) (code int, msg, label str
 	var headerErr *tls.RecordHeaderError
 	if errors.As(err, &headerErr) {
 		code = http.StatusBadGateway
-		msg = "TLS handshake failed"
+		msg = "tls handshake failed"
 		label = "tls_record_header"
 	}
 
@@ -104,7 +104,7 @@ func handleTLSCertificateError(_ *http.Request, err error) (code int, msg, label
 	var certErr *tls.CertificateVerificationError
 	if errors.As(err, &certErr) {
 		code = http.StatusBadGateway
-		msg = "TLS handshake failed"
+		msg = "tls handshake failed"
 		label = "tls_certificate"
 	}
 
