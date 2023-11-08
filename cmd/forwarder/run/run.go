@@ -276,6 +276,7 @@ func Command() *cobra.Command {
 		logConfig:           log.DefaultConfig(),
 	}
 	c.httpProxyConfig.PromRegistry = c.promReg
+	c.httpProxyConfig.PromNamespace = "forwarder"
 	c.apiServerConfig.Addr = "localhost:10000"
 
 	cmd := &cobra.Command{
