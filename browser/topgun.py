@@ -8,6 +8,7 @@ from playwright._impl._api_types import TimeoutError
 headless = False
 concurrent = 3
 load_timeout = 30000
+monkey_testing_timeout = 30000
 
 # List of URLs to open.
 urls = [
@@ -71,6 +72,12 @@ def open_page():
                     page.wait_for_load_state("networkidle", timeout=load_timeout)
             except TimeoutError:
                 print(f'{threading.current_thread().name} timed out waiting for {url}')
+
+            # Monkey testing
+            page.add_script_tag(url="https://cdnjs.cloudflare.com/ajax/libs/gremlins.js/0.1.0/gremlins.min.js")
+            page.add_script_tag(content="""gremlins.createHorde().unleash();""")
+            time.sleep(monkey_testing_timeout/1000)
+
             page.close()
 
         context.close()
