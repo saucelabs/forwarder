@@ -47,6 +47,9 @@ tags
 # Generated env.{environment} files
 .env.*
 
+# Generated yaml files
+/forwarder.yaml
+
 # UML
 *.plum
 
