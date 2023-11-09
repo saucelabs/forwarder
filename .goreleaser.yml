@@ -54,6 +54,7 @@ archives:
       {{- else }}{{ .Arch }}{{ end }}
 
     files:
+      - forwarder.yaml
       - completions/*
       - LICENSE
       - LICENSE.3RD_PARTY
