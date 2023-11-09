@@ -99,6 +99,7 @@ func rootCommand() *cobra.Command {
 	// Add other commands
 	cmd.AddCommand(
 		httpbin.Command(), // hidden
+		cobrautil.ConfigFileCommand(flagGroups, run.Command().Flags()), // hidden
 		version.Command(),
 	)
 
