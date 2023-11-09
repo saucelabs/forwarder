@@ -59,7 +59,7 @@ func main() {
 				for _, srv := range s.Compose.Services {
 					if strings.HasPrefix(srv.Image, "saucelabs/forwarder") {
 						srv.Environment["FORWARDER_LOG_LEVEL"] = "debug"
-						srv.Environment["FORWARDER_LOG_HTTP"] = "headers"
+						srv.Environment["FORWARDER_LOG_HTTP"] = "headers,api:errors"
 					}
 				}
 			}
