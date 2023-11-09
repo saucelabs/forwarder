@@ -2,6 +2,7 @@ project_name: forwarder
 
 before:
   hooks:
+    - ./packaging/config.sh
     - ./packaging/completions.sh
 
 changelog:
@@ -97,7 +98,7 @@ nfpms:
       - src: packaging/forwarder.env
         dst: /etc/default/forwarder
         type: "config|noreplace"
-      - src: packaging/forwarder.yaml
+      - src: forwarder.yaml
         dst: /etc/forwarder/forwarder.yaml
         type: "config|noreplace"
       - src: completions/forwarder.bash
