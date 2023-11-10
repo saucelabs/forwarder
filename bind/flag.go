@@ -337,9 +337,10 @@ func TLSServerConfig(fs *pflag.FlagSet, cfg *forwarder.TLSServerConfig, namePref
 }
 
 func PromNamespace(fs *pflag.FlagSet, promNamespace *string) {
-	fs.StringVar(promNamespace, "prom-namespace", *promNamespace, "<string>"+
-		"Prometheus namespace to use for metrics. "+
-		"The metrics are available at /metrics endpoint in the API server. ")
+	fs.Var(anyflag.NewValue[string](*promNamespace, promNamespace, forwarder.ParsePrometheusNamespace),
+		"prom-namespace", "<string>"+
+			"Prometheus namespace to use for metrics. "+
+			"The metrics are available at /metrics endpoint in the API server. ")
 }
 
 func LogConfig(fs *pflag.FlagSet, cfg *log.Config) {
