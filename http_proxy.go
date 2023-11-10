@@ -9,6 +9,7 @@ package forwarder
 import (
 	"bufio"
 	"context"
+	"crypto/sha256"
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
@@ -226,10 +227,14 @@ func (hp *HTTPProxy) configureProxy() error {
 	hp.proxy = martian.NewProxy()
 
 	if hp.config.MITM != nil {
-		hp.log.Infof("using MITM")
 		mc, err := newMartianMITMConfig(hp.config.MITM)
 		if err != nil {
 			return fmt.Errorf("mitm: %w", err)
+		}
+		if hp.config.MITM.CACertFile == "" {
+			hp.log.Infof("using MITM with self-signed CA certificate, sha256 fingerprint=%x", sha256.Sum256(mc.CACert().Raw))
+		} else {
+			hp.log.Infof("using MITM")
 		}
 		hp.proxy.SetMITM(mc)
 		hp.mitmCACert = mc.CACert()
