@@ -58,3 +58,9 @@ function run_interactive() {
     podman exec "$container_name" systemctl status forwarder
     podman exec -it "$container_name" /bin/bash
 }
+
+# Usage: remove_container CONTAINER_NAME
+function remove_container() {
+    local container_name="$1"
+    podman rm --force "$container_name"
+}
