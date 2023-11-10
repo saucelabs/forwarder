@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	_ "unsafe" // for go:linkname
@@ -257,4 +258,27 @@ func OpenFileParser(flag int, perm, dirPerm os.FileMode) func(val string) (*os.F
 		}
 		return os.OpenFile(val, flag, perm)
 	}
+}
+
+func ParsePrometheusNamespace(val string) (string, error) {
+	if err := validatePrometheusNamespace(val); err != nil {
+		return "", err
+	}
+
+	return val, nil
+}
+
+// https://prometheus.io/docs/concepts/data_model/#metric-names-and-labels
+var promNamespaceRegexp = regexp.MustCompile("^[a-zA-Z_:][a-zA-Z0-9_:]*$")
+
+func validatePrometheusNamespace(val string) error {
+	if val == "" {
+		return nil
+	}
+
+	if !promNamespaceRegexp.MatchString(val) {
+		return fmt.Errorf("invalid namespace: %s, it must match %q", val, promNamespaceRegexp.String())
+	}
+
+	return nil
 }
