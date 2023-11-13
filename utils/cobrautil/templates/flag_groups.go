@@ -56,3 +56,7 @@ func (g FlagGroups) splitFlagSet(f *pflag.FlagSet) []*pflag.FlagSet {
 
 	return result
 }
+
+func SplitFlagSet(g FlagGroups, f *pflag.FlagSet) []*pflag.FlagSet {
+	return g.splitFlagSet(f)
+}
