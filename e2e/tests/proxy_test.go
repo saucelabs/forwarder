@@ -12,7 +12,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"math/rand"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -20,7 +22,9 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/gorilla/websocket"
 	"github.com/saucelabs/forwarder/e2e/forwarder"
@@ -285,5 +289,49 @@ func TestProxyUpstream(t *testing.T) {
 
 	if !success {
 		t.Fatalf("%s via header not found", forwarder.UpstreamProxyServiceName)
+	}
+}
+
+func TestProxyReuseConnection(t *testing.T) {
+	c := newClient(t, "http://wronghost", func(tr *http.Transport) {
+		var (
+			d      net.Dialer
+			dialed atomic.Bool
+		)
+		tr.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
+			if dialed.CompareAndSwap(false, true) {
+				return d.DialContext(ctx, network, addr)
+			}
+			return nil, errors.New("only one dial is allowed")
+		}
+	})
+
+	for i := 0; i < 2; i++ {
+		r, w := io.Pipe()
+
+		written := make(chan struct{})
+		go func() {
+			zeros := make([]byte, 1024*1024)
+			if _, err := w.Write(zeros); err != nil {
+				t.Error(err)
+			}
+			if err := w.Close(); err != nil {
+				t.Error(err)
+			}
+			close(written)
+		}()
+
+		res := c.GET("/", func(req *http.Request) {
+			req.Body = r
+		})
+		if res.StatusCode != http.StatusBadGateway {
+			t.Fatalf("Expected status %d, got %d", http.StatusBadGateway, res.StatusCode)
+		}
+
+		select {
+		case <-written:
+		case <-time.After(10 * time.Second):
+			t.Fatal("timed-out waiting for body read")
+		}
 	}
 }
