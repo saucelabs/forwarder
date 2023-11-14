@@ -48,14 +48,24 @@ type Logger struct {
 	name  string
 	level flog.Level
 
+	errorPfx string
+	infoPfx  string
+	debugPfx string
+
 	decorate func(string) string
 }
 
 func (sl Logger) Named(name string) Logger {
+	sl.name = name
+
 	if name != "" {
 		name = "[" + name + "] "
 	}
-	sl.name = name
+
+	sl.errorPfx = name + "[ERROR] "
+	sl.infoPfx = name + "[INFO] "
+	sl.debugPfx = name + "[DEBUG] "
+
 	return sl
 }
 
@@ -66,7 +76,7 @@ func (sl Logger) Errorf(format string, args ...any) {
 	if sl.decorate != nil {
 		format = sl.decorate(format)
 	}
-	sl.log.Printf(sl.name+"[ERROR] "+format, args...)
+	sl.log.Printf(sl.errorPfx+format, args...)
 }
 
 func (sl Logger) Infof(format string, args ...any) {
@@ -76,7 +86,7 @@ func (sl Logger) Infof(format string, args ...any) {
 	if sl.decorate != nil {
 		format = sl.decorate(format)
 	}
-	sl.log.Printf(sl.name+"[INFO] "+format, args...)
+	sl.log.Printf(sl.infoPfx+format, args...)
 }
 
 func (sl Logger) Debugf(format string, args ...any) {
@@ -86,7 +96,7 @@ func (sl Logger) Debugf(format string, args ...any) {
 	if sl.decorate != nil {
 		format = sl.decorate(format)
 	}
-	sl.log.Printf(sl.name+"[DEBUG] "+format, args...)
+	sl.log.Printf(sl.debugPfx+format, args...)
 }
 
 // Unwrap returns the underlying log.Logger pointer.
