@@ -801,17 +801,20 @@ func (p *Proxy) handle(ctx *Context, conn net.Conn, brw *bufio.ReadWriter) error
 		res.Header.Set("Upgrade", resUpType)
 	}
 
-	var closing error
-	if !req.ProtoAtLeast(1, 1) || req.Close || res.Close || p.Closing() {
-		log.Debugf(req.Context(), "received close request: %v", req.RemoteAddr)
-		res.Close = true
-		closing = errClose
-	}
-
 	// deal with 101 Switching Protocols responses: (WebSocket, h2c, etc)
 	if res.StatusCode == http.StatusSwitchingProtocols {
 		return p.handleUpgradeResponse(res, brw, conn)
 	}
+
+	if closing := p.writeResponse(res, brw, conn); closing {
+		return errClose
+	}
+
+	return nil
+}
+
+func (p *Proxy) writeResponse(res *http.Response, brw *bufio.ReadWriter, conn net.Conn) (closing bool) {
+	req := res.Request
 
 	if p.WriteTimeout > 0 {
 		if deadlineErr := conn.SetWriteDeadline(time.Now().Add(p.WriteTimeout)); deadlineErr != nil {
@@ -819,6 +822,13 @@ func (p *Proxy) handle(ctx *Context, conn net.Conn, brw *bufio.ReadWriter) error
 		}
 	}
 
+	if !req.ProtoAtLeast(1, 1) || req.Close || res.Close || p.Closing() {
+		log.Debugf(req.Context(), "received close request: %v", req.RemoteAddr)
+		res.Close = true
+		closing = true
+	}
+
+	var err error
 	if req.Method == "HEAD" && res.Body == http.NoBody {
 		// The http package is misbehaving when writing a HEAD response.
 		// See https://github.com/golang/go/issues/62015 for details.
@@ -837,7 +847,7 @@ func (p *Proxy) handle(ctx *Context, conn net.Conn, brw *bufio.ReadWriter) error
 	if err != nil {
 		log.Errorf(req.Context(), "got error while writing response back to client: %v", err)
 		if errors.Is(err, io.ErrUnexpectedEOF) {
-			closing = errClose
+			closing = true
 		}
 	}
 	err = brw.Flush()
@@ -847,14 +857,14 @@ func (p *Proxy) handle(ctx *Context, conn net.Conn, brw *bufio.ReadWriter) error
 
 	if err := req.Body.Close(); err != nil {
 		log.Errorf(req.Context(), "failed to close request body: %v", err)
-		closing = errClose
+		closing = true
 	}
 	if err := res.Body.Close(); err != nil {
 		log.Errorf(req.Context(), "failed to close response body: %v", err)
-		closing = errClose
+		closing = true
 	}
 
-	return closing
+	return
 }
 
 // A peekedConn subverts the net.Conn.Read implementation, primarily so that
