@@ -21,15 +21,25 @@ func Default() Logger {
 	}
 }
 
-func New(cfg *flog.Config) Logger {
+// Option is a function that modifies the Logger.
+type Option func(*Logger)
+
+func New(cfg *flog.Config, opts ...Option) Logger {
 	var w io.Writer = os.Stdout
 	if cfg.File != nil {
 		w = cfg.File
 	}
-	return Logger{
+
+	l := Logger{
 		log:   log.New(w, "", log.Ldate|log.Ltime|log.Lmicroseconds|log.LUTC),
 		level: cfg.Level,
 	}
+
+	for _, opt := range opts {
+		opt(&l)
+	}
+
+	return l
 }
 
 // Logger implements the forwarder.Logger interface using the standard log package.
@@ -38,8 +48,7 @@ type Logger struct {
 	name  string
 	level flog.Level
 
-	// Decorate allows to modify the log message before it is written.
-	Decorate func(string) string
+	decorate func(string) string
 }
 
 func (sl Logger) Named(name string) Logger {
@@ -54,8 +63,8 @@ func (sl Logger) Errorf(format string, args ...any) {
 	if sl.level < flog.ErrorLevel {
 		return
 	}
-	if sl.Decorate != nil {
-		format = sl.Decorate(format)
+	if sl.decorate != nil {
+		format = sl.decorate(format)
 	}
 	sl.log.Printf(sl.name+"[ERROR] "+format, args...)
 }
@@ -64,8 +73,8 @@ func (sl Logger) Infof(format string, args ...any) {
 	if sl.level < flog.InfoLevel {
 		return
 	}
-	if sl.Decorate != nil {
-		format = sl.Decorate(format)
+	if sl.decorate != nil {
+		format = sl.decorate(format)
 	}
 	sl.log.Printf(sl.name+"[INFO] "+format, args...)
 }
@@ -74,8 +83,8 @@ func (sl Logger) Debugf(format string, args ...any) {
 	if sl.level < flog.DebugLevel {
 		return
 	}
-	if sl.Decorate != nil {
-		format = sl.Decorate(format)
+	if sl.decorate != nil {
+		format = sl.decorate(format)
 	}
 	sl.log.Printf(sl.name+"[DEBUG] "+format, args...)
 }
