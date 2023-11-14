@@ -87,22 +87,6 @@ func isClosedConnError(err error) bool {
 	return strings.Contains(err.Error(), "use of closed network connection")
 }
 
-// isCloseable reports whether err is an error that indicates the client connection should be closed.
-func isCloseable(err error) bool {
-	if errors.Is(err, io.EOF) ||
-		errors.Is(err, io.ErrUnexpectedEOF) ||
-		errors.Is(err, io.ErrClosedPipe) {
-		return true
-	}
-
-	var neterr net.Error
-	if ok := errors.As(err, &neterr); ok && neterr.Timeout() {
-		return true
-	}
-
-	return strings.Contains(err.Error(), "tls:")
-}
-
 // Proxy is an HTTP proxy with support for TLS MITM and customizable behavior.
 type Proxy struct {
 	// AllowHTTP disables automatic HTTP to HTTPS upgrades when the listener is TLS.
@@ -351,22 +335,20 @@ func (p *Proxy) handleLoop(conn net.Conn) {
 		ctx = withSession(s)
 	)
 
-	const maxConsecutiveErrors = 5
-	errorsN := 0
 	for {
 		if err := p.handle(ctx, conn, brw); err != nil {
-			if errors.Is(err, errClose) || isCloseable(err) {
+			switch {
+			case errors.Is(err, errClose):
 				log.Debugf(context.TODO(), "closing connection: %v", conn.RemoteAddr())
-				return
+			case errors.Is(err, io.EOF):
+				log.Debugf(context.TODO(), "connection closed by client: %v", err)
+			case isClosedConnError(err):
+				log.Debugf(context.TODO(), "connection closed by client prematurely: %v", err)
+			default:
+				log.Errorf(context.TODO(), err.Error())
 			}
 
-			errorsN++
-			if errorsN >= maxConsecutiveErrors {
-				log.Errorf(context.TODO(), "closing connection after %d consecutive errors: %v", errorsN, err)
-				return
-			}
-		} else {
-			errorsN = 0
+			return
 		}
 
 		if s.Hijacked() {
@@ -479,12 +461,7 @@ func (p *Proxy) handleMITM(ctx *Context, req *http.Request, session *Session, br
 
 	b, err := brw.Peek(1)
 	if err != nil {
-		if errors.Is(err, io.EOF) {
-			log.Debugf(req.Context(), "mitm: connection closed prematurely: %v", err)
-		} else {
-			log.Errorf(req.Context(), "mitm: failed to peek connection %s: %v", req.Host, err)
-		}
-		return errClose
+		return fmt.Errorf("mitm: peek connection %s: %w", req.Host, err)
 	}
 
 	// Drain all of the rest of the buffered data.
@@ -502,12 +479,7 @@ func (p *Proxy) handleMITM(ctx *Context, req *http.Request, session *Session, br
 
 		if err := tlsconn.Handshake(); err != nil {
 			p.mitm.HandshakeErrorCallback(req, err)
-			if errors.Is(err, io.EOF) {
-				log.Debugf(req.Context(), "mitm: connection closed prematurely: %v", err)
-			} else {
-				log.Errorf(req.Context(), "mitm: failed to handshake connection %s: %v", req.Host, err)
-			}
-			return errClose
+			return fmt.Errorf("mitm: handshake connection %s: %w", req.Host, err)
 		}
 
 		cs := tlsconn.ConnectionState()
@@ -519,7 +491,12 @@ func (p *Proxy) handleMITM(ctx *Context, req *http.Request, session *Session, br
 
 		brw.Writer.Reset(tlsconn)
 		brw.Reader.Reset(tlsconn)
-		return p.handle(ctx, tlsconn, brw)
+
+		if err := p.handle(ctx, tlsconn, brw); err != nil {
+			return fmt.Errorf("mitm: %w", err)
+		}
+
+		return errClose
 	}
 
 	// Prepend the previously read data to be read again by http.ReadRequest.
@@ -625,14 +602,12 @@ func (p *Proxy) handleUpgradeResponse(res *http.Response, brw *bufio.ReadWriter,
 
 	uconn, ok := res.Body.(io.ReadWriteCloser)
 	if !ok {
-		log.Errorf(res.Request.Context(), "internal error: switching protocols response with non-writable body")
-		return errClose
+		return fmt.Errorf("internal error: switching protocols response with non-writable body")
 	}
 
 	res.Body = nil
-
 	if err := p.tunnel(resUpType, res, brw, conn, uconn, uconn); err != nil {
-		log.Errorf(res.Request.Context(), "%s tunnel: %w", resUpType, err)
+		return fmt.Errorf("%s tunnel: %w", resUpType, err)
 	}
 
 	return errClose
@@ -643,7 +618,7 @@ func (p *Proxy) tunnel(name string, res *http.Response, brw *bufio.ReadWriter, c
 		return fmt.Errorf("write %s response: %w", name, err)
 	}
 	if err := drainBuffer(cw, brw.Reader); err != nil {
-		return fmt.Errorf("got error while draining read buffer: %w", err)
+		return fmt.Errorf("drain read buffer: %w", err)
 	}
 
 	ctx := res.Request.Context()
@@ -705,15 +680,7 @@ func (p *Proxy) handle(ctx *Context, conn net.Conn, brw *bufio.ReadWriter) error
 
 	req, err := p.readRequest(ctx, conn, brw)
 	if err != nil {
-		switch {
-		case errors.Is(err, io.EOF):
-			// Ignore EOF errors, they are expected when the client closes the connection.
-		case isClosedConnError(err):
-			log.Debugf(context.TODO(), "connection closed prematurely: %v", err)
-		default:
-			log.Errorf(context.TODO(), "failed to read request: %v", err)
-		}
-		return errClose
+		return err
 	}
 	defer req.Body.Close()
 
@@ -814,17 +781,8 @@ func (p *Proxy) handle(ctx *Context, conn net.Conn, brw *bufio.ReadWriter) error
 	return nil
 }
 
-func (p *Proxy) writeResponse(res *http.Response, brw *bufio.ReadWriter, conn net.Conn) (ferr error) {
+func (p *Proxy) writeResponse(res *http.Response, brw *bufio.ReadWriter, conn net.Conn) error {
 	req := res.Request
-
-	defer func() {
-		if isClosedConnError(ferr) {
-			log.Debugf(context.TODO(), "connection closed writing response back to client: %v", ferr)
-		} else {
-			log.Errorf(req.Context(), "got error while writing response back to client: %v", ferr)
-		}
-		ferr = errClose
-	}()
 
 	if p.WriteTimeout > 0 {
 		if deadlineErr := conn.SetWriteDeadline(time.Now().Add(p.WriteTimeout)); deadlineErr != nil {
