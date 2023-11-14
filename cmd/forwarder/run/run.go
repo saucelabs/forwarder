@@ -59,7 +59,11 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 	if f := c.logConfig.File; f != nil {
 		defer f.Close()
 	}
-	logger := stdlog.New(c.logConfig)
+	onError, err := c.registerErrorsMetric()
+	if err != nil {
+		return fmt.Errorf("register errors metric: %w", err)
+	}
+	logger := stdlog.New(c.logConfig, stdlog.WithOnError(onError))
 
 	defer func() {
 		if cmdErr != nil {
@@ -254,6 +258,22 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 	}
 
 	return g.Run()
+}
+
+func (c *command) registerErrorsMetric() (func(name string), error) {
+	m := prometheus.NewCounterVec(prometheus.CounterOpts{
+		Namespace: c.httpProxyConfig.PromNamespace,
+		Name:      "errors_total",
+		Help:      "Number of errors",
+	}, []string{"name"})
+
+	if err := c.promReg.Register(m); err != nil {
+		return nil, err
+	}
+
+	return func(name string) {
+		m.WithLabelValues(name).Inc()
+	}, nil
 }
 
 func (c *command) registerProcMetrics() error {
