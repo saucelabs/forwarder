@@ -814,57 +814,67 @@ func (p *Proxy) handle(ctx *Context, conn net.Conn, brw *bufio.ReadWriter) error
 		res.Header.Set("Upgrade", resUpType)
 	}
 
-	var closing error
-	if !req.ProtoAtLeast(1, 1) || req.Close || res.Close || p.Closing() {
-		log.Debugf(req.Context(), "received close request: %v", req.RemoteAddr)
-		res.Close = true
-		closing = errClose
-	}
-
 	// deal with 101 Switching Protocols responses: (WebSocket, h2c, etc)
 	if res.StatusCode == http.StatusSwitchingProtocols {
 		return p.handleUpgradeResponse(res, brw, conn)
 	}
 
-	closing = p.writeResponse(conn, req, res, err, brw, closing)
-
-	if p.CloseAfterReply {
-		closing = errClose
-	}
-	return closing
+	return p.writeResponse(res, brw, conn)
 }
 
-func (p *Proxy) writeResponse(conn net.Conn, req *http.Request, res *http.Response, err error, brw *bufio.ReadWriter, closing error) error {
+func (p *Proxy) writeResponse(res *http.Response, brw *bufio.ReadWriter, conn net.Conn) (ferr error) {
+	req := res.Request
+
+	defer func() {
+		if isClosedConnError(ferr) {
+			log.Debugf(context.TODO(), "connection closed writing response back to client: %v", ferr)
+		} else {
+			log.Errorf(req.Context(), "got error while writing response back to client: %v", ferr)
+		}
+		ferr = errClose
+	}()
+
 	if p.WriteTimeout > 0 {
 		if deadlineErr := conn.SetWriteDeadline(time.Now().Add(p.WriteTimeout)); deadlineErr != nil {
 			log.Errorf(req.Context(), "can't set write deadline: %v", deadlineErr)
+			defer conn.SetWriteDeadline(time.Time{})
 		}
 	}
 
+	if !req.ProtoAtLeast(1, 1) || req.Close {
+		log.Debugf(req.Context(), "received close request: %v", req.RemoteAddr)
+	}
+	var closing error
+	if !req.ProtoAtLeast(1, 1) || req.Close || res.Close || p.Closing() || p.CloseAfterReply {
+		res.Close = true
+		closing = errClose
+	}
+
+	// The http package is misbehaving when writing a HEAD response.
+	// See https://github.com/golang/go/issues/62015 for details.
+	// This works around the issue by writing the response manually.
 	if req.Method == "HEAD" && res.Body == http.NoBody {
-		// The http package is misbehaving when writing a HEAD response.
-		// See https://github.com/golang/go/issues/62015 for details.
-		// This works around the issue by writing the response manually.
-		err = writeHeadResponse(brw.Writer, res)
-	} else {
-		// Add support for Server Sent Events - relay HTTP chunks and flush after each chunk.
-		// This is safe for events that are smaller than the buffer io.Copy uses (32KB).
-		// If the event is larger than the buffer, the event will be split into multiple chunks.
-		if shouldFlush(res) {
-			err = res.Write(flushAfterChunkWriter{brw.Writer})
-		} else {
-			err = res.Write(brw)
+		if err := writeHeadResponse(brw.Writer, res); err != nil {
+			return err
 		}
-	}
-	if err != nil {
-		log.Errorf(req.Context(), "got error while writing response back to client: %v", err)
-		if errors.Is(err, io.ErrUnexpectedEOF) {
-			closing = errClose
+		if err := brw.Flush(); err != nil {
+			return err
 		}
+		return closing
 	}
-	err = brw.Flush()
-	if err != nil {
-		log.Errorf(req.Context(), "got error while flushing response back to client: %v", err)
+
+	// Add support for Server Sent Events - relay HTTP chunks and flush after each chunk.
+	// This is safe for events that are smaller than the buffer io.Copy uses (32KB).
+	// If the event is larger than the buffer, the event will be split into multiple chunks.
+	var w io.Writer = brw.Writer
+	if shouldFlush(res) {
+		w = flushAfterChunkWriter{brw.Writer}
+	}
+	if err := res.Write(w); err != nil {
+		return err
+	}
+	if err := brw.Flush(); err != nil {
+		return err
 	}
 	return closing
 }
