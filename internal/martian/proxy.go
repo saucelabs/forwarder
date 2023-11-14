@@ -470,11 +470,8 @@ func (p *Proxy) handleMITM(ctx *Context, req *http.Request, session *Session, br
 		return nil
 	}
 
-	if err := res.Write(brw); err != nil {
-		log.Errorf(req.Context(), "mitm: got error while writing response back to client: %v", err)
-	}
-	if err := brw.Flush(); err != nil {
-		log.Errorf(req.Context(), "mitm: got error while flushing response back to client: %v", err)
+	if err := p.writeResponse(res, brw, conn); err != nil {
+		return fmt.Errorf("mitm: write CONNECT response: %w", err)
 	}
 
 	b, err := brw.Peek(1)
@@ -591,14 +588,10 @@ func (p *Proxy) handleConnectRequest(ctx *Context, req *http.Request, session *S
 		if cerr == nil {
 			log.Errorf(req.Context(), "CONNECT rejected with status code: %d", res.StatusCode)
 		}
-		if err := res.Write(brw); err != nil {
-			log.Errorf(req.Context(), "got error while writing response back to client: %v", err)
+		if err := p.writeResponse(res, brw, conn); err != nil {
+			return fmt.Errorf("write CONNECT error response: %w", err)
 		}
-		err := brw.Flush()
-		if err != nil {
-			log.Errorf(req.Context(), "got error while flushing response back to client: %v", err)
-		}
-		return err
+		return nil
 	}
 
 	res.ContentLength = -1
