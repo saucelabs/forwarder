@@ -826,6 +826,15 @@ func (p *Proxy) handle(ctx *Context, conn net.Conn, brw *bufio.ReadWriter) error
 		return p.handleUpgradeResponse(res, brw, conn)
 	}
 
+	closing = p.writeResponse(conn, req, res, err, brw, closing)
+
+	if p.CloseAfterReply {
+		closing = errClose
+	}
+	return closing
+}
+
+func (p *Proxy) writeResponse(conn net.Conn, req *http.Request, res *http.Response, err error, brw *bufio.ReadWriter, closing error) error {
 	if p.WriteTimeout > 0 {
 		if deadlineErr := conn.SetWriteDeadline(time.Now().Add(p.WriteTimeout)); deadlineErr != nil {
 			log.Errorf(req.Context(), "can't set write deadline: %v", deadlineErr)
@@ -856,10 +865,6 @@ func (p *Proxy) handle(ctx *Context, conn net.Conn, brw *bufio.ReadWriter) error
 	err = brw.Flush()
 	if err != nil {
 		log.Errorf(req.Context(), "got error while flushing response back to client: %v", err)
-	}
-
-	if p.CloseAfterReply {
-		closing = errClose
 	}
 	return closing
 }
