@@ -717,13 +717,12 @@ func (p *Proxy) handle(ctx *Context, conn net.Conn, brw *bufio.ReadWriter) error
 
 	req, err := p.readRequest(ctx, conn, brw)
 	if err != nil {
-		if errors.Is(err, io.EOF) {
-			return errClose
-		}
-
-		if isClosedConnError(err) {
+		switch {
+		case errors.Is(err, io.EOF):
+			// Ignore EOF errors, they are expected when the client closes the connection.
+		case isClosedConnError(err):
 			log.Debugf(context.TODO(), "connection closed prematurely: %v", err)
-		} else {
+		default:
 			log.Errorf(context.TODO(), "failed to read request: %v", err)
 		}
 		return errClose
