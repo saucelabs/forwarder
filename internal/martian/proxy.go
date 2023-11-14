@@ -89,8 +89,7 @@ func isClosedConnError(err error) bool {
 
 // isCloseable reports whether err is an error that indicates the client connection should be closed.
 func isCloseable(err error) bool {
-	if errors.Is(err, errClose) ||
-		errors.Is(err, io.EOF) ||
+	if errors.Is(err, io.EOF) ||
 		errors.Is(err, io.ErrUnexpectedEOF) ||
 		errors.Is(err, io.ErrClosedPipe) {
 		return true
@@ -356,7 +355,7 @@ func (p *Proxy) handleLoop(conn net.Conn) {
 	errorsN := 0
 	for {
 		if err := p.handle(ctx, conn, brw); err != nil {
-			if isCloseable(err) {
+			if errors.Is(err, errClose) || isCloseable(err) {
 				log.Debugf(context.TODO(), "closing connection: %v", conn.RemoteAddr())
 				return
 			}
