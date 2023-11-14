@@ -53,6 +53,7 @@ type Logger struct {
 	debugPfx string
 
 	decorate func(string) string
+	onError  func(name string)
 }
 
 func (sl Logger) Named(name string) *Logger { //nolint:gocritic // we pass by value to get a copy
@@ -70,6 +71,9 @@ func (sl Logger) Named(name string) *Logger { //nolint:gocritic // we pass by va
 }
 
 func (sl *Logger) Errorf(format string, args ...any) {
+	if sl.onError != nil {
+		defer sl.onError(sl.name)
+	}
 	if sl.level < flog.ErrorLevel {
 		return
 	}
