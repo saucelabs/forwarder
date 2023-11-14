@@ -12,3 +12,10 @@ func WithDecorate(f func(string) string) Option {
 		l.decorate = f
 	}
 }
+
+// WithOnError allows to set a function that is called when an error is logged.
+func WithOnError(f func(name string)) Option {
+	return func(l *Logger) {
+		l.onError = f
+	}
+}
