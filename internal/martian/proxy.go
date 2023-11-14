@@ -473,11 +473,8 @@ func (p *Proxy) handleMITM(ctx *Context, req *http.Request, session *Session, br
 		return nil
 	}
 
-	if err := res.Write(brw); err != nil {
-		log.Errorf(req.Context(), "mitm: got error while writing response back to client: %v", err)
-	}
-	if err := brw.Flush(); err != nil {
-		log.Errorf(req.Context(), "mitm: got error while flushing response back to client: %v", err)
+	if err := p.writeResponse(res, brw, conn); err != nil {
+		return fmt.Errorf("mitm: write CONNECT response: %w", err)
 	}
 
 	b, err := brw.Peek(1)
@@ -609,14 +606,9 @@ func (p *Proxy) handleConnectRequest(ctx *Context, req *http.Request, session *S
 		if cerr == nil {
 			log.Errorf(req.Context(), "CONNECT rejected with status code: %d", res.StatusCode)
 		}
-		if err := res.Write(brw); err != nil {
-			log.Errorf(req.Context(), "got error while writing response back to client: %v", err)
+		if err := p.writeResponse(res, brw, conn); err != nil {
+			return fmt.Errorf("write CONNECT error response: %w", err)
 		}
-		err := brw.Flush()
-		if err != nil {
-			log.Errorf(req.Context(), "got error while flushing response back to client: %v", err)
-		}
-		return err
 	}
 
 	res.ContentLength = -1
@@ -647,11 +639,8 @@ func (p *Proxy) handleUpgradeResponse(res *http.Response, brw *bufio.ReadWriter,
 }
 
 func (p *Proxy) tunnel(name string, res *http.Response, brw *bufio.ReadWriter, conn net.Conn, cw io.Writer, cr io.Reader) error {
-	if err := res.Write(brw); err != nil {
-		return fmt.Errorf("got error while writing response back to client: %w", err)
-	}
-	if err := brw.Flush(); err != nil {
-		return fmt.Errorf("got error while flushing response back to client: %w", err)
+	if err := p.writeResponse(res, brw, conn); err != nil {
+		return fmt.Errorf("write %s response: %w", name, err)
 	}
 	if err := drainBuffer(cw, brw.Reader); err != nil {
 		return fmt.Errorf("got error while draining read buffer: %w", err)
@@ -818,7 +807,11 @@ func (p *Proxy) handle(ctx *Context, conn net.Conn, brw *bufio.ReadWriter) error
 		return p.handleUpgradeResponse(res, brw, conn)
 	}
 
-	return p.writeResponse(res, brw, conn)
+	if err := p.writeResponse(res, brw, conn); err != nil {
+		return fmt.Errorf("write response: %w", err)
+	}
+
+	return nil
 }
 
 func (p *Proxy) writeResponse(res *http.Response, brw *bufio.ReadWriter, conn net.Conn) (ferr error) {
