@@ -859,6 +859,15 @@ func (p *Proxy) handle(ctx *Context, conn net.Conn, brw *bufio.ReadWriter) error
 		log.Errorf(req.Context(), "got error while flushing response back to client: %v", err)
 	}
 
+	if err := req.Body.Close(); err != nil {
+		log.Errorf(req.Context(), "failed to close request body: %v", err)
+		closing = errClose
+	}
+	if err := res.Body.Close(); err != nil {
+		log.Errorf(req.Context(), "failed to close response body: %v", err)
+		closing = errClose
+	}
+
 	if p.CloseAfterReply {
 		closing = errClose
 	}
