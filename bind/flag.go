@@ -143,7 +143,7 @@ func DirectDomains(fs *pflag.FlagSet, cfg *[]ruleset.RegexpListItem) {
 	fs.Var(anyflag.NewSliceValue[ruleset.RegexpListItem](*cfg, cfg, ruleset.ParseRegexpListItem),
 		"direct-domains", "[-]<regexp>,..."+
 			"Connect directly to the specified domains without using the upstream proxy. "+
-			"Prefix domains with '-' to exclude requests to certain domains from being directed."+
+			"Prefix domains with '-' to exclude requests to certain domains from being directed. "+
 			"This flag takes precedence over the PAC script.")
 }
 

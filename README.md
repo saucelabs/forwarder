@@ -147,7 +147,7 @@ Proxy options:
 
     --direct-domains [-]<regexp>,... (env FORWARDER_DIRECT_DOMAINS)
         Connect directly to the specified domains without using the upstream proxy. Prefix domains with '-' to exclude
-        requests to certain domains from being directed.This flag takes precedence over the PAC script.
+        requests to certain domains from being directed. This flag takes precedence over the PAC script.
 
     -H, --header <header> (env FORWARDER_HEADER)
         Add or remove HTTP request headers. Use the format "name: value" to add a header, "name;" to set the header to
