@@ -39,23 +39,19 @@ func DefaultDialConfig() *DialConfig {
 }
 
 type Dialer struct {
-	cfg DialConfig
-	nd  *net.Dialer
+	nd net.Dialer
 }
 
-func NewDialer(cfg *DialConfig) (*Dialer, error) {
-	nd := &net.Dialer{
-		Timeout:   cfg.DialTimeout,
-		KeepAlive: cfg.KeepAlive,
-		Resolver: &net.Resolver{
-			PreferGo: true,
+func NewDialer(cfg *DialConfig) *Dialer {
+	return &Dialer{
+		net.Dialer{
+			Timeout:   cfg.DialTimeout,
+			KeepAlive: cfg.KeepAlive,
+			Resolver: &net.Resolver{
+				PreferGo: true,
+			},
 		},
 	}
-
-	return &Dialer{
-		cfg: *cfg,
-		nd:  nd,
-	}, nil
 }
 
 func (d *Dialer) DialContext(ctx context.Context, network, address string) (net.Conn, error) {

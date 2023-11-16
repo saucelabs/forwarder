@@ -71,20 +71,14 @@ func DefaultHTTPTransportConfig() *HTTPTransportConfig {
 }
 
 func NewHTTPTransport(cfg *HTTPTransportConfig) (*http.Transport, error) {
-	d, err := NewDialer(&cfg.DialConfig)
-	if err != nil {
-		return nil, err
-	}
-
 	tlsCfg := new(tls.Config)
-
 	if err := cfg.ConfigureTLSConfig(tlsCfg); err != nil {
 		return nil, err
 	}
 
 	return &http.Transport{
 		Proxy:                 nil,
-		DialContext:           d.DialContext,
+		DialContext:           NewDialer(&cfg.DialConfig).DialContext,
 		TLSClientConfig:       tlsCfg,
 		TLSHandshakeTimeout:   cfg.TLSClientConfig.HandshakeTimeout,
 		MaxIdleConns:          cfg.MaxIdleConns,
