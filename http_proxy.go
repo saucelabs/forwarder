@@ -72,7 +72,13 @@ type (
 	RequestResponseModifier = martian.RequestResponseModifier
 	RequestModifierFunc     = martian.RequestModifierFunc
 	ResponseModifierFunc    = martian.ResponseModifierFunc
+
+	ConnectFunc = martian.ConnectFunc
 )
+
+// ErrConnectFallback is returned by a ConnectFunc to indicate
+// that the CONNECT request should be handled by martian.
+var ErrConnectFallback = martian.ErrConnectFallback
 
 type HTTPProxyConfig struct {
 	HTTPServerConfig
@@ -88,7 +94,7 @@ type HTTPProxyConfig struct {
 	RequestModifiers       []RequestModifier
 	ResponseModifiers      []ResponseModifier
 	ConnectRequestModifier func(*http.Request) error
-	ConnectPassthrough     bool
+	ConnectFunc            ConnectFunc
 	CloseAfterReply        bool
 	ReadLimit              SizeSuffix
 	WriteLimit             SizeSuffix
@@ -249,7 +255,7 @@ func (hp *HTTPProxy) configureProxy() error {
 	hp.proxy.AllowHTTP = true
 	hp.proxy.RequestIDHeader = hp.config.RequestIDHeader
 	hp.proxy.ConnectRequestModifier = hp.config.ConnectRequestModifier
-	hp.proxy.ConnectPassthrough = hp.config.ConnectPassthrough
+	hp.proxy.ConnectFunc = hp.config.ConnectFunc
 	hp.proxy.WithoutWarning = true
 	hp.proxy.ErrorResponse = hp.errorResponse
 	hp.proxy.CloseAfterReply = hp.config.CloseAfterReply
