@@ -36,6 +36,7 @@ import (
 	"github.com/saucelabs/forwarder/internal/martian/martiantest"
 	"github.com/saucelabs/forwarder/internal/martian/mitm"
 	"github.com/saucelabs/forwarder/internal/martian/proxyutil"
+	"go.uber.org/multierr"
 )
 
 type tempError struct{}
@@ -1009,27 +1010,33 @@ func TestIntegrationConnectUpstreamProxy(t *testing.T) {
 	}
 }
 
-func TestIntegrationConnectPassthrough(t *testing.T) {
+type pipeConn struct {
+	*io.PipeReader
+	*io.PipeWriter
+}
+
+func (conn pipeConn) CloseWrite() error {
+	return conn.PipeWriter.Close()
+}
+
+func (conn pipeConn) Close() error {
+	return multierr.Combine(
+		conn.PipeReader.Close(),
+		conn.PipeWriter.Close(),
+	)
+}
+
+func TestIntegrationConnectFunc(t *testing.T) {
 	t.Parallel()
 
 	l := newListener(t)
 	p := NewProxy()
-	p.ConnectPassthrough = true
-	defer p.Close()
-
-	tr := martiantest.NewTransport()
-	tr.Func(func(req *http.Request) (*http.Response, error) {
+	p.ConnectFunc = func(req *http.Request) (*http.Response, io.ReadWriteCloser, error) {
 		pr, pw := io.Pipe()
-		go func() {
-			if _, err := io.Copy(pw, req.Body); err != nil {
-				t.Errorf("io.Copy(): got %v, want no error", err)
-			}
-			pw.Close()
-		}()
-		return proxyutil.NewResponse(200, pr, req), nil
-	})
-	p.SetRoundTripper(tr)
+		return proxyutil.NewResponse(200, nil, req), pipeConn{pr, pw}, nil
+	}
 	p.SetTimeout(200 * time.Millisecond)
+	defer p.Close()
 
 	go serve(p, l)
 

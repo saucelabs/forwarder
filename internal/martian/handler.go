@@ -19,6 +19,7 @@ package martian
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -26,7 +27,6 @@ import (
 	"strings"
 
 	"github.com/saucelabs/forwarder/internal/martian/log"
-	"github.com/saucelabs/forwarder/internal/martian/proxyutil"
 )
 
 func copyHeader(dst, src http.Header) {
@@ -117,40 +117,25 @@ func (p proxyHandler) handleConnectRequest(ctx *Context, rw http.ResponseWriter,
 	log.Debugf(req.Context(), "attempting to establish CONNECT tunnel: %s", req.URL.Host)
 	var (
 		res  *http.Response
-		cr   io.Reader
-		cw   io.WriteCloser
+		crw  io.ReadWriteCloser
 		cerr error
 	)
-	if p.ConnectPassthrough { //nolint:nestif // to be fixed in #445
-		pr, pw := io.Pipe()
-		req.Body = pr
-		defer req.Body.Close()
-
-		// perform the HTTP roundtrip
-		res, cerr = p.roundTrip(ctx, req)
-		if res != nil {
-			cr = res.Body
-			cw = pw
-
-			if res.StatusCode/100 == 2 {
-				res = proxyutil.NewResponse(200, http.NoBody, req)
-			}
-		}
-	} else {
+	if p.ConnectFunc != nil {
+		res, crw, cerr = p.ConnectFunc(req)
+	}
+	if p.ConnectFunc == nil || errors.Is(cerr, ErrConnectFallback) {
 		var cconn net.Conn
 		res, cconn, cerr = p.connect(req)
 
 		if cconn != nil {
 			defer cconn.Close()
-			cr = cconn
-			cw = cconn
+			crw = cconn
 
 			if shouldTerminateTLS(req) {
 				log.Debugf(req.Context(), "attempting to terminate TLS on CONNECT tunnel: %s", req.URL.Host)
 				tconn := tls.Client(cconn, p.clientTLSConfig())
 				if err := tconn.Handshake(); err == nil {
-					cr = tconn
-					cw = tconn
+					crw = tconn
 				} else {
 					log.Errorf(req.Context(), "failed to terminate TLS on CONNECT tunnel: %v", err)
 					cerr = err
@@ -187,7 +172,7 @@ func (p proxyHandler) handleConnectRequest(ctx *Context, rw http.ResponseWriter,
 		res.ContentLength = -1
 	}
 
-	if err := p.tunnel("CONNECT", rw, req, res, cw, cr); err != nil {
+	if err := p.tunnel("CONNECT", rw, req, res, crw); err != nil {
 		log.Errorf(req.Context(), "CONNECT tunnel: %v", err)
 		panic(http.ErrAbortHandler)
 	}
@@ -204,13 +189,13 @@ func (p proxyHandler) handleUpgradeResponse(rw http.ResponseWriter, req *http.Re
 
 	res.Body = nil
 
-	if err := p.tunnel(resUpType, rw, req, res, uconn, uconn); err != nil {
+	if err := p.tunnel(resUpType, rw, req, res, uconn); err != nil {
 		log.Errorf(req.Context(), "%s tunnel: %w", resUpType, err)
 		panic(http.ErrAbortHandler)
 	}
 }
 
-func (p proxyHandler) tunnel(name string, rw http.ResponseWriter, req *http.Request, res *http.Response, cw io.WriteCloser, cr io.Reader) error {
+func (p proxyHandler) tunnel(name string, rw http.ResponseWriter, req *http.Request, res *http.Response, crw io.ReadWriteCloser) error {
 	var (
 		rc    = http.NewResponseController(rw)
 		donec = make(chan bool, 2)
@@ -229,12 +214,12 @@ func (p proxyHandler) tunnel(name string, rw http.ResponseWriter, req *http.Requ
 		if err := brw.Flush(); err != nil {
 			return fmt.Errorf("got error while flushing response back to client: %w", err)
 		}
-		if err := drainBuffer(cw, brw.Reader); err != nil {
+		if err := drainBuffer(crw, brw.Reader); err != nil {
 			return fmt.Errorf("got error while draining buffer: %w", err)
 		}
 
-		go copySync(req.Context(), "outbound "+name, cw, conn, donec)
-		go copySync(req.Context(), "inbound "+name, conn, cr, donec)
+		go copySync(req.Context(), "outbound "+name, crw, conn, donec)
+		go copySync(req.Context(), "inbound "+name, conn, crw, donec)
 	case 2:
 		copyHeader(rw.Header(), res.Header)
 		rw.WriteHeader(res.StatusCode)
@@ -243,8 +228,8 @@ func (p proxyHandler) tunnel(name string, rw http.ResponseWriter, req *http.Requ
 			return fmt.Errorf("got error while flushing response back to client: %w", err)
 		}
 
-		go copySync(req.Context(), "outbound "+name, cw, req.Body, donec)
-		go copySync(req.Context(), "inbound "+name, writeFlusher{rw, rc}, cr, donec)
+		go copySync(req.Context(), "outbound "+name, crw, req.Body, donec)
+		go copySync(req.Context(), "inbound "+name, writeFlusher{rw, rc}, crw, donec)
 	default:
 		return fmt.Errorf("unsupported protocol version: %d", req.ProtoMajor)
 	}
