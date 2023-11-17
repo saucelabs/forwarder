@@ -86,6 +86,13 @@ func ParseRegexpListItem(val string) (RegexpListItem, error) {
 	return RegexpListItem{r, exclude}, nil
 }
 
+func (r RegexpListItem) String() string {
+	if r.exclude {
+		return "-" + r.Regexp.String()
+	}
+	return r.Regexp.String()
+}
+
 func NewRegexpMatcherFromList(l []RegexpListItem) (*RegexpMatcher, error) {
 	var include, exclude []*regexp.Regexp
 	for i := range l {
