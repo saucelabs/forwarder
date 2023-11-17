@@ -401,20 +401,25 @@ func SetupFlagDenyDomains(l *setupList) {
 }
 
 func SetupFlagDirectDomains(l *setupList) {
-	l.Add(setup.Setup{
-		Name: "flag-direct-domains",
-		Compose: compose.NewBuilder().
-			AddService(
-				forwarder.HttpbinService()).
-			AddService(
-				forwarder.ProxyService().
-					WithUpstream(forwarder.UpstreamProxyServiceName, "http").
-					WithDirectDomains("httpbin")).
-			AddService(
-				forwarder.UpstreamProxyService()).
-			MustBuild(),
-		Run: "^TestFlagDirectDomains$",
-	})
+	for _, scheme := range forwarder.HttpbinSchemes {
+		l.Add(
+			setup.Setup{
+				Name: "flag-direct-domains-" + scheme,
+				Compose: compose.NewBuilder().
+					AddService(
+						forwarder.HttpbinService().
+							WithProtocol(scheme)).
+					AddService(
+						forwarder.ProxyService().
+							WithUpstream(forwarder.UpstreamProxyServiceName, "http").
+							WithDirectDomains("httpbin")).
+					AddService(
+						forwarder.UpstreamProxyService()).
+					MustBuild(),
+				Run: "^TestFlagDirectDomains$",
+			},
+		)
+	}
 }
 
 func SetupFlagRateLimit(l *setupList) {
