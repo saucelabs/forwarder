@@ -114,13 +114,13 @@ type Proxy struct {
 	// If empty, no action is taken, and the proxy will generate a new request ID.
 	RequestIDHeader string
 
-	// ConnectPassthrough passes CONNECT requests to the RoundTripper,
-	// and uses the response body as the connection.
-	ConnectPassthrough bool
-
 	// ConnectRequestModifier modifies CONNECT requests to upstream proxy.
 	// If ConnectPassthrough is enabled, this is ignored.
 	ConnectRequestModifier func(*http.Request) error
+
+	// ConnectFunc specifies a function to dial network connections for CONNECT requests.
+	// Implementations can return ErrConnectFallback to indicate that the CONNECT request should be handled by martian.
+	ConnectFunc ConnectFunc
 
 	// MITMFilter specifies a function to determine whether a CONNECT request should be MITMed.
 	MITMFilter func(*http.Request) bool
@@ -548,40 +548,25 @@ func (p *Proxy) handleConnectRequest(ctx *Context, req *http.Request, session *S
 	log.Debugf(req.Context(), "attempting to establish CONNECT tunnel: %s", req.URL.Host)
 	var (
 		res  *http.Response
-		cr   io.Reader
-		cw   io.WriteCloser
+		crw  io.ReadWriteCloser
 		cerr error
 	)
-	if p.ConnectPassthrough { //nolint:nestif // to be fixed in #445
-		pr, pw := io.Pipe()
-		req.Body = pr
-		defer req.Body.Close()
-
-		// perform the HTTP roundtrip
-		res, cerr = p.roundTrip(ctx, req)
-		if res != nil {
-			cr = res.Body
-			cw = pw
-
-			if res.StatusCode/100 == 2 {
-				res = proxyutil.NewResponse(200, nil, req)
-			}
-		}
-	} else {
+	if p.ConnectFunc != nil {
+		res, crw, cerr = p.ConnectFunc(req)
+	}
+	if p.ConnectFunc == nil || errors.Is(cerr, ErrConnectFallback) {
 		var cconn net.Conn
 		res, cconn, cerr = p.connect(req)
 
 		if cconn != nil {
 			defer cconn.Close()
-			cr = cconn
-			cw = cconn
+			crw = cconn
 
 			if shouldTerminateTLS(req) {
 				log.Debugf(req.Context(), "attempting to terminate TLS on CONNECT tunnel: %s", req.URL.Host)
 				tconn := tls.Client(cconn, p.clientTLSConfig())
 				if err := tconn.Handshake(); err == nil {
-					cr = tconn
-					cw = tconn
+					crw = tconn
 				} else {
 					log.Errorf(req.Context(), "failed to terminate TLS on CONNECT tunnel: %v", err)
 					cerr = err
@@ -622,7 +607,7 @@ func (p *Proxy) handleConnectRequest(ctx *Context, req *http.Request, session *S
 
 	res.ContentLength = -1
 
-	if err := p.tunnel("CONNECT", res, brw, conn, cw, cr); err != nil {
+	if err := p.tunnel("CONNECT", res, brw, conn, crw); err != nil {
 		log.Errorf(req.Context(), "CONNECT tunnel: %w", err)
 	}
 
@@ -640,28 +625,28 @@ func (p *Proxy) handleUpgradeResponse(res *http.Response, brw *bufio.ReadWriter,
 
 	res.Body = nil
 
-	if err := p.tunnel(resUpType, res, brw, conn, uconn, uconn); err != nil {
+	if err := p.tunnel(resUpType, res, brw, conn, uconn); err != nil {
 		log.Errorf(res.Request.Context(), "%s tunnel: %w", resUpType, err)
 	}
 
 	return errClose
 }
 
-func (p *Proxy) tunnel(name string, res *http.Response, brw *bufio.ReadWriter, conn net.Conn, cw io.Writer, cr io.Reader) error {
+func (p *Proxy) tunnel(name string, res *http.Response, brw *bufio.ReadWriter, conn net.Conn, crw io.ReadWriteCloser) error {
 	if err := res.Write(brw); err != nil {
 		return fmt.Errorf("got error while writing response back to client: %w", err)
 	}
 	if err := brw.Flush(); err != nil {
 		return fmt.Errorf("got error while flushing response back to client: %w", err)
 	}
-	if err := drainBuffer(cw, brw.Reader); err != nil {
+	if err := drainBuffer(crw, brw.Reader); err != nil {
 		return fmt.Errorf("got error while draining read buffer: %w", err)
 	}
 
 	ctx := res.Request.Context()
 	donec := make(chan bool, 2)
-	go copySync(ctx, "outbound "+name, cw, conn, donec)
-	go copySync(ctx, "inbound "+name, conn, cr, donec)
+	go copySync(ctx, "outbound "+name, crw, conn, donec)
+	go copySync(ctx, "inbound "+name, conn, crw, donec)
 
 	log.Debugf(ctx, "switched protocols, proxying %s traffic", name)
 	<-donec
