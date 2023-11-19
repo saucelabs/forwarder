@@ -115,6 +115,7 @@ func (d *HTTPProxyDialer) DialContextR(ctx context.Context, network, addr string
 		Host:   addr,
 		Header: http.Header{},
 	}
+	req = *req.WithContext(ctx)
 
 	// Don't send the default Go HTTP client User-Agent.
 	req.Header.Add("User-Agent", "")
