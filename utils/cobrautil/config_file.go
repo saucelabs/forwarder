@@ -7,6 +7,8 @@
 package cobrautil
 
 import (
+	"fmt"
+
 	"github.com/saucelabs/forwarder/utils/cobrautil/templates"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -18,12 +20,15 @@ func ConfigFileCommand(g templates.FlagGroups, fs *pflag.FlagSet) *cobra.Command
 		Args:   cobra.NoArgs,
 		Hidden: true,
 		Run: func(cmd *cobra.Command, _ []string) {
-			p := templates.NewYamlFlagPrinter(cmd.OutOrStdout(), 80)
+			w := cmd.OutOrStdout()
+			p := templates.NewYamlFlagPrinter(w, 80)
 
-			for _, fs := range templates.SplitFlagSet(g, fs) {
+			for i, fs := range templates.SplitFlagSet(g, fs) {
 				if !fs.HasAvailableFlags() {
 					continue
 				}
+
+				fmt.Fprintf(w, "# --- %s ---\n", g[i].Name)
 
 				fs.VisitAll(func(flag *pflag.Flag) {
 					if flag.Hidden {
