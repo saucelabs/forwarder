@@ -96,12 +96,14 @@ func rootCommand() *cobra.Command {
 
 	templates.ActsAsRootCommand(cmd, nil, commandGroups, flagGroups, envPrefix)
 
-	// Add other commands
+	// Add other commands.
 	cmd.AddCommand(
 		httpbin.Command(), // hidden
-		cobrautil.ConfigFileCommand(flagGroups, run.Command().Flags()), // hidden
 		version.Command(),
 	)
+
+	// Add config-file command to all commands.
+	cobrautil.AddConfigFileForEachCommand(cmd, flagGroups)
 
 	return cmd
 }

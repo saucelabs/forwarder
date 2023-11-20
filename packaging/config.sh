@@ -2,4 +2,4 @@
 
 set -e
 
-go run ./cmd/forwarder config-file > "forwarder.yaml"
+go run ./cmd/forwarder run config-file > "forwarder.yaml"
