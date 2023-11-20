@@ -39,7 +39,7 @@ test: e2e.test
 	-i --read-only --rm \
 	$(shell docker inspect forwarder-e2e-proxy-1 --format='{{ range .Config.Env }}{{ if eq "FORWARDER" (slice . 0 9) }} -e "{{.}}"{{end}}{{end}}') \
 	$(shell docker inspect forwarder-e2e-httpbin-1 --format='{{ range .Config.Env }}{{ if eq "FORWARDER" (slice . 0 9) }} -e "HTTPBIN{{slice . 9}}"{{end}}{{end}}' 2> /dev/null) \
-	$(E2E_TEST_IMAGE) e2e.test -test.run "$(RUN)" -test.v $(ARGS)
+	$(E2E_TEST_IMAGE) e2e.test -test.run "$(RUN)" -test.shuffle on -test.v $(ARGS)
 
 .PHONY: e2e.test
 e2e.test:
