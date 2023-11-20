@@ -1,4 +1,5 @@
-FROM gcr.io/distroless/static:nonroot
+ARG BASE_IMAGE
+FROM ${BASE_IMAGE}
 
 COPY LICENSE /licenses/
 COPY LICENSE.3RD_PARTY /licenses/
