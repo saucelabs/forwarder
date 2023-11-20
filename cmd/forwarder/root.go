@@ -18,14 +18,17 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const envPrefix = "FORWARDER"
+const (
+	envPrefix          = "FORWARDER"
+	configFileFlagName = "config-file"
+)
 
 func rootCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "forwarder",
 		Short: "HTTP (forward) proxy server with PAC support and PAC testing tools",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			return cobrautil.BindAll(cmd, envPrefix, "config-file")
+			return cobrautil.BindAll(cmd, envPrefix, configFileFlagName)
 		},
 	}
 	bind.ConfigFile(cmd.PersistentFlags(), new(string))
@@ -103,7 +106,7 @@ func rootCommand() *cobra.Command {
 	)
 
 	// Add config-file command to all commands.
-	cobrautil.AddConfigFileForEachCommand(cmd, flagGroups)
+	cobrautil.AddConfigFileForEachCommand(cmd, flagGroups, configFileFlagName)
 
 	return cmd
 }

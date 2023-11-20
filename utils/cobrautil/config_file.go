@@ -14,7 +14,7 @@ import (
 	"github.com/spf13/pflag"
 )
 
-func ConfigFileCommand(g templates.FlagGroups, fs *pflag.FlagSet) *cobra.Command {
+func ConfigFileCommand(g templates.FlagGroups, fs *pflag.FlagSet, configFileFlagName string) *cobra.Command {
 	return &cobra.Command{
 		Use:    "config-file",
 		Args:   cobra.NoArgs,
@@ -28,12 +28,20 @@ func ConfigFileCommand(g templates.FlagGroups, fs *pflag.FlagSet) *cobra.Command
 					continue
 				}
 
-				fmt.Fprintf(w, "# --- %s ---\n", g[i].Name)
-
+				header := true
 				fs.VisitAll(func(flag *pflag.Flag) {
 					if flag.Hidden {
 						return
 					}
+					if flag.Name == configFileFlagName {
+						return
+					}
+
+					if header {
+						fmt.Fprintf(w, "# --- %s ---\n\n", g[i].Name)
+						header = false
+					}
+
 					p.PrintHelpFlag(flag)
 				})
 			}
@@ -41,12 +49,12 @@ func ConfigFileCommand(g templates.FlagGroups, fs *pflag.FlagSet) *cobra.Command
 	}
 }
 
-func AddConfigFileForEachCommand(cmd *cobra.Command, g templates.FlagGroups) {
+func AddConfigFileForEachCommand(cmd *cobra.Command, g templates.FlagGroups, configFileFlagName string) {
 	for _, cmd := range cmd.Commands() {
-		AddConfigFileForEachCommand(cmd, g)
+		AddConfigFileForEachCommand(cmd, g, configFileFlagName)
 	}
 
 	if cmd.IsAvailableCommand() && cmd.Flags().HasFlags() {
-		cmd.AddCommand(ConfigFileCommand(g, cmd.Flags()))
+		cmd.AddCommand(ConfigFileCommand(g, cmd.Flags(), configFileFlagName))
 	}
 }
