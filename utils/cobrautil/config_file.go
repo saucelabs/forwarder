@@ -35,3 +35,13 @@ func ConfigFileCommand(g templates.FlagGroups, fs *pflag.FlagSet) *cobra.Command
 		},
 	}
 }
+
+func AddConfigFileForEachCommand(cmd *cobra.Command, g templates.FlagGroups) {
+	for _, cmd := range cmd.Commands() {
+		AddConfigFileForEachCommand(cmd, g)
+	}
+
+	if cmd.IsAvailableCommand() && cmd.Flags().HasFlags() {
+		cmd.AddCommand(ConfigFileCommand(g, cmd.Flags()))
+	}
+}
