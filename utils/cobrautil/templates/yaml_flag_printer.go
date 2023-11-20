@@ -39,8 +39,8 @@ func (p *YamlFlagPrinter) PrintHelpFlag(f *pflag.Flag) {
 	if len(flagAndUsage) > 1 {
 		nextLines := strings.Join(flagAndUsage[:len(flagAndUsage)-1], " ")
 		wrappedUsages := wordwrap.WrapString(nextLines, p.wrapLimit-2)
-		wrappedUsages = "# " + strings.ReplaceAll(wrappedUsages, "\n", "\n# ")
-		wrappedStr = wrappedUsages + "\n#" + flagAndUsage[len(flagAndUsage)-1]
+		wrappedUsages = "#\n# " + strings.ReplaceAll(wrappedUsages, "\n", "\n# ")
+		wrappedStr = wrappedUsages + "\n#\n#" + flagAndUsage[len(flagAndUsage)-1]
 	}
 	fmt.Fprintf(p.out, wrappedStr)
 	fmt.Fprintf(p.out, "\n\n")
