@@ -4,7 +4,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package main
+package forwarder
 
 import (
 	"github.com/saucelabs/forwarder/bind"
@@ -23,7 +23,7 @@ const (
 	configFileFlagName = "config-file"
 )
 
-func rootCommand() *cobra.Command {
+func Command() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "forwarder",
 		Short: "HTTP (forward) proxy server with PAC support and PAC testing tools",
