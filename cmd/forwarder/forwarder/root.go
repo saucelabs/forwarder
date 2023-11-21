@@ -23,29 +23,8 @@ const (
 	ConfigFileFlagName = "config-file"
 )
 
-func Command() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "forwarder",
-		Short: "HTTP (forward) proxy server with PAC support and PAC testing tools",
-		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			return cobrautil.BindAll(cmd, EnvPrefix, ConfigFileFlagName)
-		},
-	}
-	bind.ConfigFile(cmd.PersistentFlags(), new(string))
-
-	commandGroups := templates.CommandGroups{
-		{
-			Message: "Commands:",
-			Commands: []*cobra.Command{
-				run.Command(),
-				pac.Command(),
-				ready.Command(),
-			},
-		},
-	}
-	commandGroups.Add(cmd)
-
-	flagGroups := templates.FlagGroups{
+func FlagGroups() templates.FlagGroups {
+	return templates.FlagGroups{
 		{
 			Name:   "Server options",
 			Prefix: []string{""},
@@ -96,8 +75,31 @@ func Command() *cobra.Command {
 			Prefix: []string{"config-file"},
 		},
 	}
+}
 
-	templates.ActsAsRootCommand(cmd, nil, commandGroups, flagGroups, EnvPrefix)
+func Command() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "forwarder",
+		Short: "HTTP (forward) proxy server with PAC support and PAC testing tools",
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			return cobrautil.BindAll(cmd, EnvPrefix, ConfigFileFlagName)
+		},
+	}
+	bind.ConfigFile(cmd.PersistentFlags(), new(string))
+
+	commandGroups := templates.CommandGroups{
+		{
+			Message: "Commands:",
+			Commands: []*cobra.Command{
+				run.Command(),
+				pac.Command(),
+				ready.Command(),
+			},
+		},
+	}
+	commandGroups.Add(cmd)
+
+	templates.ActsAsRootCommand(cmd, nil, commandGroups, FlagGroups(), EnvPrefix)
 
 	// Add other commands.
 	cmd.AddCommand(
@@ -106,7 +108,7 @@ func Command() *cobra.Command {
 	)
 
 	// Add config-file command to all commands.
-	cobrautil.AddConfigFileForEachCommand(cmd, flagGroups, ConfigFileFlagName)
+	cobrautil.AddConfigFileForEachCommand(cmd, FlagGroups(), ConfigFileFlagName)
 
 	return cmd
 }
