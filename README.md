@@ -4,39 +4,6 @@ Forwarder is HTTP proxy.
 It can be used to proxy HTTP/HTTPS/HTTP2 requests, Server Sent Events, WebSockets, TCP traffic and more.
 It supports upstream HTTP(S) and SOCKS5 proxies and basic authentication.
 
-## Installation
-
-We provide pre-built packages for x86_64 and arm64 architectures for Linux, macOS and Windows.
-The packages are available on [release page](https://github.com/saucelabs/forwarder/releases).
-
-### macOS
-
-On macOS you can install Forwarder with [Homebrew](https://brew.sh/):
-
-```bash
-brew install saucelabs/tap/forwarder
-```
-
-### Debian/Ubuntu and Fedora/CentOS
-
-We provide deb and rpm packages, the packages contain Forwarder systemd service.
-
-```bash
-# Debian/Ubuntu
-deb -i forwarder_1.0.1.linux_amd64.deb
-systemctl enable forwarder
-systemctl start forwarder
-```
-
-It's best to configure Forwarder Service using environment variables in `/etc/default/forwarder`.
-
-### Source
-
-You can also install Forwarder from source:
-
-```go
-go get -u github.com/saucelabs/forwarder/cmd/forwarder
-```
 
 ## Usage
 
