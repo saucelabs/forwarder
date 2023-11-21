@@ -218,7 +218,7 @@ func healthCheck() *compose.HealthCheck {
 	return &compose.HealthCheck{
 		Test:     []string{"CMD", "forwarder", "ready"},
 		Interval: time.Second,
-		Timeout:  time.Second,
+		Timeout:  3 * time.Second,
 		Retries:  10,
 	}
 }
