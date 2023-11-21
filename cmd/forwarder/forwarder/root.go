@@ -19,8 +19,8 @@ import (
 )
 
 const (
-	envPrefix          = "FORWARDER"
-	configFileFlagName = "config-file"
+	EnvPrefix          = "FORWARDER"
+	ConfigFileFlagName = "config-file"
 )
 
 func Command() *cobra.Command {
@@ -28,7 +28,7 @@ func Command() *cobra.Command {
 		Use:   "forwarder",
 		Short: "HTTP (forward) proxy server with PAC support and PAC testing tools",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			return cobrautil.BindAll(cmd, envPrefix, configFileFlagName)
+			return cobrautil.BindAll(cmd, EnvPrefix, ConfigFileFlagName)
 		},
 	}
 	bind.ConfigFile(cmd.PersistentFlags(), new(string))
@@ -97,7 +97,7 @@ func Command() *cobra.Command {
 		},
 	}
 
-	templates.ActsAsRootCommand(cmd, nil, commandGroups, flagGroups, envPrefix)
+	templates.ActsAsRootCommand(cmd, nil, commandGroups, flagGroups, EnvPrefix)
 
 	// Add other commands.
 	cmd.AddCommand(
@@ -106,7 +106,7 @@ func Command() *cobra.Command {
 	)
 
 	// Add config-file command to all commands.
-	cobrautil.AddConfigFileForEachCommand(cmd, flagGroups, configFileFlagName)
+	cobrautil.AddConfigFileForEachCommand(cmd, flagGroups, ConfigFileFlagName)
 
 	return cmd
 }
