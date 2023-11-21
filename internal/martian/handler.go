@@ -292,7 +292,12 @@ func (p proxyHandler) handleRequest(ctx *Context, rw http.ResponseWriter, req *h
 	// perform the HTTP roundtrip
 	res, err := p.roundTrip(ctx, req)
 	if err != nil {
-		log.Errorf(req.Context(), "failed to round trip: %v", err)
+		if isClosedConnError(err) {
+			log.Debugf(req.Context(), "connection closed prematurely: %v", err)
+		} else {
+			log.Errorf(req.Context(), "failed to round trip: %v", err)
+		}
+
 		res = p.errorResponse(req, err)
 		p.warning(res.Header, err)
 	}
