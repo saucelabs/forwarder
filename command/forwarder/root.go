@@ -23,6 +23,19 @@ const (
 	ConfigFileFlagName = "config-file"
 )
 
+func CommandGroups() templates.CommandGroups {
+	return templates.CommandGroups{
+		{
+			Message: "Commands:",
+			Commands: []*cobra.Command{
+				run.Command(),
+				pac.Command(),
+				ready.Command(),
+			},
+		},
+	}
+}
+
 func FlagGroups() templates.FlagGroups {
 	return templates.FlagGroups{
 		{
@@ -87,19 +100,10 @@ func Command() *cobra.Command {
 	}
 	bind.ConfigFile(cmd.PersistentFlags(), new(string))
 
-	commandGroups := templates.CommandGroups{
-		{
-			Message: "Commands:",
-			Commands: []*cobra.Command{
-				run.Command(),
-				pac.Command(),
-				ready.Command(),
-			},
-		},
-	}
-	commandGroups.Add(cmd)
+	cg := CommandGroups()
+	cg.Add(cmd)
 
-	templates.ActsAsRootCommand(cmd, nil, commandGroups, FlagGroups(), EnvPrefix)
+	templates.ActsAsRootCommand(cmd, nil, cg, FlagGroups(), EnvPrefix)
 
 	// Add other commands.
 	cmd.AddCommand(
