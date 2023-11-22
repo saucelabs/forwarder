@@ -8,44 +8,37 @@ package cobrautil
 
 import (
 	"fmt"
+	"io"
 
 	"github.com/saucelabs/forwarder/utils/cobrautil/templates"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
 
-func ConfigFileCommand(g templates.FlagGroups, fs *pflag.FlagSet, configFileFlagName string) *cobra.Command {
-	return &cobra.Command{
-		Use:    "config-file",
-		Args:   cobra.NoArgs,
-		Hidden: true,
-		Run: func(cmd *cobra.Command, _ []string) {
-			w := cmd.OutOrStdout()
-			p := templates.NewYamlFlagPrinter(w, 80)
+func WriteConfigFile(w io.Writer, g templates.FlagGroups, configFileFlagName string, fs *pflag.FlagSet) {
+	p := templates.NewYamlFlagPrinter(w, 80)
 
-			for i, fs := range templates.SplitFlagSet(g, fs) {
-				if !fs.HasAvailableFlags() {
-					continue
-				}
+	for i, fs := range templates.SplitFlagSet(g, fs) {
+		if !fs.HasAvailableFlags() {
+			continue
+		}
 
-				header := true
-				fs.VisitAll(func(flag *pflag.Flag) {
-					if flag.Hidden {
-						return
-					}
-					if flag.Name == configFileFlagName {
-						return
-					}
-
-					if header {
-						fmt.Fprintf(w, "# --- %s ---\n\n", g[i].Name)
-						header = false
-					}
-
-					p.PrintHelpFlag(flag)
-				})
+		header := true
+		fs.VisitAll(func(flag *pflag.Flag) {
+			if flag.Hidden {
+				return
 			}
-		},
+			if flag.Name == configFileFlagName {
+				return
+			}
+
+			if header {
+				fmt.Fprintf(w, "# --- %s ---\n\n", g[i].Name)
+				header = false
+			}
+
+			p.PrintHelpFlag(flag)
+		})
 	}
 }
 
@@ -55,6 +48,17 @@ func AddConfigFileForEachCommand(cmd *cobra.Command, g templates.FlagGroups, con
 	}
 
 	if cmd.IsAvailableCommand() && cmd.Flags().HasFlags() {
-		cmd.AddCommand(ConfigFileCommand(g, cmd.Flags(), configFileFlagName))
+		cmd.AddCommand(configFileCommand(g, configFileFlagName, cmd.Flags()))
+	}
+}
+
+func configFileCommand(g templates.FlagGroups, configFileFlagName string, fs *pflag.FlagSet) *cobra.Command {
+	return &cobra.Command{
+		Use:    "config-file",
+		Args:   cobra.NoArgs,
+		Hidden: true,
+		Run: func(cmd *cobra.Command, _ []string) {
+			WriteConfigFile(cmd.OutOrStdout(), g, configFileFlagName, fs)
+		},
 	}
 }
