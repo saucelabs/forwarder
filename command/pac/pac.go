@@ -7,8 +7,8 @@
 package pac
 
 import (
-	"github.com/saucelabs/forwarder/cmd/forwarder/pac/eval"
-	"github.com/saucelabs/forwarder/cmd/forwarder/pac/server"
+	"github.com/saucelabs/forwarder/command/pac/eval"
+	"github.com/saucelabs/forwarder/command/pac/server"
 	"github.com/spf13/cobra"
 )
 
