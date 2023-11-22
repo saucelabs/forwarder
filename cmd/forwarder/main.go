@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/saucelabs/forwarder/cmd/forwarder/forwarder"
+	"github.com/saucelabs/forwarder/command/forwarder"
 	"go.uber.org/automaxprocs/maxprocs"
 )
 
