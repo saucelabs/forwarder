@@ -1,4 +1,4 @@
-// Copyright 2023 Sauce Labs Inc. All rights reserved.
+// Copyright 2023 Sauce Labs Inc., all rights reserved.
 //
 // Copyright 2015 Google Inc. All rights reserved.
 //
