@@ -8,11 +8,11 @@ package main
 
 import (
 	"github.com/saucelabs/forwarder/bind"
-	"github.com/saucelabs/forwarder/cmd/forwarder/httpbin"
-	"github.com/saucelabs/forwarder/cmd/forwarder/pac"
-	"github.com/saucelabs/forwarder/cmd/forwarder/ready"
-	"github.com/saucelabs/forwarder/cmd/forwarder/run"
-	"github.com/saucelabs/forwarder/cmd/forwarder/version"
+	"github.com/saucelabs/forwarder/command/httpbin"
+	"github.com/saucelabs/forwarder/command/pac"
+	"github.com/saucelabs/forwarder/command/ready"
+	"github.com/saucelabs/forwarder/command/run"
+	"github.com/saucelabs/forwarder/command/version"
 	"github.com/saucelabs/forwarder/utils/cobrautil"
 	"github.com/saucelabs/forwarder/utils/cobrautil/templates"
 	"github.com/spf13/cobra"
