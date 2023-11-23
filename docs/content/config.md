@@ -1,6 +1,6 @@
 ---
 title: Config file
-weight: 50
+weight: 20
 ---
 
 # Config file

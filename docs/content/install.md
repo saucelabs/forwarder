@@ -1,3 +1,8 @@
+---
+title: Install
+weight: 10
+---
+
 # Install
 
 Forwarder is a single binary, you can download it from [release page](https://github.com/saucelabs/forwarder/releases).

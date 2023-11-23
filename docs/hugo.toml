@@ -1,6 +1,6 @@
 baseURL = 'https://opensource.saucelabs.com/forwarder/'
 languageCode = 'en-us'
-title = 'Forwarder'
+title = 'Forwarder Proxy'
 
 [module]
 [[module.imports]]
@@ -8,8 +8,15 @@ path = 'github.com/alex-shpak/hugo-book'
 
 disableKinds = ['taxonomy']
 
+[menu]
+[[menu.after]]
+  name = "GitHub"
+  url = "https://github.com/saucelabs/forwarder"
+  weight = 1000
+
 [params]
 BookTheme = 'auto'
+BookLogo = 'sl.svg'
 BookSection = '*'
 BookSearch = false
 BookPortableLinks = true

@@ -1,6 +1,6 @@
-.PHONY: server
-server:
-	@hugo server
+.PHONY: up
+up:
+	@hugo server --minify --disableFastRender
 
 .PHONY: install-dependencies
 install-dependencies:

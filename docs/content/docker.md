@@ -1,6 +1,11 @@
-# Running in Docker
+---
+title: Run in Docker
+weight: 15
+---
 
-Forwarder is available as a Docker image from [Docker Hub](https://hub.docker.com/r/saucelabs/forwarder).
+# Run in Docker
+
+Forwarder is available as a multi-arch Docker image from [Docker Hub](https://hub.docker.com/r/saucelabs/forwarder).
 
 To run Forwarder in a container:
 
