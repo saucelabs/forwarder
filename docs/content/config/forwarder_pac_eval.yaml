@@ -1,0 +1,73 @@
+# --- Proxy options ---
+
+#
+# Proxy Auto-Configuration file to use for upstream proxy selection. It can be a
+# local file or a URL, you can also use '-' to read from stdin. The data URI
+# scheme is supported, the format is data:base64,<encoded data>.
+#
+#pac: file://pac.js
+
+# --- DNS options ---
+
+#
+# If more than one DNS server is specified with the --dns-server flag, passing
+# this flag will enable round-robin selection. 
+#
+#dns-round-robin: false
+
+#
+# DNS server(s) to use instead of system default. There are two execution
+# policies, when more then one server is specified. Fallback: the first server
+# in a list is used as primary, the rest are used as fallbacks. Round robin: the
+# servers are used in a round-robin fashion. The port is optional, if not
+# specified the default port is 53.
+#
+#dns-server:
+
+#
+# Timeout for dialing DNS servers. Only used if DNS servers are specified. 
+#
+#dns-timeout: 5s
+
+# --- HTTP client options ---
+
+#
+# Add your own CA certificates to verify against. The system root certificates
+# will be used in addition to any certificates in this list. Can be a path to a
+# file or "data:" followed by base64 encoded certificate. Use this flag multiple
+# times to specify multiple CA certificate files.
+#
+#cacert-file:
+
+#
+# The maximum amount of time a dial will wait for a connect to complete. With or
+# without a timeout, the operating system may impose its own earlier timeout.
+# For instance, TCP timeouts are often around 3 minutes. 
+#
+#http-dial-timeout: 10s
+
+#
+# The maximum amount of time an idle (keep-alive) connection will remain idle
+# before closing itself. Zero means no limit. 
+#
+#http-idle-conn-timeout: 1m30s
+
+#
+# The amount of time to wait for a server's response headers after fully writing
+# the request (including its body, if any).This time does not include the time
+# to read the response body. Zero means no limit. 
+#
+#http-response-header-timeout: 0s
+
+#
+# The maximum amount of time waiting to wait for a TLS handshake. Zero means no
+# limit.
+#
+#http-tls-handshake-timeout: 10s
+
+#
+# Don't verify the server's certificate chain and host name. Enable to work with
+# self-signed certificates. 
+#
+#insecure: false
+

@@ -1,0 +1,7 @@
+# --- API server options ---
+
+#
+# The API server address.
+#
+#api-address: localhost:10000
+
