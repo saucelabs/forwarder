@@ -75,7 +75,7 @@ ifeq ($(shell uname),Linux)
 	@$(CONTAINER_RUNTIME) buildx build --build-arg BASE_IMAGE=ubuntu:latest -t saucelabs/forwarder:$(TAG) $(TMPDIR)
 else
 	@CGO_ENABLED=0 GOOS=linux go build -o $(TMPDIR)/forwarder ./cmd/forwarder
-	@$(CONTAINER_RUNTIME) buildx build --build-arg BASE_IMAGE=gcr.io/distroless/static:nonroot -t saucelabs/forwarder:$(TAG) $(TMPDIR)
+	@$(CONTAINER_RUNTIME) buildx build --build-arg -t saucelabs/forwarder:$(TAG) $(TMPDIR)
 endif
 	@rm -rf $(TMPDIR)
 
