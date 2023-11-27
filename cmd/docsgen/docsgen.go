@@ -6,14 +6,11 @@
 
 package main
 
-//go:generate go run .
-
 import (
-	"bytes"
+	"flag"
 	"fmt"
 	"log"
 	"os"
-	"os/exec"
 	"path"
 	"strings"
 
@@ -23,33 +20,19 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func gitRoot() (string, error) {
-	var b bytes.Buffer
+var (
+	docsDir = flag.String("docs-dir", "", "path to the docs directory")
 
-	c := exec.Command("git", "rev-parse", "--show-toplevel")
-	c.Stdout = &b
-	if err := c.Run(); err != nil {
-		return "", err
-	}
-
-	return strings.TrimSpace(b.String()), nil
-}
-
-var docsDir, cliDir, cfgDir string
-
-func init() {
-	r, err := gitRoot()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	docsDir = path.Join(r, "docs", "content")
-	cliDir = path.Join(docsDir, "cli")
-	cfgDir = path.Join(docsDir, "config")
-}
+	cliDir, cfgDir string
+)
 
 func main() {
-	for _, dir := range []string{docsDir, cliDir, cfgDir} {
+	flag.Parse()
+
+	cliDir = path.Join(*docsDir, "content", "cli")
+	cfgDir = path.Join(*docsDir, "content", "config")
+
+	for _, dir := range []string{cliDir, cfgDir} {
 		if err := os.MkdirAll(dir, 0o700); err != nil {
 			log.Fatal(err)
 		}
