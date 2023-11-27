@@ -1,4 +1,5 @@
-ARG BASE_IMAGE
+ARG BASE_IMAGE=gcr.io/distroless/static:nonroot
+
 FROM ${BASE_IMAGE}
 
 COPY LICENSE /licenses/
