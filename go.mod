@@ -6,6 +6,7 @@ require (
 	github.com/dop251/goja v0.0.0-20230919151941-fc55792775de
 	github.com/golang/snappy v0.0.4
 	github.com/google/go-cmp v0.6.0
+	github.com/google/go-github/v56 v56.0.0
 	github.com/gorilla/websocket v1.5.0
 	github.com/mitchellh/go-wordwrap v1.0.1
 	github.com/mmatczuk/anyflag v0.0.0-20231026075539-5f42d2f36d96
@@ -38,6 +39,7 @@ require (
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/go-sourcemap/sourcemap v2.1.3+incompatible // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
+	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/pprof v0.0.0-20230926050212-f7f687d19a98 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
