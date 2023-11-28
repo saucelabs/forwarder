@@ -65,4 +65,8 @@ func main() {
 	if err := writeDataAssets(r); err != nil {
 		log.Fatal(err)
 	}
+
+	if err := writeDataLatest(r); err != nil {
+		log.Fatal(err)
+	}
 }

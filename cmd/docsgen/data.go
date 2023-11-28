@@ -8,6 +8,7 @@ package main
 
 import (
 	"bufio"
+	"fmt"
 	"os"
 	"path"
 	"regexp"
@@ -100,6 +101,27 @@ func writeDataAssets(r *github.RepositoryRelease) error {
 	}
 	if err := bw.Flush(); err != nil {
 		return err
+	}
+
+	return f.Close()
+}
+
+func writeDataLatest(r *github.RepositoryRelease) error {
+	version := strings.TrimPrefix(r.GetTagName(), "v")
+
+	f, err := os.Create(path.Join(dataDir, "latest.yml"))
+	if err != nil {
+		return err
+	}
+
+	for _, a := range r.Assets {
+		name := a.GetName()
+
+		if name == "checksums" {
+			fmt.Fprintf(f, "checksums: %s\n", a.GetBrowserDownloadURL())
+		} else if strings.HasPrefix(name, repo) {
+			fmt.Fprintf(f, "%s: %s\n", name[len(repo)+1+len(version)+1:], a.GetBrowserDownloadURL())
+		}
 	}
 
 	return f.Close()
