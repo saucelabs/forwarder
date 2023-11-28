@@ -7,6 +7,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"log"
 	"os"
@@ -19,7 +20,7 @@ import (
 var (
 	docsDir = flag.String("docs-dir", "", "path to the docs directory")
 
-	cliDir, cfgDir string
+	cliDir, cfgDir, dataDir string
 )
 
 func main() {
@@ -27,8 +28,9 @@ func main() {
 
 	cliDir = path.Join(*docsDir, "content", "cli")
 	cfgDir = path.Join(*docsDir, "content", "config")
+	dataDir = path.Join(*docsDir, "data")
 
-	for _, dir := range []string{cliDir, cfgDir} {
+	for _, dir := range []string{cliDir, cfgDir, dataDir} {
 		if err := os.MkdirAll(dir, 0o700); err != nil {
 			log.Fatal(err)
 		}
@@ -47,6 +49,20 @@ func main() {
 	}
 
 	if err := writeDefaultConfig(forwarder.Command()); err != nil {
+		log.Fatal(err)
+	}
+
+	gh := newGitHubClient()
+
+	r, _, err := gh.Repositories.GetLatestRelease(context.Background(), owner, repo)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if len(r.Assets) == 0 {
+		log.Fatalf("no assets found for release %s", r.GetTagName())
+	}
+
+	if err := writeDataAssets(r); err != nil {
 		log.Fatal(err)
 	}
 }
