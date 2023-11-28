@@ -1,0 +1,5 @@
+{{ $file := .Get 0 -}}
+{{ $key := .Get 1 -}}
+{{ with index .Site.Data $file $key -}}
+{{ . -}}
+{{ end -}}
