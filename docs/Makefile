@@ -10,5 +10,7 @@ gen:
 up:
 	@hugo server --minify --disableFastRender
 
+.PHONY: dist
+dist: BASE_URL="https://saucelabs.github.io/forwarder/"
 dist:
-	@HUGO_ENVIRONMENT=production HUGO_ENV=production hugo --gc --minify
+	@HUGO_ENVIRONMENT=production HUGO_ENV=production hugo --gc --minify --baseURL "$(BASE_URL)"
