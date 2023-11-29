@@ -50,7 +50,7 @@ New-Item -ItemType File -Path $PROFILE -Force
 Add PowerShell completion to the profile.
 
 ```powershell
-type C:\forwarder\completions\powershell.powershell >> $PROFILE
+Add-Content -Path $PROFILE -Value ". C:\forwarder\completions\forwarder.ps1"
 ```
 
 ### Edit config file
