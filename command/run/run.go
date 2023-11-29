@@ -232,6 +232,9 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 		if err := c.registerProcMetrics(); err != nil {
 			return fmt.Errorf("register process metrics: %w", err)
 		}
+		if err := c.registerVersionMetric(); err != nil {
+			return fmt.Errorf("register version metric: %w", err)
+		}
 
 		ep := append([]forwarder.APIEndpoint{
 			{
@@ -283,6 +286,25 @@ func (c *command) registerProcMetrics() error {
 			collectors.ProcessCollectorOpts{Namespace: c.httpProxyConfig.PromNamespace})),
 		c.promReg.Register(collectors.NewGoCollector()),
 	)
+}
+
+func (c *command) registerVersionMetric() error {
+	return c.promReg.Register(c.constMetric("version", "Forwarder version, value is always 1", prometheus.Labels{
+		"version": version.Version,
+		"commit":  version.Commit,
+		"time":    version.Time,
+	}))
+}
+
+func (c *command) constMetric(name, help string, labels prometheus.Labels) prometheus.GaugeFunc {
+	return prometheus.NewGaugeFunc(prometheus.GaugeOpts{
+		Namespace:   c.httpProxyConfig.PromNamespace,
+		Name:        name,
+		Help:        help,
+		ConstLabels: labels,
+	}, func() float64 {
+		return 1
+	})
 }
 
 func Command() *cobra.Command {
