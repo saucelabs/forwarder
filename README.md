@@ -20,11 +20,11 @@ Forwarder is a forward HTTP proxy i.e. it supports `CONNECT` requests.
 
 ## Documentation
 
-Forwarder documentation is available at [opensource.saucelabs.com/forwarder](https://opensource.saucelabs.com/forwarder).
+Full documentation is available at [forwarder-proxy.io](https://forwarder-proxy.io).
 
 Quick links:
 
-- [forwarder run](https://opensource.saucelabs.com/forwarder/cli/forwarder_run) - Start HTTP (forward) proxy server
-- [forwarder pac eval](https://opensource.saucelabs.com/forwarder/cli/forwarder_pac_eval) - Evaluate a PAC file for given URL (or URLs)
-- [forwarder pac server](https://opensource.saucelabs.com/forwarder/cli/forwarder_pac_server) - Start HTTP server that serves a PAC file
-- [forwarder ready](https://opensource.saucelabs.com/forwarder/cli/forwarder_ready) - Readiness probe for the Forwarder
+- [forwarder run](https://forwarder-proxy.io/cli/forwarder_run) - Start HTTP (forward) proxy server
+- [forwarder pac eval](https://forwarder-proxy.io/cli/forwarder_pac_eval) - Evaluate a PAC file for given URL (or URLs)
+- [forwarder pac server](https://forwarder-proxy.io/cli/forwarder_pac_server) - Start HTTP server that serves a PAC file
+- [forwarder ready](https://forwarder-proxy.io/cli/forwarder_ready) - Readiness probe for the Forwarder
