@@ -1,0 +1,7 @@
+User-agent: *
+
+Disallow: /categories/
+Disallow: /fonts/
+Disallow: /katex/
+
+Sitemap: {{ .Site.BaseURL }}sitemap.xml
