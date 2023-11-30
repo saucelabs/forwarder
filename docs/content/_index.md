@@ -30,3 +30,8 @@ When you have Forwarder installed, you can run it with the following command:
 - [forwarder pac eval](cli/forwarder_pac_eval.md) - Evaluate a PAC file for given URL (or URLs)
 - [forwarder pac server](cli/forwarder_pac_server.md) - Start HTTP server that serves a PAC file
 - [forwarder ready](cli/forwarder_ready.md) - Readiness probe for the Forwarder
+
+## Asking for help
+
+If you have any questions about Forwarder, please feel free to ask them on the
+[Forwarder Discussions](https://github.com/saucelabs/forwarder/discussions) page.
