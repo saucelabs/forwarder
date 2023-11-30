@@ -1,8 +1,9 @@
 # Forwarder Proxy [![Build Status](https://github.com/saucelabs/forwarder/actions/workflows/go.yml/badge.svg)](https://github.com/saucelabs/forwarder/actions/workflows/go.yml) [![Go Report Card](https://goreportcard.com/badge/github.com/saucelabs/forwarder)](https://goreportcard.com/report/github.com/saucelabs/forwarder) [![GitHub release](https://img.shields.io/github/release/saucelabs/forwarder.svg)](https://github.com/saucelabs/forwarder/releases) ![GitHub all releases](https://img.shields.io/github/downloads/saucelabs/forwarder/total)
 
-Forwarder is a forward HTTP proxy i.e. it supports `CONNECT` requests.
-
-## It can proxy
+Forwarder is a production-ready, MITM-capable HTTP proxy written in Go.
+It's used as a core component of Sauce Labs' [Sauce Connect Proxy](https://docs.saucelabs.com/secure-connections/sauce-connect/).
+It is a forward proxy, which means it proxies traffic from clients to servers (e.g. browsers to websites), and supports `CONNECT` requests.
+It can proxy:
 
 * HTTP/HTTPS/HTTP2 requests
 * WebSockets (both HTTP and HTTPS)
@@ -18,13 +19,11 @@ Forwarder is a forward HTTP proxy i.e. it supports `CONNECT` requests.
 * Supports augmenting requests and responses with headers
 * Supports basic authentication, for websites and proxies
 
-## Documentation
+## Additional resources
 
-Full documentation is available at [forwarder-proxy.io](https://forwarder-proxy.io).
-
-Quick links:
-
-- [forwarder run](https://forwarder-proxy.io/cli/forwarder_run) - Start HTTP (forward) proxy server
-- [forwarder pac eval](https://forwarder-proxy.io/cli/forwarder_pac_eval) - Evaluate a PAC file for given URL (or URLs)
-- [forwarder pac server](https://forwarder-proxy.io/cli/forwarder_pac_server) - Start HTTP server that serves a PAC file
-- [forwarder ready](https://forwarder-proxy.io/cli/forwarder_ready) - Readiness probe for the Forwarder
+* Forwarder Proxy documentation: https://forwarder-proxy.io
+* Forwarder Proxy CLI reference:
+  - [forwarder run](https://forwarder-proxy.io/cli/forwarder_run) - Start HTTP (forward) proxy server
+  - [forwarder pac eval](https://forwarder-proxy.io/cli/forwarder_pac_eval) - Evaluate a PAC file for given URL (or URLs)
+  - [forwarder pac server](https://forwarder-proxy.io/cli/forwarder_pac_server) - Start HTTP server that serves a PAC file
+  - [forwarder ready](https://forwarder-proxy.io/cli/forwarder_ready) - Readiness probe for the Forwarder
