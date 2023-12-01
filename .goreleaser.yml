@@ -6,17 +6,7 @@ before:
     - ./packaging/completions.sh
 
 changelog:
-  sort: asc
-  filters:
-    exclude:
-      - '^chore\s*(:|\()'
-      - '^ci\s*(:|\()'
-      - '^dockerfile\s*(:|\()'
-      - '^gh\s*(:|\()'
-      - '^golangci\s*(:|\()'
-      - '^goreleaser\s*(:|\()'
-      - '^makefile\s*(:|\()'
-      - '^mk\s*(:|\()'
+  use: github-native
 
 source:
   enabled: false
