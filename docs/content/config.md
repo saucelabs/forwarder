@@ -1,9 +1,9 @@
 ---
-title: Config file
-weight: 20
+title: Config File
+weight: 150
 ---
 
-# Config file
+# Config File
 
 You can generate a config file by running `forwarder <command> config-file` for any command.
 
