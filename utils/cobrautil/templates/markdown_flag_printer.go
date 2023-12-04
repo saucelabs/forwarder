@@ -7,6 +7,7 @@
 package templates
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"strings"
@@ -49,22 +50,25 @@ func (p *MarkdownFlagPrinter) header(f *pflag.Flag) string {
 }
 
 func (p *MarkdownFlagPrinter) body(f *pflag.Flag) string {
-	env := fmt.Sprintf("Environment variable: `%s`", envName(p.envPrefix, f.Name))
+	buf := new(bytes.Buffer)
 
-	_, usage := flagNameAndUsage(f)
-
-	deprecated := ""
-	if f.Deprecated != "" {
-		deprecated = fmt.Sprintf("\nDEPRECATED: %s", f.Deprecated)
-	}
-
+	fmt.Fprintf(buf, "* Environment variable: `%s`\n", envName(p.envPrefix, f.Name))
+	format, usage := flagNameAndUsage(f)
+	fmt.Fprintf(buf, "* Value Format: `%s`\n", strings.TrimSpace(format))
 	def := f.DefValue
 	if def == "[]" {
 		def = ""
 	}
 	if def != "" {
-		def = "\n\nDefault value: `" + def + "`"
+		fmt.Fprintf(buf, "* Default value: `%s`\n", def)
+	}
+	fmt.Fprintln(buf)
+
+	if f.Deprecated != "" {
+		fmt.Fprintf(buf, "DEPRECATED: %s\n\n", f.Deprecated)
 	}
 
-	return fmt.Sprintf("%s\n\n%s%s%s", env, usage, deprecated, def)
+	fmt.Fprintf(buf, "%s", usage)
+
+	return buf.String()
 }
