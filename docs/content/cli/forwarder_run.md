@@ -35,22 +35,24 @@ You can generate a config file by running `forwarder run config-file` command.
 
 ### `--address` {#address}
 
-Environment variable: `FORWARDER_ADDRESS`
+* Environment variable: `FORWARDER_ADDRESS`
+* Value Format: `<host:port>`
+* Default value: `:3128`
 
 The server address to listen on.
 If the host is empty, the server will listen on all available interfaces.
 
-Default value: `:3128`
-
 ### `--basic-auth` {#basic-auth}
 
-Environment variable: `FORWARDER_BASIC_AUTH`
+* Environment variable: `FORWARDER_BASIC_AUTH`
+* Value Format: `<username[:password]>`
 
 Basic authentication credentials to protect the server.
 
 ### `-s, --credentials` {#credentials}
 
-Environment variable: `FORWARDER_CREDENTIALS`
+* Environment variable: `FORWARDER_CREDENTIALS`
+* Value Format: `<username[:password]@host:port,...>`
 
 Site or upstream proxy basic authentication credentials.
 The host and port can be set to "*" to match all hosts and ports respectively.
@@ -58,79 +60,83 @@ The flag can be specified multiple times to add multiple credentials.
 
 ### `--name` {#name}
 
-Environment variable: `FORWARDER_NAME`
+* Environment variable: `FORWARDER_NAME`
+* Value Format: `<string>`
+* Default value: `forwarder`
 
 Name of this proxy instance.
 This value is used in the Via header in requests.
 The name value in Via header is extended with a random string to avoid collisions when several proxies are chained.
 
-Default value: `forwarder`
-
 ### `--protocol` {#protocol}
 
-Environment variable: `FORWARDER_PROTOCOL`
+* Environment variable: `FORWARDER_PROTOCOL`
+* Value Format: `<http|https>`
+* Default value: `http`
 
 The server protocol.
 For https and h2 protocols, if TLS certificate is not specified, the server will use a self-signed certificate.
 
-Default value: `http`
-
 ### `--read-header-timeout` {#read-header-timeout}
 
-Environment variable: `FORWARDER_READ_HEADER_TIMEOUT`
+* Environment variable: `FORWARDER_READ_HEADER_TIMEOUT`
+* Value Format: `<duration>`
+* Default value: `1m0s`
 
 The amount of time allowed to read request headers.
 
-Default value: `1m0s`
-
 ### `--read-limit` {#read-limit}
 
-Environment variable: `FORWARDER_READ_LIMIT`
+* Environment variable: `FORWARDER_READ_LIMIT`
+* Value Format: `<bandwidth>`
+* Default value: `0`
 
 Global read rate limit in bytes per second i.e.
 how many bytes per second you can receive from a proxy.
 Accepts binary format (e.g.
 1.5Ki, 1Mi, 3.6Gi).
 
-Default value: `0`
-
 ### `--tls-cert-file` {#tls-cert-file}
 
-Environment variable: `FORWARDER_TLS_CERT_FILE`
+* Environment variable: `FORWARDER_TLS_CERT_FILE`
+* Value Format: `<path or base64>`
 
 TLS certificate to use if the server protocol is https or h2.
 Can be a path to a file or "data:" followed by base64 encoded certificate.
 
 ### `--tls-key-file` {#tls-key-file}
 
-Environment variable: `FORWARDER_TLS_KEY_FILE`
+* Environment variable: `FORWARDER_TLS_KEY_FILE`
+* Value Format: `<path or base64>`
 
 TLS private key to use if the server protocol is https or h2.
 Can be a path to a file or "data:" followed by base64 encoded key.
 
 ### `--write-limit` {#write-limit}
 
-Environment variable: `FORWARDER_WRITE_LIMIT`
+* Environment variable: `FORWARDER_WRITE_LIMIT`
+* Value Format: `<bandwidth>`
+* Default value: `0`
 
 Global write rate limit in bytes per second i.e.
 how many bytes per second you can send to proxy.
 Accepts binary format (e.g.
 1.5Ki, 1Mi, 3.6Gi).
 
-Default value: `0`
-
 ## Proxy options
 
 ### `--deny-domains` {#deny-domains}
 
-Environment variable: `FORWARDER_DENY_DOMAINS`
+* Environment variable: `FORWARDER_DENY_DOMAINS`
+* Value Format: `[-]<regexp>,...`
 
 Deny requests to the specified domains.
 Prefix domains with '-' to exclude requests to certain domains from being denied.
 
 ### `--direct-domains` {#direct-domains}
 
-Environment variable: `FORWARDER_DIRECT_DOMAINS`
+* Environment variable: `FORWARDER_DIRECT_DOMAINS`
+* Value Format: `[-]<regexp>,...`
 
 Connect directly to the specified domains without using the upstream proxy.
 Prefix domains with '-' to exclude requests to certain domains from being directed.
@@ -138,7 +144,8 @@ This flag takes precedence over the PAC script.
 
 ### `-H, --header` {#header}
 
-Environment variable: `FORWARDER_HEADER`
+* Environment variable: `FORWARDER_HEADER`
+* Value Format: `<header>`
 
 Add or remove HTTP request headers.
 Use the format "name: value" to add a header, "name;" to set the header to empty value, "-name" to remove the header, "-name*" to remove headers by prefix.
@@ -149,7 +156,8 @@ Example: -H "Host: example.com" -H "-User-Agent" -H "-X-*".
 
 ### `-p, --pac` {#pac}
 
-Environment variable: `FORWARDER_PAC`
+* Environment variable: `FORWARDER_PAC`
+* Value Format: `<path or URL>`
 
 Proxy Auto-Configuration file to use for upstream proxy selection.
 It can be a local file or a URL, you can also use '-' to read from stdin.
@@ -157,7 +165,8 @@ The data URI scheme is supported, the format is data:base64,<encoded data>.
 
 ### `-x, --proxy` {#proxy}
 
-Environment variable: `FORWARDER_PROXY`
+* Environment variable: `FORWARDER_PROXY`
+* Value Format: `[protocol://]host[:port]`
 
 Upstream proxy to use.
 The supported protocols are: http, https, socks5.
@@ -170,24 +179,26 @@ If both are specified, the proxy flag takes precedence.
 
 ### `--proxy-header` {#proxy-header}
 
-Environment variable: `FORWARDER_PROXY_HEADER`
+* Environment variable: `FORWARDER_PROXY_HEADER`
+* Value Format: `<header>`
 
 Add or remove HTTP headers on the CONNECT request to the upstream proxy.
 See the documentation for the -H, --header flag for more details on the format.
 
 ### `--proxy-localhost` {#proxy-localhost}
 
-Environment variable: `FORWARDER_PROXY_LOCALHOST`
+* Environment variable: `FORWARDER_PROXY_LOCALHOST`
+* Value Format: `<allow|deny|direct>`
+* Default value: `deny`
 
 Setting this to allow enables sending requests to localhost through the upstream proxy.
 Setting this to direct sends requests to localhost directly without using the upstream proxy.
 By default, requests to localhost are denied.
 
-Default value: `deny`
-
 ### `-R, --response-header` {#response-header}
 
-Environment variable: `FORWARDER_RESPONSE_HEADER`
+* Environment variable: `FORWARDER_RESPONSE_HEADER`
+* Value Format: `<header>`
 
 Add or remove HTTP headers on the received response before sending it to the client.
 See the documentation for the -H, --header flag for more details on the format.
@@ -196,7 +207,9 @@ See the documentation for the -H, --header flag for more details on the format.
 
 ### `--mitm` {#mitm}
 
-Environment variable: `FORWARDER_MITM`
+* Environment variable: `FORWARDER_MITM`
+* Value Format: `<value>`
+* Default value: `false`
 
 Enable Man-in-the-Middle (MITM) mode.
 It only works with HTTPS requests, HTTP/2 is not supported.
@@ -204,11 +217,10 @@ MITM is enabled by default when the --mitm-cacert-file flag is set.
 If the CA certificate is not provided MITM uses a generated CA certificate.
 The CA certificate used can be retrieved from the API server .
 
-Default value: `false`
-
 ### `--mitm-cacert-file` {#mitm-cacert-file}
 
-Environment variable: `FORWARDER_MITM_CACERT_FILE`
+* Environment variable: `FORWARDER_MITM_CACERT_FILE`
+* Value Format: `<path or base64>`
 
 CA certificate file to use for generating MITM certificates.
 If the file is not specified, a generated CA certificate will be used.
@@ -216,48 +228,51 @@ See the documentation for the --mitm flag for more details.
 
 ### `--mitm-cakey-file` {#mitm-cakey-file}
 
-Environment variable: `FORWARDER_MITM_CAKEY_FILE`
+* Environment variable: `FORWARDER_MITM_CAKEY_FILE`
+* Value Format: `<path or base64>`
 
 CA key file to use for generating MITM certificates.
 
 ### `--mitm-domains` {#mitm-domains}
 
-Environment variable: `FORWARDER_MITM_DOMAINS`
+* Environment variable: `FORWARDER_MITM_DOMAINS`
+* Value Format: `[-]<regexp>,...`
 
 Limit MITM to the specified domains.
 Prefix domains with '-' to exclude requests to certain domains from being MITMed.
 
 ### `--mitm-org` {#mitm-org}
 
-Environment variable: `FORWARDER_MITM_ORG`
+* Environment variable: `FORWARDER_MITM_ORG`
+* Value Format: `<name>`
+* Default value: `Sauce Labs Inc.`
 
 Organization name to use in the generated MITM certificates.
 
-Default value: `Sauce Labs Inc.`
-
 ### `--mitm-validity` {#mitm-validity}
 
-Environment variable: `FORWARDER_MITM_VALIDITY`
+* Environment variable: `FORWARDER_MITM_VALIDITY`
+* Value Format: `<duration>`
+* Default value: `24h0m0s`
 
 Validity period of the generated MITM certificates.
 
-
-Default value: `24h0m0s`
 
 ## DNS options
 
 ### `--dns-round-robin` {#dns-round-robin}
 
-Environment variable: `FORWARDER_DNS_ROUND_ROBIN`
+* Environment variable: `FORWARDER_DNS_ROUND_ROBIN`
+* Value Format: `<value>`
+* Default value: `false`
 
 If more than one DNS server is specified with the --dns-server flag, passing this flag will enable round-robin selection.
 
 
-Default value: `false`
-
 ### `-n, --dns-server` {#dns-server}
 
-Environment variable: `FORWARDER_DNS_SERVER`
+* Environment variable: `FORWARDER_DNS_SERVER`
+* Value Format: `<ip>[:<port>]`
 
 DNS server(s) to use instead of system default.
 There are two execution policies, when more then one server is specified.
@@ -267,19 +282,20 @@ The port is optional, if not specified the default port is 53.
 
 ### `--dns-timeout` {#dns-timeout}
 
-Environment variable: `FORWARDER_DNS_TIMEOUT`
+* Environment variable: `FORWARDER_DNS_TIMEOUT`
+* Value Format: `<duration>`
+* Default value: `5s`
 
 Timeout for dialing DNS servers.
 Only used if DNS servers are specified.
 
 
-Default value: `5s`
-
 ## HTTP client options
 
 ### `--cacert-file` {#cacert-file}
 
-Environment variable: `FORWARDER_CACERT_FILE`
+* Environment variable: `FORWARDER_CACERT_FILE`
+* Value Format: `<path or base64>`
 
 Add your own CA certificates to verify against.
 The system root certificates will be used in addition to any certificates in this list.
@@ -288,99 +304,102 @@ Use this flag multiple times to specify multiple CA certificate files.
 
 ### `--http-dial-timeout` {#http-dial-timeout}
 
-Environment variable: `FORWARDER_HTTP_DIAL_TIMEOUT`
+* Environment variable: `FORWARDER_HTTP_DIAL_TIMEOUT`
+* Value Format: `<duration>`
+* Default value: `10s`
 
 The maximum amount of time a dial will wait for a connect to complete.
 With or without a timeout, the operating system may impose its own earlier timeout.
 For instance, TCP timeouts are often around 3 minutes.
 
 
-Default value: `10s`
-
 ### `--http-idle-conn-timeout` {#http-idle-conn-timeout}
 
-Environment variable: `FORWARDER_HTTP_IDLE_CONN_TIMEOUT`
+* Environment variable: `FORWARDER_HTTP_IDLE_CONN_TIMEOUT`
+* Value Format: `<duration>`
+* Default value: `1m30s`
 
 The maximum amount of time an idle (keep-alive) connection will remain idle before closing itself.
 Zero means no limit.
 
 
-Default value: `1m30s`
-
 ### `--http-response-header-timeout` {#http-response-header-timeout}
 
-Environment variable: `FORWARDER_HTTP_RESPONSE_HEADER_TIMEOUT`
+* Environment variable: `FORWARDER_HTTP_RESPONSE_HEADER_TIMEOUT`
+* Value Format: `<duration>`
+* Default value: `0s`
 
 The amount of time to wait for a server's response headers after fully writing the request (including its body, if any).This time does not include the time to read the response body.
 Zero means no limit.
 
 
-Default value: `0s`
-
 ### `--http-tls-handshake-timeout` {#http-tls-handshake-timeout}
 
-Environment variable: `FORWARDER_HTTP_TLS_HANDSHAKE_TIMEOUT`
+* Environment variable: `FORWARDER_HTTP_TLS_HANDSHAKE_TIMEOUT`
+* Value Format: `<duration>`
+* Default value: `10s`
 
 The maximum amount of time waiting to wait for a TLS handshake.
 Zero means no limit.
 
-Default value: `10s`
-
 ### `--insecure` {#insecure}
 
-Environment variable: `FORWARDER_INSECURE`
+* Environment variable: `FORWARDER_INSECURE`
+* Value Format: `<value>`
+* Default value: `false`
 
 Don't verify the server's certificate chain and host name.
 Enable to work with self-signed certificates.
 
 
-Default value: `false`
-
 ## API server options
 
 ### `--api-address` {#api-address}
 
-Environment variable: `FORWARDER_API_ADDRESS`
+* Environment variable: `FORWARDER_API_ADDRESS`
+* Value Format: `<host:port>`
+* Default value: `localhost:10000`
 
 The server address to listen on.
 If the host is empty, the server will listen on all available interfaces.
 
-Default value: `localhost:10000`
-
 ### `--api-basic-auth` {#api-basic-auth}
 
-Environment variable: `FORWARDER_API_BASIC_AUTH`
+* Environment variable: `FORWARDER_API_BASIC_AUTH`
+* Value Format: `<username[:password]>`
 
 Basic authentication credentials to protect the server.
 
 ### `--api-read-header-timeout` {#api-read-header-timeout}
 
-Environment variable: `FORWARDER_API_READ_HEADER_TIMEOUT`
+* Environment variable: `FORWARDER_API_READ_HEADER_TIMEOUT`
+* Value Format: `<duration>`
+* Default value: `1m0s`
 
 The amount of time allowed to read request headers.
 
-Default value: `1m0s`
-
 ### `--prom-namespace` {#prom-namespace}
 
-Environment variable: `FORWARDER_PROM_NAMESPACE`
+* Environment variable: `FORWARDER_PROM_NAMESPACE`
+* Value Format: `<string>`
+* Default value: `forwarder`
 
 Prometheus namespace to use for metrics.
 The metrics are available at /metrics endpoint in the API server.
-
-Default value: `forwarder`
 
 ## Logging options
 
 ### `--log-file` {#log-file}
 
-Environment variable: `FORWARDER_LOG_FILE`
+* Environment variable: `FORWARDER_LOG_FILE`
+* Value Format: `<path>`
 
 Path to the log file, if empty, logs to stdout.
 
 ### `--log-http` {#log-http}
 
-Environment variable: `FORWARDER_LOG_HTTP`
+* Environment variable: `FORWARDER_LOG_HTTP`
+* Value Format: `[api|proxy:]<none|short-url|url|headers|body|errors>,...`
 
 HTTP request and response logging mode.
 Setting this to none disables logging.
@@ -389,17 +408,17 @@ The error mode logs request line and headers if status code is greater than or e
 
 ### `--log-http-request-id-header` {#log-http-request-id-header}
 
-Environment variable: `FORWARDER_LOG_HTTP_REQUEST_ID_HEADER`
+* Environment variable: `FORWARDER_LOG_HTTP_REQUEST_ID_HEADER`
+* Value Format: `<name>`
+* Default value: `X-Request-Id`
 
 If the header is present in the request, the proxy will associate the value with the request in the logs.
 
-Default value: `X-Request-Id`
-
 ### `--log-level` {#log-level}
 
-Environment variable: `FORWARDER_LOG_LEVEL`
+* Environment variable: `FORWARDER_LOG_LEVEL`
+* Value Format: `<error|info|debug>`
+* Default value: `info`
 
 Log level.
-
-Default value: `info`
 

@@ -18,9 +18,9 @@ You can generate a config file by running `forwarder ready config-file` command.
 
 ### `--api-address` {#api-address}
 
-Environment variable: `FORWARDER_API_ADDRESS`
+* Environment variable: `FORWARDER_API_ADDRESS`
+* Value Format: `<host:port>`
+* Default value: `localhost:10000`
 
 The API server address.
-
-Default value: `localhost:10000`
 
