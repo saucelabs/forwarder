@@ -7,7 +7,6 @@
 package templates
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"strings"
@@ -29,38 +28,27 @@ func NewYamlFlagPrinter(out io.Writer, wrapLimit uint) *YamlFlagPrinter {
 }
 
 func (p *YamlFlagPrinter) PrintHelpFlag(f *pflag.Flag) {
-	formatBuf := new(bytes.Buffer)
-	writeYamlFlag(formatBuf, f)
-
-	wrappedStr := formatBuf.String()
-	flagAndUsage := strings.Split(formatBuf.String(), "\n")
-
-	// if the flag usage is longer than one line, wrap it again
-	if len(flagAndUsage) > 1 {
-		nextLines := strings.Join(flagAndUsage[:len(flagAndUsage)-1], " ")
-		wrappedUsages := wordwrap.WrapString(nextLines, p.wrapLimit-2)
-		wrappedUsages = "#\n# " + strings.ReplaceAll(wrappedUsages, "\n", "\n# ")
-		wrappedStr = wrappedUsages + "\n#\n#" + flagAndUsage[len(flagAndUsage)-1]
-	}
-	fmt.Fprintf(p.out, wrappedStr)
-	fmt.Fprintf(p.out, "\n\n")
-}
-
-func writeYamlFlag(out io.Writer, f *pflag.Flag) {
-	_, usage := flagNameAndUsage(f)
-
-	def := f.DefValue
-	if def == "[]" {
-		def = ""
-	}
-	if def != "" {
-		def = " " + def
-	}
+	name, usage := flagNameAndUsage(f)
 
 	deprecated := ""
 	if f.Deprecated != "" {
 		deprecated = fmt.Sprintf("\nDEPRECATED: %s", f.Deprecated)
 	}
 
-	fmt.Fprintf(out, "%s%s\n%s:%s", usage, deprecated, f.Name, def)
+	fmt.Fprintf(p.out, "# %s%s\n#\n", f.Name, name)
+	for _, l := range strings.Split(wordwrap.WrapString(usage, p.wrapLimit-2), "\n") {
+		fmt.Fprintf(p.out, "# %s\n", l)
+	}
+	if deprecated != "" {
+		fmt.Fprintf(p.out, "# %s\n", deprecated)
+	}
+	fmt.Fprintf(p.out, "#%s: %s\n\n", f.Name, p.defaultValue(f))
+}
+
+func (p *YamlFlagPrinter) defaultValue(f *pflag.Flag) string {
+	def := f.DefValue
+	if def == "[]" {
+		def = ""
+	}
+	return def
 }

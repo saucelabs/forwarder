@@ -1,80 +1,81 @@
 # --- Server options ---
 
+# address <host:port>
 #
 # The server address to listen on. If the host is empty, the server will listen
 # on all available interfaces.
-#
 #address: :3128
 
+# basic-auth <username[:password]>
 #
 # Basic authentication credentials to protect the server.
-#
-#basic-auth:
+#basic-auth: 
 
+# credentials <username[:password]@host:port,...>
 #
 # Site or upstream proxy basic authentication credentials. The host and port can
 # be set to "*" to match all hosts and ports respectively. The flag can be
 # specified multiple times to add multiple credentials.
-#
-#credentials:
+#credentials: 
 
+# name <string>
 #
 # Name of this proxy instance. This value is used in the Via header in requests.
 # The name value in Via header is extended with a random string to avoid
 # collisions when several proxies are chained.
-#
 #name: forwarder
 
+# protocol <http|https>
 #
 # The server protocol. For https and h2 protocols, if TLS certificate is not
 # specified, the server will use a self-signed certificate.
-#
 #protocol: http
 
+# read-header-timeout <duration>
 #
 # The amount of time allowed to read request headers.
-#
 #read-header-timeout: 1m0s
 
+# read-limit <bandwidth>
 #
 # Global read rate limit in bytes per second i.e. how many bytes per second you
 # can receive from a proxy. Accepts binary format (e.g. 1.5Ki, 1Mi, 3.6Gi).
-#
 #read-limit: 0
 
+# tls-cert-file <path or base64>
 #
 # TLS certificate to use if the server protocol is https or h2. Can be a path to
 # a file or "data:" followed by base64 encoded certificate.
-#
-#tls-cert-file:
+#tls-cert-file: 
 
+# tls-key-file <path or base64>
 #
 # TLS private key to use if the server protocol is https or h2. Can be a path to
 # a file or "data:" followed by base64 encoded key.
-#
-#tls-key-file:
+#tls-key-file: 
 
+# write-limit <bandwidth>
 #
 # Global write rate limit in bytes per second i.e. how many bytes per second you
 # can send to proxy. Accepts binary format (e.g. 1.5Ki, 1Mi, 3.6Gi).
-#
 #write-limit: 0
 
 # --- Proxy options ---
 
+# deny-domains [-]<regexp>,...
 #
 # Deny requests to the specified domains. Prefix domains with '-' to exclude
 # requests to certain domains from being denied.
-#
-#deny-domains:
+#deny-domains: 
 
+# direct-domains [-]<regexp>,...
 #
 # Connect directly to the specified domains without using the upstream proxy.
 # Prefix domains with '-' to exclude requests to certain domains from being
 # directed. This flag takes precedence over the PAC script.
-#
-#direct-domains:
+#direct-domains: 
 
+# header <header>
 #
 # Add or remove HTTP request headers. Use the format "name: value" to add a
 # header, "name;" to set the header to empty value, "-name" to remove the
@@ -82,16 +83,16 @@
 # normalized to canonical form. The header value should not contain any newlines
 # or carriage returns. The flag can be specified multiple times. Example: -H
 # "Host: example.com" -H "-User-Agent" -H "-X-*".
-#
-#header:
+#header: 
 
+# pac <path or URL>
 #
 # Proxy Auto-Configuration file to use for upstream proxy selection. It can be a
 # local file or a URL, you can also use '-' to read from stdin. The data URI
 # scheme is supported, the format is data:base64,<encoded data>.
-#
-#pac:
+#pac: 
 
+# proxy [protocol://]host[:port]
 #
 # Upstream proxy to use. The supported protocols are: http, https, socks5. No
 # protocol specified will be treated as HTTP proxy. If the port number is not
@@ -99,180 +100,179 @@
 # password can be specified in the host string e.g. user:pass@host:port.
 # Alternatively, you can use the -c, --credentials flag to specify the
 # credentials. If both are specified, the proxy flag takes precedence.
-#
-#proxy:
+#proxy: 
 
+# proxy-header <header>
 #
 # Add or remove HTTP headers on the CONNECT request to the upstream proxy. See
 # the documentation for the -H, --header flag for more details on the format.
-#
-#proxy-header:
+#proxy-header: 
 
+# proxy-localhost <allow|deny|direct>
 #
 # Setting this to allow enables sending requests to localhost through the
 # upstream proxy. Setting this to direct sends requests to localhost directly
 # without using the upstream proxy. By default, requests to localhost are
 # denied.
-#
 #proxy-localhost: deny
 
+# response-header <header>
 #
 # Add or remove HTTP headers on the received response before sending it to the
 # client. See the documentation for the -H, --header flag for more details on
 # the format.
-#
-#response-header:
+#response-header: 
 
 # --- MITM options ---
 
+# mitm <value>
 #
 # Enable Man-in-the-Middle (MITM) mode. It only works with HTTPS requests,
 # HTTP/2 is not supported. MITM is enabled by default when the
 # --mitm-cacert-file flag is set. If the CA certificate is not provided MITM
 # uses a generated CA certificate. The CA certificate used can be retrieved from
 # the API server .
-#
 #mitm: false
 
+# mitm-cacert-file <path or base64>
 #
 # CA certificate file to use for generating MITM certificates. If the file is
 # not specified, a generated CA certificate will be used. See the documentation
 # for the --mitm flag for more details.
-#
-#mitm-cacert-file:
+#mitm-cacert-file: 
 
+# mitm-cakey-file <path or base64>
 #
 # CA key file to use for generating MITM certificates.
-#
-#mitm-cakey-file:
+#mitm-cakey-file: 
 
+# mitm-domains [-]<regexp>,...
 #
 # Limit MITM to the specified domains. Prefix domains with '-' to exclude
 # requests to certain domains from being MITMed.
-#
-#mitm-domains:
+#mitm-domains: 
 
+# mitm-org <name>
 #
 # Organization name to use in the generated MITM certificates.
-#
 #mitm-org: Sauce Labs Inc.
 
+# mitm-validity <duration>
 #
 # Validity period of the generated MITM certificates. 
-#
 #mitm-validity: 24h0m0s
 
 # --- DNS options ---
 
+# dns-round-robin <value>
 #
 # If more than one DNS server is specified with the --dns-server flag, passing
 # this flag will enable round-robin selection. 
-#
 #dns-round-robin: false
 
+# dns-server <ip>[:<port>]
 #
 # DNS server(s) to use instead of system default. There are two execution
 # policies, when more then one server is specified. Fallback: the first server
 # in a list is used as primary, the rest are used as fallbacks. Round robin: the
 # servers are used in a round-robin fashion. The port is optional, if not
 # specified the default port is 53.
-#
-#dns-server:
+#dns-server: 
 
+# dns-timeout <duration>
 #
 # Timeout for dialing DNS servers. Only used if DNS servers are specified. 
-#
 #dns-timeout: 5s
 
 # --- HTTP client options ---
 
+# cacert-file <path or base64>
 #
 # Add your own CA certificates to verify against. The system root certificates
 # will be used in addition to any certificates in this list. Can be a path to a
 # file or "data:" followed by base64 encoded certificate. Use this flag multiple
 # times to specify multiple CA certificate files.
-#
-#cacert-file:
+#cacert-file: 
 
+# http-dial-timeout <duration>
 #
 # The maximum amount of time a dial will wait for a connect to complete. With or
 # without a timeout, the operating system may impose its own earlier timeout.
 # For instance, TCP timeouts are often around 3 minutes. 
-#
 #http-dial-timeout: 10s
 
+# http-idle-conn-timeout <duration>
 #
 # The maximum amount of time an idle (keep-alive) connection will remain idle
 # before closing itself. Zero means no limit. 
-#
 #http-idle-conn-timeout: 1m30s
 
+# http-response-header-timeout <duration>
 #
 # The amount of time to wait for a server's response headers after fully writing
 # the request (including its body, if any).This time does not include the time
 # to read the response body. Zero means no limit. 
-#
 #http-response-header-timeout: 0s
 
+# http-tls-handshake-timeout <duration>
 #
 # The maximum amount of time waiting to wait for a TLS handshake. Zero means no
 # limit.
-#
 #http-tls-handshake-timeout: 10s
 
+# insecure <value>
 #
 # Don't verify the server's certificate chain and host name. Enable to work with
 # self-signed certificates. 
-#
 #insecure: false
 
 # --- API server options ---
 
+# api-address <host:port>
 #
 # The server address to listen on. If the host is empty, the server will listen
 # on all available interfaces.
-#
 #api-address: localhost:10000
 
+# api-basic-auth <username[:password]>
 #
 # Basic authentication credentials to protect the server.
-#
-#api-basic-auth:
+#api-basic-auth: 
 
+# api-read-header-timeout <duration>
 #
 # The amount of time allowed to read request headers.
-#
 #api-read-header-timeout: 1m0s
 
+# prom-namespace <string>
 #
 # Prometheus namespace to use for metrics. The metrics are available at /metrics
 # endpoint in the API server.
-#
 #prom-namespace: forwarder
 
 # --- Logging options ---
 
+# log-file <path>
 #
 # Path to the log file, if empty, logs to stdout.
-#
-#log-file:
+#log-file: 
 
+# log-http [api|proxy:]<none|short-url|url|headers|body|errors>,... 
 #
 # HTTP request and response logging mode. Setting this to none disables logging.
 # The short-url mode logs [scheme://]host[/path] instead of the full URL. The
 # error mode logs request line and headers if status code is greater than or
 # equal to 500.
-#
-#log-http:
+#log-http: 
 
+# log-http-request-id-header <name>
 #
 # If the header is present in the request, the proxy will associate the value
 # with the request in the logs.
-#
 #log-http-request-id-header: X-Request-Id
 
+# log-level <error|info|debug>
 #
 # Log level.
-#
 #log-level: info
 
