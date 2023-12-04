@@ -43,9 +43,9 @@ func (p *MarkdownFlagPrinter) header(f *pflag.Flag) string {
 	} else {
 		format = "%s" + format
 	}
-	format = "### `" + format + "`"
+	format = "### `" + format + "` {#%s}"
 
-	return fmt.Sprintf(format, f.Shorthand, f.Name)
+	return fmt.Sprintf(format, f.Shorthand, f.Name, f.Name)
 }
 
 func (p *MarkdownFlagPrinter) body(f *pflag.Flag) string {

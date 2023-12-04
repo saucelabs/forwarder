@@ -16,7 +16,7 @@ You can generate a config file by running `forwarder ready config-file` command.
 
 ## API server options
 
-### `--api-address`
+### `--api-address` {#api-address}
 
 Environment variable: `FORWARDER_API_ADDRESS`
 

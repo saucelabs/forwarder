@@ -33,7 +33,7 @@ You can generate a config file by running `forwarder run config-file` command.
 
 ## Server options
 
-### `--address`
+### `--address` {#address}
 
 Environment variable: `FORWARDER_ADDRESS`
 
@@ -42,13 +42,13 @@ If the host is empty, the server will listen on all available interfaces.
 
 Default value: `:3128`
 
-### `--basic-auth`
+### `--basic-auth` {#basic-auth}
 
 Environment variable: `FORWARDER_BASIC_AUTH`
 
 Basic authentication credentials to protect the server.
 
-### `-s, --credentials`
+### `-s, --credentials` {#credentials}
 
 Environment variable: `FORWARDER_CREDENTIALS`
 
@@ -56,7 +56,7 @@ Site or upstream proxy basic authentication credentials.
 The host and port can be set to "*" to match all hosts and ports respectively.
 The flag can be specified multiple times to add multiple credentials.
 
-### `--name`
+### `--name` {#name}
 
 Environment variable: `FORWARDER_NAME`
 
@@ -66,7 +66,7 @@ The name value in Via header is extended with a random string to avoid collision
 
 Default value: `forwarder`
 
-### `--protocol`
+### `--protocol` {#protocol}
 
 Environment variable: `FORWARDER_PROTOCOL`
 
@@ -75,7 +75,7 @@ For https and h2 protocols, if TLS certificate is not specified, the server will
 
 Default value: `http`
 
-### `--read-header-timeout`
+### `--read-header-timeout` {#read-header-timeout}
 
 Environment variable: `FORWARDER_READ_HEADER_TIMEOUT`
 
@@ -83,7 +83,7 @@ The amount of time allowed to read request headers.
 
 Default value: `1m0s`
 
-### `--read-limit`
+### `--read-limit` {#read-limit}
 
 Environment variable: `FORWARDER_READ_LIMIT`
 
@@ -94,21 +94,21 @@ Accepts binary format (e.g.
 
 Default value: `0`
 
-### `--tls-cert-file`
+### `--tls-cert-file` {#tls-cert-file}
 
 Environment variable: `FORWARDER_TLS_CERT_FILE`
 
 TLS certificate to use if the server protocol is https or h2.
 Can be a path to a file or "data:" followed by base64 encoded certificate.
 
-### `--tls-key-file`
+### `--tls-key-file` {#tls-key-file}
 
 Environment variable: `FORWARDER_TLS_KEY_FILE`
 
 TLS private key to use if the server protocol is https or h2.
 Can be a path to a file or "data:" followed by base64 encoded key.
 
-### `--write-limit`
+### `--write-limit` {#write-limit}
 
 Environment variable: `FORWARDER_WRITE_LIMIT`
 
@@ -121,14 +121,14 @@ Default value: `0`
 
 ## Proxy options
 
-### `--deny-domains`
+### `--deny-domains` {#deny-domains}
 
 Environment variable: `FORWARDER_DENY_DOMAINS`
 
 Deny requests to the specified domains.
 Prefix domains with '-' to exclude requests to certain domains from being denied.
 
-### `--direct-domains`
+### `--direct-domains` {#direct-domains}
 
 Environment variable: `FORWARDER_DIRECT_DOMAINS`
 
@@ -136,7 +136,7 @@ Connect directly to the specified domains without using the upstream proxy.
 Prefix domains with '-' to exclude requests to certain domains from being directed.
 This flag takes precedence over the PAC script.
 
-### `-H, --header`
+### `-H, --header` {#header}
 
 Environment variable: `FORWARDER_HEADER`
 
@@ -147,7 +147,7 @@ The header value should not contain any newlines or carriage returns.
 The flag can be specified multiple times.
 Example: -H "Host: example.com" -H "-User-Agent" -H "-X-*".
 
-### `-p, --pac`
+### `-p, --pac` {#pac}
 
 Environment variable: `FORWARDER_PAC`
 
@@ -155,7 +155,7 @@ Proxy Auto-Configuration file to use for upstream proxy selection.
 It can be a local file or a URL, you can also use '-' to read from stdin.
 The data URI scheme is supported, the format is data:base64,<encoded data>.
 
-### `-x, --proxy`
+### `-x, --proxy` {#proxy}
 
 Environment variable: `FORWARDER_PROXY`
 
@@ -168,14 +168,14 @@ user:pass@host:port.
 Alternatively, you can use the -c, --credentials flag to specify the credentials.
 If both are specified, the proxy flag takes precedence.
 
-### `--proxy-header`
+### `--proxy-header` {#proxy-header}
 
 Environment variable: `FORWARDER_PROXY_HEADER`
 
 Add or remove HTTP headers on the CONNECT request to the upstream proxy.
 See the documentation for the -H, --header flag for more details on the format.
 
-### `--proxy-localhost`
+### `--proxy-localhost` {#proxy-localhost}
 
 Environment variable: `FORWARDER_PROXY_LOCALHOST`
 
@@ -185,7 +185,7 @@ By default, requests to localhost are denied.
 
 Default value: `deny`
 
-### `-R, --response-header`
+### `-R, --response-header` {#response-header}
 
 Environment variable: `FORWARDER_RESPONSE_HEADER`
 
@@ -194,7 +194,7 @@ See the documentation for the -H, --header flag for more details on the format.
 
 ## MITM options
 
-### `--mitm`
+### `--mitm` {#mitm}
 
 Environment variable: `FORWARDER_MITM`
 
@@ -206,7 +206,7 @@ The CA certificate used can be retrieved from the API server .
 
 Default value: `false`
 
-### `--mitm-cacert-file`
+### `--mitm-cacert-file` {#mitm-cacert-file}
 
 Environment variable: `FORWARDER_MITM_CACERT_FILE`
 
@@ -214,20 +214,20 @@ CA certificate file to use for generating MITM certificates.
 If the file is not specified, a generated CA certificate will be used.
 See the documentation for the --mitm flag for more details.
 
-### `--mitm-cakey-file`
+### `--mitm-cakey-file` {#mitm-cakey-file}
 
 Environment variable: `FORWARDER_MITM_CAKEY_FILE`
 
 CA key file to use for generating MITM certificates.
 
-### `--mitm-domains`
+### `--mitm-domains` {#mitm-domains}
 
 Environment variable: `FORWARDER_MITM_DOMAINS`
 
 Limit MITM to the specified domains.
 Prefix domains with '-' to exclude requests to certain domains from being MITMed.
 
-### `--mitm-org`
+### `--mitm-org` {#mitm-org}
 
 Environment variable: `FORWARDER_MITM_ORG`
 
@@ -235,7 +235,7 @@ Organization name to use in the generated MITM certificates.
 
 Default value: `Sauce Labs Inc.`
 
-### `--mitm-validity`
+### `--mitm-validity` {#mitm-validity}
 
 Environment variable: `FORWARDER_MITM_VALIDITY`
 
@@ -246,7 +246,7 @@ Default value: `24h0m0s`
 
 ## DNS options
 
-### `--dns-round-robin`
+### `--dns-round-robin` {#dns-round-robin}
 
 Environment variable: `FORWARDER_DNS_ROUND_ROBIN`
 
@@ -255,7 +255,7 @@ If more than one DNS server is specified with the --dns-server flag, passing thi
 
 Default value: `false`
 
-### `-n, --dns-server`
+### `-n, --dns-server` {#dns-server}
 
 Environment variable: `FORWARDER_DNS_SERVER`
 
@@ -265,7 +265,7 @@ Fallback: the first server in a list is used as primary, the rest are used as fa
 Round robin: the servers are used in a round-robin fashion.
 The port is optional, if not specified the default port is 53.
 
-### `--dns-timeout`
+### `--dns-timeout` {#dns-timeout}
 
 Environment variable: `FORWARDER_DNS_TIMEOUT`
 
@@ -277,7 +277,7 @@ Default value: `5s`
 
 ## HTTP client options
 
-### `--cacert-file`
+### `--cacert-file` {#cacert-file}
 
 Environment variable: `FORWARDER_CACERT_FILE`
 
@@ -286,7 +286,7 @@ The system root certificates will be used in addition to any certificates in thi
 Can be a path to a file or "data:" followed by base64 encoded certificate.
 Use this flag multiple times to specify multiple CA certificate files.
 
-### `--http-dial-timeout`
+### `--http-dial-timeout` {#http-dial-timeout}
 
 Environment variable: `FORWARDER_HTTP_DIAL_TIMEOUT`
 
@@ -297,7 +297,7 @@ For instance, TCP timeouts are often around 3 minutes.
 
 Default value: `10s`
 
-### `--http-idle-conn-timeout`
+### `--http-idle-conn-timeout` {#http-idle-conn-timeout}
 
 Environment variable: `FORWARDER_HTTP_IDLE_CONN_TIMEOUT`
 
@@ -307,7 +307,7 @@ Zero means no limit.
 
 Default value: `1m30s`
 
-### `--http-response-header-timeout`
+### `--http-response-header-timeout` {#http-response-header-timeout}
 
 Environment variable: `FORWARDER_HTTP_RESPONSE_HEADER_TIMEOUT`
 
@@ -317,7 +317,7 @@ Zero means no limit.
 
 Default value: `0s`
 
-### `--http-tls-handshake-timeout`
+### `--http-tls-handshake-timeout` {#http-tls-handshake-timeout}
 
 Environment variable: `FORWARDER_HTTP_TLS_HANDSHAKE_TIMEOUT`
 
@@ -326,7 +326,7 @@ Zero means no limit.
 
 Default value: `10s`
 
-### `--insecure`
+### `--insecure` {#insecure}
 
 Environment variable: `FORWARDER_INSECURE`
 
@@ -338,7 +338,7 @@ Default value: `false`
 
 ## API server options
 
-### `--api-address`
+### `--api-address` {#api-address}
 
 Environment variable: `FORWARDER_API_ADDRESS`
 
@@ -347,13 +347,13 @@ If the host is empty, the server will listen on all available interfaces.
 
 Default value: `localhost:10000`
 
-### `--api-basic-auth`
+### `--api-basic-auth` {#api-basic-auth}
 
 Environment variable: `FORWARDER_API_BASIC_AUTH`
 
 Basic authentication credentials to protect the server.
 
-### `--api-read-header-timeout`
+### `--api-read-header-timeout` {#api-read-header-timeout}
 
 Environment variable: `FORWARDER_API_READ_HEADER_TIMEOUT`
 
@@ -361,7 +361,7 @@ The amount of time allowed to read request headers.
 
 Default value: `1m0s`
 
-### `--prom-namespace`
+### `--prom-namespace` {#prom-namespace}
 
 Environment variable: `FORWARDER_PROM_NAMESPACE`
 
@@ -372,13 +372,13 @@ Default value: `forwarder`
 
 ## Logging options
 
-### `--log-file`
+### `--log-file` {#log-file}
 
 Environment variable: `FORWARDER_LOG_FILE`
 
 Path to the log file, if empty, logs to stdout.
 
-### `--log-http`
+### `--log-http` {#log-http}
 
 Environment variable: `FORWARDER_LOG_HTTP`
 
@@ -387,7 +387,7 @@ Setting this to none disables logging.
 The short-url mode logs [scheme://]host[/path] instead of the full URL.
 The error mode logs request line and headers if status code is greater than or equal to 500.
 
-### `--log-http-request-id-header`
+### `--log-http-request-id-header` {#log-http-request-id-header}
 
 Environment variable: `FORWARDER_LOG_HTTP_REQUEST_ID_HEADER`
 
@@ -395,7 +395,7 @@ If the header is present in the request, the proxy will associate the value with
 
 Default value: `X-Request-Id`
 
-### `--log-level`
+### `--log-level` {#log-level}
 
 Environment variable: `FORWARDER_LOG_LEVEL`
 
