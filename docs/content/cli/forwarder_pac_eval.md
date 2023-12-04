@@ -28,7 +28,7 @@ You can generate a config file by running `forwarder pac eval config-file` comma
 
 ## Proxy options
 
-### `-p, --pac`
+### `-p, --pac` {#pac}
 
 Environment variable: `FORWARDER_PAC`
 
@@ -40,7 +40,7 @@ Default value: `file://pac.js`
 
 ## DNS options
 
-### `--dns-round-robin`
+### `--dns-round-robin` {#dns-round-robin}
 
 Environment variable: `FORWARDER_DNS_ROUND_ROBIN`
 
@@ -49,7 +49,7 @@ If more than one DNS server is specified with the --dns-server flag, passing thi
 
 Default value: `false`
 
-### `-n, --dns-server`
+### `-n, --dns-server` {#dns-server}
 
 Environment variable: `FORWARDER_DNS_SERVER`
 
@@ -59,7 +59,7 @@ Fallback: the first server in a list is used as primary, the rest are used as fa
 Round robin: the servers are used in a round-robin fashion.
 The port is optional, if not specified the default port is 53.
 
-### `--dns-timeout`
+### `--dns-timeout` {#dns-timeout}
 
 Environment variable: `FORWARDER_DNS_TIMEOUT`
 
@@ -71,7 +71,7 @@ Default value: `5s`
 
 ## HTTP client options
 
-### `--cacert-file`
+### `--cacert-file` {#cacert-file}
 
 Environment variable: `FORWARDER_CACERT_FILE`
 
@@ -80,7 +80,7 @@ The system root certificates will be used in addition to any certificates in thi
 Can be a path to a file or "data:" followed by base64 encoded certificate.
 Use this flag multiple times to specify multiple CA certificate files.
 
-### `--http-dial-timeout`
+### `--http-dial-timeout` {#http-dial-timeout}
 
 Environment variable: `FORWARDER_HTTP_DIAL_TIMEOUT`
 
@@ -91,7 +91,7 @@ For instance, TCP timeouts are often around 3 minutes.
 
 Default value: `10s`
 
-### `--http-idle-conn-timeout`
+### `--http-idle-conn-timeout` {#http-idle-conn-timeout}
 
 Environment variable: `FORWARDER_HTTP_IDLE_CONN_TIMEOUT`
 
@@ -101,7 +101,7 @@ Zero means no limit.
 
 Default value: `1m30s`
 
-### `--http-response-header-timeout`
+### `--http-response-header-timeout` {#http-response-header-timeout}
 
 Environment variable: `FORWARDER_HTTP_RESPONSE_HEADER_TIMEOUT`
 
@@ -111,7 +111,7 @@ Zero means no limit.
 
 Default value: `0s`
 
-### `--http-tls-handshake-timeout`
+### `--http-tls-handshake-timeout` {#http-tls-handshake-timeout}
 
 Environment variable: `FORWARDER_HTTP_TLS_HANDSHAKE_TIMEOUT`
 
@@ -120,7 +120,7 @@ Zero means no limit.
 
 Default value: `10s`
 
-### `--insecure`
+### `--insecure` {#insecure}
 
 Environment variable: `FORWARDER_INSECURE`
 

@@ -38,7 +38,7 @@ You can generate a config file by running `forwarder pac server config-file` com
 
 ## Server options
 
-### `--address`
+### `--address` {#address}
 
 Environment variable: `FORWARDER_ADDRESS`
 
@@ -47,13 +47,13 @@ If the host is empty, the server will listen on all available interfaces.
 
 Default value: `:8080`
 
-### `--basic-auth`
+### `--basic-auth` {#basic-auth}
 
 Environment variable: `FORWARDER_BASIC_AUTH`
 
 Basic authentication credentials to protect the server.
 
-### `--protocol`
+### `--protocol` {#protocol}
 
 Environment variable: `FORWARDER_PROTOCOL`
 
@@ -62,7 +62,7 @@ For https and h2 protocols, if TLS certificate is not specified, the server will
 
 Default value: `http`
 
-### `--read-header-timeout`
+### `--read-header-timeout` {#read-header-timeout}
 
 Environment variable: `FORWARDER_READ_HEADER_TIMEOUT`
 
@@ -70,14 +70,14 @@ The amount of time allowed to read request headers.
 
 Default value: `1m0s`
 
-### `--tls-cert-file`
+### `--tls-cert-file` {#tls-cert-file}
 
 Environment variable: `FORWARDER_TLS_CERT_FILE`
 
 TLS certificate to use if the server protocol is https or h2.
 Can be a path to a file or "data:" followed by base64 encoded certificate.
 
-### `--tls-key-file`
+### `--tls-key-file` {#tls-key-file}
 
 Environment variable: `FORWARDER_TLS_KEY_FILE`
 
@@ -86,7 +86,7 @@ Can be a path to a file or "data:" followed by base64 encoded key.
 
 ## Proxy options
 
-### `-p, --pac`
+### `-p, --pac` {#pac}
 
 Environment variable: `FORWARDER_PAC`
 
@@ -98,7 +98,7 @@ Default value: `file://pac.js`
 
 ## DNS options
 
-### `--dns-round-robin`
+### `--dns-round-robin` {#dns-round-robin}
 
 Environment variable: `FORWARDER_DNS_ROUND_ROBIN`
 
@@ -107,7 +107,7 @@ If more than one DNS server is specified with the --dns-server flag, passing thi
 
 Default value: `false`
 
-### `-n, --dns-server`
+### `-n, --dns-server` {#dns-server}
 
 Environment variable: `FORWARDER_DNS_SERVER`
 
@@ -117,7 +117,7 @@ Fallback: the first server in a list is used as primary, the rest are used as fa
 Round robin: the servers are used in a round-robin fashion.
 The port is optional, if not specified the default port is 53.
 
-### `--dns-timeout`
+### `--dns-timeout` {#dns-timeout}
 
 Environment variable: `FORWARDER_DNS_TIMEOUT`
 
@@ -129,7 +129,7 @@ Default value: `5s`
 
 ## HTTP client options
 
-### `--cacert-file`
+### `--cacert-file` {#cacert-file}
 
 Environment variable: `FORWARDER_CACERT_FILE`
 
@@ -138,7 +138,7 @@ The system root certificates will be used in addition to any certificates in thi
 Can be a path to a file or "data:" followed by base64 encoded certificate.
 Use this flag multiple times to specify multiple CA certificate files.
 
-### `--http-dial-timeout`
+### `--http-dial-timeout` {#http-dial-timeout}
 
 Environment variable: `FORWARDER_HTTP_DIAL_TIMEOUT`
 
@@ -149,7 +149,7 @@ For instance, TCP timeouts are often around 3 minutes.
 
 Default value: `10s`
 
-### `--http-idle-conn-timeout`
+### `--http-idle-conn-timeout` {#http-idle-conn-timeout}
 
 Environment variable: `FORWARDER_HTTP_IDLE_CONN_TIMEOUT`
 
@@ -159,7 +159,7 @@ Zero means no limit.
 
 Default value: `1m30s`
 
-### `--http-response-header-timeout`
+### `--http-response-header-timeout` {#http-response-header-timeout}
 
 Environment variable: `FORWARDER_HTTP_RESPONSE_HEADER_TIMEOUT`
 
@@ -169,7 +169,7 @@ Zero means no limit.
 
 Default value: `0s`
 
-### `--http-tls-handshake-timeout`
+### `--http-tls-handshake-timeout` {#http-tls-handshake-timeout}
 
 Environment variable: `FORWARDER_HTTP_TLS_HANDSHAKE_TIMEOUT`
 
@@ -178,7 +178,7 @@ Zero means no limit.
 
 Default value: `10s`
 
-### `--insecure`
+### `--insecure` {#insecure}
 
 Environment variable: `FORWARDER_INSECURE`
 
@@ -190,13 +190,13 @@ Default value: `false`
 
 ## Logging options
 
-### `--log-file`
+### `--log-file` {#log-file}
 
 Environment variable: `FORWARDER_LOG_FILE`
 
 Path to the log file, if empty, logs to stdout.
 
-### `--log-http`
+### `--log-http` {#log-http}
 
 Environment variable: `FORWARDER_LOG_HTTP`
 
@@ -205,7 +205,7 @@ Setting this to none disables logging.
 The short-url mode logs [scheme://]host[/path] instead of the full URL.
 The error mode logs request line and headers if status code is greater than or equal to 500.
 
-### `--log-level`
+### `--log-level` {#log-level}
 
 Environment variable: `FORWARDER_LOG_LEVEL`
 
