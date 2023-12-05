@@ -1,6 +1,9 @@
 # Forwarder Proxy
 
-[![Build Status](https://github.com/saucelabs/forwarder/actions/workflows/go.yml/badge.svg)](https://github.com/saucelabs/forwarder/actions/workflows/go.yml) [![Go Report Card](https://goreportcard.com/badge/github.com/saucelabs/forwarder)](https://goreportcard.com/report/github.com/saucelabs/forwarder) [![GitHub release](https://img.shields.io/github/release/saucelabs/forwarder.svg)](https://github.com/saucelabs/forwarder/releases) ![GitHub all releases](https://img.shields.io/github/downloads/saucelabs/forwarder/total)
+[![Build Status](https://github.com/saucelabs/forwarder/actions/workflows/go.yml/badge.svg)](https://github.com/saucelabs/forwarder/actions/workflows/go.yml)
+[![Go Report Card](https://goreportcard.com/badge/github.com/saucelabs/forwarder)](https://goreportcard.com/report/github.com/saucelabs/forwarder)
+[![GitHub Repo stars](https://img.shields.io/github/stars/saucelabs/forwarder)](https://github.com/saucelabs/forwarder/)
+[![GitHub release](https://img.shields.io/github/release/saucelabs/forwarder.svg)](https://github.com/saucelabs/forwarder/releases)
 
 Forwarder is a production-ready, MITM and PAC capable HTTP proxy.
 It's used as a core component of Sauce Labs [Sauce Connect Proxy](https://docs.saucelabs.com/secure-connections/sauce-connect/).
