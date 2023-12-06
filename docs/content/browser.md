@@ -35,11 +35,10 @@ curl --proxy http://localhost:10000 https://example.com/
 * Click `OK`
 
 ## Safari
-
-* Go to `Preferences`
-* Click `Advanced` 
+* Go to `Safari > Settings`
+* Go to `Advanced` tab
+* Scroll to `Proxies`
 * Click `Change Settings` 
-* Select `Proxies` tab 
 * Check `Web Proxy (HTTP)`
 * Set `Web Proxy Server` to `localhost` and `Port` to `10000`
 * Click `OK`
