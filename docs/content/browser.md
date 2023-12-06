@@ -6,12 +6,12 @@ weight: 20
 # Setup Browser
 
 Configure your browser to use Forwarder as a proxy server.
-The below instructions assume that Forwarder is running on `localhost` and listening on port `10000`.
+The below instructions assume that Forwarder is running on `localhost` and listening on port `3128`.
 
 If using `curl` or `wget`, you can simply use `--proxy` flag to specify the proxy server.
 
 ```bash
-curl --proxy http://localhost:10000 https://example.com/
+curl --proxy http://localhost:3128 https://example.com/
 ```
 
 ## Firefox
@@ -20,7 +20,7 @@ curl --proxy http://localhost:10000 https://example.com/
 * Scroll down to `Network Settings`
 * Click `Settings`
 * Select `Manual proxy configuration`
-* Set `HTTP Proxy` to `localhost` and `Port` to `10000`
+* Set `HTTP Proxy` to `localhost` and `Port` to `3128`
 * Check `Use this proxy server for all protocols`
 * Click `OK`
 
@@ -31,7 +31,7 @@ curl --proxy http://localhost:10000 https://example.com/
 * Click `Open proxy settings`
 * Click `LAN settings`
 * Check `Use a proxy server for your LAN`
-* Set `Address` to `localhost` and `Port` to `10000`
+* Set `Address` to `localhost` and `Port` to `3128`
 * Click `OK`
 
 ## Safari
@@ -40,7 +40,7 @@ curl --proxy http://localhost:10000 https://example.com/
 * Scroll to `Proxies`
 * Click `Change Settings` 
 * Check `Web Proxy (HTTP)`
-* Set `Web Proxy Server` to `localhost` and `Port` to `10000`
+* Set `Web Proxy Server` to `localhost` and `Port` to `3128`
 * Click `OK`
 
 ## Edge 
@@ -50,7 +50,7 @@ curl --proxy http://localhost:10000 https://example.com/
 * Click `Open your computer's proxy settings`
 * Click `LAN settings`
 * Check `Use a proxy server for your LAN`
-* Set `Address` to `localhost` and `Port` to `10000`
+* Set `Address` to `localhost` and `Port` to `3128`
 * Click `OK`
 
 ## Opera 
@@ -60,5 +60,5 @@ curl --proxy http://localhost:10000 https://example.com/
 * Click `Change proxy settings`
 * Click `LAN settings`
 * Check `Use a proxy server for your LAN`
-* Set `Address` to `localhost` and `Port` to `10000`
+* Set `Address` to `localhost` and `Port` to `3128`
 * Click `OK`
