@@ -1,4 +1,4 @@
-baseURL = 'https://opensource.saucelabs.com/forwarder/'
+baseURL = 'https://opensource.saucelabs.com/'
 languageCode = 'en-us'
 title = 'Forwarder Proxy'
 enableRobotsTXT = true
