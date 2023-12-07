@@ -7,7 +7,7 @@ require (
 	github.com/golang/snappy v0.0.4
 	github.com/google/go-cmp v0.6.0
 	github.com/google/go-github/v56 v56.0.0
-	github.com/gorilla/websocket v1.5.0
+	github.com/gorilla/websocket v1.5.1
 	github.com/mitchellh/go-wordwrap v1.0.1
 	github.com/mmatczuk/anyflag v0.0.0-20231026075539-5f42d2f36d96
 	github.com/prometheus/client_golang v1.17.0
