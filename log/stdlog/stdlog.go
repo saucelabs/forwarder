@@ -10,6 +10,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"strings"
 
 	flog "github.com/saucelabs/forwarder/log"
 )
@@ -30,23 +31,22 @@ func New(cfg *flog.Config, opts ...Option) *Logger {
 		w = cfg.File
 	}
 
-	l := &Logger{
+	l := Logger{
 		log:   log.New(w, "", log.Ldate|log.Ltime|log.Lmicroseconds|log.LUTC),
 		level: cfg.Level,
 	}
-
 	for _, opt := range opts {
-		opt(l)
+		opt(&l)
 	}
-
-	return l
+	return l.Named("")
 }
 
 // Logger implements the forwarder.Logger interface using the standard log package.
 type Logger struct {
-	log   *log.Logger
-	name  string
-	level flog.Level
+	log    *log.Logger
+	labels []string
+	name   string
+	level  flog.Level
 
 	errorPfx string
 	infoPfx  string
@@ -59,15 +59,22 @@ type Logger struct {
 func (sl Logger) Named(name string) *Logger { //nolint:gocritic // we pass by value to get a copy
 	sl.name = name
 
-	if name != "" {
-		name = "[" + name + "] "
-	}
-
-	sl.errorPfx = name + "[ERROR] "
-	sl.infoPfx = name + "[INFO] "
-	sl.debugPfx = name + "[DEBUG] "
+	sl.errorPfx = logLinePrefix(sl.labels, name, "ERROR")
+	sl.infoPfx = logLinePrefix(sl.labels, name, "INFO")
+	sl.debugPfx = logLinePrefix(sl.labels, name, "DEBUG")
 
 	return &sl
+}
+
+func logLinePrefix(labels []string, name, level string) string {
+	all := append(labels[0:len(labels):len(labels)], name, level) //nolint:gocritic // all is good we always create new slice
+	var sb strings.Builder
+	for _, l := range all {
+		sb.WriteString("[")
+		sb.WriteString(l)
+		sb.WriteString("] ")
+	}
+	return sb.String()
 }
 
 func (sl *Logger) Errorf(format string, args ...any) {
