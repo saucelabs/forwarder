@@ -6,6 +6,13 @@
 
 package stdlog
 
+// WithLabels allows to set labels that are added to each log message.
+func WithLabels(labels ...string) Option {
+	return func(l *Logger) {
+		l.labels = labels
+	}
+}
+
 // WithDecorate allows to a function that modifies the log message before it is written.
 func WithDecorate(f func(string) string) Option {
 	return func(l *Logger) {
