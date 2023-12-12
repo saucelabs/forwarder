@@ -70,6 +70,9 @@ func logLinePrefix(labels []string, name, level string) string {
 	all := append(labels[0:len(labels):len(labels)], name, level) //nolint:gocritic // all is good we always create new slice
 	var sb strings.Builder
 	for _, l := range all {
+		if l == "" {
+			continue
+		}
 		sb.WriteString("[")
 		sb.WriteString(l)
 		sb.WriteString("] ")
