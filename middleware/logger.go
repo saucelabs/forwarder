@@ -17,7 +17,6 @@ type LogEntry struct {
 	Request  *http.Request
 	Response *http.Response
 	Status   int
-	Written  int64
 	Duration time.Duration
 }
 
@@ -34,7 +33,6 @@ func (l Logger) Wrap(h http.Handler) http.Handler {
 		l(LogEntry{
 			Request:  r,
 			Status:   d.Status(),
-			Written:  d.Written(),
 			Duration: time.Since(start),
 		})
 	})
@@ -62,7 +60,6 @@ func (l Logger) ModifyResponse(res *http.Response) error {
 		Request:  res.Request,
 		Response: res,
 		Status:   res.StatusCode,
-		Written:  0, // There seem not to be an easy way of counting it.
 		Duration: d,
 	})
 
