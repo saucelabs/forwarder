@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/saucelabs/forwarder/internal/martian"
+	"github.com/saucelabs/forwarder/utils/httpx"
 )
 
 type LogEntry struct {
@@ -18,6 +19,18 @@ type LogEntry struct {
 	Response *http.Response
 	Status   int
 	Duration time.Duration
+}
+
+func makeLogEntry(req *http.Request, res *http.Response, d time.Duration) LogEntry {
+	le := LogEntry{
+		Request:  req,
+		Response: res,
+		Duration: d,
+	}
+	if res != nil {
+		le.Status = res.StatusCode
+	}
+	return le
 }
 
 type Logger func(e LogEntry)
@@ -38,6 +51,15 @@ func (l Logger) Wrap(h http.Handler) http.Handler {
 	})
 }
 
+func (l Logger) WrapRoundTripper(rt http.RoundTripper) http.RoundTripper {
+	return httpx.RoundTripperFunc(func(req *http.Request) (res *http.Response, err error) {
+		start := time.Now()
+		res, err = rt.RoundTrip(req)
+		l(makeLogEntry(req, res, time.Since(start)))
+		return
+	})
+}
+
 const startTimeKey = "start-time"
 
 func (l Logger) ModifyRequest(req *http.Request) error {
@@ -55,13 +77,7 @@ func (l Logger) ModifyResponse(res *http.Response) error {
 			d = time.Since(ss)
 		}
 	}
-
-	l(LogEntry{
-		Request:  res.Request,
-		Response: res,
-		Status:   res.StatusCode,
-		Duration: d,
-	})
+	l(makeLogEntry(res.Request, res, d))
 
 	return nil
 }
