@@ -13,7 +13,6 @@ on:
 jobs:
   govulncheck:
     runs-on: ubuntu-latest
-    name: Run govulncheck
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -22,7 +21,7 @@ jobs:
         run: |
           cat .version >> $GITHUB_ENV
 
-      - id: Run govulncheck
+      - name: Run govulncheck
         uses: golang/govulncheck-action@v1
         with:
           go-version-input: "${{env.GO_VERSION}}"
