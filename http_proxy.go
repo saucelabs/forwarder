@@ -440,9 +440,6 @@ func (hp *HTTPProxy) writeErrorResponseToResponseWriter(res *http.Response, rw h
 			header.Add(k, v)
 		}
 	}
-	if res.Close {
-		header.Set("Connection", "close")
-	}
 	rw.WriteHeader(res.StatusCode)
 
 	if _, err := io.Copy(rw, res.Body); err != nil {
