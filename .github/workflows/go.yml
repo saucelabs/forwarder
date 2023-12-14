@@ -23,7 +23,7 @@ jobs:
         with:
           version: "${{env.GOLANGCI_LINT_VERSION}}"
 
-  test-ubuntu:
+  ubuntu-test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -44,7 +44,7 @@ jobs:
       - name: Run unit test
         run: make test coverage
 
-  test-windows:
+  windows-test:
     runs-on: windows-latest
     steps:
       - name: Checkout code
