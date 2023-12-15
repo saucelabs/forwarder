@@ -10,7 +10,6 @@ import (
 	"bytes"
 	"io"
 	"net/http"
-	"net/url"
 	"os"
 	"runtime"
 	"testing"
@@ -45,11 +44,11 @@ func DiffPrometheusMetrics(t *testing.T, p prometheus.Gatherer, filter ...func(*
 	}
 }
 
-func DiffPrometheusMetricsHTTP(t *testing.T, u *url.URL, filter ...func(*dto.MetricFamily) bool) {
+func DiffPrometheusMetricsHTTP(t *testing.T, url string, filter ...func(*dto.MetricFamily) bool) {
 	t.Helper()
 
 	http.DefaultClient.Timeout = 30 * time.Second
-	res, err := http.DefaultClient.Get(u.String()) //nolint:noctx // The timeout is set above.
+	res, err := http.DefaultClient.Get(url) //nolint:noctx // The timeout is set above.
 	if err != nil {
 		t.Fatal(err)
 	}
