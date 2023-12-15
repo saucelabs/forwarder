@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"runtime"
+	"strings"
 	"testing"
 	"time"
 
@@ -24,7 +25,7 @@ import (
 func DiffPrometheusMetrics(t *testing.T, p prometheus.Gatherer, filter ...func(*dto.MetricFamily) bool) {
 	t.Helper()
 
-	goldenFile := "testdata/" + t.Name() + ".golden.txt"
+	goldenFile := "testdata/" + strings.ReplaceAll(t.Name(), "/", "_") + ".golden.txt"
 	golden, err := os.ReadFile(goldenFile)
 	if err != nil && !os.IsNotExist(err) {
 		t.Fatal(err)
