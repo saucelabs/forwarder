@@ -1967,7 +1967,7 @@
             "axisPlacement": "auto",
             "barAlignment": 0,
             "drawStyle": "line",
-            "fillOpacity": 20,
+            "fillOpacity": 10,
             "gradientMode": "scheme",
             "hideFrom": {
               "legend": false,
