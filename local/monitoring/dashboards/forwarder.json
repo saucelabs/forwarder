@@ -165,7 +165,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum(rate(${prom_namespace}_errors_total{$labels}[$__rate_interval])) or on() vector(0)",
+          "expr": "sum(rate(${prom_namespace}_errors_total{job=~\"$job\", instance=~\"$instance\", $labels}[$__rate_interval])) or on() vector(0)",
           "format": "time_series",
           "instant": false,
           "legendFormat": "Status",
@@ -309,7 +309,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "sum by (reason) (rate(${prom_namespace}_proxy_errors_total{$labels}[$__rate_interval])) or on() vector(0)",
+          "expr": "sum by (reason) (rate(${prom_namespace}_proxy_errors_total{job=~\"$job\", instance=~\"$instance\", $labels}[$__rate_interval])) or on() vector(0)",
           "format": "time_series",
           "instant": false,
           "legendFormat": "{{reason}}",
@@ -488,7 +488,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(1, sum by (le) (rate(${prom_namespace}_http_request_duration_seconds_bucket{code=~\"2..\",method=\"CONNECT\",$labels}[$__rate_interval])))",
+          "expr": "histogram_quantile(1, sum by (le) (rate(${prom_namespace}_http_request_duration_seconds_bucket{code=~\"2..\", method=\"CONNECT\", job=~\"$job\", instance=~\"$instance\", $labels}[$__rate_interval])))",
           "hide": false,
           "instant": false,
           "legendFormat": "Connect P100",
@@ -501,7 +501,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.99, sum by (le) (rate(${prom_namespace}_http_request_duration_seconds_bucket{code=~\"2..\",method=\"CONNECT\",$labels}[$__rate_interval])))",
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(${prom_namespace}_http_request_duration_seconds_bucket{code=~\"2..\", method=\"CONNECT\", job=~\"$job\", instance=~\"$instance\", $labels}[$__rate_interval])))",
           "hide": false,
           "instant": false,
           "legendFormat": "Connect P99",
@@ -514,7 +514,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.95, sum by (le) (rate(${prom_namespace}_http_request_duration_seconds_bucket{code=~\"2..\",method=\"CONNECT\",$labels}[$__rate_interval])))",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(${prom_namespace}_http_request_duration_seconds_bucket{code=~\"2..\", method=\"CONNECT\", job=~\"$job\", instance=~\"$instance\", $labels}[$__rate_interval])))",
           "hide": false,
           "instant": false,
           "legendFormat": "Connect P95",
@@ -527,7 +527,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.5, sum by (le) (rate(${prom_namespace}_http_request_duration_seconds_bucket{code=~\"2..\",method=\"CONNECT\",$labels}[$__rate_interval])))",
+          "expr": "histogram_quantile(0.5, sum by (le) (rate(${prom_namespace}_http_request_duration_seconds_bucket{code=~\"2..\", method=\"CONNECT\", job=~\"$job\", instance=~\"$instance\", $labels}[$__rate_interval])))",
           "hide": false,
           "instant": false,
           "legendFormat": "Connect P50",
@@ -645,7 +645,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum (rate(${prom_namespace}_http_requests_total{code=~\"2..\", method=\"CONNECT\",$labels}[$__rate_interval]))",
+          "expr": "sum (rate(${prom_namespace}_http_requests_total{code=~\"2..\", method=\"CONNECT\", job=~\"$job\", instance=~\"$instance\", $labels}[$__rate_interval]))",
           "hide": false,
           "instant": false,
           "legendFormat": "Connect 2XX",
@@ -806,7 +806,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum (rate(${prom_namespace}_http_requests_total{code=~\"1..\", method=\"CONNECT\",$labels}[$__rate_interval])) or on() vector(0)",
+          "expr": "sum (rate(${prom_namespace}_http_requests_total{code=~\"1..\", method=\"CONNECT\", job=~\"$job\", instance=~\"$instance\", $labels}[$__rate_interval])) or on() vector(0)",
           "instant": false,
           "legendFormat": "Connect 1XX",
           "range": true,
@@ -818,7 +818,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum (rate(${prom_namespace}_http_requests_total{code=~\"3..\", method=\"CONNECT\",$labels}[$__rate_interval])) or on() vector(0)",
+          "expr": "sum (rate(${prom_namespace}_http_requests_total{code=~\"3..\", method=\"CONNECT\", job=~\"$job\", instance=~\"$instance\", $labels}[$__rate_interval])) or on() vector(0)",
           "hide": false,
           "instant": false,
           "legendFormat": "Connect 3XX",
@@ -831,7 +831,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum (rate(${prom_namespace}_http_requests_total{code=~\"4..\", method=\"CONNECT\",$labels}[$__rate_interval])) or on () vector(0)",
+          "expr": "sum (rate(${prom_namespace}_http_requests_total{code=~\"4..\", method=\"CONNECT\", job=~\"$job\", instance=~\"$instance\", $labels}[$__rate_interval])) or on () vector(0)",
           "hide": false,
           "instant": false,
           "legendFormat": "Connect 4XX",
@@ -844,7 +844,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum (rate(${prom_namespace}_http_requests_total{code=~\"5..\", method=\"CONNECT\",$labels}[$__rate_interval])) or on() vector(0)",
+          "expr": "sum (rate(${prom_namespace}_http_requests_total{code=~\"5..\", method=\"CONNECT\", job=~\"$job\", instance=~\"$instance\", $labels}[$__rate_interval])) or on() vector(0)",
           "hide": false,
           "instant": false,
           "legendFormat": "Connect 5XX",
@@ -1009,7 +1009,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(1, sum by (le) (rate(${prom_namespace}_http_request_duration_seconds_bucket{code=~\"2..\",method!=\"CONNECT\",$labels}[$__rate_interval])))",
+          "expr": "histogram_quantile(1, sum by (le) (rate(${prom_namespace}_http_request_duration_seconds_bucket{code=~\"2..\", method!=\"CONNECT\", job=~\"$job\", instance=~\"$instance\", $labels}[$__rate_interval])))",
           "hide": false,
           "instant": false,
           "legendFormat": "P100",
@@ -1022,7 +1022,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.99, sum by (le) (rate(${prom_namespace}_http_request_duration_seconds_bucket{code=~\"2..\",method!=\"CONNECT\",$labels}[$__rate_interval])))",
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(${prom_namespace}_http_request_duration_seconds_bucket{code=~\"2..\", method!=\"CONNECT\", job=~\"$job\", instance=~\"$instance\", $labels}[$__rate_interval])))",
           "format": "time_series",
           "instant": false,
           "legendFormat": "P99",
@@ -1035,7 +1035,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.95, sum by (le) (rate(${prom_namespace}_http_request_duration_seconds_bucket{code=~\"2..\",method!=\"CONNECT\",$labels}[$__rate_interval])))",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(${prom_namespace}_http_request_duration_seconds_bucket{code=~\"2..\", method!=\"CONNECT\", job=~\"$job\", instance=~\"$instance\", $labels}[$__rate_interval])))",
           "hide": false,
           "instant": false,
           "legendFormat": "P95",
@@ -1048,7 +1048,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.5, sum by (le) (rate(${prom_namespace}_http_request_duration_seconds_bucket{code=~\"2..\",method!=\"CONNECT\",$labels}[$__rate_interval])))",
+          "expr": "histogram_quantile(0.5, sum by (le) (rate(${prom_namespace}_http_request_duration_seconds_bucket{code=~\"2..\", method!=\"CONNECT\", job=~\"$job\", instance=~\"$instance\", $labels}[$__rate_interval])))",
           "hide": false,
           "instant": false,
           "legendFormat": "P50",
@@ -1166,7 +1166,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum (rate(${prom_namespace}_http_requests_total{code=~\"2..\", method!=\"CONNECT\",$labels}[$__rate_interval]))",
+          "expr": "sum (rate(${prom_namespace}_http_requests_total{code=~\"2..\", method!=\"CONNECT\", job=~\"$job\", instance=~\"$instance\", $labels}[$__rate_interval]))",
           "hide": false,
           "instant": false,
           "legendFormat": "2XX",
@@ -1327,7 +1327,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum (rate(${prom_namespace}_http_requests_total{code=~\"1..\", method!=\"CONNECT\",$labels}[$__rate_interval])) or on() vector(0)",
+          "expr": "sum (rate(${prom_namespace}_http_requests_total{code=~\"1..\", method!=\"CONNECT\", job=~\"$job\", instance=~\"$instance\", $labels}[$__rate_interval])) or on() vector(0)",
           "hide": false,
           "instant": false,
           "legendFormat": "1XX",
@@ -1340,7 +1340,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum (rate(${prom_namespace}_http_requests_total{code=~\"3..\", method!=\"CONNECT\",$labels}[$__rate_interval])) or on() vector(0)",
+          "expr": "sum (rate(${prom_namespace}_http_requests_total{code=~\"3..\", method!=\"CONNECT\", job=~\"$job\", instance=~\"$instance\", $labels}[$__rate_interval])) or on() vector(0)",
           "hide": false,
           "instant": false,
           "legendFormat": "3XX",
@@ -1353,7 +1353,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum (rate(${prom_namespace}_http_requests_total{code=~\"4..\", method!=\"CONNECT\",$labels}[$__rate_interval])) or on() vector(0)",
+          "expr": "sum (rate(${prom_namespace}_http_requests_total{code=~\"4..\", method!=\"CONNECT\", job=~\"$job\", instance=~\"$instance\", $labels}[$__rate_interval])) or on() vector(0)",
           "hide": false,
           "instant": false,
           "legendFormat": "4XX",
@@ -1366,7 +1366,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum (rate(${prom_namespace}_http_requests_total{code=~\"5..\", method!=\"CONNECT\",$labels}[$__rate_interval])) or on() vector(0)",
+          "expr": "sum (rate(${prom_namespace}_http_requests_total{code=~\"5..\", method!=\"CONNECT\", job=~\"$job\", instance=~\"$instance\", $labels}[$__rate_interval])) or on() vector(0)",
           "hide": false,
           "instant": false,
           "legendFormat": "5XX",
@@ -1482,7 +1482,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "go_memstats_stack_sys_bytes{$labels}",
+          "expr": "go_memstats_stack_sys_bytes{job=~\"$job\", instance=~\"$instance\", $labels}",
           "hide": false,
           "instant": false,
           "legendFormat": "bytes",
@@ -1584,7 +1584,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "go_memstats_heap_alloc_bytes{$labels}",
+          "expr": "go_memstats_heap_alloc_bytes{job=~\"$job\", instance=~\"$instance\", $labels}",
           "instant": false,
           "legendFormat": "bytes",
           "range": true,
@@ -1681,7 +1681,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "go_memstats_sys_bytes{$labels}",
+          "expr": "go_memstats_sys_bytes{job=~\"$job\", instance=~\"$instance\", $labels}",
           "instant": false,
           "legendFormat": "bytes",
           "range": true,
@@ -1779,7 +1779,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "rate(${prom_namespace}_process_cpu_seconds_total{$labels}[$__rate_interval])",
+          "expr": "rate(${prom_namespace}_process_cpu_seconds_total{job=~\"$job\", instance=~\"$instance\", $labels}[$__rate_interval])",
           "instant": false,
           "legendFormat": "CPU",
           "range": true,
@@ -1880,7 +1880,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "rate(go_gc_duration_seconds_sum{$labels}[$__rate_interval])",
+          "expr": "rate(go_gc_duration_seconds_sum{job=~\"$job\", instance=~\"$instance\", $labels}[$__rate_interval])",
           "instant": false,
           "legendFormat": "pause",
           "range": true,
@@ -1950,7 +1950,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "go_threads{$labels}",
+          "expr": "go_threads{job=~\"$job\", instance=~\"$instance\", $labels}",
           "instant": false,
           "legendFormat": "__auto",
           "range": true,
@@ -2056,7 +2056,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "go_goroutines{$labels}",
+          "expr": "go_goroutines{job=~\"$job\", instance=~\"$instance\", $labels}",
           "instant": false,
           "legendFormat": "goroutines",
           "range": true,
@@ -2137,7 +2137,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "${prom_namespace}_version{$labels}",
+          "expr": "${prom_namespace}_version{job=~\"$job\", instance=~\"$instance\", $labels}",
           "instant": false,
           "legendFormat": "Version={{version}} Time={{time}} Commit={{commit}}",
           "range": true,
@@ -2205,7 +2205,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "go_info{$labels}",
+          "expr": "go_info{job=~\"$job\", instance=~\"$instance\", $labels}",
           "instant": false,
           "legendFormat": "{{version}}",
           "range": true,
@@ -2253,12 +2253,64 @@
         "type": "custom"
       },
       {
+        "allValue": ".+",
+        "current": {},
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "definition": "label_values(go_info, job)",
+        "hide": 0,
+        "includeAll": true,
+        "label": "job",
+        "multi": true,
+        "name": "job",
+        "options": [],
+        "query": {
+          "query": "label_values(go_info, job)"
+        },
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "tagValuesQuery": "",
+        "tagsQuery": "",
+        "type": "query",
+        "useTags": false
+      },
+      {
+        "allValue": ".+",
+        "current": {},
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "definition": "label_values(go_info{job=~\"$job\"}, instance)",
+        "hide": 0,
+        "includeAll": true,
+        "label": "instance",
+        "multi": true,
+        "name": "instance",
+        "options": [],
+        "query": {
+          "query": "label_values(go_info{job=~\"$job\"}, instance)"
+        },
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "tagValuesQuery": "",
+        "tagsQuery": "",
+        "type": "query",
+        "useTags": false
+      },
+      {
         "current": {
           "selected": false,
           "text": "",
           "value": ""
         },
-        "description": "Use it to provide custom labels and filter Forwarder data.\nExample: `job=\"forwarder\", namespace=\"my-namespace\"`.",
+        "description": "Use it to provide custom labels and filter Forwarder data.\nExample: namespace=\"my-namespace\"`.",
         "hide": 0,
         "name": "labels",
         "options": [
