@@ -9,6 +9,7 @@ package forwarder
 import (
 	"context"
 	"net"
+	"syscall"
 	"time"
 )
 
@@ -21,20 +22,15 @@ type DialConfig struct {
 	// often around 3 minutes.
 	DialTimeout time.Duration
 
-	// KeepAlive specifies the interval between keep-alive
-	// probes for an active network connection.
-	// If zero, keep-alive probes are sent with a default value
-	// (currently 15 seconds), if supported by the protocol and operating
-	// system. Network protocols or operating systems that do
-	// not support keep-alives ignore this field.
-	// If negative, keep-alive probes are disabled.
-	KeepAlive time.Duration
+	// KeepAlive enables TCP keep-alive probes for an active network connection.
+	// The keep-alive probes are sent with OS specific intervals.
+	KeepAlive bool
 }
 
 func DefaultDialConfig() *DialConfig {
 	return &DialConfig{
 		DialTimeout: 10 * time.Second,
-		KeepAlive:   30 * time.Second,
+		KeepAlive:   true,
 	}
 }
 
@@ -43,14 +39,22 @@ type Dialer struct {
 }
 
 func NewDialer(cfg *DialConfig) *Dialer {
-	return &Dialer{
-		net.Dialer{
-			Timeout:   cfg.DialTimeout,
-			KeepAlive: cfg.KeepAlive,
-			Resolver: &net.Resolver{
-				PreferGo: true,
-			},
+	nd := net.Dialer{
+		Timeout:   cfg.DialTimeout,
+		KeepAlive: -1,
+		Resolver: &net.Resolver{
+			PreferGo: true,
 		},
+	}
+
+	if cfg.KeepAlive {
+		nd.Control = func(network, address string, c syscall.RawConn) error {
+			return c.Control(enableTCPKeepAlive)
+		}
+	}
+
+	return &Dialer{
+		nd: nd,
 	}
 }
 
