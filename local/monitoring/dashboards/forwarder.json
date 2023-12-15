@@ -2460,7 +2460,7 @@
           "refId": "A"
         }
       ],
-      "title": "Forwarder Version",
+      "title": "Build",
       "transparent": true,
       "type": "stat"
     },
