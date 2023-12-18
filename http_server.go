@@ -232,7 +232,7 @@ func (hs *HTTPServer) Run(ctx context.Context) error {
 func (hs *HTTPServer) listen() (net.Listener, error) {
 	switch hs.config.Protocol {
 	case HTTPScheme, HTTPSScheme, HTTP2Scheme:
-		listener, err := net.Listen("tcp", hs.srv.Addr)
+		listener, err := Listen("tcp", hs.srv.Addr)
 		if err != nil {
 			return nil, fmt.Errorf("failed to open listener on address %s: %w", hs.srv.Addr, err)
 		}

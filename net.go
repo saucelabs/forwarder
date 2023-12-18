@@ -61,3 +61,20 @@ func NewDialer(cfg *DialConfig) *Dialer {
 func (d *Dialer) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
 	return d.nd.DialContext(ctx, network, address)
 }
+
+func defaultListenConfig() *net.ListenConfig {
+	return &net.ListenConfig{
+		KeepAlive: -1,
+		Control: func(network, address string, c syscall.RawConn) error {
+			return c.Control(enableTCPKeepAlive)
+		},
+	}
+}
+
+// Listen creates a listener for the provided network and address and configures OS-specific keep-alive parameters.
+// See net.Listen for more information.
+func Listen(network, address string) (net.Listener, error) {
+	// The context cancellation does not close the listener.
+	// I asked about it here: https://groups.google.com/g/golang-nuts/c/Q1I7Viz9AJc
+	return defaultListenConfig().Listen(context.Background(), network, address)
+}
