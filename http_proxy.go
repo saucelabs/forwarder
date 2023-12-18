@@ -599,7 +599,7 @@ func (hp *HTTPProxy) Run(ctx context.Context) error {
 }
 
 func (hp *HTTPProxy) listen() (net.Listener, error) {
-	listener, err := net.Listen("tcp", hp.config.Addr)
+	listener, err := Listen("tcp", hp.config.Addr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open listener on address %s: %w", hp.config.Addr, err)
 	}
