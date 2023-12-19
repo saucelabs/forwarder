@@ -144,9 +144,9 @@ type HTTPProxy struct {
 	proxy      *martian.Proxy
 	mitmCACert *x509.Certificate
 	proxyFunc  ProxyFunc
-	listener   net.Listener
 
-	TLSConfig *tls.Config
+	tlsConfig *tls.Config
+	listener  net.Listener
 }
 
 // NewHTTPProxy creates a new HTTP proxy.
@@ -224,9 +224,9 @@ func (hp *HTTPProxy) configureHTTPS() error {
 		hp.log.Debugf("loading TLS certificate from %s and %s", hp.config.CertFile, hp.config.KeyFile)
 	}
 
-	hp.TLSConfig = httpsTLSConfigTemplate()
+	hp.tlsConfig = httpsTLSConfigTemplate()
 
-	return hp.config.ConfigureTLSConfig(hp.TLSConfig)
+	return hp.config.ConfigureTLSConfig(hp.tlsConfig)
 }
 
 func (hp *HTTPProxy) configureProxy() error {
@@ -615,7 +615,7 @@ func (hp *HTTPProxy) listen() (net.Listener, error) {
 	case HTTPScheme:
 		return listener, nil
 	case HTTPSScheme, HTTP2Scheme:
-		return tls.NewListener(listener, hp.TLSConfig), nil
+		return tls.NewListener(listener, hp.tlsConfig), nil
 	default:
 		listener.Close()
 		return nil, fmt.Errorf("invalid protocol %q", hp.config.Protocol)
