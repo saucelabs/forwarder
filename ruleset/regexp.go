@@ -77,8 +77,15 @@ type RegexpListItem struct {
 	exclude bool
 }
 
+var allRegexp = regexp.MustCompile(`.*`)
+
 func ParseRegexpListItem(val string) (RegexpListItem, error) {
 	val, exclude := strings.CutPrefix(val, "-")
+
+	if val == "all" {
+		return RegexpListItem{allRegexp, exclude}, nil
+	}
+
 	r, err := regexp.Compile(val)
 	if err != nil {
 		return RegexpListItem{}, err

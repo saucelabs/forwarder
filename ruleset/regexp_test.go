@@ -148,6 +148,13 @@ func TestParseRegexpListItem(t *testing.T) {
 				exclude: true,
 			},
 		},
+		{
+			name:  "all literal",
+			input: "all",
+			expected: RegexpListItem{
+				Regexp: allRegexp,
+			},
+		},
 	}
 
 	for i := range tests {
