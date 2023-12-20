@@ -74,7 +74,7 @@ func (r *RegexpMatcher) match(s string) bool {
 
 type RegexpListItem struct {
 	*regexp.Regexp
-	exclude bool
+	Exclude bool
 }
 
 func ParseRegexpListItem(val string) (RegexpListItem, error) {
@@ -87,7 +87,7 @@ func ParseRegexpListItem(val string) (RegexpListItem, error) {
 }
 
 func (r RegexpListItem) String() string {
-	if r.exclude {
+	if r.Exclude {
 		return "-" + r.Regexp.String()
 	}
 	return r.Regexp.String()
@@ -96,7 +96,7 @@ func (r RegexpListItem) String() string {
 func NewRegexpMatcherFromList(l []RegexpListItem) (*RegexpMatcher, error) {
 	var include, exclude []*regexp.Regexp
 	for i := range l {
-		if l[i].exclude {
+		if l[i].Exclude {
 			exclude = append(exclude, l[i].Regexp)
 		} else {
 			include = append(include, l[i].Regexp)

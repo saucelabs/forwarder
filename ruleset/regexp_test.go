@@ -145,7 +145,7 @@ func TestParseRegexpListItem(t *testing.T) {
 			input: "-foo",
 			expected: RegexpListItem{
 				Regexp:  regexp.MustCompile("foo"),
-				exclude: true,
+				Exclude: true,
 			},
 		},
 	}
@@ -160,8 +160,8 @@ func TestParseRegexpListItem(t *testing.T) {
 			if r.Regexp.String() != tc.expected.Regexp.String() {
 				t.Errorf("expected regexp %q, got %q", tc.expected.Regexp.String(), r.Regexp.String())
 			}
-			if r.exclude != tc.expected.exclude {
-				t.Errorf("expected exclude %v, got %v", tc.expected.exclude, r.exclude)
+			if r.Exclude != tc.expected.Exclude {
+				t.Errorf("expected exclude %v, got %v", tc.expected.Exclude, r.Exclude)
 			}
 		})
 	}
