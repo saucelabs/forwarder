@@ -59,7 +59,7 @@ func TestHTTPProxyDialerDialContext(t *testing.T) {
 		}
 	})
 
-	t.Run("connect status 404", func(t *testing.T) {
+	t.Run("status 404", func(t *testing.T) {
 		errCh := make(chan error, 1)
 		go func() {
 			errCh <- serveOne(l, func(conn net.Conn) error {
