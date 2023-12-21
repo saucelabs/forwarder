@@ -8,6 +8,7 @@ package dialvia
 
 import (
 	"bufio"
+	"fmt"
 	"net"
 	"net/http"
 	"net/url"
@@ -80,6 +81,50 @@ func TestHTTPProxyDialerDialContext(t *testing.T) {
 			t.Fatal("conn is not nil")
 		}
 
+		if err := <-errCh; err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	t.Run("response with data", func(t *testing.T) {
+		errCh := make(chan error, 1)
+		go func() {
+			errCh <- serveOne(l, func(conn net.Conn) error {
+				pbr := bufio.NewReader(conn)
+				req, err := http.ReadRequest(pbr)
+				if err != nil {
+					return err
+				}
+
+				// Write a response with data.
+				pbw := bufio.NewWriter(conn)
+				proxyutil.NewResponse(200, nil, req).Write(pbw)
+				for i := 0; i < 100; i++ {
+					fmt.Fprintf(pbw, "hello %d\n", i)
+				}
+				return pbw.Flush()
+			})
+		}()
+
+		conn, err := d.DialContext(ctx, "tcp", "foobar.com:80")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if conn == nil {
+			t.Fatal("conn is nil")
+		}
+
+		n := 0
+		s := bufio.NewScanner(conn)
+		for s.Scan() {
+			n++
+		}
+		if err := s.Err(); err != nil {
+			t.Fatal(err)
+		}
+		if n != 100 {
+			t.Fatalf("n=%d, want 100", n)
+		}
 		if err := <-errCh; err != nil {
 			t.Fatal(err)
 		}
