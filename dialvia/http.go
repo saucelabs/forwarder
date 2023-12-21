@@ -107,7 +107,7 @@ func (d *HTTPProxyDialer) DialContextR(ctx context.Context, network, addr string
 		conn = tls.Client(conn, d.tlsConfig)
 	}
 
-	pbw := bufio.NewWriterSize(conn, 1024)
+	pbw := bufio.NewWriterSize(conn, 512)
 	pbr := bufio.NewReaderSize(byteReader{conn}, 1)
 
 	req := http.Request{
