@@ -81,3 +81,12 @@ endif
 
 LICENSE.3RD_PARTY: LICENSE.3RD_PARTY.tpl go.mod go.sum
 	@go-licenses report ./cmd/forwarder --template LICENSE.3RD_PARTY.tpl --ignore $(shell go list .) --ignore golang.org > LICENSE.3RD_PARTY
+
+.forwarder.yaml:
+	@cp .forwarder.yaml.example .forwarder.yaml
+
+.PHONY: run
+run: .forwarder.yaml
+run:
+	@go run --race ./cmd/forwarder run --config-file .forwarder.yaml
+

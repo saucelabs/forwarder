@@ -1,0 +1,3 @@
+address: localhost:3128
+log-level: debug
+log-http: headers,api:errors
