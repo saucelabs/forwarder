@@ -8,7 +8,9 @@ package dialvia
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"net/url"
@@ -187,4 +189,52 @@ func serveOne(l net.Listener, h func(conn net.Conn) error) error {
 	defer conn.Close()
 
 	return h(conn)
+}
+
+func BenchmarkHTTPProxyDialer_DialContextR(b *testing.B) {
+	b.Run("status 200", func(b *testing.B) {
+		var buf bytes.Buffer
+		resp := proxyutil.NewResponse(200, nil, nil)
+		resp.Write(&buf)
+		benchmarkHTTPProxyDialerDialContextR(b, buf.Bytes())
+	})
+
+	b.Run("status 403", func(b *testing.B) {
+		var buf bytes.Buffer
+		resp := proxyutil.NewResponse(403, bytes.NewBufferString("proxying is denied to host \"foobar\"\nproxying denied"), nil)
+		resp.Header.Set("Content-Type", "text/plain; charset=utf-8")
+		resp.Header.Set("X-Forwarder-Error", "proxying denied")
+		resp.Write(&buf)
+		benchmarkHTTPProxyDialerDialContextR(b, buf.Bytes())
+	})
+}
+
+func benchmarkHTTPProxyDialerDialContextR(b *testing.B, resp []byte) {
+	b.Helper()
+
+	mockDialer := func(ctx context.Context, network, addr string) (net.Conn, error) {
+		c0, c1 := net.Pipe()
+		go func() {
+			defer c0.Close()
+			if _, err := io.CopyN(io.Discard, c0, 55); err != nil {
+				b.Errorf("CopyN: %v", err)
+			}
+			if _, err := c0.Write(resp); err != nil {
+				b.Errorf("Write: %v", err)
+			}
+		}()
+		return c1, nil
+	}
+
+	d := HTTPProxy(mockDialer, &url.URL{Scheme: "http", Host: "foobar.com:80"})
+	ctx := context.Background()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_, _, err := d.DialContextR(ctx, "tcp", "foobar.com:80")
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+	b.StopTimer()
 }
