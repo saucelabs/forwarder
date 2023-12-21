@@ -51,3 +51,6 @@ tags
 
 # scratch repo to hack
 /scratch
+
+## Local config file
+.forwarder.yaml
