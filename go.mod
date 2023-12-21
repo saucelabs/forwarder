@@ -3,7 +3,7 @@ module github.com/saucelabs/forwarder
 go 1.20
 
 require (
-	github.com/dop251/goja v0.0.0-20230919151941-fc55792775de
+	github.com/dop251/goja v0.0.0-20231027120936-b396bb4c349d
 	github.com/golang/snappy v0.0.4
 	github.com/google/go-cmp v0.6.0
 	github.com/google/go-github/v56 v56.0.0
