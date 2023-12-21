@@ -1762,10 +1762,13 @@
       "id": 18,
       "options": {
         "legend": {
-          "calcs": [],
+          "calcs": [
+            "mean",
+            "max"
+          ],
           "displayMode": "list",
-          "placement": "right",
-          "showLegend": false
+          "placement": "bottom",
+          "showLegend": true
         },
         "tooltip": {
           "mode": "single",
