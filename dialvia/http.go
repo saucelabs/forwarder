@@ -12,6 +12,7 @@ import (
 	"crypto/tls"
 	"encoding/base64"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"net/http/httputil"
@@ -107,7 +108,7 @@ func (d *HTTPProxyDialer) DialContextR(ctx context.Context, network, addr string
 	}
 
 	pbw := bufio.NewWriterSize(conn, 1024)
-	pbr := bufio.NewReaderSize(conn, 1024)
+	pbr := bufio.NewReaderSize(byteReader{conn}, 1)
 
 	req := http.Request{
 		Method: http.MethodConnect,
@@ -162,4 +163,12 @@ func (d *HTTPProxyDialer) DialContextR(ctx context.Context, network, addr string
 	case res := <-resCh:
 		return res, conn, nil
 	}
+}
+
+type byteReader struct {
+	r io.Reader
+}
+
+func (r byteReader) Read(p []byte) (int, error) {
+	return r.r.Read(p[:1])
 }
