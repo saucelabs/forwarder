@@ -18,7 +18,7 @@ Other commands are available as well, but you will need to start them manually.
 {{< tabs "debian-install" >}}
 {{< tab "ARM64" >}}
 ```bash
-curl -L -o forwarder.deb {{< data "latest" "linux_ARM6464.deb" >}}
+curl -L -o forwarder.deb {{< data "latest" "linux_arm64.deb" >}}
 sudo dpkg -i forwarder.deb
 ```
 {{< /tab >}}
