@@ -1,5 +1,5 @@
 +++
-description = "Forwarder is fast MITM proxy with PAC support. It's suitable for debugging, intercepting and manipulating HTTP traffic."
+description = "Forwarder is a production-ready, fast MITM proxy with PAC support. It's suitable for debugging, intercepting and manipulating HTTP traffic. It's used as a core component of Sauce Labs Sauce Connect Proxy."
 +++
 
 # Forwarder Proxy
@@ -9,7 +9,7 @@ description = "Forwarder is fast MITM proxy with PAC support. It's suitable for 
 [![GitHub Repo stars](https://img.shields.io/github/stars/saucelabs/forwarder)](https://github.com/saucelabs/forwarder/)
 [![GitHub release](https://img.shields.io/github/release/saucelabs/forwarder.svg)](https://github.com/saucelabs/forwarder/releases)
 
-Forwarder is fast MITM proxy with PAC support.
+Forwarder is a production-ready, fast MITM proxy with PAC support.
 It's suitable for debugging, intercepting and manipulating HTTP traffic.
 It's used as a core component of Sauce Labs [Sauce Connect Proxy](https://docs.saucelabs.com/secure-connections/sauce-connect/).
 It is a forward proxy, which means it proxies traffic from clients to servers (e.g. browsers to websites), and supports `CONNECT` requests.
