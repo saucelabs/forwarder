@@ -703,9 +703,9 @@ func (p *Proxy) handle(ctx *Context, conn net.Conn, brw *bufio.ReadWriter) error
 		}
 
 		if isClosedConnError(err) {
-			log.Debugf(context.TODO(), "connection closed prematurely: %v", err)
+			log.Debugf(context.TODO(), "connection closed prematurely while reading request: %v", err)
 		} else {
-			log.Errorf(context.TODO(), "failed to read request: %v", err)
+			log.Errorf(context.TODO(), "got error while reading request: %v", err)
 		}
 		return errClose
 	}
@@ -806,26 +806,35 @@ func (p *Proxy) handle(ctx *Context, conn net.Conn, brw *bufio.ReadWriter) error
 		return p.handleUpgradeResponse(res, brw, conn)
 	}
 
-	if closing := p.writeResponse(res, brw, conn); closing {
+	if err := p.writeResponse(res, brw, conn); err != nil {
+		if errors.Is(err, errClose) {
+			return errClose
+		}
+
+		if isClosedConnError(err) {
+			log.Debugf(req.Context(), "connection closed prematurely while writing response: %v", err)
+		} else {
+			log.Errorf(req.Context(), "got error while writing response: %v", err)
+		}
 		return errClose
 	}
 
 	return nil
 }
 
-func (p *Proxy) writeResponse(res *http.Response, brw *bufio.ReadWriter, conn net.Conn) (closing bool) {
+func (p *Proxy) writeResponse(res *http.Response, brw *bufio.ReadWriter, conn net.Conn) error {
 	req := res.Request
 
 	if p.WriteTimeout > 0 {
 		if deadlineErr := conn.SetWriteDeadline(time.Now().Add(p.WriteTimeout)); deadlineErr != nil {
 			log.Errorf(req.Context(), "can't set write deadline: %v", deadlineErr)
 		}
+		defer conn.SetWriteDeadline(time.Time{})
 	}
 
 	if !req.ProtoAtLeast(1, 1) || req.Close || res.Close || p.Closing() {
 		log.Debugf(req.Context(), "received close request: %v", req.RemoteAddr)
 		res.Close = true
-		closing = true
 	}
 
 	var err error
@@ -845,26 +854,19 @@ func (p *Proxy) writeResponse(res *http.Response, brw *bufio.ReadWriter, conn ne
 		}
 	}
 	if err != nil {
-		log.Errorf(req.Context(), "got error while writing response back to client: %v", err)
-		if errors.Is(err, io.ErrUnexpectedEOF) {
-			closing = true
-		}
-	}
-	err = brw.Flush()
-	if err != nil {
-		log.Errorf(req.Context(), "got error while flushing response back to client: %v", err)
+		brw.Flush() // flush any remaining data
+		return err
 	}
 
-	if err := req.Body.Close(); err != nil {
-		log.Errorf(req.Context(), "failed to close request body: %v", err)
-		closing = true
-	}
-	if err := res.Body.Close(); err != nil {
-		log.Errorf(req.Context(), "failed to close response body: %v", err)
-		closing = true
+	if err := brw.Flush(); err != nil {
+		return err
 	}
 
-	return
+	if res.Close {
+		return errClose
+	}
+
+	return nil
 }
 
 // A peekedConn subverts the net.Conn.Read implementation, primarily so that
