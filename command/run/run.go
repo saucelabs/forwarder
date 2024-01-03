@@ -73,11 +73,7 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 	}()
 
 	logger.Infof("Forwarder %s (%s)", version.Version, version.Commit)
-	if limit, ok := os.LookupEnv("GOMEMLIMIT"); ok {
-		logger.Debugf("resource limits: GOMAXPROCS=%d GOMEMLIMIT=%s", runtime.GOMAXPROCS(0), limit)
-	} else {
-		logger.Debugf("resource limits: GOMAXPROCS=%d", runtime.GOMAXPROCS(0))
-	}
+	logger.Debugf("resource limits: GOMAXPROCS=%d GOMEMLIMIT=%s", runtime.GOMAXPROCS(0), os.Getenv("GOMEMLIMIT"))
 
 	var ep []forwarder.APIEndpoint
 

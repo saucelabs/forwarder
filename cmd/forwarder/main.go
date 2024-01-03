@@ -18,6 +18,9 @@ func main() {
 	if _, err := maxprocs.Set(maxprocs.Logger(nil)); err != nil {
 		fmt.Fprintf(os.Stderr, "failed to set GOMAXPROCS: %v\n", err)
 	}
+	if _, ok := os.LookupEnv("GOMEMLIMIT"); !ok {
+		os.Setenv("GOMEMLIMIT", "250MiB")
+	}
 
 	if err := forwarder.Command().Execute(); err != nil {
 		os.WriteFile("/dev/termination-log", []byte(err.Error()), 0o644) //nolint // best effort
