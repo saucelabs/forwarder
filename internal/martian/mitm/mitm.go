@@ -27,9 +27,11 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"errors"
+	"hash/maphash"
 	"math/big"
 	"net"
 	"net/http"
+	"runtime"
 	"sync"
 	"time"
 
@@ -56,8 +58,9 @@ type Config struct {
 	skipVerify             bool
 	handshakeErrorCallback func(*http.Request, error)
 
-	certmu sync.RWMutex
-	certs  map[string]*tls.Certificate
+	certmu   []sync.Mutex
+	certSeed maphash.Seed
+	certs    sync.Map
 }
 
 // NewAuthority creates a new CA certificate and associated
@@ -145,8 +148,10 @@ func NewConfig(ca *x509.Certificate, privateKey any) (*Config, error) {
 		keyID:    keyID,
 		validity: time.Hour,
 		org:      "Martian Proxy",
-		certs:    make(map[string]*tls.Certificate),
 		roots:    roots,
+
+		certmu:   make([]sync.Mutex, 8*runtime.GOMAXPROCS(0)),
+		certSeed: maphash.MakeSeed(),
 	}, nil
 }
 
@@ -245,26 +250,21 @@ func (c *Config) cert(hostname string) (*tls.Certificate, error) {
 		hostname = host
 	}
 
-	c.certmu.RLock()
-	tlsc, ok := c.certs[hostname]
-	c.certmu.RUnlock()
-
-	if ok {
-		log.Debugf(context.TODO(), "mitm: cache hit for %s", hostname)
-
-		// Check validity of the certificate for hostname match, expiry, etc. In
-		// particular, if the cached certificate has expired, create a new one.
-		if _, err := tlsc.Leaf.Verify(x509.VerifyOptions{
-			DNSName: hostname,
-			Roots:   c.roots,
-		}); err == nil {
-			return tlsc, nil
-		}
-
-		log.Debugf(context.TODO(), "mitm: invalid certificate in cache for %s", hostname)
+	if tlsc := c.cachedCert(hostname); tlsc != nil {
+		return tlsc, nil
 	}
 
 	log.Debugf(context.TODO(), "mitm: cache miss for %s", hostname)
+
+	// Lock the shard for the hostname.
+	shard := maphash.String(c.certSeed, hostname) % uint64(len(c.certmu))
+	c.certmu[shard].Lock()
+	defer c.certmu[shard].Unlock()
+
+	// Check again in case another goroutine has already created the cert.
+	if tlsc := c.cachedCert(hostname); tlsc != nil {
+		return tlsc, nil
+	}
 
 	serial, err := rand.Int(rand.Reader, MaxSerialNumber)
 	if err != nil {
@@ -302,15 +302,33 @@ func (c *Config) cert(hostname string) (*tls.Certificate, error) {
 		return nil, err
 	}
 
-	tlsc = &tls.Certificate{
+	tlsc := &tls.Certificate{
 		Certificate: [][]byte{raw, c.ca.Raw},
 		PrivateKey:  c.priv,
 		Leaf:        x509c,
 	}
 
-	c.certmu.Lock()
-	c.certs[hostname] = tlsc
-	c.certmu.Unlock()
+	c.certs.Store(hostname, tlsc)
 
 	return tlsc, nil
+}
+
+func (c *Config) cachedCert(hostname string) *tls.Certificate {
+	ptr, ok := c.certs.Load(hostname)
+	if !ok {
+		return nil
+	}
+
+	// Check validity of the certificate for hostname match, expiry, etc. In
+	// particular, if the cached certificate has expired, create a new one.
+	tlsc := ptr.(*tls.Certificate)
+	if _, err := tlsc.Leaf.Verify(x509.VerifyOptions{
+		DNSName: hostname,
+		Roots:   c.roots,
+	}); err == nil {
+		return tlsc
+	}
+
+	log.Debugf(context.TODO(), "mitm: invalid certificate in cache for %s", hostname)
+	return nil
 }
