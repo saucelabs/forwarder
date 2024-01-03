@@ -331,9 +331,6 @@ func (p proxyHandler) handleRequest(ctx *Context, rw http.ResponseWriter, req *h
 		log.Debugf(req.Context(), "received close request: %v", req.RemoteAddr)
 		res.Close = true
 	}
-	if p.CloseAfterReply {
-		res.Close = true
-	}
 
 	// deal with 101 Switching Protocols responses: (WebSocket, h2c, etc)
 	if res.StatusCode == http.StatusSwitchingProtocols {
