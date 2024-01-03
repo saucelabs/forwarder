@@ -95,7 +95,6 @@ type HTTPProxyConfig struct {
 	ResponseModifiers      []ResponseModifier
 	ConnectRequestModifier func(*http.Request) error
 	ConnectFunc            ConnectFunc
-	CloseAfterReply        bool
 	ReadLimit              SizeSuffix
 	WriteLimit             SizeSuffix
 
@@ -258,7 +257,6 @@ func (hp *HTTPProxy) configureProxy() error {
 	hp.proxy.ConnectFunc = hp.config.ConnectFunc
 	hp.proxy.WithoutWarning = true
 	hp.proxy.ErrorResponse = hp.errorResponse
-	hp.proxy.CloseAfterReply = hp.config.CloseAfterReply
 	hp.proxy.ReadTimeout = hp.config.ReadTimeout
 	hp.proxy.ReadHeaderTimeout = hp.config.ReadHeaderTimeout
 	hp.proxy.WriteTimeout = hp.config.WriteTimeout
