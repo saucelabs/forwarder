@@ -17,8 +17,10 @@ package mitm
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"fmt"
 	"net"
 	"reflect"
+	"sync"
 	"testing"
 	"time"
 )
@@ -205,5 +207,79 @@ func TestCert(t *testing.T) {
 
 	if got, want := x509c.IPAddresses[0], net.ParseIP("10.0.0.1"); !got.Equal(want) {
 		t.Fatalf("x509c.IPAddresses: got %v, want %v", got, want)
+	}
+}
+
+func BenchmarkCert(b *testing.B) {
+	ca, priv, err := NewAuthority("martian.proxy", "Martian Authority", 24*time.Hour)
+	if err != nil {
+		b.Fatalf("NewAuthority(): got %v, want no error", err)
+	}
+
+	c, err := NewConfig(ca, priv)
+	if err != nil {
+		b.Fatalf("NewConfig(): got %v, want no error", err)
+	}
+
+	c.SetValidity(20 * time.Hour)
+	c.SetOrganization("Test Organization")
+
+	conf := c.TLS()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		var wg sync.WaitGroup
+		wg.Add(100)
+		for j := 0; j < 100; j++ {
+			go func(serverName string) {
+				clientHello := tls.ClientHelloInfo{
+					ServerName: serverName,
+				}
+
+				_, err = conf.GetCertificate(&clientHello)
+				if err != nil {
+					b.Errorf("conf.GetCertificate(): got %v, want no error", err)
+				}
+				wg.Done()
+			}(fmt.Sprintf("server-%d-%d", i, j))
+		}
+		wg.Wait()
+	}
+}
+
+func BenchmarkCert2(b *testing.B) {
+	ca, priv, err := NewAuthority("martian.proxy", "Martian Authority", 24*time.Hour)
+	if err != nil {
+		b.Fatalf("NewAuthority(): got %v, want no error", err)
+	}
+
+	c, err := NewConfig(ca, priv)
+	if err != nil {
+		b.Fatalf("NewConfig(): got %v, want no error", err)
+	}
+
+	c.SetValidity(20 * time.Hour)
+	c.SetOrganization("Test Organization")
+
+	conf := c.TLS()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		var wg sync.WaitGroup
+		wg.Add(100)
+		for j := 0; j < 100; j++ {
+			go func(serverName string) {
+				clientHello := tls.ClientHelloInfo{
+					ServerName: serverName,
+				}
+
+				_, err = conf.GetCertificate(&clientHello)
+				if err != nil {
+					b.Errorf("conf.GetCertificate(): got %v, want no error", err)
+				}
+				wg.Done()
+			}(fmt.Sprintf("server-%d", j))
+		}
+		wg.Wait()
 	}
 }
