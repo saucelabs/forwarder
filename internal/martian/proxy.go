@@ -476,7 +476,7 @@ func (p *Proxy) handleMITM(ctx *Context, req *http.Request, session *Session, br
 
 	b, err := brw.Peek(1)
 	if err != nil {
-		if errors.Is(err, io.EOF) {
+		if isClosedConnError(err) {
 			log.Debugf(req.Context(), "mitm: connection closed prematurely: %v", err)
 		} else {
 			log.Errorf(req.Context(), "mitm: failed to peek connection %s: %v", req.Host, err)
@@ -499,7 +499,7 @@ func (p *Proxy) handleMITM(ctx *Context, req *http.Request, session *Session, br
 
 		if err := tlsconn.Handshake(); err != nil {
 			p.mitm.HandshakeErrorCallback(req, err)
-			if errors.Is(err, io.EOF) {
+			if isClosedConnError(err) {
 				log.Debugf(req.Context(), "mitm: connection closed prematurely: %v", err)
 			} else {
 				log.Errorf(req.Context(), "mitm: failed to handshake connection %s: %v", req.Host, err)
