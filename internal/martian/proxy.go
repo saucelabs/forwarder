@@ -124,6 +124,10 @@ type Proxy struct {
 	// MITMFilter specifies a function to determine whether a CONNECT request should be MITMed.
 	MITMFilter func(*http.Request) bool
 
+	// MITMTLSHandshakeTimeout specifies the maximum amount of time to wait for a TLS handshake for a MITMed connection.
+	// Zero means no timeout.
+	MITMTLSHandshakeTimeout time.Duration
+
 	// WithoutWarning disables the warning header added to requests and responses when modifier errors occur.
 	WithoutWarning bool
 
@@ -512,7 +516,15 @@ func (p *Proxy) handleMITM(ctx *Context, req *http.Request, session *Session, br
 			io.MultiReader(bytes.NewReader(buf), conn),
 		}, p.mitm.TLSForHost(req.Host))
 
-		if err := tlsconn.Handshake(); err != nil {
+		var hctx context.Context
+		if p.MITMTLSHandshakeTimeout > 0 {
+			var hcancel context.CancelFunc
+			hctx, hcancel = context.WithTimeout(req.Context(), p.MITMTLSHandshakeTimeout)
+			defer hcancel()
+		} else {
+			hctx = req.Context()
+		}
+		if err = tlsconn.HandshakeContext(hctx); err != nil {
 			p.mitm.HandshakeErrorCallback(req, err)
 			if isClosedConnError(err) {
 				log.Debugf(req.Context(), "mitm: connection closed prematurely: %v", err)
