@@ -1672,6 +1672,76 @@ func TestHTTPThroughConnectWithMITM(t *testing.T) {
 	}
 }
 
+func TestTLSHandshakeTimeoutWithMITM(t *testing.T) {
+	t.Parallel()
+
+	l := newListener(t)
+	p := NewProxy()
+	p.MITMTLSHandshakeTimeout = 200 * time.Millisecond
+	defer p.Close()
+
+	tm := martiantest.NewModifier()
+	tm.RequestFunc(func(req *http.Request) {
+		ctx := NewContext(req)
+		ctx.SkipRoundTrip()
+
+		if req.Method != http.MethodGet && req.Method != http.MethodConnect {
+			t.Errorf("unexpected method on request handler: %v", req.Method)
+		}
+	})
+	p.SetRequestModifier(tm)
+
+	ca, priv, err := mitm.NewAuthority("martian.proxy", "Martian Authority", 2*time.Hour)
+	if err != nil {
+		t.Fatalf("mitm.NewAuthority(): got %v, want no error", err)
+	}
+
+	mc, err := mitm.NewConfig(ca, priv)
+	if err != nil {
+		t.Fatalf("mitm.NewConfig(): got %v, want no error", err)
+	}
+	p.SetMITM(mc)
+
+	go serve(p, l)
+
+	conn, err := l.dial()
+	if err != nil {
+		t.Fatalf("net.Dial(): got %v, want no error", err)
+	}
+	defer conn.Close()
+
+	req, err := http.NewRequest(http.MethodConnect, "//example.com:80", http.NoBody)
+	if err != nil {
+		t.Fatalf("http.NewRequest(): got %v, want no error", err)
+	}
+
+	// CONNECT example.com:80 HTTP/1.1
+	// Host: example.com
+	if err := req.Write(conn); err != nil {
+		t.Fatalf("req.Write(): got %v, want no error", err)
+	}
+
+	// Response skipped round trip.
+	res, err := http.ReadResponse(bufio.NewReader(conn), req)
+	if err != nil {
+		t.Fatalf("http.ReadResponse(): got %v, want no error", err)
+	}
+	res.Body.Close()
+
+	if got, want := res.StatusCode, 200; got != want {
+		t.Errorf("res.StatusCode: got %d, want %d", got, want)
+	}
+
+	if _, err := conn.Write([]byte{22}); err != nil {
+		t.Fatalf("conn.Write(): got %v, want no error", err)
+	}
+
+	time.Sleep(300 * time.Millisecond)
+	if _, err := conn.Read(make([]byte, 1)); !isClosedConnError(err) {
+		t.Fatalf("conn.Read(): got %v, want ClosedConnError", err)
+	}
+}
+
 func TestServerClosesConnection(t *testing.T) {
 	t.Parallel()
 

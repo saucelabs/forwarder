@@ -251,6 +251,7 @@ func (hp *HTTPProxy) configureProxy() error {
 				return hp.config.MITMDomains.Match(req.URL.Hostname())
 			}
 		}
+		hp.proxy.MITMTLSHandshakeTimeout = hp.config.TLSServerConfig.HandshakeTimeout
 	}
 
 	hp.proxy.AllowHTTP = true
