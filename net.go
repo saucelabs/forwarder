@@ -8,9 +8,13 @@ package forwarder
 
 import (
 	"context"
+	"crypto/tls"
 	"net"
 	"syscall"
 	"time"
+
+	"github.com/saucelabs/forwarder/log"
+	"github.com/saucelabs/forwarder/ratelimit"
 )
 
 type DialConfig struct {
@@ -77,4 +81,97 @@ func Listen(network, address string) (net.Listener, error) {
 	// The context cancellation does not close the listener.
 	// I asked about it here: https://groups.google.com/g/golang-nuts/c/Q1I7Viz9AJc
 	return defaultListenConfig().Listen(context.Background(), network, address)
+}
+
+type ListenerCallbacks interface {
+	// OnAccept is called when a new connection is successfully accepted.
+	OnAccept(net.Conn)
+
+	// OnTLSHandshakeError is called after a TLS handshake errors out.
+	OnTLSHandshakeError(*tls.Conn, error)
+}
+
+type Listener struct {
+	Address             string
+	Log                 log.Logger
+	TLSConfig           *tls.Config
+	TLSHandshakeTimeout time.Duration
+	ReadLimit           int64
+	WriteLimit          int64
+	Callbacks           ListenerCallbacks
+
+	listener net.Listener
+}
+
+func (l *Listener) Listen() error {
+	ll, err := Listen("tcp", l.Address)
+	if err != nil {
+		return err
+	}
+
+	if rl, wl := l.ReadLimit, l.WriteLimit; rl > 0 || wl > 0 {
+		// Notice that the ReadLimit stands for the read limit *from* a proxy, and the WriteLimit
+		// stands for the write limit *to* a proxy, thus the ReadLimit is in fact
+		// a txBandwidth and the WriteLimit is a rxBandwidth.
+		ll = ratelimit.NewListener(ll, wl, rl)
+	}
+
+	l.listener = ll
+	return nil
+}
+
+func (l *Listener) Accept() (net.Conn, error) {
+	for {
+		c, err := l.listener.Accept()
+		if err != nil {
+			return nil, err
+		}
+
+		if l.Callbacks != nil {
+			l.Callbacks.OnAccept(c)
+		}
+
+		if l.TLSConfig == nil {
+			return c, nil
+		}
+
+		tc, err := l.withTLS(c)
+		if err != nil {
+			l.Log.Errorf("Failed to perform TLS handshake: %v", err)
+			if cerr := tc.Close(); cerr != nil {
+				l.Log.Errorf("Failed to close TLS connection: %v", cerr)
+			}
+			continue
+		}
+
+		return tc, nil
+	}
+}
+
+func (l *Listener) withTLS(conn net.Conn) (*tls.Conn, error) {
+	tconn := tls.Server(conn, l.TLSConfig)
+
+	var err error
+	if l.TLSHandshakeTimeout <= 0 {
+		err = tconn.Handshake()
+	} else {
+		ctx, cancel := context.WithTimeout(context.Background(), l.TLSHandshakeTimeout)
+		err = tconn.HandshakeContext(ctx)
+		cancel()
+	}
+	if err != nil {
+		if l.Callbacks != nil {
+			l.Callbacks.OnTLSHandshakeError(tconn, err)
+		}
+	}
+
+	return tconn, err
+}
+
+func (l *Listener) Addr() net.Addr {
+	return l.listener.Addr()
+}
+
+func (l *Listener) Close() error {
+	return l.listener.Close()
 }

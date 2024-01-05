@@ -28,7 +28,6 @@ import (
 	"github.com/saucelabs/forwarder/log"
 	"github.com/saucelabs/forwarder/middleware"
 	"github.com/saucelabs/forwarder/pac"
-	"github.com/saucelabs/forwarder/ratelimit"
 	"github.com/saucelabs/forwarder/ruleset"
 )
 
@@ -109,6 +108,9 @@ func DefaultHTTPProxyConfig() *HTTPProxyConfig {
 			Protocol:          HTTPScheme,
 			Addr:              ":3128",
 			ReadHeaderTimeout: 1 * time.Minute,
+			TLSServerConfig: TLSServerConfig{
+				HandshakeTimeout: 10 * time.Second,
+			},
 		},
 		Name:            "forwarder",
 		ProxyLocalhost:  DenyProxyLocalhost,
@@ -599,27 +601,26 @@ func (hp *HTTPProxy) Run(ctx context.Context) error {
 }
 
 func (hp *HTTPProxy) listen() (net.Listener, error) {
-	listener, err := Listen("tcp", hp.config.Addr)
-	if err != nil {
-		return nil, fmt.Errorf("failed to open listener on address %s: %w", hp.config.Addr, err)
-	}
-
-	if rl, wl := int64(hp.config.ReadLimit), int64(hp.config.WriteLimit); rl > 0 || wl > 0 {
-		// Notice that the ReadLimit stands for the read limit *from* a proxy, and the WriteLimit
-		// stands for the write limit *to* a proxy, thus the ReadLimit is in fact
-		// a txBandwidth and the WriteLimit is a rxBandwidth.
-		listener = ratelimit.NewListener(listener, wl, rl)
-	}
-
 	switch hp.config.Protocol {
-	case HTTPScheme:
-		return listener, nil
-	case HTTPSScheme, HTTP2Scheme:
-		return tls.NewListener(listener, hp.tlsConfig), nil
+	case HTTPScheme, HTTPSScheme, HTTP2Scheme:
 	default:
-		listener.Close()
 		return nil, fmt.Errorf("invalid protocol %q", hp.config.Protocol)
 	}
+
+	l := Listener{
+		Address:             hp.config.Addr,
+		Log:                 hp.log,
+		TLSConfig:           hp.tlsConfig,
+		TLSHandshakeTimeout: hp.config.TLSServerConfig.HandshakeTimeout,
+		ReadLimit:           int64(hp.config.ReadLimit),
+		WriteLimit:          int64(hp.config.WriteLimit),
+	}
+
+	if err := l.Listen(); err != nil {
+		return nil, err
+	}
+
+	return &l, nil
 }
 
 // Addr returns the address the server is listening on.

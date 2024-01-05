@@ -70,6 +70,10 @@ func (c *TLSClientConfig) loadRootCAs(tlsCfg *tls.Config) error {
 }
 
 type TLSServerConfig struct {
+	// HandshakeTimeout specifies the maximum amount of time waiting to
+	// wait for a TLS handshake. Zero means no timeout.
+	HandshakeTimeout time.Duration
+
 	// CertFile is the path to the TLS certificate.
 	CertFile string
 
