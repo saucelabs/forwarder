@@ -9,7 +9,7 @@ require (
 	github.com/google/go-github/v56 v56.0.0
 	github.com/gorilla/websocket v1.5.0
 	github.com/mitchellh/go-wordwrap v1.0.1
-	github.com/mmatczuk/anyflag v0.0.0-20231026075539-5f42d2f36d96
+	github.com/mmatczuk/anyflag v0.0.0-20240105091245-c64b70bf5d41
 	github.com/prometheus/client_golang v1.18.0
 	github.com/prometheus/client_model v0.5.0
 	github.com/prometheus/common v0.45.0
