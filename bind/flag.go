@@ -328,6 +328,10 @@ func HTTPLogConfig(fs *pflag.FlagSet, cfg []NamedParam[httplog.Mode]) {
 }
 
 func TLSServerConfig(fs *pflag.FlagSet, cfg *forwarder.TLSServerConfig, namePrefix string) {
+	fs.DurationVar(&cfg.HandshakeTimeout,
+		namePrefix+"tls-handshake-timeout", cfg.HandshakeTimeout,
+		"The maximum amount of time to wait for a TLS handshake before closing connection. Zero means no limit.")
+
 	fs.Var(anyflag.NewValueWithRedact[string](cfg.CertFile, &cfg.CertFile, func(val string) (string, error) { return val, nil }, RedactBase64),
 		namePrefix+"tls-cert-file", "<path or base64>"+
 			"TLS certificate to use if the server protocol is https or h2. "+
