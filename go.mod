@@ -1,6 +1,6 @@
 module github.com/saucelabs/forwarder
 
-go 1.20
+go 1.21
 
 require (
 	github.com/dop251/goja v0.0.0-20231027120936-b396bb4c349d
