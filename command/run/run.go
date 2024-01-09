@@ -303,6 +303,8 @@ func (c *command) constMetric(name, help string, labels prometheus.Labels) prome
 	})
 }
 
+const promNs = "forwarder"
+
 func Command() *cobra.Command {
 	c := command{
 		promReg:             prometheus.NewRegistry(),
@@ -314,7 +316,7 @@ func Command() *cobra.Command {
 		logConfig:           log.DefaultConfig(),
 	}
 	c.httpProxyConfig.PromRegistry = c.promReg
-	c.httpProxyConfig.PromNamespace = "forwarder"
+	c.httpProxyConfig.PromNamespace = promNs
 	c.apiServerConfig.Addr = "localhost:10000"
 
 	cmd := &cobra.Command{
@@ -343,7 +345,6 @@ func Command() *cobra.Command {
 		{Name: "api", Param: &c.apiServerConfig.LogHTTPMode},
 		{Name: "proxy", Param: &c.httpProxyConfig.LogHTTPMode},
 	})
-	bind.PromNamespace(fs, &c.httpProxyConfig.PromNamespace)
 	bind.AutoMarkFlagFilename(cmd)
 	cmd.MarkFlagsMutuallyExclusive("proxy", "pac")
 
