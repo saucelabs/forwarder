@@ -35,8 +35,8 @@ process_flags() {
 function build_image() {
     local img="$1"
     local dockerfile="$2"
-    if ! podman image exists "$img" || [ "$FORCE_BUILD_IMAGE" = true ] ; then
-        podman build --no-cache -t "$img" -f "$dockerfile"
+    if ! podman image exists ${img} || [ ${FORCE_BUILD_IMAGE} = true ] ; then
+        podman build --no-cache -t ${img} -f ${dockerfile}
     fi
 }
 
@@ -44,23 +44,23 @@ function build_image() {
 function create_package() {
     local dist="$1"
     local package_name="$2"
-    if [[ ! -f "$package_name" || "$FORCE_RELEASE" = true ]] ; then
-        make -C $ROOT_DIR dist
-        cp $dist "$package_name"
+    if [[ ! -f ${package_name} || ${FORCE_RELEASE} = true ]] ; then
+        make -C ${ROOT_DIR} dist
+        cp ${dist} ${package_name}
     fi
 }
 
 # Usage: run_interactive CONTAINER_NAME
 function run_interactive() {
     local container_name="$1"
-    podman exec "$container_name" systemctl enable forwarder
-    podman exec "$container_name" systemctl start forwarder
-    podman exec "$container_name" systemctl status forwarder
-    podman exec -it "$container_name" /bin/bash
+    podman exec ${container_name} systemctl enable forwarder
+    podman exec ${container_name} systemctl start forwarder
+    podman exec ${container_name} systemctl status forwarder
+    podman exec -it ${container_name} /bin/bash
 }
 
 # Usage: remove_container CONTAINER_NAME
 function remove_container() {
     local container_name="$1"
-    podman rm --force "$container_name"
+    podman rm --force ${container_name}
 }
