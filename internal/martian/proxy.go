@@ -121,6 +121,9 @@ type Proxy struct {
 	// Implementations can return ErrConnectFallback to indicate that the CONNECT request should be handled by martian.
 	ConnectFunc ConnectFunc
 
+	// ConnectTimeout specifies the maximum amount of time to connect to upstream before cancelling request.
+	ConnectTimeout time.Duration
+
 	// MITMFilter specifies a function to determine whether a CONNECT request should be MITMed.
 	MITMFilter func(*http.Request) bool
 
@@ -965,7 +968,16 @@ func (p *Proxy) connectHTTP(req *http.Request, proxyURL *url.URL) (res *http.Res
 		d = dialvia.HTTPProxy(p.dial, proxyURL)
 	}
 	d.ConnectRequestModifier = p.ConnectRequestModifier
-	res, conn, err = d.DialContextR(req.Context(), "tcp", req.URL.Host)
+
+	var ctx context.Context
+	if p.ConnectTimeout > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(req.Context(), p.ConnectTimeout)
+		defer cancel()
+	} else {
+		ctx = req.Context()
+	}
+	res, conn, err = d.DialContextR(ctx, "tcp", req.URL.Host)
 
 	if res != nil {
 		if res.StatusCode/100 == 2 {
