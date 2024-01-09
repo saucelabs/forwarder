@@ -15,11 +15,11 @@ DIST="$ROOT_DIR/dist/forwarder*linux_arm64.deb"
 
 process_flags "$@"
 
-build_image "$IMG" debian-systemd.Dockerfile
-create_package "$DIST" forwarder.deb
+build_image ${IMG} debian-systemd.Dockerfile
+create_package "${DIST}" forwarder.deb
 
-podman run -p 3128:3128 -d -v ./forwarder.deb:/forwarder.deb --name "$CONTAINER" --replace "$IMG"
-trap "remove_container $CONTAINER" EXIT
+podman run -p 3128:3128 -d -v ./forwarder.deb:/forwarder.deb --name ${CONTAINER} --replace ${IMG}
+trap "remove_container ${CONTAINER}" EXIT
 
-podman exec "$CONTAINER" dpkg --force-confdef -i /forwarder.deb
-run_interactive "$CONTAINER"
+podman exec ${CONTAINER} dpkg --force-confdef -i /forwarder.deb
+run_interactive ${CONTAINER}
