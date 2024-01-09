@@ -2228,32 +2228,12 @@
   "templating": {
     "list": [
       {
-        "current": {
-          "selected": true,
-          "text": "forwarder",
-          "value": "forwarder"
-        },
-        "description": "It must match Forwarder's `--prom-namespace` flag value.\nDefault: `forwarder`.",
-        "hide": 0,
-        "includeAll": false,
-        "multi": false,
+        "description": "",
+        "hide": 2,
         "name": "prom_namespace",
-        "options": [
-          {
-            "selected": true,
-            "text": "forwarder",
-            "value": "forwarder"
-          },
-          {
-            "selected": false,
-            "text": "proxy",
-            "value": "proxy"
-          }
-        ],
-        "query": "forwarder, proxy",
-        "queryValue": "",
+        "query": "forwarder",
         "skipUrlSync": false,
-        "type": "custom"
+        "type": "constant"
       },
       {
         "allValue": ".+",
