@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	Image = "prom/prometheus:v2.47.2"
+	Image = "prom/prometheus:latest"
 )
 
 func Service() *compose.Service {
