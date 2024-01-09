@@ -30,8 +30,7 @@ func ProxyService() *Service {
 		Name:  ProxyServiceName,
 		Image: Image,
 		Environment: map[string]string{
-			"FORWARDER_API_ADDRESS":    ":10000",
-			"FORWARDER_PROM_NAMESPACE": ProxyServiceName,
+			"FORWARDER_API_ADDRESS": ":10000",
 		},
 		Ports: []string{
 			"3128:3128",
@@ -46,9 +45,8 @@ func UpstreamProxyService() *Service {
 		Name:  UpstreamProxyServiceName,
 		Image: Image,
 		Environment: map[string]string{
-			"FORWARDER_API_ADDRESS":    ":10000",
-			"FORWARDER_NAME":           UpstreamProxyServiceName,
-			"FORWARDER_PROM_NAMESPACE": "upstream",
+			"FORWARDER_API_ADDRESS": ":10000",
+			"FORWARDER_NAME":        UpstreamProxyServiceName,
 		},
 		Ports: []string{
 			"10001:10000",
