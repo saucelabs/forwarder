@@ -258,6 +258,7 @@ func (hp *HTTPProxy) configureProxy() error {
 	hp.proxy.RequestIDHeader = hp.config.RequestIDHeader
 	hp.proxy.ConnectRequestModifier = hp.config.ConnectRequestModifier
 	hp.proxy.ConnectFunc = hp.config.ConnectFunc
+	hp.proxy.ConnectTimeout = 60 * time.Second
 	hp.proxy.WithoutWarning = true
 	hp.proxy.ErrorResponse = hp.errorResponse
 	hp.proxy.IdleTimeout = hp.config.IdleTimeout
