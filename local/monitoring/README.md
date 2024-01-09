@@ -30,8 +30,7 @@ Use the following commands to start and stop Prometheus and Grafana containers:
 
 ## Available dashboards
 
-- Forwarder dashboard have been added to Grafana
-  - Remember to set `prom_namespace` to the namespace you are using in your forwarder instance
+- Forwarder dashboard has been added to Grafana
 
 ## Accessing Monitoring Dashboards
 
