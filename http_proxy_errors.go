@@ -73,15 +73,15 @@ func (hp *HTTPProxy) errorResponse(req *http.Request, err error) *http.Response 
 
 type errorHandler func(*http.Request, error) (int, string, string)
 
-func handleNetError(_ *http.Request, err error) (code int, msg, label string) {
+func handleNetError(req *http.Request, err error) (code int, msg, label string) {
 	var netErr *net.OpError
 	if errors.As(err, &netErr) {
 		if netErr.Timeout() {
 			code = http.StatusGatewayTimeout
-			msg = "timed out connecting to remote host"
+			msg = fmt.Sprintf("timed out connecting to remote host %q", req.Host)
 		} else {
 			code = http.StatusBadGateway
-			msg = "failed to connect to remote host"
+			msg = fmt.Sprintf("failed to connect to remote host %q", req.Host)
 		}
 		label = "net_" + netErr.Op
 	}
@@ -89,22 +89,22 @@ func handleNetError(_ *http.Request, err error) (code int, msg, label string) {
 	return
 }
 
-func handleTLSRecordHeader(_ *http.Request, err error) (code int, msg, label string) {
+func handleTLSRecordHeader(req *http.Request, err error) (code int, msg, label string) {
 	var headerErr *tls.RecordHeaderError
 	if errors.As(err, &headerErr) {
 		code = http.StatusBadGateway
-		msg = "tls handshake failed"
+		msg = fmt.Sprintf("tls handshake failed for host %q", req.Host)
 		label = "tls_record_header"
 	}
 
 	return
 }
 
-func handleTLSCertificateError(_ *http.Request, err error) (code int, msg, label string) {
+func handleTLSCertificateError(req *http.Request, err error) (code int, msg, label string) {
 	var certErr *tls.CertificateVerificationError
 	if errors.As(err, &certErr) {
 		code = http.StatusBadGateway
-		msg = "tls handshake failed"
+		msg = fmt.Sprintf("tls handshake failed for host %q", req.Host)
 		label = "tls_certificate"
 	}
 
