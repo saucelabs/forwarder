@@ -8,11 +8,11 @@ package forwarder
 
 import (
 	"github.com/saucelabs/forwarder/bind"
-	"github.com/saucelabs/forwarder/command/grpctest"
-	"github.com/saucelabs/forwarder/command/httpbin"
 	"github.com/saucelabs/forwarder/command/pac"
 	"github.com/saucelabs/forwarder/command/ready"
 	"github.com/saucelabs/forwarder/command/run"
+	"github.com/saucelabs/forwarder/command/test/grpc"
+	"github.com/saucelabs/forwarder/command/test/httpbin"
 	"github.com/saucelabs/forwarder/command/version"
 	"github.com/saucelabs/forwarder/utils/cobrautil"
 	"github.com/saucelabs/forwarder/utils/cobrautil/templates"
@@ -106,12 +106,19 @@ func Command() *cobra.Command {
 
 	templates.ActsAsRootCommand(cmd, nil, cg, FlagGroups(), EnvPrefix)
 
-	// Add other commands.
-	cmd.AddCommand(
-		grpctest.Command(), // hidden
-		httpbin.Command(),  // hidden
-		version.Command(),
+	// Add test commands.
+	test := &cobra.Command{
+		Use:   "test",
+		Short: "Run test servers for various protocols",
+	}
+	test.AddCommand(
+		grpc.Command(),
+		httpbin.Command(),
 	)
+	cmd.AddCommand(test)
+
+	// Add version command.
+	cmd.AddCommand(version.Command())
 
 	// Add config-file command to all commands.
 	cobrautil.AddConfigFileForEachCommand(cmd, FlagGroups(), ConfigFileFlagName)

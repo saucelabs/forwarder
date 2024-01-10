@@ -59,7 +59,7 @@ func HttpbinService() *Service {
 	return &Service{
 		Name:    HttpbinServiceName,
 		Image:   Image,
-		Command: "httpbin",
+		Command: "test httpbin",
 		Environment: map[string]string{
 			"FORWARDER_API_ADDRESS": ":10000",
 		},
