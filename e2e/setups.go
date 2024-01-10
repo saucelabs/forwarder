@@ -33,6 +33,7 @@ func AllSetups() []setup.Setup {
 	SetupDefaults(l)
 	SetupAuth(l)
 	SetupPac(l)
+	SetupGRPC(l)
 	SetupFlagProxyLocalhost(l)
 	SetupFlagHeader(l)
 	SetupFlagResponseHeader(l)
@@ -160,6 +161,19 @@ func SetupPac(l *setupList) {
 					forwarder.HttpbinService()).
 				MustBuild(),
 			Run: "^TestProxyGoogleCom$",
+		},
+	)
+}
+
+func SetupGRPC(l *setupList) {
+	l.Add(
+		setup.Setup{
+			Name: "grpc",
+			Compose: compose.NewBuilder().
+				AddService(forwarder.ProxyService()).
+				AddService(forwarder.GRPCTestService()).
+				MustBuild(),
+			Run: "^TestGRPC",
 		},
 	)
 }

@@ -56,5 +56,6 @@ EOF
 generate_certificate "proxy"
 generate_certificate "upstream-proxy"
 generate_certificate "httpbin"
+generate_certificate "grpctest"
 
 chmod 644 *.key *.crt
