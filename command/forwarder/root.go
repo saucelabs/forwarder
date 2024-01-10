@@ -8,6 +8,7 @@ package forwarder
 
 import (
 	"github.com/saucelabs/forwarder/bind"
+	"github.com/saucelabs/forwarder/command/grpctest"
 	"github.com/saucelabs/forwarder/command/httpbin"
 	"github.com/saucelabs/forwarder/command/pac"
 	"github.com/saucelabs/forwarder/command/ready"
@@ -107,7 +108,8 @@ func Command() *cobra.Command {
 
 	// Add other commands.
 	cmd.AddCommand(
-		httpbin.Command(), // hidden
+		grpctest.Command(), // hidden
+		httpbin.Command(),  // hidden
 		version.Command(),
 	)
 
