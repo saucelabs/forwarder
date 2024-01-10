@@ -21,6 +21,7 @@ const (
 	ProxyServiceName         = "proxy"
 	UpstreamProxyServiceName = "upstream-proxy"
 	HttpbinServiceName       = "httpbin"
+	GRPCTestServiceName      = "grpctest"
 )
 
 const enabled = "true"
@@ -68,6 +69,22 @@ func HttpbinService() *Service {
 		},
 		HealthCheck: healthCheck(),
 	}
+}
+
+func GRPCTestService() *Service {
+	s := &Service{
+		Name:    GRPCTestServiceName,
+		Image:   Image,
+		Command: "test grpc",
+		Environment: map[string]string{
+			"FORWARDER_ADDRESS": ":1443",
+		},
+		Ports: []string{
+			"1443:1443",
+			"10003:10000",
+		},
+	}
+	return s.WithProtocol("h2")
 }
 
 func (s *Service) WithProtocol(protocol string) *Service {
