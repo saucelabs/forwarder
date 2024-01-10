@@ -323,11 +323,6 @@ func (p *Proxy) Serve(l net.Listener) error {
 		delay = 0
 		log.Debugf(context.TODO(), "accepted connection from %s", conn.RemoteAddr())
 
-		if tconn, ok := conn.(*net.TCPConn); ok {
-			tconn.SetKeepAlive(true)
-			tconn.SetKeepAlivePeriod(3 * time.Minute)
-		}
-
 		go p.handleLoop(conn)
 	}
 }
