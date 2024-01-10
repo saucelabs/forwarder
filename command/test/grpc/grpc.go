@@ -4,7 +4,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package grpctest
+package grpc
 
 import (
 	"context"
@@ -107,10 +107,9 @@ func Command() *cobra.Command {
 	}
 
 	cmd := &cobra.Command{
-		Use:    "grpctest [--address <host:port>] [flags]",
-		Short:  "Start HTTP/2 gRPC server for testing",
-		RunE:   c.runE,
-		Hidden: true,
+		Use:   "grpc [--address <host:port>] [flags]",
+		Short: "Start HTTP/2 gRPC server for testing",
+		RunE:  c.runE,
 	}
 
 	fs := cmd.Flags()

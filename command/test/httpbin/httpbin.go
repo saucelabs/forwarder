@@ -87,10 +87,9 @@ func Command() *cobra.Command {
 	c.apiServerConfig.Addr = "localhost:10000"
 
 	cmd := &cobra.Command{
-		Use:    "httpbin [--protocol <http|https|h2>] [--address <host:port>] [flags]",
-		Short:  "Start HTTP(S) server that serves httpbin.org API",
-		RunE:   c.runE,
-		Hidden: true,
+		Use:   "httpbin [--protocol <http|https|h2>] [--address <host:port>] [flags]",
+		Short: "Start HTTP(S) server that serves httpbin.org API",
+		RunE:  c.runE,
 	}
 
 	fs := cmd.Flags()
