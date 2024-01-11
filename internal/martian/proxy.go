@@ -130,6 +130,11 @@ type Proxy struct {
 	// ErrorResponse specifies a custom error HTTP response to send when a proxying error occurs.
 	ErrorResponse func(req *http.Request, err error) *http.Response
 
+	// IdleTimeout is the maximum amount of time to wait for the
+	// next request. If IdleTimeout is zero, the value of ReadTimeout is used.
+	// If both are zero, there is no timeout.
+	IdleTimeout time.Duration
+
 	// ReadTimeout is the maximum duration for reading the entire
 	// request, including the body. A zero or negative value means
 	// there will be no timeout.
@@ -373,6 +378,13 @@ func (p *Proxy) handleLoop(conn net.Conn) {
 	}
 }
 
+func (p *Proxy) idleTimeout() time.Duration {
+	if p.IdleTimeout > 0 {
+		return p.IdleTimeout
+	}
+	return p.ReadTimeout
+}
+
 func (p *Proxy) readHeaderTimeout() time.Duration {
 	if p.ReadHeaderTimeout > 0 {
 		return p.ReadHeaderTimeout
@@ -381,6 +393,14 @@ func (p *Proxy) readHeaderTimeout() time.Duration {
 }
 
 func (p *Proxy) readRequest(ctx *Context, conn net.Conn, brw *bufio.ReadWriter) (*http.Request, error) {
+	var idleDeadline time.Time // or zero if none
+	if d := p.idleTimeout(); d > 0 {
+		idleDeadline = time.Now().Add(d)
+	}
+	if deadlineErr := conn.SetReadDeadline(idleDeadline); deadlineErr != nil {
+		log.Errorf(context.TODO(), "can't set idle deadline: %v", deadlineErr)
+	}
+
 	// Wait for the connection to become readable before trying to
 	// read the next request. This prevents a ReadHeaderTimeout or
 	// ReadTimeout from starting until the first bytes of the next request
