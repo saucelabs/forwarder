@@ -274,6 +274,9 @@ func HTTPServerConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPServerConfig, prefix
 		TLSServerConfig(fs, &cfg.TLSServerConfig, namePrefix)
 	}
 
+	fs.DurationVar(&cfg.IdleTimeout, namePrefix+"idle-timeout", cfg.IdleTimeout,
+		"The maximum amount of time to wait for the next request before closing connection.")
+
 	fs.DurationVar(&cfg.ReadHeaderTimeout,
 		namePrefix+"read-header-timeout", cfg.ReadHeaderTimeout,
 		"The amount of time allowed to read request headers.")
