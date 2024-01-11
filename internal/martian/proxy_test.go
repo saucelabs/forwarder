@@ -1803,6 +1803,34 @@ func TestRacyClose(t *testing.T) {
 	}
 }
 
+func TestIdleTimeout(t *testing.T) {
+	t.Parallel()
+
+	l := newListener(t)
+	p := NewProxy()
+	defer p.Close()
+
+	tr := martiantest.NewTransport()
+	p.SetRoundTripper(tr)
+
+	// Reset read and write timeouts.
+	p.SetTimeout(0)
+	p.IdleTimeout = 100 * time.Millisecond
+
+	go p.Serve(newTimeoutListener(l, 0))
+
+	conn, err := l.dial()
+	if err != nil {
+		t.Fatalf("net.Dial(): got %v, want no error", err)
+	}
+	defer conn.Close()
+
+	time.Sleep(200 * time.Millisecond)
+	if _, err = conn.Read(make([]byte, 1)); !isClosedConnError(err) {
+		t.Fatalf("conn.Read(): got %v, want io.EOF", err)
+	}
+}
+
 func TestReadHeaderTimeout(t *testing.T) {
 	t.Parallel()
 
