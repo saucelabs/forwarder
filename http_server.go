@@ -77,6 +77,7 @@ type HTTPServerConfig struct {
 	Protocol Scheme
 	Addr     string
 	TLSServerConfig
+	IdleTimeout       time.Duration
 	ReadTimeout       time.Duration
 	ReadHeaderTimeout time.Duration
 	WriteTimeout      time.Duration
@@ -122,6 +123,7 @@ func NewHTTPServer(cfg *HTTPServerConfig, h http.Handler, log log.Logger) (*HTTP
 		srv: &http.Server{
 			Addr:              cfg.Addr,
 			Handler:           withMiddleware(cfg, log, h),
+			IdleTimeout:       cfg.IdleTimeout,
 			ReadTimeout:       cfg.ReadTimeout,
 			ReadHeaderTimeout: cfg.ReadHeaderTimeout,
 			WriteTimeout:      cfg.WriteTimeout,
