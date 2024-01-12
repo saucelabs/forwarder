@@ -1,3 +1,7 @@
+- os: macOS
+  arch: all
+  name: forwarder-1.1.2_darwin-signed.all.zip
+  url: https://github.com/saucelabs/forwarder/releases/download/v1.1.2/forwarder-1.1.2_darwin-signed.all.zip
 - os: Debian/Ubuntu
   arch: ARM64
   name: forwarder_1.1.2.linux_arm64.deb
