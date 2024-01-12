@@ -244,12 +244,6 @@
 # The amount of time allowed to read request headers.
 #api-read-header-timeout: 1m0s
 
-# prom-namespace <string>
-#
-# Prometheus namespace to use for metrics. The metrics are available at /metrics
-# endpoint in the API server.
-#prom-namespace: forwarder
-
 # --- Logging options ---
 
 # log-file <path>

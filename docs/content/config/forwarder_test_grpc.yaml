@@ -1,0 +1,32 @@
+# --- Server options ---
+
+# address <host:port>
+#
+# Address to listen on. If the host is empty, the server will listen on all
+# available interfaces.
+#address: localhost:1443
+
+# tls-cert-file <path or base64>
+#
+# TLS certificate to use if the server protocol is https or h2. Can be a path to
+# a file or "data:" followed by base64 encoded certificate.
+#tls-cert-file: 
+
+# tls-key-file <path or base64>
+#
+# TLS private key to use if the server protocol is https or h2. Can be a path to
+# a file or "data:" followed by base64 encoded key.
+#tls-key-file: 
+
+# --- Logging options ---
+
+# log-file <path>
+#
+# Path to the log file, if empty, logs to stdout.
+#log-file: 
+
+# log-level <error|info|debug>
+#
+# Log level.
+#log-level: info
+

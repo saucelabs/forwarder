@@ -378,15 +378,6 @@ Basic authentication credentials to protect the server.
 
 The amount of time allowed to read request headers.
 
-### `--prom-namespace` {#prom-namespace}
-
-* Environment variable: `FORWARDER_PROM_NAMESPACE`
-* Value Format: `<string>`
-* Default value: `forwarder`
-
-Prometheus namespace to use for metrics.
-The metrics are available at /metrics endpoint in the API server.
-
 ## Logging options
 
 ### `--log-file` {#log-file}
