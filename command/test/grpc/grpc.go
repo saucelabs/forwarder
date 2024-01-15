@@ -27,6 +27,7 @@ import (
 
 type command struct {
 	addr            string
+	plainText       bool
 	tlsServerConfig *forwarder.TLSServerConfig
 	logConfig       *log.Config
 }
@@ -70,21 +71,27 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 	g := runctx.NewGroup()
 
 	{
-		tlsCfg := new(tls.Config)
-		if err := c.tlsServerConfig.ConfigureTLSConfig(tlsCfg); err != nil {
-			return err
+		var gs *grpc.Server
+		if c.plainText {
+			gs = grpc.NewServer()
+		} else {
+			tlsCfg := new(tls.Config)
+			if err := c.tlsServerConfig.ConfigureTLSConfig(tlsCfg); err != nil {
+				return err
+			}
+			gs = grpc.NewServer(
+				grpc.Creds(credentials.NewServerTLSFromCert(&tlsCfg.Certificates[0])),
+			)
 		}
-		gs := grpc.NewServer(
-			grpc.Creds(credentials.NewServerTLSFromCert(&tlsCfg.Certificates[0])),
-		)
-		tspb.RegisterTestServiceServer(gs, &ts.Server{})
-		defer gs.Stop()
 
 		l, err := net.Listen("tcp", c.addr)
 		if err != nil {
 			return err
 		}
 		defer l.Close()
+
+		tspb.RegisterTestServiceServer(gs, &ts.Server{})
+		defer gs.Stop()
 
 		g.Add(func(ctx context.Context) error {
 			logger.Named("grpc").Infof("server listen address=%s", l.Addr())
@@ -108,7 +115,7 @@ func Command() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "grpc [--address <host:port>] [flags]",
-		Short: "Start HTTP/2 gRPC server for testing",
+		Short: "Start gRPC server for testing",
 		RunE:  c.runE,
 	}
 
@@ -116,6 +123,7 @@ func Command() *cobra.Command {
 	fs.StringVar(&c.addr, "address", c.addr, "<host:port>"+
 		"Address to listen on. "+
 		"If the host is empty, the server will listen on all available interfaces. ")
+	fs.BoolVar(&c.plainText, "plain-text", c.plainText, "Run in plain-text mode i.e. without TLS.")
 	bind.TLSServerConfig(fs, c.tlsServerConfig, "")
 	bind.LogConfig(fs, c.logConfig)
 	bind.AutoMarkFlagFilename(cmd)
