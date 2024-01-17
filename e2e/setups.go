@@ -45,6 +45,7 @@ func AllSetups() []setup.Setup {
 	SetupFlagDenyDomains(l)
 	SetupFlagDirectDomains(l)
 	SetupFlagRateLimit(l)
+	SetupFlagOptionalAddresses(l)
 	SetupSC2450(l)
 
 	return l.Build()
@@ -451,6 +452,21 @@ func SetupFlagRateLimit(l *setupList) {
 			Run: "^TestFlag(Read|Write)Limit$",
 		},
 	)
+}
+
+func SetupFlagOptionalAddresses(l *setupList) {
+	l.Add(
+		setup.Setup{
+			Name: "flag-address-multiple-ports",
+			Compose: compose.NewBuilder().
+				AddService(
+					forwarder.HttpbinService()).
+				AddService(
+					forwarder.ProxyService().
+						WithOptionalAddresses(":4567,:5678")).
+				MustBuild(),
+			Run: "^TestFlagOptionalAddresses$",
+		})
 }
 
 func SetupSC2450(l *setupList) {

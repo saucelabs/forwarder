@@ -87,6 +87,11 @@ func GRPCTestService() *Service {
 	return s.WithProtocol("h2")
 }
 
+func (s *Service) WithOptionalAddresses(addresses ...string) *Service {
+	s.Environment["FORWARDER_OPTIONAL_ADDRESSES"] = strings.Join(addresses, ",")
+	return s
+}
+
 func (s *Service) WithProtocol(protocol string) *Service {
 	s.Environment["FORWARDER_PROTOCOL"] = protocol
 

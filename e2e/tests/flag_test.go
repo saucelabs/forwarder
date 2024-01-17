@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/saucelabs/forwarder/e2e/forwarder"
+	"github.com/saucelabs/forwarder/utils/httpexpect"
 )
 
 func TestFlagProxyLocalhost(t *testing.T) {
@@ -222,5 +223,18 @@ func testRateLimitHelper(t *testing.T, workers int, expectedTime, epsilon time.D
 	wg.Wait()
 	if elapsed := time.Since(ts); elapsed < expectedTime-epsilon || elapsed > expectedTime+epsilon {
 		t.Fatalf("Expected request to take approximately %s, took %s", expectedTime, elapsed)
+	}
+}
+
+func TestFlagOptionalAddresses(t *testing.T) {
+	for _, port := range []string{"3128", "4567", "5678"} {
+		newClient(t, httpbin, func(tr *http.Transport) {
+			proxy := serviceScheme("FORWARDER_PROTOCOL") + "://proxy:" + port
+			proxyURL, err := httpexpect.NewURLWithBasicAuth(proxy, basicAuth)
+			if err != nil {
+				t.Fatal(err)
+			}
+			tr.Proxy = http.ProxyURL(proxyURL)
+		}).GET("/status/200").ExpectStatus(http.StatusOK)
 	}
 }
