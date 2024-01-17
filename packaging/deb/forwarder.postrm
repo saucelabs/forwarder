@@ -21,4 +21,4 @@ fi
 # End automatically added section
 
 # Remove the service account
-/usr/sbin/userdel forwarder
+/usr/sbin/userdel forwarder ||:
