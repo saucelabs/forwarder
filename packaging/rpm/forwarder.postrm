@@ -4,4 +4,4 @@ if [ $1 -ge 1 ] && [ -x /usr/bin/systemctl ]; then
 fi
 
 # Remove the service account
-/usr/sbin/userdel forwarder
+/usr/sbin/userdel forwarder ||:
