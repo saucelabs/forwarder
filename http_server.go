@@ -212,10 +212,8 @@ func (hs *HTTPServer) Run(ctx context.Context) error {
 
 	var srvErr error
 	switch hs.config.Protocol {
-	case HTTPScheme:
+	case HTTPScheme, HTTPSScheme, HTTP2Scheme:
 		srvErr = hs.srv.Serve(hs.listener)
-	case HTTP2Scheme, HTTPSScheme:
-		srvErr = hs.srv.ServeTLS(hs.listener, "", "")
 	default:
 		return fmt.Errorf("invalid protocol %q", hs.config.Protocol)
 	}
@@ -232,16 +230,18 @@ func (hs *HTTPServer) Run(ctx context.Context) error {
 }
 
 func (hs *HTTPServer) listen() (net.Listener, error) {
-	switch hs.config.Protocol {
-	case HTTPScheme, HTTPSScheme, HTTP2Scheme:
-		listener, err := Listen("tcp", hs.srv.Addr)
-		if err != nil {
-			return nil, fmt.Errorf("failed to open listener on address %s: %w", hs.srv.Addr, err)
-		}
-		return listener, nil
-	default:
-		return nil, fmt.Errorf("invalid protocol %q", hs.config.Protocol)
+	l := Listener{
+		Address:             hs.config.Addr,
+		Log:                 hs.log,
+		TLSConfig:           hs.srv.TLSConfig,
+		TLSHandshakeTimeout: hs.config.HandshakeTimeout,
 	}
+
+	if err := l.Listen(); err != nil {
+		return nil, err
+	}
+
+	return &l, nil
 }
 
 // Addr returns the address the server is listening on.
