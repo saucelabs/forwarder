@@ -10,11 +10,13 @@ import (
 	"context"
 	"crypto/tls"
 	"net"
+	"sync"
 	"syscall"
 	"time"
 
 	"github.com/saucelabs/forwarder/log"
 	"github.com/saucelabs/forwarder/ratelimit"
+	"go.uber.org/multierr"
 )
 
 type DialConfig struct {
@@ -87,12 +89,18 @@ type ListenerCallbacks interface {
 	// OnAccept is called when a new connection is successfully accepted.
 	OnAccept(net.Conn)
 
+	// OnBindError is called when a listener fails to bind to an address.
+	OnBindError(address string, err error)
+
 	// OnTLSHandshakeError is called after a TLS handshake errors out.
 	OnTLSHandshakeError(*tls.Conn, error)
 }
 
+// Listener is a multi-address listener with TLS support, rate limiting and callbacks.
+// The Listener must successfully bind on Address, but it may fail to bind on OptionalAddresses.
 type Listener struct {
 	Address             string
+	OptionalAddresses   []string
 	Log                 log.Logger
 	TLSConfig           *tls.Config
 	TLSHandshakeTimeout time.Duration
@@ -100,12 +108,45 @@ type Listener struct {
 	WriteLimit          int64
 	Callbacks           ListenerCallbacks
 
-	listener net.Listener
+	listeners []net.Listener
+	acceptCh  chan acceptResult
+	wg        sync.WaitGroup
+	closeCh   chan struct{}
+	closeOnce sync.Once
 }
 
+type acceptResult struct {
+	c   net.Conn
+	err error
+}
+
+// Listen starts listening on the provided addresses.
+// The method should be called only once.
 func (l *Listener) Listen() error {
-	ll, err := Listen("tcp", l.Address)
+	l.acceptCh = make(chan acceptResult)
+	l.closeCh = make(chan struct{})
+
+	if err := l.listen(l.Address); err != nil {
+		return err
+	}
+
+	// OptionalAddresses may fail to bind.
+	for _, addr := range l.OptionalAddresses {
+		if err := l.listen(addr); err != nil {
+			l.Log.Errorf("failed to listen on %s: %v", addr, err)
+			continue
+		}
+	}
+
+	return nil
+}
+
+func (l *Listener) listen(addr string) error {
+	ll, err := Listen("tcp", addr)
 	if err != nil {
+		if l.Callbacks != nil {
+			l.Callbacks.OnBindError(addr, err)
+		}
 		return err
 	}
 
@@ -116,13 +157,42 @@ func (l *Listener) Listen() error {
 		ll = ratelimit.NewListener(ll, wl, rl)
 	}
 
-	l.listener = ll
+	l.listeners = append(l.listeners, ll)
+	l.wg.Add(1)
+	go l.acceptLoop(ll)
+
 	return nil
+}
+
+func (l *Listener) acceptLoop(ll net.Listener) {
+	defer l.wg.Done()
+	for {
+		c, err := ll.Accept()
+		select {
+		case l.acceptCh <- acceptResult{c, err}:
+		case <-l.closeCh:
+			if c != nil {
+				if cerr := c.Close(); cerr != nil {
+					l.Log.Errorf("failed to close connection: %v", cerr)
+				}
+			}
+			return
+		}
+	}
 }
 
 func (l *Listener) Accept() (net.Conn, error) {
 	for {
-		c, err := l.listener.Accept()
+		var (
+			c   net.Conn
+			err error
+		)
+		select {
+		case <-l.closeCh:
+			return nil, net.ErrClosed
+		case res := <-l.acceptCh:
+			c, err = res.c, res.err
+		}
 		if err != nil {
 			return nil, err
 		}
@@ -137,9 +207,9 @@ func (l *Listener) Accept() (net.Conn, error) {
 
 		tc, err := l.withTLS(c)
 		if err != nil {
-			l.Log.Errorf("Failed to perform TLS handshake: %v", err)
+			l.Log.Errorf("failed to perform TLS handshake: %v", err)
 			if cerr := tc.Close(); cerr != nil {
-				l.Log.Errorf("Failed to close TLS connection: %v", cerr)
+				l.Log.Errorf("failed to close connection: %v", cerr)
 			}
 			continue
 		}
@@ -169,9 +239,32 @@ func (l *Listener) withTLS(conn net.Conn) (*tls.Conn, error) {
 }
 
 func (l *Listener) Addr() net.Addr {
-	return l.listener.Addr()
+	if len(l.listeners) == 0 {
+		return &net.IPAddr{}
+	}
+
+	return l.listeners[0].Addr()
+}
+
+func (l *Listener) Addrs() []net.Addr {
+	addrs := make([]net.Addr, 0, len(l.listeners))
+	for _, ll := range l.listeners {
+		addrs = append(addrs, ll.Addr())
+	}
+	return addrs
 }
 
 func (l *Listener) Close() error {
-	return l.listener.Close()
+	l.closeOnce.Do(func() { close(l.closeCh) })
+
+	var merr error
+	for _, ll := range l.listeners {
+		if err := ll.Close(); err != nil {
+			merr = multierr.Append(merr, err)
+		}
+	}
+
+	l.wg.Wait()
+
+	return merr
 }

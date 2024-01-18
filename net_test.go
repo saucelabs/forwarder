@@ -11,6 +11,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"net"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -56,12 +57,65 @@ func TestListenerTLSHandshakeTimeout(t *testing.T) {
 	<-done
 }
 
+func TestMultiListen(t *testing.T) {
+	mlc := &mockListenerCallback{
+		t: t,
+	}
+
+	l := Listener{
+		Address:           "localhost:0",
+		OptionalAddresses: []string{"localhost:0"},
+		Log:               log.NopLogger,
+		Callbacks:         mlc,
+	}
+
+	err := l.Listen()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if err := l.Close(); err != nil {
+			t.Fatal(err)
+		}
+	}()
+
+	done := make(chan struct{})
+	go func() {
+		for i := 0; i < 2; i++ {
+			_, err := l.Accept()
+			if err != nil {
+				t.Errorf("l.Accept(): got %v, want no error", err)
+				return
+			}
+		}
+		close(done)
+	}()
+
+	for _, ll := range l.listeners {
+		_, err := net.Dial("tcp", ll.Addr().String())
+		if err != nil {
+			t.Fatalf("net.Dial(): got %v, want no error", err)
+		}
+	}
+
+	<-done
+
+	if mlc.accepts.Load() != 2 {
+		t.Fatalf("mlc.accepts.Load(): got %d, want 2", mlc.accepts.Load())
+	}
+}
+
 type mockListenerCallback struct {
-	t    *testing.T
-	done chan struct{}
+	t       *testing.T
+	accepts atomic.Int32
+	done    chan struct{}
 }
 
 func (m *mockListenerCallback) OnAccept(_ net.Conn) {
+	m.accepts.Add(1)
+}
+
+func (m *mockListenerCallback) OnBindError(_ string, _ error) {
 }
 
 func (m *mockListenerCallback) OnTLSHandshakeError(_ *tls.Conn, err error) {
