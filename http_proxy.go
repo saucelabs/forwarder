@@ -611,6 +611,7 @@ func (hp *HTTPProxy) listen() (net.Listener, error) {
 
 	l := Listener{
 		Address:             hp.config.Addr,
+		OptionalAddresses:   hp.config.OptionalAddrs,
 		Log:                 hp.log,
 		TLSConfig:           hp.tlsConfig,
 		TLSHandshakeTimeout: hp.config.TLSServerConfig.HandshakeTimeout,
