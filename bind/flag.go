@@ -244,6 +244,12 @@ func HTTPServerConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPServerConfig, prefix
 			"The server address to listen on. "+
 			"If the host is empty, the server will listen on all available interfaces. ")
 
+	fs.StringSliceVarP(&cfg.OptionalAddrs,
+		namePrefix+"optional-addresses", "", cfg.OptionalAddrs, "<host:port,...>"+
+			"Optional server addresses to listen on. "+
+			"The server will continue to run if the bind fails. "+
+			"Can be specified multiple times.")
+
 	if schemes == nil {
 		schemes = []forwarder.Scheme{
 			forwarder.HTTPScheme,
