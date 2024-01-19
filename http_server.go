@@ -74,8 +74,9 @@ func h2TLSConfigTemplate() *tls.Config {
 }
 
 type HTTPServerConfig struct {
-	Protocol Scheme
-	Addr     string
+	Protocol      Scheme
+	Addr          string
+	OptionalAddrs []string
 	TLSServerConfig
 	IdleTimeout       time.Duration
 	ReadTimeout       time.Duration
@@ -232,6 +233,7 @@ func (hs *HTTPServer) Run(ctx context.Context) error {
 func (hs *HTTPServer) listen() (net.Listener, error) {
 	l := Listener{
 		Address:             hs.config.Addr,
+		OptionalAddresses:   hs.config.OptionalAddrs,
 		Log:                 hs.log,
 		TLSConfig:           hs.srv.TLSConfig,
 		TLSHandshakeTimeout: hs.config.HandshakeTimeout,
