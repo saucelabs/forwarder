@@ -170,7 +170,9 @@ func NewHTTPProxy(cfg *HTTPProxyConfig, pr PACResolver, cm *CredentialsMatcher, 
 	}
 	hp.listener = l
 
-	hp.log.Infof("PROXY server listen address=%s protocol=%s", l.Addr(), hp.config.Protocol)
+	for _, addr := range l.Addrs() {
+		hp.log.Infof("PROXY server listen address=%s protocol=%s", addr, hp.config.Protocol)
+	}
 
 	return hp, nil
 }
@@ -602,7 +604,7 @@ func (hp *HTTPProxy) Run(ctx context.Context) error {
 	return nil
 }
 
-func (hp *HTTPProxy) listen() (net.Listener, error) {
+func (hp *HTTPProxy) listen() (*Listener, error) {
 	switch hp.config.Protocol {
 	case HTTPScheme, HTTPSScheme, HTTP2Scheme:
 	default:
