@@ -150,7 +150,9 @@ func NewHTTPServer(cfg *HTTPServerConfig, h http.Handler, log log.Logger) (*HTTP
 	}
 	hs.listener = l
 
-	hs.log.Infof("HTTP server listen address=%s protocol=%s", l.Addr(), hs.config.Protocol)
+	for _, addr := range l.Addrs() {
+		hs.log.Infof("HTTP server listen address=%s protocol=%s", addr, hs.config.Protocol)
+	}
 
 	return hs, nil
 }
@@ -230,7 +232,7 @@ func (hs *HTTPServer) Run(ctx context.Context) error {
 	return nil
 }
 
-func (hs *HTTPServer) listen() (net.Listener, error) {
+func (hs *HTTPServer) listen() (*Listener, error) {
 	l := Listener{
 		Address:             hs.config.Addr,
 		OptionalAddresses:   hs.config.OptionalAddrs,
