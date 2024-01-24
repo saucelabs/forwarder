@@ -47,7 +47,10 @@ func NewAPIHandler(title string, r prometheus.Gatherer, ready func(ctx context.C
 		m.HandleFunc(pattern, handler)
 	}
 
-	handleFunc("/metrics", promhttp.HandlerFor(r, promhttp.HandlerOpts{}).ServeHTTP)
+	handleFunc("/metrics", promhttp.HandlerFor(r, promhttp.HandlerOpts{
+		DisableCompression: true,
+		EnableOpenMetrics:  true,
+	}).ServeHTTP)
 	handleFunc("/healthz", a.healthz)
 	handleFunc("/readyz", a.readyz)
 
