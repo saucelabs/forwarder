@@ -31,8 +31,6 @@ func events(w http.ResponseWriter, r *http.Request) {
 	// Set the headers related to event streaming.
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
-	w.Header().Set("Connection", "keep-alive")
-	w.Header().Set("Transfer-Encoding", "chunked")
 
 	var i int
 	for {
