@@ -7,8 +7,8 @@ from playwright._impl._api_types import TimeoutError
 
 headless = False
 concurrent = 3
-load_timeout = 30000
-monkey_testing_timeout = 30000
+load_timeout = 7000
+monkey_testing_timeout = 3000
 
 # List of URLs to open.
 urls = [
