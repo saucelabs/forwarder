@@ -84,6 +84,9 @@ func NewHTTPTransport(cfg *HTTPTransportConfig) (*http.Transport, error) {
 		IdleConnTimeout:       cfg.IdleConnTimeout,
 		ResponseHeaderTimeout: cfg.ResponseHeaderTimeout,
 		ExpectContinueTimeout: cfg.ExpectContinueTimeout,
-		ForceAttemptHTTP2:     true,
+
+		ForceAttemptHTTP2: true,
+		ReadBufferSize:    32 * 1024,
+		WriteBufferSize:   32 * 1024,
 	}, nil
 }
