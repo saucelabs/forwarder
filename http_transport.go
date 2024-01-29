@@ -9,7 +9,6 @@ package forwarder
 import (
 	"crypto/tls"
 	"net/http"
-	"runtime"
 	"time"
 )
 
@@ -57,16 +56,14 @@ type HTTPTransportConfig struct {
 }
 
 func DefaultHTTPTransportConfig() *HTTPTransportConfig {
-	// The default values are taken from [hashicorp/go-cleanhttp](https://github.com/hashicorp/go-cleanhttp/blob/a0807dd79fc1680a7b1f2d5a2081d92567aab97d/cleanhttp.go#L19.
 	return &HTTPTransportConfig{
 		DialConfig: *DefaultDialConfig(),
 		TLSClientConfig: TLSClientConfig{
 			HandshakeTimeout: 10 * time.Second,
 		},
-		MaxIdleConns:          100,
 		IdleConnTimeout:       90 * time.Second,
 		ExpectContinueTimeout: 1 * time.Second,
-		MaxIdleConnsPerHost:   runtime.GOMAXPROCS(0) + 1,
+		MaxIdleConnsPerHost:   512,
 	}
 }
 
