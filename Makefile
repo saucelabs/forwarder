@@ -88,5 +88,9 @@ LICENSE.3RD_PARTY: LICENSE.3RD_PARTY.tpl go.mod go.sum
 .PHONY: run
 run: .forwarder.yaml
 run:
-	@go run --race ./cmd/forwarder run --config-file .forwarder.yaml
+	@GOMAXPROCS=1 go run ./cmd/forwarder run --config-file .forwarder.yaml
 
+.PHONY: run-race
+run-race: .forwarder.yaml
+run-race:
+	@go run --race ./cmd/forwarder run --config-file .forwarder.yaml
