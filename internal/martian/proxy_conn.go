@@ -98,10 +98,6 @@ func (p *proxyConn) handleMITM(ctx *Context, req *http.Request) error {
 		log.Errorf(req.Context(), "mitm: error modifying CONNECT response: %v", err)
 		p.warning(res.Header, err)
 	}
-	if p.session.Hijacked() {
-		log.Debugf(req.Context(), "mitm: connection hijacked by response modifier")
-		return nil
-	}
 
 	if err := p.writeResponse(res); err != nil {
 		return fmt.Errorf("mitm: write CONNECT response: %w", err)
@@ -171,10 +167,6 @@ func (p *proxyConn) handleConnectRequest(ctx *Context, req *http.Request) error 
 		log.Errorf(req.Context(), "error modifying CONNECT request: %v", err)
 		p.warning(req.Header, err)
 	}
-	if p.session.Hijacked() {
-		log.Debugf(req.Context(), "connection hijacked by request modifier")
-		return nil
-	}
 
 	if p.shouldMITM(req) {
 		return p.handleMITM(ctx, req)
@@ -220,10 +212,6 @@ func (p *proxyConn) handleConnectRequest(ctx *Context, req *http.Request) error 
 	if err := p.resmod.ModifyResponse(res); err != nil {
 		log.Errorf(req.Context(), "error modifying CONNECT response: %v", err)
 		p.warning(res.Header, err)
-	}
-	if p.session.Hijacked() {
-		log.Debugf(req.Context(), "connection hijacked by response modifier")
-		return nil
 	}
 
 	if res.StatusCode != http.StatusOK {
@@ -348,10 +336,6 @@ func (p *proxyConn) handle(ctx *Context) error {
 		log.Errorf(req.Context(), "error modifying request: %v", err)
 		p.warning(req.Header, err)
 	}
-	if session.Hijacked() {
-		log.Debugf(req.Context(), "connection hijacked by request modifier")
-		return nil
-	}
 
 	// after stripping all the hop-by-hop connection headers above, add back any
 	// necessary for protocol upgrades, such as for websockets.
@@ -385,10 +369,6 @@ func (p *proxyConn) handle(ctx *Context) error {
 	if err := p.resmod.ModifyResponse(res); err != nil {
 		log.Errorf(req.Context(), "error modifying response: %v", err)
 		p.warning(res.Header, err)
-	}
-	if session.Hijacked() {
-		log.Debugf(req.Context(), "connection hijacked by response modifier")
-		return nil
 	}
 
 	// after stripping all the hop-by-hop connection headers above, add back any

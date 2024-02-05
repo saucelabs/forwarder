@@ -84,7 +84,7 @@ func (p *Proxy) Handler() http.Handler {
 }
 
 func (p proxyHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
-	session := newSessionWithResponseWriter(rw)
+	session := new(Session)
 	if req.TLS != nil {
 		session.MarkSecure()
 	}
@@ -102,16 +102,10 @@ func (p proxyHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	p.handleRequest(ctx, rw, outreq)
 }
 
-func (p proxyHandler) handleConnectRequest(ctx *Context, rw http.ResponseWriter, req *http.Request) {
-	session := ctx.Session()
-
+func (p proxyHandler) handleConnectRequest(rw http.ResponseWriter, req *http.Request) {
 	if err := p.reqmod.ModifyRequest(req); err != nil {
 		log.Errorf(req.Context(), "error modifying CONNECT request: %v", err)
 		p.warning(req.Header, err)
-	}
-	if session.Hijacked() {
-		log.Debugf(req.Context(), "connection hijacked by request modifier")
-		return
 	}
 
 	log.Debugf(req.Context(), "attempting to establish CONNECT tunnel: %s", req.URL.Host)
@@ -154,10 +148,6 @@ func (p proxyHandler) handleConnectRequest(ctx *Context, rw http.ResponseWriter,
 	if err := p.resmod.ModifyResponse(res); err != nil {
 		log.Errorf(req.Context(), "error modifying CONNECT response: %v", err)
 		p.warning(res.Header, err)
-	}
-	if session.Hijacked() {
-		log.Debugf(req.Context(), "connection hijacked by response modifier")
-		return
 	}
 
 	if res.StatusCode != http.StatusOK {
@@ -248,7 +238,7 @@ func (p proxyHandler) handleRequest(ctx *Context, rw http.ResponseWriter, req *h
 	session := ctx.Session()
 
 	if req.Method == http.MethodConnect {
-		p.handleConnectRequest(ctx, rw, req)
+		p.handleConnectRequest(rw, req)
 		return
 	}
 
@@ -276,10 +266,6 @@ func (p proxyHandler) handleRequest(ctx *Context, rw http.ResponseWriter, req *h
 	if err := p.reqmod.ModifyRequest(req); err != nil {
 		log.Errorf(req.Context(), "error modifying request: %v", err)
 		p.warning(req.Header, err)
-	}
-	if session.Hijacked() {
-		log.Debugf(req.Context(), "connection hijacked by request modifier")
-		return
 	}
 
 	// After stripping all the hop-by-hop connection headers above, add back any
@@ -314,10 +300,6 @@ func (p proxyHandler) handleRequest(ctx *Context, rw http.ResponseWriter, req *h
 	if err := p.resmod.ModifyResponse(res); err != nil {
 		log.Errorf(req.Context(), "error modifying response: %v", err)
 		p.warning(res.Header, err)
-	}
-	if session.Hijacked() {
-		log.Debugf(req.Context(), "connection hijacked by response modifier")
-		return
 	}
 
 	// after stripping all the hop-by-hop connection headers above, add back any

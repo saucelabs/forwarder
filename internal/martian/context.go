@@ -15,11 +15,8 @@
 package martian
 
 import (
-	"bufio"
 	"context"
-	"errors"
 	"fmt"
-	"net"
 	"net/http"
 	"sync"
 	"sync/atomic"
@@ -43,12 +40,8 @@ type Context struct {
 
 // Session provides information and storage about a connection.
 type Session struct {
-	mu       sync.RWMutex
-	secure   bool
-	hijacked bool
-	conn     net.Conn
-	brw      *bufio.ReadWriter
-	rw       http.ResponseWriter
+	mu     sync.RWMutex
+	secure bool
 }
 
 type contextKey string
@@ -71,13 +64,13 @@ func NewContext(req *http.Request) *Context {
 
 // TestContext builds a new session and associated context and returns the context.
 // Intended for tests only.
-func TestContext(req *http.Request, conn net.Conn, bw *bufio.ReadWriter) *Context {
+func TestContext(req *http.Request) *Context {
 	ctx := NewContext(req)
 	if ctx != nil {
 		return ctx
 	}
 
-	ctx = withSession(newSession(conn, bw))
+	ctx = withSession(new(Session))
 	*req = *req.Clone(ctx.addToContext(req.Context()))
 
 	return ctx
@@ -106,55 +99,6 @@ func (s *Session) MarkInsecure() {
 	defer s.mu.Unlock()
 
 	s.secure = false
-}
-
-// Hijack takes control of the connection from the proxy. No further action
-// will be taken by the proxy and the connection will be closed following the
-// return of the hijacker.
-func (s *Session) Hijack() (conn net.Conn, brw *bufio.ReadWriter, err error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if s.hijacked {
-		return nil, nil, errors.New("session has already been hijacked")
-	}
-	defer func() {
-		s.hijacked = err == nil
-	}()
-
-	if s.conn != nil {
-		return s.conn, s.brw, nil
-	}
-	if s.rw != nil {
-		return http.NewResponseController(s.rw).Hijack()
-	}
-
-	panic("session has no connection or response writer")
-}
-
-// HijackResponseWriter takes control of the response writer from the proxy.
-func (s *Session) HijackResponseWriter() (http.ResponseWriter, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if s.hijacked {
-		return nil, errors.New("session has already been hijacked")
-	}
-
-	if s.rw != nil {
-		s.hijacked = true
-		return s.rw, nil
-	}
-
-	return nil, errors.New("session has no response writer")
-}
-
-// Hijacked returns whether the connection has been hijacked.
-func (s *Session) Hijacked() bool {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
-	return s.hijacked
 }
 
 // addToContext returns context.Context with the current context to the passed context.
@@ -214,21 +158,6 @@ func (ctx *Context) SkippingRoundTrip() bool {
 	defer ctx.mu.RUnlock()
 
 	return ctx.skipRoundTrip
-}
-
-// newSession builds a new session from a [net.Conn].
-func newSession(conn net.Conn, brw *bufio.ReadWriter) *Session {
-	return &Session{
-		conn: conn,
-		brw:  brw,
-	}
-}
-
-// newSessionWithResponseWriter builds a new session from a [http.ResponseWriter].
-func newSessionWithResponseWriter(rw http.ResponseWriter) *Session {
-	return &Session{
-		rw: rw,
-	}
 }
 
 var nextID atomic.Uint64

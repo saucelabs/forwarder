@@ -155,7 +155,7 @@ func TestModifyResponseAggregatesErrors(t *testing.T) {
 	if err != nil {
 		t.Fatalf("http.NewRequest(): got %v, want no error", err)
 	}
-	martian.TestContext(req, nil, nil)
+	martian.TestContext(req)
 
 	res := proxyutil.NewResponse(200, nil, req)
 
@@ -204,7 +204,7 @@ func TestModifyResponseInlineGroupsAggregateErrors(t *testing.T) {
 	if err != nil {
 		t.Fatalf("http.NewRequest(): got %v, want no error", err)
 	}
-	martian.TestContext(req, nil, nil)
+	martian.TestContext(req)
 
 	res := proxyutil.NewResponse(200, nil, req)
 
