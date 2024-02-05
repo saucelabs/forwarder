@@ -349,7 +349,7 @@ func (p *Proxy) handleLoop(conn net.Conn) {
 
 	pc := &proxyConn{
 		Proxy:   p,
-		session: newSession(conn, brw),
+		session: new(Session),
 		brw:     brw,
 		conn:    conn,
 	}
@@ -370,11 +370,6 @@ func (p *Proxy) handleLoop(conn net.Conn) {
 			}
 		} else {
 			errorsN = 0
-		}
-
-		if pc.session.Hijacked() {
-			log.Debugf(context.TODO(), "closing connection: %v", conn.RemoteAddr())
-			return
 		}
 	}
 }
