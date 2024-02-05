@@ -25,6 +25,8 @@ type denyError struct {
 const ErrorHeader = "X-Forwarder-Error"
 
 var (
+	ErrProxyAuthentication = errors.New("proxy authentication required")
+
 	ErrProxyLocalhost = denyError{errors.New("localhost proxying is disabled")}
 	ErrProxyDenied    = denyError{errors.New("proxying denied")}
 )
@@ -34,6 +36,7 @@ func (hp *HTTPProxy) errorResponse(req *http.Request, err error) *http.Response 
 		handleNetError,
 		handleTLSRecordHeader,
 		handleTLSCertificateError,
+		handleAuthenticationError,
 		handleDenyError,
 		handleStatusText,
 	}
@@ -65,6 +68,9 @@ func (hp *HTTPProxy) errorResponse(req *http.Request, err error) *http.Response 
 	body.WriteString("\n")
 
 	resp := proxyutil.NewResponse(code, &body, req)
+	if code == http.StatusProxyAuthRequired {
+		resp.Header.Set("Proxy-Authenticate", fmt.Sprintf("Basic realm=%q", hp.config.Name))
+	}
 	resp.Header.Set(ErrorHeader, hp.config.Name+" "+err.Error())
 	resp.Header.Set("Content-Type", "text/plain; charset=utf-8")
 	resp.ContentLength = int64(body.Len())
@@ -111,6 +117,16 @@ func handleTLSCertificateError(req *http.Request, err error) (code int, msg, lab
 	return
 }
 
+func handleAuthenticationError(req *http.Request, err error) (code int, msg, label string) {
+	if errors.Is(err, ErrProxyAuthentication) {
+		code = http.StatusProxyAuthRequired
+		msg = fmt.Sprintf("proxying is denied to host %q", req.Host)
+		label = "proxy_authentication"
+	}
+
+	return
+}
+
 func handleDenyError(req *http.Request, err error) (code int, msg, label string) {
 	var denyErr denyError
 	if errors.As(err, &denyErr) {
@@ -135,10 +151,4 @@ func handleStatusText(req *http.Request, err error) (code int, msg, label string
 	}
 
 	return
-}
-
-func unauthorizedResponse(req *http.Request) *http.Response {
-	resp := proxyutil.NewResponse(http.StatusProxyAuthRequired, nil, req)
-	resp.Header.Set("Proxy-Authenticate", `Basic realm="Sauce Labs Forwarder"`)
-	return resp
 }

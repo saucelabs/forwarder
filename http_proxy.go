@@ -7,14 +7,12 @@
 package forwarder
 
 import (
-	"bufio"
 	"context"
 	"crypto/sha256"
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
 	"fmt"
-	"io"
 	"net"
 	"net/http"
 	"net/url"
@@ -387,95 +385,35 @@ func (hp *HTTPProxy) middlewareStack() martian.RequestResponseModifier {
 	return topg.ToImmutable()
 }
 
-func (hp *HTTPProxy) abortIf(condition func(r *http.Request) bool, response func(*http.Request) *http.Response, returnErr func(*http.Request) error) martian.RequestModifier {
-	return martian.RequestModifierFunc(func(req *http.Request) error {
-		if !condition(req) {
-			return nil
-		}
-
-		lf := httplog.NewLogger(hp.log.Infof, hp.config.LogHTTPMode).LogFunc()
-		if err := lf.ModifyRequest(req); err != nil {
-			hp.log.Errorf("got error while logging request: %s", err)
-		}
-
-		res := response(req)
-		defer res.Body.Close()
-		res.Close = true // hijacked connection is closed by Martian in handleLoop()
-
-		if err := lf.ModifyResponse(res); err != nil {
-			hp.log.Errorf("got error while logging response: %s", err)
-		}
-
-		session := martian.NewContext(req).Session()
-		var (
-			brw *bufio.ReadWriter
-			rw  http.ResponseWriter
-			err error
-		)
-		_, brw, err = session.Hijack()
-		if err == nil {
-			hp.writeErrorResponseToBuffer(res, brw)
-		} else if errors.Is(err, http.ErrNotSupported) {
-			rw, err = session.HijackResponseWriter()
-			if err == nil {
-				hp.writeErrorResponseToResponseWriter(res, rw)
-			}
-		}
-		if err != nil {
-			panic(err)
-		}
-
-		return returnErr(req)
-	})
-}
-
-func (hp *HTTPProxy) writeErrorResponseToBuffer(res *http.Response, brw *bufio.ReadWriter) {
-	res.Write(brw) //nolint:errcheck // it's a buffer
-	if err := brw.Flush(); err != nil {
-		hp.log.Errorf("got error while flushing error response: %s", err)
-	}
-}
-
-func (hp *HTTPProxy) writeErrorResponseToResponseWriter(res *http.Response, rw http.ResponseWriter) {
-	header := rw.Header()
-	for k, vv := range res.Header {
-		for _, v := range vv {
-			header.Add(k, v)
-		}
-	}
-	rw.WriteHeader(res.StatusCode)
-
-	if _, err := io.Copy(rw, res.Body); err != nil {
-		hp.log.Errorf("got error while writing error response: %s", err)
-	}
-}
-
 func (hp *HTTPProxy) basicAuth(u *url.Userinfo) martian.RequestModifier {
 	user := u.Username()
 	pass, _ := u.Password()
 	ba := middleware.NewProxyBasicAuth()
 
-	return hp.abortIf(
-		func(req *http.Request) bool { return !ba.AuthenticatedRequest(req, user, pass) },
-		unauthorizedResponse,
-		func(_ *http.Request) error { return errors.New("basic auth required") },
-	)
+	return martian.RequestModifierFunc(func(req *http.Request) error {
+		if !ba.AuthenticatedRequest(req, user, pass) {
+			return ErrProxyAuthentication
+		}
+		return nil
+	})
 }
 
 func (hp *HTTPProxy) denyLocalhost() martian.RequestModifier {
-	return hp.abortIf(
-		hp.isLocalhost,
-		func(req *http.Request) *http.Response { return hp.errorResponse(req, ErrProxyLocalhost) },
-		func(req *http.Request) error { return errors.New("localhost access denied") },
-	)
+	return martian.RequestModifierFunc(func(req *http.Request) error {
+		if hp.isLocalhost(req) {
+			return ErrProxyLocalhost
+		}
+		return nil
+	})
 }
 
 func (hp *HTTPProxy) denyDomains(r *ruleset.RegexpMatcher) martian.RequestModifier {
-	return hp.abortIf(
-		func(req *http.Request) bool { return r.Match(req.URL.Hostname()) },
-		func(req *http.Request) *http.Response { return hp.errorResponse(req, ErrProxyDenied) },
-		func(req *http.Request) error { return fmt.Errorf("access to %s denied", req.URL.Hostname()) },
-	)
+	return martian.RequestModifierFunc(func(req *http.Request) error {
+		if r.Match(req.URL.Hostname()) {
+			return ErrProxyDenied
+		}
+		return nil
+	})
 }
 
 func (hp *HTTPProxy) directDomains(fn ProxyFunc) ProxyFunc {
