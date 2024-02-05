@@ -49,7 +49,6 @@ type Session struct {
 	conn     net.Conn
 	brw      *bufio.ReadWriter
 	rw       http.ResponseWriter
-	vals     map[string]any
 }
 
 type contextKey string
@@ -156,29 +155,6 @@ func (s *Session) Hijacked() bool {
 	defer s.mu.RUnlock()
 
 	return s.hijacked
-}
-
-// Get takes key and returns the associated value from the session.
-func (s *Session) Get(key string) (any, bool) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
-	val, ok := s.vals[key]
-
-	return val, ok
-}
-
-// Set takes a key and associates it with val in the session. The value is
-// persisted for the entire session across multiple requests and responses.
-func (s *Session) Set(key string, val any) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	if s.vals == nil {
-		s.vals = make(map[string]any)
-	}
-
-	s.vals[key] = val
 }
 
 // addToContext returns context.Context with the current context to the passed context.

@@ -50,15 +50,6 @@ func TestContexts(t *testing.T) {
 		t.Error("s.IsSecure(): got false, want true")
 	}
 
-	s.Set("key", "value")
-	got, ok = s.Get("key")
-	if !ok {
-		t.Errorf("s.Get(%q): got !ok, want ok", "key")
-	}
-	if want := "value"; got != want {
-		t.Errorf("s.Get(%q): got %q, want %q", "key", got, want)
-	}
-
 	ctx2 := TestContext(req, nil, nil)
 	if ctx != ctx2 {
 		t.Error("TestContext(): got new context, want existing context")
