@@ -93,8 +93,8 @@ func (c *Compose) down() error {
 }
 
 func (c *Compose) dockerCompose(args ...string) *exec.Cmd {
-	return exec.Command("docker", append([]string{ //nolint:gosec // G204: Subprocess launched with a potential tainted input or cmd arguments
-		"compose", "-f", c.Path,
+	return exec.Command("docker-compose", append([]string{ //nolint:gosec // G204: Subprocess launched with a potential tainted input or cmd arguments
+		"-f", c.Path,
 	}, args...)...)
 }
 
