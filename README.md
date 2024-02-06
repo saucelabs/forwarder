@@ -11,20 +11,37 @@ It can proxy:
 * Server Sent Events (SSE)
 * TCP traffic (e.g. SMTP, IMAP, etc.)
 
-## Features
+## Documentation
 
-* Supports upstream HTTP(S) and SOCKS5 proxies
-* Supports PAC files for upstream proxy configuration
-* Supports MITM for HTTPS traffic with automatic certificate generation
-* Supports custom DNS servers
-* Supports augmenting requests and responses with headers
-* Supports basic authentication, for websites and proxies
+The documentation is available at [forwarder-proxy.io](https://forwarder-proxy.io).
 
-## Additional resources
+## Development
 
-* Forwarder Proxy documentation: https://forwarder-proxy.io
-* Forwarder Proxy CLI reference:
-  - [forwarder run](https://forwarder-proxy.io/cli/forwarder_run) - Start HTTP (forward) proxy server
-  - [forwarder pac eval](https://forwarder-proxy.io/cli/forwarder_pac_eval) - Evaluate a PAC file for given URL (or URLs)
-  - [forwarder pac server](https://forwarder-proxy.io/cli/forwarder_pac_server) - Start HTTP server that serves a PAC file
-  - [forwarder ready](https://forwarder-proxy.io/cli/forwarder_ready) - Readiness probe for the Forwarder
+### Quick Start
+
+- Install Docker and Docker Compose
+- Install `make`
+- Run `make install-dependencies`
+
+### Linting
+
+- Run `make fmt` to auto format code
+- Run `make lint` to lint code
+- Edit [.golangci.yml](.golangci.yml) to change linting rules
+
+### Building Devel Images
+
+- Run `make update-devel-image` to build the devel docker image.
+  The target supports both `docker` and `podman` as container engines.
+  Configure with `CONTAINER_RUNTIME=<docker|podman>`.
+
+### Testing
+
+- Run `make test` to run Go unit tests
+- Run `make -C e2e run-e2e` to run e2e tests, more details in [e2e/README.md](e2e/README.md)
+
+### Updating tools versions
+
+All tools versions are defined in [.version](.version) file.
+To update a version, edit the file and create a merge request.
+CI will run and update the CI image with the new version.
