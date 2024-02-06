@@ -1,4 +1,4 @@
-COMPOSE := docker compose -f docker-compose.yaml
+COMPOSE := docker-compose -f docker-compose.yaml
 
 # Docker tag to be tested.
 ifndef FORWARDER_VERSION
