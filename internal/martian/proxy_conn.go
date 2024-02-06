@@ -100,7 +100,7 @@ func (p *proxyConn) handleMITM(ctx *Context, req *http.Request) error {
 	}
 
 	if err := p.writeResponse(res); err != nil {
-		return fmt.Errorf("mitm: write CONNECT response: %w", err)
+		return err
 	}
 
 	b, err := p.brw.Peek(1)
@@ -218,10 +218,7 @@ func (p *proxyConn) handleConnectRequest(ctx *Context, req *http.Request) error 
 		if cerr == nil {
 			log.Errorf(req.Context(), "CONNECT rejected with status code: %d", res.StatusCode)
 		}
-		if err := p.writeResponse(res); err != nil {
-			return fmt.Errorf("write CONNECT error response: %w", err)
-		}
-		return nil
+		return p.writeResponse(res)
 	}
 
 	res.ContentLength = -1
@@ -383,20 +380,7 @@ func (p *proxyConn) handle(ctx *Context) error {
 		return p.handleUpgradeResponse(res)
 	}
 
-	if err := p.writeResponse(res); err != nil {
-		if errors.Is(err, errClose) {
-			return errClose
-		}
-
-		if isClosedConnError(err) {
-			log.Debugf(req.Context(), "connection closed prematurely while writing response: %v", err)
-		} else {
-			log.Errorf(req.Context(), "got error while writing response: %v", err)
-		}
-		return errClose
-	}
-
-	return nil
+	return p.writeResponse(res)
 }
 
 func (p *proxyConn) writeResponse(res *http.Response) error {
@@ -432,11 +416,17 @@ func (p *proxyConn) writeResponse(res *http.Response) error {
 	}
 	if err != nil {
 		p.brw.Flush() // flush any remaining data
-		return err
+	} else {
+		err = p.brw.Flush()
 	}
 
-	if err := p.brw.Flush(); err != nil {
-		return err
+	if err != nil {
+		if isClosedConnError(err) {
+			log.Debugf(req.Context(), "connection closed prematurely while writing response: %v", err)
+		} else {
+			log.Errorf(req.Context(), "got error while writing response: %v", err)
+		}
+		return errClose
 	}
 
 	if res.Close {
