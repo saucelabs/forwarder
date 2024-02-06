@@ -19,7 +19,8 @@ The documentation is available at [forwarder-proxy.io](https://forwarder-proxy.i
 
 ### Quick Start
 
-- Install Docker and Docker Compose
+- Install Docker or Podman, for Podman configuration see [Using Podman](#using-podman) section below
+- Install Docker Compose
 - Install `make`
 - Run `make install-dependencies`
 
@@ -31,9 +32,7 @@ The documentation is available at [forwarder-proxy.io](https://forwarder-proxy.i
 
 ### Building Devel Images
 
-- Run `make update-devel-image` to build the devel docker image.
-  The target supports both `docker` and `podman` as container engines.
-  Configure with `CONTAINER_RUNTIME=<docker|podman>`.
+Run `make update-devel-image` to build the devel docker image.
 
 ### Testing
 
@@ -45,3 +44,31 @@ The documentation is available at [forwarder-proxy.io](https://forwarder-proxy.i
 All tools versions are defined in [.version](.version) file.
 To update a version, edit the file and create a merge request.
 CI will run and update the CI image with the new version.
+
+### Using Podman
+
+You can use Podman instead of Docker as a container engine.
+Docker Compose needs to be installed as we don't support Podman Compose yet.
+
+#### Configuration
+
+Make sure you have installed and started Podman.
+
+- Link `podman` command as `docker` command:
+  ```
+  ln -s $(which podman) /usr/local/bin/docker
+  ```
+- If not on Linux, ssh into the Podman Machine:
+  ```
+  podman machine ssh
+  ``` 
+- Edit the `delegate.conf` file:
+  ```
+  sudo vi /etc/systemd/system/user@.service.d/delegate.conf 
+  ```
+  By adding `cpuset` to the `Delegate` line, it should look like this:
+  ```
+  [Service]
+  Delegate=memory pids cpu cpuset io
+  ```
+- Restart the Podman Machine
