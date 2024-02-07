@@ -7,6 +7,7 @@
 package forwarder
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"net/url"
@@ -22,13 +23,13 @@ type HostPortUser struct {
 
 func (hpu *HostPortUser) Validate() error {
 	if hpu.Host == "" {
-		return fmt.Errorf("missing host")
+		return errors.New("missing host")
 	}
 	if hpu.Port == "" {
-		return fmt.Errorf("missing port")
+		return errors.New("missing port")
 	}
 	if hpu.Userinfo == nil {
-		return fmt.Errorf("missing user")
+		return errors.New("missing user")
 	}
 	return validatedUserInfo(hpu.Userinfo)
 }
@@ -100,7 +101,7 @@ func NewCredentialsMatcher(credentials []*HostPortUser, log log.Logger) (*Creden
 		switch {
 		case hpu.Host == "*" && hpu.Port == "0":
 			if m.global != nil {
-				return nil, withRowInfo(fmt.Errorf("duplicate global input"))
+				return nil, withRowInfo(errors.New("duplicate global input"))
 			}
 			m.global = hpu.Userinfo
 		case hpu.Host == "*":
@@ -116,7 +117,7 @@ func NewCredentialsMatcher(credentials []*HostPortUser, log log.Logger) (*Creden
 		default:
 			hostport := net.JoinHostPort(hpu.Host, hpu.Port)
 			if _, ok := m.hostport[hostport]; ok {
-				return nil, fmt.Errorf("duplicate input")
+				return nil, errors.New("duplicate input")
 			}
 			m.hostport[hostport] = hpu.Userinfo
 		}

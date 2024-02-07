@@ -7,7 +7,7 @@
 package middleware
 
 import (
-	"fmt"
+	"errors"
 	"net/http"
 	"strconv"
 	"time"
@@ -138,7 +138,7 @@ func (p *Prometheus) ModifyResponse(res *http.Response) error {
 		start := t0.(time.Time) //nolint:forcetypeassert // we know it's time
 		elapsed = float64(time.Since(start)) / float64(time.Second)
 	} else {
-		return fmt.Errorf("prometheus duration key not found")
+		return errors.New("prometheus duration key not found")
 	}
 
 	reqSize := computeApproximateRequestSize(r)

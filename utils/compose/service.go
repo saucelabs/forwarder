@@ -7,7 +7,7 @@
 package compose
 
 import (
-	"fmt"
+	"errors"
 	"time"
 )
 
@@ -29,13 +29,13 @@ type Service struct {
 
 func (s *Service) Validate() error {
 	if s == nil {
-		return fmt.Errorf("service is nil")
+		return errors.New("service is nil")
 	}
 	if s.Image == "" {
-		return fmt.Errorf("service image is empty")
+		return errors.New("service image is empty")
 	}
 	if s.Name == "" {
-		return fmt.Errorf("service name is empty")
+		return errors.New("service name is empty")
 	}
 
 	return nil

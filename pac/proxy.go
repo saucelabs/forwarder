@@ -7,6 +7,7 @@
 package pac
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"net/url"
@@ -116,7 +117,7 @@ func parseProxy(s string) (Proxy, error) {
 
 	mode, hostport, ok := strings.Cut(s, " ")
 	if !ok {
-		return noProxy, fmt.Errorf("missing host:port")
+		return noProxy, errors.New("missing host:port")
 	}
 	host, port, err := net.SplitHostPort(hostport)
 	if err != nil {

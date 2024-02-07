@@ -15,7 +15,7 @@
 package proxyutil
 
 import (
-	"fmt"
+	"errors"
 	"net/http"
 	"strings"
 	"testing"
@@ -57,7 +57,7 @@ func TestNewResponse(t *testing.T) {
 
 func TestWarning(t *testing.T) {
 	hdr := http.Header{}
-	err := fmt.Errorf("modifier error")
+	err := errors.New("modifier error")
 
 	Warning(hdr, err)
 

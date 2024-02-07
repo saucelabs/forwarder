@@ -190,7 +190,7 @@ func newHTTPProxy(cfg *HTTPProxyConfig, pr PACResolver, cm *CredentialsMatcher, 
 		return nil, err
 	}
 	if cfg.UpstreamProxy != nil && pr != nil {
-		return nil, fmt.Errorf("cannot use both upstream proxy and PAC")
+		return nil, errors.New("cannot use both upstream proxy and PAC")
 	}
 
 	// If not set, use http.DefaultTransport.

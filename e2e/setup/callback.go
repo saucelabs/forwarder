@@ -8,6 +8,7 @@ package setup
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -40,7 +41,7 @@ func makeTestCallback(run string, debug bool) func() error {
 			fmt.Fprintln(os.Stderr, "stderr:")
 			stderr.WriteTo(os.Stderr)
 			fmt.Fprintln(os.Stderr)
-			return fmt.Errorf("unexpected stderr")
+			return errors.New("unexpected stderr")
 		}
 
 		s := strings.Split(stdout.String(), "\n")

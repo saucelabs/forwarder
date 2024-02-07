@@ -289,7 +289,7 @@ func HTTPServerConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPServerConfig, prefix
 func HTTPLogConfig(fs *pflag.FlagSet, cfg []NamedParam[httplog.Mode]) {
 	for _, p := range cfg {
 		if p.Param == nil {
-			panic(fmt.Sprintf("httplog mode is nil for %s", p.Name))
+			panic("httplog mode is nil for " + p.Name)
 		}
 	}
 

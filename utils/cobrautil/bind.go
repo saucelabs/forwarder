@@ -7,6 +7,7 @@
 package cobrautil
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -66,7 +67,7 @@ func BindFromViper(cmd *cobra.Command, v *viper.Viper) error {
 					if f.Shorthand != "" && f.ShorthandDeprecated == "" {
 						flagName = fmt.Sprintf("-%s, --%s", f.Shorthand, f.Name)
 					} else {
-						flagName = fmt.Sprintf("--%s", f.Name)
+						flagName = "--" + f.Name
 					}
 					fmt.Fprintf(cmd.ErrOrStderr(), "invalid argument %q for %q flag: %v", value, flagName, err)
 					ok = false
@@ -82,11 +83,11 @@ func BindFromViper(cmd *cobra.Command, v *viper.Viper) error {
 	}
 
 	if !updateFs(cmd.PersistentFlags()) {
-		return fmt.Errorf("failed to update persistent flags")
+		return errors.New("failed to update persistent flags")
 	}
 
 	if !updateFs(cmd.Flags()) {
-		return fmt.Errorf("failed to update flags")
+		return errors.New("failed to update flags")
 	}
 
 	return nil

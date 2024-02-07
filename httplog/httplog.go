@@ -154,7 +154,7 @@ func (w *logWriter) ShortURLLine(e middleware.LogEntry) {
 	if scheme != "" {
 		scheme += "://"
 	}
-	if len(path) > 0 && path[0] != '/' {
+	if path != "" && path[0] != '/' {
 		path = "/" + path
 	}
 

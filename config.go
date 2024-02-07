@@ -7,6 +7,7 @@
 package forwarder
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"net/netip"
@@ -24,7 +25,7 @@ import (
 // ParseUserinfo parses a user:password string into *url.Userinfo.
 func ParseUserinfo(val string) (*url.Userinfo, error) {
 	if val == "" {
-		return nil, fmt.Errorf("expected username[:password]")
+		return nil, errors.New("expected username[:password]")
 	}
 
 	var ui *url.Userinfo
@@ -46,7 +47,7 @@ func validatedUserInfo(ui *url.Userinfo) error {
 		return nil
 	}
 	if ui.Username() == "" {
-		return fmt.Errorf("username cannot be empty")
+		return errors.New("username cannot be empty")
 	}
 
 	return nil
@@ -63,15 +64,15 @@ func wildcardPortTo0(val string) string {
 // ParseHostPortUser parses a user:password@host:port string into HostUser.
 func ParseHostPortUser(val string) (*HostPortUser, error) {
 	if val == "" {
-		return nil, fmt.Errorf("expected user[:password]@host:port")
+		return nil, errors.New("expected user[:password]@host:port")
 	}
 	if strings.Index(val, "@") != strings.LastIndex(val, "@") {
-		return nil, fmt.Errorf("only one '@' is allowed")
+		return nil, errors.New("only one '@' is allowed")
 	}
 
 	up, hp, ok := strings.Cut(val, "@")
 	if !ok {
-		return nil, fmt.Errorf("expected user[:password]@host:port")
+		return nil, errors.New("expected user[:password]@host:port")
 	}
 
 	ui, err := ParseUserinfo(up)
@@ -104,7 +105,7 @@ func ParseProxyURL(val string) (*url.URL, error) {
 	}
 
 	if strings.Index(hpu, "@") != strings.LastIndex(hpu, "@") {
-		return nil, fmt.Errorf("only one '@' is allowed")
+		return nil, errors.New("only one '@' is allowed")
 	}
 
 	var (
@@ -162,7 +163,7 @@ func validateProxyURL(u *url.URL) error {
 		uu := *u
 		uu.User = nil
 		if uu.String() != c.String() {
-			return fmt.Errorf("unsupported URL elements, format: [<protocol>://]<host>:<port>")
+			return errors.New("unsupported URL elements, format: [<protocol>://]<host>:<port>")
 		}
 	}
 
@@ -182,14 +183,14 @@ func validateProxyURL(u *url.URL) error {
 
 	{
 		if u.Port() == "" {
-			return fmt.Errorf("port is required")
+			return errors.New("port is required")
 		}
 		p, err := strconv.ParseUint(u.Port(), 10, 16)
 		if err != nil {
 			return fmt.Errorf("port: %w", err)
 		}
 		if p == 0 {
-			return fmt.Errorf("port cannot be 0")
+			return errors.New("port cannot be 0")
 		}
 	}
 
@@ -233,7 +234,7 @@ func validateDNSAddress(p netip.AddrPort) error {
 		return fmt.Errorf("IP: %s", p.Addr())
 	}
 	if p.Port() == 0 {
-		return fmt.Errorf("port cannot be 0")
+		return errors.New("port cannot be 0")
 	}
 	return nil
 }

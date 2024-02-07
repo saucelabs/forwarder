@@ -5,6 +5,7 @@
 package osdns
 
 import (
+	"errors"
 	"fmt"
 )
 
@@ -21,7 +22,7 @@ func configure(cfg *Config) error {
 
 	procDNSCfg := resolvConf.dnsConfig.Load()
 	if procDNSCfg == nil {
-		return fmt.Errorf("failed to get system DNS config")
+		return errors.New("failed to get system DNS config")
 	}
 	if procDNSCfg.err != nil {
 		return fmt.Errorf("failed to get system DNS config: %w", procDNSCfg.err)

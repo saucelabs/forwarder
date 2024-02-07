@@ -23,7 +23,7 @@ func RedactUserinfo(ui *url.Userinfo) string {
 		return ""
 	}
 	if _, has := ui.Password(); has {
-		return fmt.Sprintf("%s:xxxxx", ui.Username())
+		return ui.Username() + ":xxxxx"
 	}
 	return ui.Username()
 }
