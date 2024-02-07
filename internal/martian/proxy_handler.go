@@ -372,8 +372,13 @@ func (p proxyHandler) writeResponse(rw http.ResponseWriter, res *http.Response) 
 	} else {
 		err = copyBody(rw, res.Body)
 	}
+
 	if err != nil {
-		log.Errorf(res.Request.Context(), "got error while writing response back to client: %v", err)
+		if isClosedConnError(err) {
+			log.Debugf(res.Request.Context(), "connection closed prematurely while writing response: %v", err)
+		} else {
+			log.Errorf(res.Request.Context(), "got error while writing response: %v", err)
+		}
 		panic(http.ErrAbortHandler)
 	}
 
