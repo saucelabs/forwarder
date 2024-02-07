@@ -98,7 +98,7 @@ func New(spf []h2.StreamProcessorFactory) (*Fixture, error) {
 		}
 		proxyTarget := hostname + ":" + strconv.Itoa(proxyPort)
 		// Sets the HTTPS_PROXY environment variable so that http requests will go through the proxy.
-		os.Setenv("HTTPS_PROXY", fmt.Sprintf("http://%s", proxyTarget))
+		os.Setenv("HTTPS_PROXY", "http://"+proxyTarget)
 		fmt.Printf("proxy at %s\n", proxyTarget)
 	}
 	if f.proxyListener == nil {

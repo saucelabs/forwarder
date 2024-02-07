@@ -8,6 +8,7 @@ package forwarder
 
 import (
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -45,7 +46,7 @@ func readData(u *url.URL) ([]byte, error) {
 	idx := strings.IndexByte(v, ',')
 	if idx != -1 {
 		if v[:idx] != "base64" {
-			return nil, fmt.Errorf("invalid data URI, the only supported format is: data:base64,<encoded data>")
+			return nil, errors.New("invalid data URI, the only supported format is: data:base64,<encoded data>")
 		}
 		v = v[idx+1:]
 	}

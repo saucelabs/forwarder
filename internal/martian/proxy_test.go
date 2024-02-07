@@ -708,7 +708,7 @@ func TestIntegrationTLSHandshakeErrorCallback(t *testing.T) {
 	}
 
 	var herr error
-	mc.SetHandshakeErrorCallback(func(_ *http.Request, err error) { herr = fmt.Errorf("handshake error") })
+	mc.SetHandshakeErrorCallback(func(_ *http.Request, err error) { herr = errors.New("handshake error") })
 	p.SetMITM(mc)
 
 	tl, err := net.Listen("tcp", "[::]:0")
@@ -1808,7 +1808,7 @@ func TestServerClosesConnection(t *testing.T) {
 	}
 	defer conn.Close()
 
-	req, err := http.NewRequest(http.MethodConnect, fmt.Sprintf("//%s", dstl.Addr().String()), http.NoBody)
+	req, err := http.NewRequest(http.MethodConnect, "//"+dstl.Addr().String(), http.NoBody)
 	if err != nil {
 		t.Fatalf("http.NewRequest(): got %v, want no error", err)
 	}

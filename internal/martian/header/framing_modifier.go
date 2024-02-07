@@ -15,6 +15,7 @@
 package header
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -66,7 +67,7 @@ func NewBadFramingModifier() martian.RequestModifier {
 				// "chunked", else we have no way to determine when the request is
 				// finished.
 				if strings.TrimSpace(last[len(last)-1]) != "chunked" {
-					return fmt.Errorf(`bad request framing: "Transfer-Encoding" header is present, but does not end in "chunked"`)
+					return errors.New(`bad request framing: "Transfer-Encoding" header is present, but does not end in "chunked"`)
 				}
 
 				// Transfer-Encoding "chunked" takes precedence over

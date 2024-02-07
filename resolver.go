@@ -8,7 +8,7 @@ package forwarder
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"net"
 )
 
@@ -16,7 +16,7 @@ func nopResolver() *net.Resolver {
 	return &net.Resolver{
 		PreferGo: true,
 		Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
-			return nil, fmt.Errorf("no DNS resolver configured")
+			return nil, errors.New("no DNS resolver configured")
 		},
 	}
 }

@@ -9,7 +9,7 @@ package pac
 import (
 	"bytes"
 	"context"
-	"fmt"
+	"errors"
 	"net"
 	"sort"
 
@@ -125,7 +125,7 @@ func (pr *ProxyResolver) sortIPAddressList(call goja.FunctionCall) goja.Value {
 	ips, err := asSlice(s, ";", func(v string) (parsedIP, error) {
 		ip := net.ParseIP(v)
 		if ip == nil {
-			return parsedIP{}, fmt.Errorf("invalid IP address")
+			return parsedIP{}, errors.New("invalid IP address")
 		}
 		return parsedIP{
 			IP:   ip,

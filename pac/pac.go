@@ -8,6 +8,7 @@ package pac
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -28,7 +29,7 @@ type ProxyResolverConfig struct {
 
 func (c *ProxyResolverConfig) Validate() error {
 	if c.Script == "" {
-		return fmt.Errorf("PAC script is empty")
+		return errors.New("PAC script is empty")
 	}
 	return nil
 }
@@ -82,10 +83,10 @@ func NewProxyResolver(cfg *ProxyResolverConfig, r *net.Resolver, opts ...Option)
 	// Find the FindProxyForURL function.
 	fnx, fn := pr.entryPoint()
 	if fnx == nil && fn == nil {
-		return nil, fmt.Errorf("PAC script: missing required function FindProxyForURL or FindProxyForURLEx")
+		return nil, errors.New("PAC script: missing required function FindProxyForURL or FindProxyForURLEx")
 	}
 	if fnx != nil && fn != nil {
-		return nil, fmt.Errorf("PAC script: ambiguous entry point, both FindProxyForURL and FindProxyForURLEx are defined")
+		return nil, errors.New("PAC script: ambiguous entry point, both FindProxyForURL and FindProxyForURLEx are defined")
 	}
 	if fnx != nil {
 		pr.fn = fnx

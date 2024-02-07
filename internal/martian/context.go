@@ -17,6 +17,7 @@ package martian
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -116,7 +117,7 @@ func (s *Session) Hijack() (conn net.Conn, brw *bufio.ReadWriter, err error) {
 	defer s.mu.Unlock()
 
 	if s.hijacked {
-		return nil, nil, fmt.Errorf("session has already been hijacked")
+		return nil, nil, errors.New("session has already been hijacked")
 	}
 	defer func() {
 		s.hijacked = err == nil
@@ -138,7 +139,7 @@ func (s *Session) HijackResponseWriter() (http.ResponseWriter, error) {
 	defer s.mu.Unlock()
 
 	if s.hijacked {
-		return nil, fmt.Errorf("session has already been hijacked")
+		return nil, errors.New("session has already been hijacked")
 	}
 
 	if s.rw != nil {
@@ -146,7 +147,7 @@ func (s *Session) HijackResponseWriter() (http.ResponseWriter, error) {
 		return s.rw, nil
 	}
 
-	return nil, fmt.Errorf("session has no response writer")
+	return nil, errors.New("session has no response writer")
 }
 
 // Hijacked returns whether the connection has been hijacked.

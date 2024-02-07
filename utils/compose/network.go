@@ -7,6 +7,7 @@
 package compose
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"strconv"
@@ -53,10 +54,10 @@ type Network struct {
 
 func (n *Network) Validate() error {
 	if n.Name == "" {
-		return fmt.Errorf("network name is required")
+		return errors.New("network name is required")
 	}
 	if n.Driver == "" {
-		return fmt.Errorf("network driver is required")
+		return errors.New("network driver is required")
 	}
 	return n.IPAM.Validate()
 }

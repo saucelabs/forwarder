@@ -9,7 +9,7 @@ package forwarder
 import (
 	"crypto/tls"
 	"crypto/x509"
-	"fmt"
+	"errors"
 	"time"
 
 	"github.com/saucelabs/forwarder/internal/martian/mitm"
@@ -53,7 +53,7 @@ func newMartianMITMConfig(c *MITMConfig) (*mitm.Config, error) {
 	}
 
 	if !ca.IsCA {
-		return nil, fmt.Errorf("certificate is not a CA")
+		return nil, errors.New("certificate is not a CA")
 	}
 
 	cfg, err := mitm.NewConfig(ca, cert.PrivateKey)

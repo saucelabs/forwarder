@@ -10,6 +10,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"net/url"
@@ -79,7 +80,7 @@ func TestProxyResolverChromium(t *testing.T) { //nolint:maintidx // long table
 			fileName: "dns_fail.js",
 			configure: func(t *testing.T, cfg *ProxyResolverConfig) {
 				cfg.testingLookupIP = func(ctx context.Context, network, host string) ([]net.IP, error) {
-					return nil, fmt.Errorf("test")
+					return nil, errors.New("test")
 				}
 				cfg.testingMyIPAddress = []net.IP{}
 				cfg.testingMyIPAddressEx = []net.IP{}

@@ -9,7 +9,6 @@ package forwarder
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -82,7 +81,7 @@ func TestAbortIf(t *testing.T) {
 }
 
 func TestNopDialer(t *testing.T) {
-	nopDialerErr := fmt.Errorf("nop dialer")
+	nopDialerErr := errors.New("nop dialer")
 
 	tr := &http.Transport{
 		DialContext: func(_ context.Context, _, _ string) (net.Conn, error) {
