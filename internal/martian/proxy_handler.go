@@ -27,6 +27,7 @@ import (
 	"strings"
 
 	"github.com/saucelabs/forwarder/internal/martian/log"
+	"github.com/saucelabs/forwarder/internal/martian/proxyutil"
 )
 
 func copyHeader(dst, src http.Header) {
@@ -104,8 +105,9 @@ func (p proxyHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 
 func (p proxyHandler) handleConnectRequest(rw http.ResponseWriter, req *http.Request) {
 	if err := p.reqmod.ModifyRequest(req); err != nil {
-		log.Errorf(req.Context(), "error modifying CONNECT request: %v", err)
-		p.warning(req.Header, err)
+		log.Debugf(req.Context(), "error modifying CONNECT request: %v", err)
+		p.writeErrorResponse(rw, req, err)
+		return
 	}
 
 	log.Debugf(req.Context(), "attempting to establish CONNECT tunnel: %s", req.URL.Host)
@@ -138,23 +140,24 @@ func (p proxyHandler) handleConnectRequest(rw http.ResponseWriter, req *http.Req
 		}
 	}
 
+	if res != nil {
+		defer res.Body.Close()
+	}
 	if cerr != nil {
 		log.Errorf(req.Context(), "failed to CONNECT: %v", cerr)
-		res = p.errorResponse(req, cerr)
-		p.warning(res.Header, cerr)
+		p.writeErrorResponse(rw, req, cerr)
+		return
 	}
-	defer res.Body.Close()
 
 	if err := p.resmod.ModifyResponse(res); err != nil {
-		log.Errorf(req.Context(), "error modifying CONNECT response: %v", err)
-		p.warning(res.Header, err)
+		log.Debugf(req.Context(), "error modifying CONNECT response: %v", err)
+		p.writeErrorResponse(rw, req, err)
+		return
 	}
 
 	if res.StatusCode != http.StatusOK {
-		if cerr == nil {
-			log.Errorf(req.Context(), "CONNECT rejected with status code: %d", res.StatusCode)
-		}
-		writeResponse(rw, res)
+		log.Errorf(req.Context(), "CONNECT rejected with status code: %d", res.StatusCode)
+		p.writeResponse(rw, res)
 		return
 	}
 
@@ -263,9 +266,11 @@ func (p proxyHandler) handleRequest(ctx *Context, rw http.ResponseWriter, req *h
 	if reqUpType != "" {
 		log.Debugf(req.Context(), "upgrade request: %s", reqUpType)
 	}
+
 	if err := p.reqmod.ModifyRequest(req); err != nil {
-		log.Errorf(req.Context(), "error modifying request: %v", err)
-		p.warning(req.Header, err)
+		log.Debugf(req.Context(), "error modifying request: %v", err)
+		p.writeErrorResponse(rw, req, err)
+		return
 	}
 
 	// After stripping all the hop-by-hop connection headers above, add back any
@@ -283,10 +288,10 @@ func (p proxyHandler) handleRequest(ctx *Context, rw http.ResponseWriter, req *h
 		} else {
 			log.Errorf(req.Context(), "failed to round trip: %v", err)
 		}
-
-		res = p.errorResponse(req, err)
-		p.warning(res.Header, err)
+		p.writeErrorResponse(rw, req, err)
+		return
 	}
+
 	defer res.Body.Close()
 
 	// set request to original request manually, res.Request may be changed in transport.
@@ -297,9 +302,11 @@ func (p proxyHandler) handleRequest(ctx *Context, rw http.ResponseWriter, req *h
 	if resUpType != "" {
 		log.Debugf(req.Context(), "upgrade response: %s", resUpType)
 	}
+
 	if err := p.resmod.ModifyResponse(res); err != nil {
-		log.Errorf(req.Context(), "error modifying response: %v", err)
-		p.warning(res.Header, err)
+		log.Debugf(req.Context(), "error modifying response: %v", err)
+		p.writeErrorResponse(rw, req, err)
+		return
 	}
 
 	// after stripping all the hop-by-hop connection headers above, add back any
@@ -350,6 +357,17 @@ func (w writeFlusher) CloseWrite() error {
 	// This is a nop implementation of closeWriter.
 	// It avoids printing the error log "cannot close write side of inbound CONNECT tunnel".
 	return nil
+}
+
+func (p proxyHandler) writeErrorResponse(rw http.ResponseWriter, req *http.Request, err error) {
+	res := p.errorResponse(req, err)
+	if err := p.resmod.ModifyResponse(res); err != nil {
+		log.Errorf(req.Context(), "error modifying error response: %v", err)
+		if !p.WithoutWarning {
+			proxyutil.Warning(res.Header, err)
+		}
+	}
+	p.writeResponse(rw, res)
 }
 
 func (p proxyHandler) writeResponse(rw http.ResponseWriter, res *http.Response) {

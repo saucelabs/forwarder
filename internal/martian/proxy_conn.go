@@ -95,8 +95,8 @@ func (p *proxyConn) handleMITM(ctx *Context, req *http.Request) error {
 	res := proxyutil.NewResponse(200, nil, req)
 
 	if err := p.resmod.ModifyResponse(res); err != nil {
-		log.Errorf(req.Context(), "mitm: error modifying CONNECT response: %v", err)
-		p.warning(res.Header, err)
+		log.Debugf(req.Context(), "error modifying CONNECT response: %v", err)
+		return p.writeResponse(p.errorResponse(req, err))
 	}
 
 	if err := p.writeResponse(res); err != nil {
@@ -164,8 +164,8 @@ func (p *proxyConn) handleMITM(ctx *Context, req *http.Request) error {
 
 func (p *proxyConn) handleConnectRequest(ctx *Context, req *http.Request) error {
 	if err := p.reqmod.ModifyRequest(req); err != nil {
-		log.Errorf(req.Context(), "error modifying CONNECT request: %v", err)
-		p.warning(req.Header, err)
+		log.Debugf(req.Context(), "error modifying CONNECT request: %v", err)
+		return p.writeErrorResponse(req, err)
 	}
 
 	if p.shouldMITM(req) {
@@ -202,29 +202,28 @@ func (p *proxyConn) handleConnectRequest(ctx *Context, req *http.Request) error 
 		}
 	}
 
+	if res != nil {
+		defer res.Body.Close()
+	}
 	if cerr != nil {
 		log.Errorf(req.Context(), "failed to CONNECT: %v", cerr)
-		res = p.errorResponse(req, cerr)
-		p.warning(res.Header, cerr)
+		return p.writeErrorResponse(req, cerr)
 	}
-	defer res.Body.Close()
 
 	if err := p.resmod.ModifyResponse(res); err != nil {
-		log.Errorf(req.Context(), "error modifying CONNECT response: %v", err)
-		p.warning(res.Header, err)
+		log.Debugf(req.Context(), "error modifying CONNECT response: %v", err)
+		return p.writeErrorResponse(req, err)
 	}
 
 	if res.StatusCode != http.StatusOK {
-		if cerr == nil {
-			log.Errorf(req.Context(), "CONNECT rejected with status code: %d", res.StatusCode)
-		}
+		log.Errorf(req.Context(), "CONNECT rejected with status code: %d", res.StatusCode)
 		return p.writeResponse(res)
 	}
 
 	res.ContentLength = -1
 
 	if err := p.tunnel("CONNECT", res, crw); err != nil {
-		log.Errorf(req.Context(), "CONNECT tunnel: %w", err)
+		log.Errorf(req.Context(), "CONNECT tunnel: %v", err)
 	}
 
 	return errClose
@@ -242,7 +241,7 @@ func (p *proxyConn) handleUpgradeResponse(res *http.Response) error {
 	res.Body = nil
 
 	if err := p.tunnel(resUpType, res, uconn); err != nil {
-		log.Errorf(res.Request.Context(), "%s tunnel: %w", resUpType, err)
+		log.Errorf(res.Request.Context(), "%s tunnel: %v", resUpType, err)
 	}
 
 	return errClose
@@ -329,9 +328,10 @@ func (p *proxyConn) handle(ctx *Context) error {
 	if reqUpType != "" {
 		log.Debugf(req.Context(), "upgrade request: %s", reqUpType)
 	}
+
 	if err := p.reqmod.ModifyRequest(req); err != nil {
-		log.Errorf(req.Context(), "error modifying request: %v", err)
-		p.warning(req.Header, err)
+		log.Debugf(req.Context(), "error modifying request: %v", err)
+		return p.writeErrorResponse(req, err)
 	}
 
 	// after stripping all the hop-by-hop connection headers above, add back any
@@ -349,10 +349,9 @@ func (p *proxyConn) handle(ctx *Context) error {
 		} else {
 			log.Errorf(req.Context(), "failed to round trip: %v", err)
 		}
-
-		res = p.errorResponse(req, err)
-		p.warning(res.Header, err)
+		return p.writeErrorResponse(req, err)
 	}
+
 	defer res.Body.Close()
 
 	// set request to original request manually, res.Request may be changed in transport.
@@ -363,9 +362,10 @@ func (p *proxyConn) handle(ctx *Context) error {
 	if resUpType != "" {
 		log.Debugf(req.Context(), "upgrade response: %s", resUpType)
 	}
+
 	if err := p.resmod.ModifyResponse(res); err != nil {
-		log.Errorf(req.Context(), "error modifying response: %v", err)
-		p.warning(res.Header, err)
+		log.Debugf(req.Context(), "error modifying response: %v", err)
+		return p.writeErrorResponse(req, err)
 	}
 
 	// after stripping all the hop-by-hop connection headers above, add back any
@@ -380,6 +380,17 @@ func (p *proxyConn) handle(ctx *Context) error {
 		return p.handleUpgradeResponse(res)
 	}
 
+	return p.writeResponse(res)
+}
+
+func (p *proxyConn) writeErrorResponse(req *http.Request, err error) error {
+	res := p.errorResponse(req, err)
+	if err := p.resmod.ModifyResponse(res); err != nil {
+		log.Errorf(req.Context(), "error modifying error response: %v", err)
+		if !p.WithoutWarning {
+			proxyutil.Warning(res.Header, err)
+		}
+	}
 	return p.writeResponse(res)
 }
 
