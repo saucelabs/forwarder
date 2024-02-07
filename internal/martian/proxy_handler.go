@@ -318,7 +318,7 @@ func (p proxyHandler) handleRequest(ctx *Context, rw http.ResponseWriter, req *h
 	if res.StatusCode == http.StatusSwitchingProtocols {
 		p.handleUpgradeResponse(rw, req, res)
 	} else {
-		writeResponse(rw, res)
+		p.writeResponse(rw, res)
 	}
 }
 
@@ -352,7 +352,7 @@ func (w writeFlusher) CloseWrite() error {
 	return nil
 }
 
-func writeResponse(rw http.ResponseWriter, res *http.Response) {
+func (p proxyHandler) writeResponse(rw http.ResponseWriter, res *http.Response) {
 	copyHeader(rw.Header(), res.Header)
 	if res.Close {
 		res.Header.Set("Connection", "close")
