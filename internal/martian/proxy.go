@@ -431,16 +431,17 @@ func (p *Proxy) roundTrip(ctx *Context, req *http.Request) (*http.Response, erro
 	return p.roundTripper.RoundTrip(req)
 }
 
-func (p *Proxy) warning(h http.Header, err error) {
-	if p.WithoutWarning {
-		return
-	}
-	proxyutil.Warning(h, err)
-}
-
 func (p *Proxy) errorResponse(req *http.Request, err error) *http.Response {
+	var res *http.Response
 	if p.ErrorResponse != nil {
-		return p.ErrorResponse(req, err)
+		res = p.ErrorResponse(req, err)
+	} else {
+		res = proxyutil.NewResponse(502, http.NoBody, req)
 	}
-	return proxyutil.NewResponse(502, http.NoBody, req)
+
+	if !p.WithoutWarning {
+		proxyutil.Warning(res.Header, err)
+	}
+
+	return res
 }

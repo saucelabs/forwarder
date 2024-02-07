@@ -782,7 +782,7 @@ func TestIntegrationTLSHandshakeErrorCallback(t *testing.T) {
 	}
 }
 
-func TestIntegrationConnect(t *testing.T) {
+func TestIntegrationConnect(t *testing.T) { //nolint:tparallel // Subtests share tm.
 	t.Parallel()
 
 	l := newListener(t)
@@ -811,27 +811,123 @@ func TestIntegrationConnect(t *testing.T) {
 		}))
 
 	tm := martiantest.NewModifier()
-	reqerr := errors.New("request error")
-	reserr := errors.New("response error")
 
 	// Force the CONNECT request to dial the local TLS server.
 	tm.RequestFunc(func(req *http.Request) {
 		req.URL.Host = tl.Addr().String()
 	})
 
-	tm.RequestError(reqerr)
-	tm.ResponseError(reserr)
-
 	p.SetRequestModifier(tm)
 	p.SetResponseModifier(tm)
 
 	go serve(p, l)
 
+	t.Run("ok", func(t *testing.T) {
+		conn, res := connect(t, l)
+		defer conn.Close()
+
+		if got, want := res.StatusCode, 200; got != want {
+			t.Fatalf("res.StatusCode: got %d, want %d", got, want)
+		}
+
+		if !tm.RequestModified() {
+			t.Error("tm.RequestModified(): got false, want true")
+		}
+		if !tm.ResponseModified() {
+			t.Error("tm.ResponseModified(): got false, want true")
+		}
+
+		roots := x509.NewCertPool()
+		roots.AddCert(ca)
+
+		tlsconn := tls.Client(conn, &tls.Config{
+			ServerName: "example.com",
+			RootCAs:    roots,
+		})
+		defer tlsconn.Close()
+
+		req, err := http.NewRequest(http.MethodGet, "https://example.com", http.NoBody)
+		if err != nil {
+			t.Fatalf("http.NewRequest(): got %v, want no error", err)
+		}
+		req.Header.Set("Connection", "close")
+
+		// GET / HTTP/1.1
+		// Host: example.com
+		// Connection: close
+		if err := req.Write(tlsconn); err != nil {
+			t.Fatalf("req.Write(): got %v, want no error", err)
+		}
+
+		res, err = http.ReadResponse(bufio.NewReader(tlsconn), req)
+		if err != nil {
+			t.Fatalf("http.ReadResponse(): got %v, want no error", err)
+		}
+		defer res.Body.Close()
+
+		if got, want := res.StatusCode, 299; got != want {
+			t.Fatalf("res.StatusCode: got %d, want %d", got, want)
+		}
+	})
+
+	t.Run("reqerr", func(t *testing.T) {
+		tm.Reset()
+
+		reqerr := errors.New("request error")
+		tm.RequestError(reqerr)
+
+		conn, res := connect(t, l)
+		defer conn.Close()
+
+		if got, want := res.StatusCode, 502; got != want {
+			t.Fatalf("res.StatusCode: got %d, want %d", got, want)
+		}
+
+		if !tm.RequestModified() {
+			t.Error("tm.RequestModified(): got false, want true")
+		}
+		if !tm.ResponseModified() {
+			t.Error("tm.ResponseModified(): got false, want true")
+		}
+
+		if got, want := res.Header.Get("Warning"), reqerr.Error(); !strings.Contains(got, want) {
+			t.Errorf("res.Header.Get(%q): got %q, want to contain %q", "Warning", got, want)
+		}
+	})
+
+	t.Run("reserr", func(t *testing.T) {
+		tm.Reset()
+
+		reserr := errors.New("response error")
+		tm.ResponseError(reserr)
+
+		conn, res := connect(t, l)
+		defer conn.Close()
+
+		if got, want := res.StatusCode, 502; got != want {
+			t.Fatalf("res.StatusCode: got %d, want %d", got, want)
+		}
+
+		if !tm.RequestModified() {
+			t.Error("tm.RequestModified(): got false, want true")
+		}
+		if !tm.ResponseModified() {
+			t.Error("tm.ResponseModified(): got false, want true")
+		}
+
+		if got, want := res.Header.Get("Warning"), reserr.Error(); !strings.Contains(got, want) {
+			t.Errorf("res.Header.Get(%q): got %q, want to contain %q", "Warning", got, want)
+		}
+	})
+}
+
+func connect(t *testing.T, l listener) (net.Conn, *http.Response) {
+	t.Helper()
+
 	conn, err := l.dial()
 	if err != nil {
 		t.Fatalf("net.Dial(): got %v, want no error", err)
 	}
-	defer conn.Close()
 
 	req, err := http.NewRequest(http.MethodConnect, "//example.com:443", http.NoBody)
 	if err != nil {
@@ -852,55 +948,7 @@ func TestIntegrationConnect(t *testing.T) {
 		t.Fatalf("http.ReadResponse(): got %v, want no error", err)
 	}
 
-	if got, want := res.StatusCode, 200; got != want {
-		t.Fatalf("res.StatusCode: got %d, want %d", got, want)
-	}
-
-	if !tm.RequestModified() {
-		t.Error("tm.RequestModified(): got false, want true")
-	}
-	if !tm.ResponseModified() {
-		t.Error("tm.ResponseModified(): got false, want true")
-	}
-	if got, want := res.Header.Get("Warning"), reserr.Error(); !strings.Contains(got, want) {
-		t.Errorf("res.Header.Get(%q): got %q, want to contain %q", "Warning", got, want)
-	}
-
-	roots := x509.NewCertPool()
-	roots.AddCert(ca)
-
-	tlsconn := tls.Client(conn, &tls.Config{
-		ServerName: "example.com",
-		RootCAs:    roots,
-	})
-	defer tlsconn.Close()
-
-	req, err = http.NewRequest(http.MethodGet, "https://example.com", http.NoBody)
-	if err != nil {
-		t.Fatalf("http.NewRequest(): got %v, want no error", err)
-	}
-	req.Header.Set("Connection", "close")
-
-	//
-	// GET / HTTP/1.1
-	// Host: example.com
-	// Connection: close
-	if err := req.Write(tlsconn); err != nil {
-		t.Fatalf("req.Write(): got %v, want no error", err)
-	}
-
-	res, err = http.ReadResponse(bufio.NewReader(tlsconn), req)
-	if err != nil {
-		t.Fatalf("http.ReadResponse(): got %v, want no error", err)
-	}
-	defer res.Body.Close()
-
-	if got, want := res.StatusCode, 299; got != want {
-		t.Fatalf("res.StatusCode: got %d, want %d", got, want)
-	}
-	if got, want := res.Header.Get("Warning"), reserr.Error(); strings.Contains(got, want) {
-		t.Errorf("res.Header.Get(%q): got %s, want to not contain %s", "Warning", got, want)
-	}
+	return conn, res
 }
 
 func TestIntegrationConnectUpstreamProxy(t *testing.T) {
@@ -1123,16 +1171,11 @@ func TestIntegrationConnectTerminateTLS(t *testing.T) {
 		}))
 
 	tm := martiantest.NewModifier()
-	reqerr := errors.New("request error")
-	reserr := errors.New("response error")
 
 	// Force the CONNECT request to dial the local TLS server.
 	tm.RequestFunc(func(req *http.Request) {
 		req.URL.Host = tl.Addr().String()
 	})
-
-	tm.RequestError(reqerr)
-	tm.ResponseError(reserr)
 
 	p.SetRequestModifier(tm)
 	p.SetResponseModifier(tm)
@@ -1176,9 +1219,6 @@ func TestIntegrationConnectTerminateTLS(t *testing.T) {
 	if !tm.ResponseModified() {
 		t.Error("tm.ResponseModified(): got false, want true")
 	}
-	if got, want := res.Header.Get("Warning"), reserr.Error(); !strings.Contains(got, want) {
-		t.Errorf("res.Header.Get(%q): got %q, want to contain %q", "Warning", got, want)
-	}
 
 	req, err = http.NewRequest(http.MethodGet, "https://example.com", http.NoBody)
 	if err != nil {
@@ -1201,9 +1241,6 @@ func TestIntegrationConnectTerminateTLS(t *testing.T) {
 
 	if got, want := res.StatusCode, 299; got != want {
 		t.Fatalf("res.StatusCode: got %d, want %d", got, want)
-	}
-	if got, want := res.Header.Get("Warning"), reserr.Error(); strings.Contains(got, want) {
-		t.Errorf("res.Header.Get(%q): got %s, want to not contain %s", "Warning", got, want)
 	}
 }
 
@@ -1241,11 +1278,6 @@ func TestIntegrationMITM(t *testing.T) {
 	p.SetMITM(mc)
 
 	tm := martiantest.NewModifier()
-	reqerr := errors.New("request error")
-	reserr := errors.New("response error")
-	tm.RequestError(reqerr)
-	tm.ResponseError(reserr)
-
 	p.SetRequestModifier(tm)
 	p.SetResponseModifier(tm)
 
@@ -1275,9 +1307,6 @@ func TestIntegrationMITM(t *testing.T) {
 	}
 	if got, want := res.StatusCode, 200; got != want {
 		t.Errorf("res.StatusCode: got %d, want %d", got, want)
-	}
-	if got, want := res.Header.Get("Warning"), reserr.Error(); !strings.Contains(got, want) {
-		t.Errorf("res.Header.Get(%q): got %q, want to contain %q", "Warning", got, want)
 	}
 
 	roots := x509.NewCertPool()
@@ -1312,9 +1341,6 @@ func TestIntegrationMITM(t *testing.T) {
 	}
 	if got, want := res.Header.Get("Request-Scheme"), "https"; got != want {
 		t.Errorf("res.Header.Get(%q): got %q, want %q", "Request-Scheme", got, want)
-	}
-	if got, want := res.Header.Get("Warning"), reserr.Error(); !strings.Contains(got, want) {
-		t.Errorf("res.Header.Get(%q): got %q, want to contain %q", "Warning", got, want)
 	}
 }
 
