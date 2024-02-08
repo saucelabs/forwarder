@@ -87,3 +87,16 @@ func isCloseable(err error) bool {
 
 	return strings.Contains(err.Error(), "tls:")
 }
+
+type ErrorStatus struct { //nolint:errname // ErrorStatus is a type name not a variable.
+	Err    error
+	Status int
+}
+
+func (e ErrorStatus) Error() string {
+	return e.Err.Error()
+}
+
+func (e ErrorStatus) Unwrap() error {
+	return e.Err
+}
