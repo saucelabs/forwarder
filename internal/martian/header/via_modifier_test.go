@@ -18,9 +18,6 @@ import (
 	"net/http"
 	"strings"
 	"testing"
-
-	"github.com/saucelabs/forwarder/internal/martian"
-	"github.com/saucelabs/forwarder/internal/martian/proxyutil"
 )
 
 func TestViaModifier(t *testing.T) {
@@ -29,19 +26,12 @@ func TestViaModifier(t *testing.T) {
 	if err != nil {
 		t.Fatalf("http.NewRequest(): got %v, want no error", err)
 	}
-	res := proxyutil.NewResponse(200, nil, req)
-
-	ctx := martian.TestContext(req)
 
 	if err := m.ModifyRequest(req); err != nil {
 		t.Fatalf("ModifyRequest(): got %v, want no error", err)
 	}
 	if got, want := req.Header.Get("Via"), "1.1 martian"; !strings.HasPrefix(got, want) {
 		t.Errorf("req.Header.Get(%q): got %q, want prefixed with %q", "Via", got, want)
-	}
-
-	if err := m.ModifyResponse(res); err != nil {
-		t.Fatalf("ModifyResponse(): got %v, want no error", err)
 	}
 
 	req.Header.Set("Via", "1.0\talpha\t(martian)")
@@ -56,18 +46,5 @@ func TestViaModifier(t *testing.T) {
 	req.Header.Set("Via", "1.0\talpha\t(martian), 1.1 martian-boundary, 1.1 beta")
 	if err := m.ModifyRequest(req); err == nil {
 		t.Fatal("ModifyRequest(): got nil, want request loop error")
-	}
-	if !ctx.SkippingRoundTrip() {
-		t.Errorf("ctx.SkippingRoundTrip(): got false, want true")
-	}
-
-	if err := m.ModifyResponse(res); err == nil {
-		t.Fatal("ModifyResponse(): got nil, want request loop error")
-	}
-	if got, want := res.StatusCode, http.StatusBadRequest; got != want {
-		t.Errorf("res.StatusCode: got %d, want %d", got, want)
-	}
-	if got, want := res.Status, http.StatusText(http.StatusBadRequest); got != want {
-		t.Errorf("res.Status: got %q, want %q", got, want)
 	}
 }

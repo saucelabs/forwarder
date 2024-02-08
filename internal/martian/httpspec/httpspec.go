@@ -40,8 +40,6 @@ func NewStack(via string) (outer, inner *fifo.Group) {
 	inner = fifo.NewGroup()
 	outer.AddRequestModifier(inner)
 	outer.AddResponseModifier(inner)
-
-	outer.AddResponseModifier(vm)
 	outer.AddResponseModifier(hbhm)
 
 	return outer, inner
