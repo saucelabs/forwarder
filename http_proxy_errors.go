@@ -14,6 +14,7 @@ import (
 	"net"
 	"net/http"
 
+	"github.com/saucelabs/forwarder/internal/martian"
 	"github.com/saucelabs/forwarder/internal/martian/proxyutil"
 )
 
@@ -36,6 +37,7 @@ func (hp *HTTPProxy) errorResponse(req *http.Request, err error) *http.Response 
 		handleNetError,
 		handleTLSRecordHeader,
 		handleTLSCertificateError,
+		handleMartianErrorStatus,
 		handleAuthenticationError,
 		handleDenyError,
 		handleStatusText,
@@ -112,6 +114,17 @@ func handleTLSCertificateError(req *http.Request, err error) (code int, msg, lab
 		code = http.StatusBadGateway
 		msg = fmt.Sprintf("tls handshake failed for host %q", req.Host)
 		label = "tls_certificate"
+	}
+
+	return
+}
+
+func handleMartianErrorStatus(req *http.Request, err error) (code int, msg, label string) {
+	var martianErr martian.ErrorStatus
+	if errors.As(err, &martianErr) {
+		code = martianErr.Status
+		msg = fmt.Sprintf("proxy error for host %q", req.Host)
+		label = "martian_error"
 	}
 
 	return
