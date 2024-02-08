@@ -40,12 +40,6 @@ func TestContexts(t *testing.T) {
 		t.Error("ctx.SkippingRoundTrip(): got false, want true")
 	}
 
-	s := ctx.Session()
-	s.MarkSecure()
-	if !s.IsSecure() {
-		t.Error("s.IsSecure(): got false, want true")
-	}
-
 	ctx2 := TestContext(req)
 	if ctx != ctx2 {
 		t.Error("TestContext(): got new context, want existing context")

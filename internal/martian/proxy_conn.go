@@ -34,9 +34,25 @@ import (
 
 type proxyConn struct {
 	*Proxy
-	session *Session
-	brw     *bufio.ReadWriter
-	conn    net.Conn
+	brw    *bufio.ReadWriter
+	conn   net.Conn
+	secure bool
+	cs     tls.ConnectionState
+}
+
+func newProxyConn(p *Proxy, conn net.Conn) *proxyConn {
+	v := &proxyConn{
+		Proxy: p,
+		brw:   bufio.NewReadWriter(bufio.NewReader(conn), bufio.NewWriter(conn)),
+		conn:  conn,
+	}
+
+	if tconn, ok := conn.(*tls.Conn); ok {
+		v.secure = true
+		v.cs = tconn.ConnectionState()
+	}
+
+	return v
 }
 
 func (p *proxyConn) readRequest(ctx *Context) (*http.Request, error) {
@@ -75,6 +91,9 @@ func (p *proxyConn) readRequest(ctx *Context) (*http.Request, error) {
 	req, err := http.ReadRequest(p.brw.Reader)
 	if err != nil {
 		return nil, err
+	}
+	if p.secure {
+		req.TLS = &p.cs
 	}
 
 	req = req.WithContext(p.requestContext(ctx, req))
@@ -153,7 +172,11 @@ func (p *proxyConn) handleMITM(ctx *Context, req *http.Request) error {
 
 		p.brw.Writer.Reset(tlsconn)
 		p.brw.Reader.Reset(tlsconn)
+
 		p.conn = tlsconn
+		p.secure = true
+		p.cs = cs
+
 		return p.handle(ctx)
 	}
 
@@ -271,11 +294,10 @@ func (p *proxyConn) tunnel(name string, res *http.Response, crw io.ReadWriteClos
 	return nil
 }
 
-func (p *proxyConn) handle(ctx *Context) error {
+func (p *proxyConn) handle(_ *Context) error {
 	log.Debugf(context.TODO(), "waiting for request: %v", p.conn.RemoteAddr())
 
-	session := ctx.Session()
-	ctx = withSession(session)
+	ctx := newContext()
 
 	req, err := p.readRequest(ctx)
 	if err != nil {
@@ -296,13 +318,6 @@ func (p *proxyConn) handle(ctx *Context) error {
 		return errClose
 	}
 
-	if tconn, ok := p.conn.(*tls.Conn); ok {
-		session.MarkSecure()
-
-		cs := tconn.ConnectionState()
-		req.TLS = &cs
-	}
-
 	req.RemoteAddr = p.conn.RemoteAddr().String()
 	if req.URL.Host == "" {
 		req.URL.Host = req.Host
@@ -314,11 +329,11 @@ func (p *proxyConn) handle(ctx *Context) error {
 
 	if req.URL.Scheme == "" {
 		req.URL.Scheme = "http"
-		if session.IsSecure() {
+		if p.secure {
 			req.URL.Scheme = "https"
 		}
 	} else if req.URL.Scheme == "http" {
-		if session.IsSecure() && !p.AllowHTTP {
+		if p.secure && !p.AllowHTTP {
 			log.Infof(req.Context(), "forcing HTTPS inside secure session")
 			req.URL.Scheme = "https"
 		}
