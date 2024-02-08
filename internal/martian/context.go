@@ -29,19 +29,12 @@ import (
 // Contexts are linked to shared session that is used for multiple requests on
 // a single connection.
 type Context struct {
-	session *Session
-	n       uint64
-	hash    uint32
+	n    uint64
+	hash uint32
 
 	mu            sync.RWMutex
 	vals          map[string]any
 	skipRoundTrip bool
-}
-
-// Session provides information and storage about a connection.
-type Session struct {
-	mu     sync.RWMutex
-	secure bool
 }
 
 type contextKey string
@@ -70,35 +63,21 @@ func TestContext(req *http.Request) *Context {
 		return ctx
 	}
 
-	ctx = withSession(new(Session))
+	ctx = newContext()
 	*req = *req.Clone(ctx.addToContext(req.Context()))
 
 	return ctx
 }
 
-// IsSecure returns whether the current session is from a secure connection,
-// such as when receiving requests from a TLS connection that has been MITM'd.
-func (s *Session) IsSecure() bool {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
+var nextID atomic.Uint64
 
-	return s.secure
-}
-
-// MarkSecure marks the session as secure.
-func (s *Session) MarkSecure() {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	s.secure = true
-}
-
-// MarkInsecure marks the session as insecure.
-func (s *Session) MarkInsecure() {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	s.secure = false
+// withSession builds a new context from an existing session.
+// Session must be non-nil.
+func newContext() *Context {
+	return &Context{
+		n:    nextID.Add(1),
+		hash: uint32(time.Now().UnixNano()),
+	}
 }
 
 // addToContext returns context.Context with the current context to the passed context.
@@ -108,11 +87,6 @@ func (ctx *Context) addToContext(rctx context.Context) context.Context {
 	}
 	mctx := context.WithValue(rctx, martianKey, ctx)
 	return context.WithValue(mctx, log.TraceContextKey, ctx.ID())
-}
-
-// Session returns the session for the context.
-func (ctx *Context) Session() *Session {
-	return ctx.session
 }
 
 // ID returns the context ID.
@@ -158,16 +132,4 @@ func (ctx *Context) SkippingRoundTrip() bool {
 	defer ctx.mu.RUnlock()
 
 	return ctx.skipRoundTrip
-}
-
-var nextID atomic.Uint64
-
-// withSession builds a new context from an existing session.
-// Session must be non-nil.
-func withSession(s *Session) *Context {
-	return &Context{
-		session: s,
-		n:       nextID.Add(1),
-		hash:    uint32(time.Now().UnixNano()),
-	}
 }

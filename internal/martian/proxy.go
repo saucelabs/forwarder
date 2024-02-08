@@ -15,7 +15,6 @@
 package martian
 
 import (
-	"bufio"
 	"context"
 	"crypto/tls"
 	"errors"
@@ -345,19 +344,12 @@ func (p *Proxy) handleLoop(conn net.Conn) {
 		return
 	}
 
-	brw := bufio.NewReadWriter(bufio.NewReader(conn), bufio.NewWriter(conn))
-
-	pc := &proxyConn{
-		Proxy:   p,
-		session: new(Session),
-		brw:     brw,
-		conn:    conn,
-	}
+	pc := newProxyConn(p, conn)
 
 	const maxConsecutiveErrors = 5
 	errorsN := 0
 	for {
-		if err := pc.handle(withSession(pc.session)); err != nil {
+		if err := pc.handle(newContext()); err != nil {
 			if errors.Is(err, errClose) || isCloseable(err) {
 				log.Debugf(context.TODO(), "closing connection: %v", conn.RemoteAddr())
 				return

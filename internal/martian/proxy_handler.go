@@ -85,11 +85,7 @@ func (p *Proxy) Handler() http.Handler {
 }
 
 func (p proxyHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
-	session := new(Session)
-	if req.TLS != nil {
-		session.MarkSecure()
-	}
-	ctx := withSession(session)
+	ctx := newContext()
 
 	outreq := req.Clone(p.requestContext(ctx, req))
 	if req.ContentLength == 0 {
@@ -238,8 +234,6 @@ func (p proxyHandler) tunnel(name string, rw http.ResponseWriter, req *http.Requ
 // handleRequest handles a request and writes the response to the given http.ResponseWriter.
 // It returns an error if the request.
 func (p proxyHandler) handleRequest(ctx *Context, rw http.ResponseWriter, req *http.Request) {
-	session := ctx.Session()
-
 	if req.Method == http.MethodConnect {
 		p.handleConnectRequest(rw, req)
 		return
@@ -252,11 +246,11 @@ func (p proxyHandler) handleRequest(ctx *Context, rw http.ResponseWriter, req *h
 
 	if req.URL.Scheme == "" {
 		req.URL.Scheme = "http"
-		if session.IsSecure() {
+		if req.TLS != nil {
 			req.URL.Scheme = "https"
 		}
 	} else if req.URL.Scheme == "http" {
-		if session.IsSecure() && !p.AllowHTTP {
+		if req.TLS != nil && !p.AllowHTTP {
 			log.Infof(req.Context(), "forcing HTTPS inside secure session")
 			req.URL.Scheme = "https"
 		}
