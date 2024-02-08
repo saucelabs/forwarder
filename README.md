@@ -58,6 +58,12 @@ Make sure you have installed and started Podman.
   ```
   ln -s $(which podman) /usr/local/bin/docker
   ```
+- Edit `~/.docker/config.json` by changing the `credsStore` to `credStore`, it should look like this:
+  ```
+  {
+    "credStore": "desktop"
+  }
+  ```
 - If not on Linux, ssh into the Podman Machine:
   ```
   podman machine ssh
