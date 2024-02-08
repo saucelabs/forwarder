@@ -22,6 +22,13 @@ func Default() *Logger {
 	}
 }
 
+func Debug() *Logger {
+	return &Logger{
+		log:   log.Default(),
+		level: flog.DebugLevel,
+	}
+}
+
 // Option is a function that modifies the Logger.
 type Option func(*Logger)
 
