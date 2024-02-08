@@ -357,7 +357,7 @@ func (p *proxyConn) handle(_ *Context) error {
 	}
 
 	// perform the HTTP roundtrip
-	res, err := p.roundTrip(ctx, req)
+	res, err := p.roundTrip(req)
 	if err != nil {
 		if isClosedConnError(err) {
 			log.Debugf(req.Context(), "connection closed prematurely: %v", err)

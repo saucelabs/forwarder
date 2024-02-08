@@ -1548,6 +1548,7 @@ func TestIntegrationSkipRoundTrip(t *testing.T) {
 
 	l := newListener(t)
 	p := NewProxy()
+	p.TestingSkipRoundTrip = true
 	defer p.Close()
 
 	// Transport will be skipped, no 500.
@@ -1557,10 +1558,6 @@ func TestIntegrationSkipRoundTrip(t *testing.T) {
 	p.SetTimeout(200 * time.Millisecond)
 
 	tm := martiantest.NewModifier()
-	tm.RequestFunc(func(req *http.Request) {
-		ctx := NewContext(req)
-		ctx.SkipRoundTrip()
-	})
 	p.SetRequestModifier(tm)
 
 	go serve(p, l)
@@ -1599,13 +1596,11 @@ func TestHTTPThroughConnectWithMITM(t *testing.T) {
 
 	l := newListener(t)
 	p := NewProxy()
+	p.TestingSkipRoundTrip = true
 	defer p.Close()
 
 	tm := martiantest.NewModifier()
 	tm.RequestFunc(func(req *http.Request) {
-		ctx := NewContext(req)
-		ctx.SkipRoundTrip()
-
 		if req.Method != http.MethodGet && req.Method != http.MethodConnect {
 			t.Errorf("unexpected method on request handler: %v", req.Method)
 		}
@@ -1704,13 +1699,11 @@ func TestTLSHandshakeTimeoutWithMITM(t *testing.T) {
 	l := newListener(t)
 	p := NewProxy()
 	p.MITMTLSHandshakeTimeout = 200 * time.Millisecond
+	p.TestingSkipRoundTrip = true
 	defer p.Close()
 
 	tm := martiantest.NewModifier()
 	tm.RequestFunc(func(req *http.Request) {
-		ctx := NewContext(req)
-		ctx.SkipRoundTrip()
-
 		if req.Method != http.MethodGet && req.Method != http.MethodConnect {
 			t.Errorf("unexpected method on request handler: %v", req.Method)
 		}
