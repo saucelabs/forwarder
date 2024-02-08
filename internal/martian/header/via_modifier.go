@@ -26,8 +26,6 @@ import (
 	"github.com/saucelabs/forwarder/internal/martian"
 )
 
-const viaLoopKey = "via.LoopDetection"
-
 var whitespace = regexp.MustCompile("[\t ]+")
 
 // ViaModifier is a header modifier that checks for proxy redirect loops.
@@ -55,34 +53,16 @@ func (m *ViaModifier) ModifyRequest(req *http.Request) error {
 
 	if v := req.Header.Get("Via"); v != "" {
 		if m.hasLoop(v) {
-			err := fmt.Errorf("via: detected request loop, header contains %s", via)
-
-			ctx := martian.NewContext(req)
-			ctx.Set(viaLoopKey, err)
-			ctx.SkipRoundTrip()
-
-			return err
+			return martian.ErrorStatus{
+				Err:    fmt.Errorf("via: detected request loop, header contains %s", via),
+				Status: 400,
+			}
 		}
 
 		via = fmt.Sprintf("%s, %s", v, via)
 	}
 
 	req.Header.Set("Via", via)
-
-	return nil
-}
-
-// ModifyResponse sets the status code to 400 Bad Request if a loop was
-// detected in the request.
-func (m *ViaModifier) ModifyResponse(res *http.Response) error {
-	ctx := martian.NewContext(res.Request)
-
-	if err, _ := ctx.Get(viaLoopKey); err != nil {
-		res.StatusCode = 400
-		res.Status = http.StatusText(http.StatusBadRequest)
-
-		return err.(error) //nolint:forcetypeassert // viaLoopKey is always an error.
-	}
 
 	return nil
 }
