@@ -35,11 +35,6 @@ func TestContexts(t *testing.T) {
 		t.Errorf("ctx.Get(%q): got %q, want %q", "key", got, want)
 	}
 
-	ctx.SkipRoundTrip()
-	if !ctx.SkippingRoundTrip() {
-		t.Error("ctx.SkippingRoundTrip(): got false, want true")
-	}
-
 	ctx2 := TestContext(req)
 	if ctx != ctx2 {
 		t.Error("TestContext(): got new context, want existing context")

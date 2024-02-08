@@ -95,6 +95,9 @@ type Proxy struct {
 	// A zero or negative value means there will be no timeout.
 	WriteTimeout time.Duration
 
+	// TestingSkipRoundTrip skips the round trip for requests and returns a 200 OK response.
+	TestingSkipRoundTrip bool
+
 	roundTripper http.RoundTripper
 	dial         func(context.Context, string, string) (net.Conn, error)
 	mitm         *mitm.Config
@@ -347,8 +350,8 @@ func shouldTerminateTLS(req *http.Request) bool {
 	return b
 }
 
-func (p *Proxy) roundTrip(ctx *Context, req *http.Request) (*http.Response, error) {
-	if ctx.SkippingRoundTrip() {
+func (p *Proxy) roundTrip(req *http.Request) (*http.Response, error) {
+	if p.TestingSkipRoundTrip {
 		log.Debugf(req.Context(), "skipping round trip")
 		return proxyutil.NewResponse(200, http.NoBody, req), nil
 	}

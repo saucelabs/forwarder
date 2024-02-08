@@ -96,7 +96,7 @@ func (p proxyHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	}
 	outreq.Close = false
 
-	p.handleRequest(ctx, rw, outreq)
+	p.handleRequest(rw, outreq)
 }
 
 func (p proxyHandler) handleConnectRequest(rw http.ResponseWriter, req *http.Request) {
@@ -233,7 +233,7 @@ func (p proxyHandler) tunnel(name string, rw http.ResponseWriter, req *http.Requ
 
 // handleRequest handles a request and writes the response to the given http.ResponseWriter.
 // It returns an error if the request.
-func (p proxyHandler) handleRequest(ctx *Context, rw http.ResponseWriter, req *http.Request) {
+func (p proxyHandler) handleRequest(rw http.ResponseWriter, req *http.Request) {
 	if req.Method == http.MethodConnect {
 		p.handleConnectRequest(rw, req)
 		return
@@ -275,7 +275,7 @@ func (p proxyHandler) handleRequest(ctx *Context, rw http.ResponseWriter, req *h
 	}
 
 	// perform the HTTP roundtrip
-	res, err := p.roundTrip(ctx, req)
+	res, err := p.roundTrip(req)
 	if err != nil {
 		if isClosedConnError(err) {
 			log.Debugf(req.Context(), "connection closed prematurely: %v", err)

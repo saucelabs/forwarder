@@ -32,9 +32,8 @@ type Context struct {
 	n    uint64
 	hash uint32
 
-	mu            sync.RWMutex
-	vals          map[string]any
-	skipRoundTrip bool
+	mu   sync.RWMutex
+	vals map[string]any
 }
 
 type contextKey string
@@ -116,20 +115,4 @@ func (ctx *Context) Set(key string, val any) {
 	}
 
 	ctx.vals[key] = val
-}
-
-// SkipRoundTrip skips the round trip for the current request.
-func (ctx *Context) SkipRoundTrip() {
-	ctx.mu.Lock()
-	defer ctx.mu.Unlock()
-
-	ctx.skipRoundTrip = true
-}
-
-// SkippingRoundTrip returns whether the current round trip will be skipped.
-func (ctx *Context) SkippingRoundTrip() bool {
-	ctx.mu.RLock()
-	defer ctx.mu.RUnlock()
-
-	return ctx.skipRoundTrip
 }
