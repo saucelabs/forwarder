@@ -25,6 +25,28 @@ If you have a project idea that you think would be beneficial for the project, f
 
 ### Project Ideas
 
+#### Request recording
+
+Request recording, preferably to a columnar format like Apache Arrow, opens up a lot of possibilities for analysis and debugging.
+
+##### AI-based request analysis
+
+The goal of this project is to use AI to analyze the recorded requests and provide insights into the traffic.
+We can use a SQL LLM to convert user queries into SQL queries and then use a columnar database to analyze the data.
+
+Another possibility is traffic prediction, for instance we would be interested in predicting traffic spikes to allocate resources accordingly.
+
+##### UI or TUI for request analysis
+
+The goal of this project is to create a user interface for viewing and analyzing the recorded requests.
+There are terminal-based UI libraries like [bubbletea](https://github.com/charmbracelet/bubbletea) that allow for creating exciting TUIs in Go.
+
+#### gRPC visualization and modification
+
+The goal of this project is adding dedicated support for gRPC in Forwarder.
+It would allow for visualizing and modifying gRPC traffic.
+We can easily add JavaScript based modification support for gRPC traffic.  
+
 #### Wireguard integration in Forwarder proxy
 
 The goal of this project is to incorporate a WireGuard Server into the Forwarder proxy.
