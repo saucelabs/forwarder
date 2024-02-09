@@ -95,6 +95,9 @@ type Proxy struct {
 	// A zero or negative value means there will be no timeout.
 	WriteTimeout time.Duration
 
+	// BaseContex is the base context for all requests.
+	BaseContex context.Context //nolint:containedctx // It's intended to be used as a base context.
+
 	// TestingSkipRoundTrip skips the round trip for requests and returns a 200 OK response.
 	TestingSkipRoundTrip bool
 
@@ -125,6 +128,8 @@ func NewProxy() *Proxy {
 		closing: make(chan bool),
 		reqmod:  noop,
 		resmod:  noop,
+
+		BaseContex: context.Background(),
 	}
 	proxy.SetDialContext((&net.Dialer{
 		Timeout:   30 * time.Second,
@@ -285,7 +290,7 @@ func (p *Proxy) handleLoop(conn net.Conn) {
 	const maxConsecutiveErrors = 5
 	errorsN := 0
 	for {
-		if err := pc.handle(newContext()); err != nil {
+		if err := pc.handle(); err != nil {
 			if errors.Is(err, errClose) || isCloseable(err) {
 				log.Debugf(context.TODO(), "closing connection: %v", conn.RemoteAddr())
 				return
@@ -314,19 +319,6 @@ func (p *Proxy) readHeaderTimeout() time.Duration {
 		return p.ReadHeaderTimeout
 	}
 	return p.ReadTimeout
-}
-
-func (p *Proxy) requestContext(mctx *Context, req *http.Request) context.Context {
-	ctx := req.Context()
-	ctx = mctx.addToContext(ctx)
-
-	if h := p.RequestIDHeader; h != "" {
-		if id := req.Header.Get(h); id != "" {
-			ctx = context.WithValue(ctx, log.TraceContextKey, id)
-		}
-	}
-
-	return ctx
 }
 
 func (p *Proxy) shouldMITM(req *http.Request) bool {

@@ -195,17 +195,8 @@ func TestIntegrationHTTP(t *testing.T) {
 	p.SetTimeout(200 * time.Millisecond)
 
 	tm := martiantest.NewModifier()
-
-	tm.RequestFunc(func(req *http.Request) {
-		ctx := NewContext(req)
-		ctx.Set("martian.test", "true")
-	})
-
 	tm.ResponseFunc(func(res *http.Response) {
-		ctx := NewContext(res.Request)
-		v, _ := ctx.Get("martian.test")
-
-		res.Header.Set("Martian-Test", v.(string)) //nolint:forcetypeassert // Test only.
+		res.Header.Set("Martian-Test", "true")
 	})
 
 	p.SetRequestModifier(tm)

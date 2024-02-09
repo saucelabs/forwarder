@@ -19,7 +19,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/saucelabs/forwarder/internal/martian"
 	"github.com/saucelabs/forwarder/internal/martian/martiantest"
 	"github.com/saucelabs/forwarder/internal/martian/proxyutil"
 )
@@ -34,8 +33,6 @@ func TestNewStack(t *testing.T) {
 	if err != nil {
 		t.Fatalf("http.NewRequest(): got %v, want no error", err)
 	}
-
-	martian.TestContext(req)
 
 	// Hop-by-hop header to be removed.
 	req.Header.Set("Hop-By-Hop", "true")
