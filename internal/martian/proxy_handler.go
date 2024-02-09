@@ -98,13 +98,15 @@ func (p proxyHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 }
 
 func (p proxyHandler) handleConnectRequest(rw http.ResponseWriter, req *http.Request) {
+	ctx := req.Context()
+
 	if err := p.reqmod.ModifyRequest(req); err != nil {
-		log.Debugf(req.Context(), "error modifying CONNECT request: %v", err)
+		log.Debugf(ctx, "error modifying CONNECT request: %v", err)
 		p.writeErrorResponse(rw, req, err)
 		return
 	}
 
-	log.Debugf(req.Context(), "attempting to establish CONNECT tunnel: %s", req.URL.Host)
+	log.Debugf(ctx, "attempting to establish CONNECT tunnel: %s", req.URL.Host)
 	var (
 		res  *http.Response
 		crw  io.ReadWriteCloser
@@ -122,12 +124,12 @@ func (p proxyHandler) handleConnectRequest(rw http.ResponseWriter, req *http.Req
 			crw = cconn
 
 			if shouldTerminateTLS(req) {
-				log.Debugf(req.Context(), "attempting to terminate TLS on CONNECT tunnel: %s", req.URL.Host)
+				log.Debugf(ctx, "attempting to terminate TLS on CONNECT tunnel: %s", req.URL.Host)
 				tconn := tls.Client(cconn, p.clientTLSConfig())
 				if err := tconn.Handshake(); err == nil {
 					crw = tconn
 				} else {
-					log.Errorf(req.Context(), "failed to terminate TLS on CONNECT tunnel: %v", err)
+					log.Errorf(ctx, "failed to terminate TLS on CONNECT tunnel: %v", err)
 					cerr = err
 				}
 			}
@@ -138,19 +140,19 @@ func (p proxyHandler) handleConnectRequest(rw http.ResponseWriter, req *http.Req
 		defer res.Body.Close()
 	}
 	if cerr != nil {
-		log.Errorf(req.Context(), "failed to CONNECT: %v", cerr)
+		log.Errorf(ctx, "failed to CONNECT: %v", cerr)
 		p.writeErrorResponse(rw, req, cerr)
 		return
 	}
 
 	if err := p.resmod.ModifyResponse(res); err != nil {
-		log.Debugf(req.Context(), "error modifying CONNECT response: %v", err)
+		log.Debugf(ctx, "error modifying CONNECT response: %v", err)
 		p.writeErrorResponse(rw, req, err)
 		return
 	}
 
 	if res.StatusCode != http.StatusOK {
-		log.Errorf(req.Context(), "CONNECT rejected with status code: %d", res.StatusCode)
+		log.Errorf(ctx, "CONNECT rejected with status code: %d", res.StatusCode)
 		p.writeResponse(rw, res)
 		return
 	}
@@ -160,29 +162,32 @@ func (p proxyHandler) handleConnectRequest(rw http.ResponseWriter, req *http.Req
 	}
 
 	if err := p.tunnel("CONNECT", rw, req, res, crw); err != nil {
-		log.Errorf(req.Context(), "CONNECT tunnel: %v", err)
+		log.Errorf(ctx, "CONNECT tunnel: %v", err)
 		panic(http.ErrAbortHandler)
 	}
 }
 
 func (p proxyHandler) handleUpgradeResponse(rw http.ResponseWriter, req *http.Request, res *http.Response) {
+	ctx := req.Context()
 	resUpType := upgradeType(res.Header)
 
 	uconn, ok := res.Body.(io.ReadWriteCloser)
 	if !ok {
-		log.Errorf(req.Context(), "%s tunnel: internal error: switching protocols response with non-ReadWriteCloser body", resUpType)
+		log.Errorf(ctx, "%s tunnel: internal error: switching protocols response with non-ReadWriteCloser body", resUpType)
 		panic(http.ErrAbortHandler)
 	}
 
 	res.Body = nil
 
 	if err := p.tunnel(resUpType, rw, req, res, uconn); err != nil {
-		log.Errorf(req.Context(), "%s tunnel: %w", resUpType, err)
+		log.Errorf(ctx, "%s tunnel: %w", resUpType, err)
 		panic(http.ErrAbortHandler)
 	}
 }
 
 func (p proxyHandler) tunnel(name string, rw http.ResponseWriter, req *http.Request, res *http.Response, crw io.ReadWriteCloser) error {
+	ctx := req.Context()
+
 	var (
 		rc    = http.NewResponseController(rw)
 		donec = make(chan bool, 2)
@@ -205,8 +210,8 @@ func (p proxyHandler) tunnel(name string, rw http.ResponseWriter, req *http.Requ
 			return fmt.Errorf("got error while draining buffer: %w", err)
 		}
 
-		go copySync(req.Context(), "outbound "+name, crw, conn, donec)
-		go copySync(req.Context(), "inbound "+name, conn, crw, donec)
+		go copySync(ctx, "outbound "+name, crw, conn, donec)
+		go copySync(ctx, "inbound "+name, conn, crw, donec)
 	case 2:
 		copyHeader(rw.Header(), res.Header)
 		rw.WriteHeader(res.StatusCode)
@@ -215,16 +220,16 @@ func (p proxyHandler) tunnel(name string, rw http.ResponseWriter, req *http.Requ
 			return fmt.Errorf("got error while flushing response back to client: %w", err)
 		}
 
-		go copySync(req.Context(), "outbound "+name, crw, req.Body, donec)
-		go copySync(req.Context(), "inbound "+name, writeFlusher{rw, rc}, crw, donec)
+		go copySync(ctx, "outbound "+name, crw, req.Body, donec)
+		go copySync(ctx, "inbound "+name, writeFlusher{rw, rc}, crw, donec)
 	default:
 		return fmt.Errorf("unsupported protocol version: %d", req.ProtoMajor)
 	}
 
-	log.Debugf(req.Context(), "established %s tunnel, proxying traffic", name)
+	log.Debugf(ctx, "established %s tunnel, proxying traffic", name)
 	<-donec
 	<-donec
-	log.Debugf(req.Context(), "closed %s tunnel", name)
+	log.Debugf(ctx, "closed %s tunnel", name)
 
 	return nil
 }
@@ -232,6 +237,8 @@ func (p proxyHandler) tunnel(name string, rw http.ResponseWriter, req *http.Requ
 // handleRequest handles a request and writes the response to the given http.ResponseWriter.
 // It returns an error if the request.
 func (p proxyHandler) handleRequest(rw http.ResponseWriter, req *http.Request) {
+	ctx := req.Context()
+
 	if req.Method == http.MethodConnect {
 		p.handleConnectRequest(rw, req)
 		return
@@ -249,18 +256,18 @@ func (p proxyHandler) handleRequest(rw http.ResponseWriter, req *http.Request) {
 		}
 	} else if req.URL.Scheme == "http" {
 		if req.TLS != nil && !p.AllowHTTP {
-			log.Infof(req.Context(), "forcing HTTPS inside secure session")
+			log.Infof(ctx, "forcing HTTPS inside secure session")
 			req.URL.Scheme = "https"
 		}
 	}
 
 	reqUpType := upgradeType(req.Header)
 	if reqUpType != "" {
-		log.Debugf(req.Context(), "upgrade request: %s", reqUpType)
+		log.Debugf(ctx, "upgrade request: %s", reqUpType)
 	}
 
 	if err := p.reqmod.ModifyRequest(req); err != nil {
-		log.Debugf(req.Context(), "error modifying request: %v", err)
+		log.Debugf(ctx, "error modifying request: %v", err)
 		p.writeErrorResponse(rw, req, err)
 		return
 	}
@@ -276,9 +283,9 @@ func (p proxyHandler) handleRequest(rw http.ResponseWriter, req *http.Request) {
 	res, err := p.roundTrip(req)
 	if err != nil {
 		if isClosedConnError(err) {
-			log.Debugf(req.Context(), "connection closed prematurely: %v", err)
+			log.Debugf(ctx, "connection closed prematurely: %v", err)
 		} else {
-			log.Errorf(req.Context(), "failed to round trip: %v", err)
+			log.Errorf(ctx, "failed to round trip: %v", err)
 		}
 		p.writeErrorResponse(rw, req, err)
 		return
@@ -292,11 +299,11 @@ func (p proxyHandler) handleRequest(rw http.ResponseWriter, req *http.Request) {
 
 	resUpType := upgradeType(res.Header)
 	if resUpType != "" {
-		log.Debugf(req.Context(), "upgrade response: %s", resUpType)
+		log.Debugf(ctx, "upgrade response: %s", resUpType)
 	}
 
 	if err := p.resmod.ModifyResponse(res); err != nil {
-		log.Debugf(req.Context(), "error modifying response: %v", err)
+		log.Debugf(ctx, "error modifying response: %v", err)
 		p.writeErrorResponse(rw, req, err)
 		return
 	}
@@ -309,7 +316,7 @@ func (p proxyHandler) handleRequest(rw http.ResponseWriter, req *http.Request) {
 	}
 
 	if !req.ProtoAtLeast(1, 1) || req.Close || res.Close || p.Closing() {
-		log.Debugf(req.Context(), "received close request: %v", req.RemoteAddr)
+		log.Debugf(ctx, "received close request: %v", req.RemoteAddr)
 		res.Close = true
 	}
 

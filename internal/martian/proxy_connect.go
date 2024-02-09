@@ -41,6 +41,8 @@ var ErrConnectFallback = errors.New("martian: connect fallback")
 type ConnectFunc func(req *http.Request) (*http.Response, io.ReadWriteCloser, error)
 
 func (p *Proxy) connect(req *http.Request) (*http.Response, net.Conn, error) {
+	ctx := req.Context()
+
 	var proxyURL *url.URL
 	if p.proxyURL != nil {
 		u, err := p.proxyURL(req)
@@ -51,9 +53,9 @@ func (p *Proxy) connect(req *http.Request) (*http.Response, net.Conn, error) {
 	}
 
 	if proxyURL == nil {
-		log.Debugf(req.Context(), "CONNECT to host directly: %s", req.URL.Host)
+		log.Debugf(ctx, "CONNECT to host directly: %s", req.URL.Host)
 
-		conn, err := p.dial(req.Context(), "tcp", req.URL.Host)
+		conn, err := p.dial(ctx, "tcp", req.URL.Host)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -72,7 +74,9 @@ func (p *Proxy) connect(req *http.Request) (*http.Response, net.Conn, error) {
 }
 
 func (p *Proxy) connectHTTP(req *http.Request, proxyURL *url.URL) (res *http.Response, conn net.Conn, err error) {
-	log.Debugf(req.Context(), "CONNECT with upstream HTTP proxy: %s", proxyURL.Host)
+	ctx := req.Context()
+
+	log.Debugf(ctx, "CONNECT with upstream HTTP proxy: %s", proxyURL.Host)
 
 	var d *dialvia.HTTPProxyDialer
 	if proxyURL.Scheme == "https" {
@@ -82,13 +86,10 @@ func (p *Proxy) connectHTTP(req *http.Request, proxyURL *url.URL) (res *http.Res
 	}
 	d.ConnectRequestModifier = p.ConnectRequestModifier
 
-	var ctx context.Context
 	if p.ConnectTimeout > 0 {
 		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(req.Context(), p.ConnectTimeout)
+		ctx, cancel = context.WithTimeout(ctx, p.ConnectTimeout)
 		defer cancel()
-	} else {
-		ctx = req.Context()
 	}
 	res, conn, err = d.DialContextR(ctx, "tcp", req.URL.Host)
 
@@ -115,11 +116,13 @@ func (p *Proxy) clientTLSConfig() *tls.Config {
 }
 
 func (p *Proxy) connectSOCKS5(req *http.Request, proxyURL *url.URL) (*http.Response, net.Conn, error) {
-	log.Debugf(req.Context(), "CONNECT with upstream SOCKS5 proxy: %s", proxyURL.Host)
+	ctx := req.Context()
+
+	log.Debugf(ctx, "CONNECT with upstream SOCKS5 proxy: %s", proxyURL.Host)
 
 	d := dialvia.SOCKS5Proxy(p.dial, proxyURL)
 
-	conn, err := d.DialContext(req.Context(), "tcp", req.URL.Host)
+	conn, err := d.DialContext(ctx, "tcp", req.URL.Host)
 	if err != nil {
 		return nil, nil, err
 	}
