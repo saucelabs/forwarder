@@ -114,6 +114,10 @@ issues:
         - errcheck
         - gosec
 
+    - path: internal/martian/context.go
+      linters:
+        - forcetypeassert
+
     - path: internal/martian/h2/testing
       linters:
         - forbidigo

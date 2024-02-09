@@ -55,7 +55,7 @@ func newProxyConn(p *Proxy, conn net.Conn) *proxyConn {
 	return v
 }
 
-func (p *proxyConn) readRequest(ctx *Context) (*http.Request, error) {
+func (p *proxyConn) readRequest() (*http.Request, error) {
 	var idleDeadline time.Time // or zero if none
 	if d := p.idleTimeout(); d > 0 {
 		idleDeadline = time.Now().Add(d)
@@ -95,8 +95,7 @@ func (p *proxyConn) readRequest(ctx *Context) (*http.Request, error) {
 	if p.secure {
 		req.TLS = &p.cs
 	}
-
-	req = req.WithContext(p.requestContext(ctx, req))
+	req = req.WithContext(WithTraceID(p.BaseContex, newTraceID()))
 
 	// Adjust the read deadline if necessary.
 	if !hdrDeadline.Equal(wholeReqDeadline) {
@@ -108,7 +107,7 @@ func (p *proxyConn) readRequest(ctx *Context) (*http.Request, error) {
 	return req, err
 }
 
-func (p *proxyConn) handleMITM(ctx *Context, req *http.Request) error {
+func (p *proxyConn) handleMITM(req *http.Request) error {
 	log.Debugf(req.Context(), "mitm: attempting MITM for connection %s", req.Host)
 
 	res := proxyutil.NewResponse(200, nil, req)
@@ -177,22 +176,22 @@ func (p *proxyConn) handleMITM(ctx *Context, req *http.Request) error {
 		p.secure = true
 		p.cs = cs
 
-		return p.handle(ctx)
+		return p.handle()
 	}
 
 	// Prepend the previously read data to be read again by http.ReadRequest.
 	p.brw.Reader.Reset(io.MultiReader(bytes.NewReader(buf), p.conn))
-	return p.handle(ctx)
+	return p.handle()
 }
 
-func (p *proxyConn) handleConnectRequest(ctx *Context, req *http.Request) error {
+func (p *proxyConn) handleConnectRequest(req *http.Request) error {
 	if err := p.reqmod.ModifyRequest(req); err != nil {
 		log.Debugf(req.Context(), "error modifying CONNECT request: %v", err)
 		return p.writeErrorResponse(req, err)
 	}
 
 	if p.shouldMITM(req) {
-		return p.handleMITM(ctx, req)
+		return p.handleMITM(req)
 	}
 
 	log.Debugf(req.Context(), "attempting to establish CONNECT tunnel: %s", req.URL.Host)
@@ -294,12 +293,10 @@ func (p *proxyConn) tunnel(name string, res *http.Response, crw io.ReadWriteClos
 	return nil
 }
 
-func (p *proxyConn) handle(_ *Context) error {
+func (p *proxyConn) handle() error {
 	log.Debugf(context.TODO(), "waiting for request: %v", p.conn.RemoteAddr())
 
-	ctx := newContext()
-
-	req, err := p.readRequest(ctx)
+	req, err := p.readRequest()
 	if err != nil {
 		if errors.Is(err, io.EOF) {
 			return errClose
@@ -324,7 +321,7 @@ func (p *proxyConn) handle(_ *Context) error {
 	}
 
 	if req.Method == http.MethodConnect {
-		return p.handleConnectRequest(ctx, req)
+		return p.handleConnectRequest(req)
 	}
 
 	if req.URL.Scheme == "" {

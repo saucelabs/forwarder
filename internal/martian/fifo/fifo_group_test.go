@@ -19,7 +19,6 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/saucelabs/forwarder/internal/martian"
 	_ "github.com/saucelabs/forwarder/internal/martian/header"
 	"github.com/saucelabs/forwarder/internal/martian/martiantest"
 	"github.com/saucelabs/forwarder/internal/martian/proxyutil"
@@ -155,7 +154,6 @@ func TestModifyResponseAggregatesErrors(t *testing.T) {
 	if err != nil {
 		t.Fatalf("http.NewRequest(): got %v, want no error", err)
 	}
-	martian.TestContext(req)
 
 	res := proxyutil.NewResponse(200, nil, req)
 
@@ -204,7 +202,6 @@ func TestModifyResponseInlineGroupsAggregateErrors(t *testing.T) {
 	if err != nil {
 		t.Fatalf("http.NewRequest(): got %v, want no error", err)
 	}
-	martian.TestContext(req)
 
 	res := proxyutil.NewResponse(200, nil, req)
 

@@ -85,9 +85,7 @@ func (p *Proxy) Handler() http.Handler {
 }
 
 func (p proxyHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
-	ctx := newContext()
-
-	outreq := req.Clone(p.requestContext(ctx, req))
+	outreq := req.Clone(WithTraceID(p.BaseContex, newTraceID()))
 	if req.ContentLength == 0 {
 		outreq.Body = http.NoBody
 	}
