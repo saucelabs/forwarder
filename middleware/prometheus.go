@@ -7,7 +7,6 @@
 package middleware
 
 import (
-	"errors"
 	"net/http"
 	"strconv"
 	"time"
@@ -121,28 +120,13 @@ func computeApproximateRequestSize(r *http.Request) int {
 	return s
 }
 
-const durationKey = "sl-duration-key"
-
-func (p *Prometheus) ModifyRequest(req *http.Request) error {
-	ctx := martian.NewContext(req)
-	ctx.Set(durationKey, time.Now())
-	return nil
-}
-
 func (p *Prometheus) ModifyResponse(res *http.Response) error {
-	r := res.Request
-	ctx := martian.NewContext(r)
+	req := res.Request
 
-	var elapsed float64
-	if t0, ok := ctx.Get(durationKey); ok {
-		start := t0.(time.Time) //nolint:forcetypeassert // we know it's time
-		elapsed = float64(time.Since(start)) / float64(time.Second)
-	} else {
-		return errors.New("prometheus duration key not found")
-	}
+	elapsed := float64(martian.Duration(req.Context())) / float64(time.Second)
 
-	reqSize := computeApproximateRequestSize(r)
-	lv := [2]string{strconv.Itoa(res.StatusCode), r.Method}
+	reqSize := computeApproximateRequestSize(req)
+	lv := [2]string{strconv.Itoa(res.StatusCode), req.Method}
 
 	p.requestsTotal.WithLabelValues(lv[:]...).Inc()
 	p.requestDuration.WithLabelValues(lv[:]...).Observe(elapsed)

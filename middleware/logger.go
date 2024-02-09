@@ -60,24 +60,8 @@ func (l Logger) WrapRoundTripper(rt http.RoundTripper) http.RoundTripper {
 	})
 }
 
-const startTimeKey = "start-time"
-
-func (l Logger) ModifyRequest(req *http.Request) error {
-	ctx := martian.NewContext(req)
-	ctx.Set(startTimeKey, time.Now())
-	return nil
-}
-
 func (l Logger) ModifyResponse(res *http.Response) error {
-	ctx := martian.NewContext(res.Request)
-
-	var d time.Duration
-	if s, ok := ctx.Get(startTimeKey); ok {
-		if ss, ok := s.(time.Time); ok {
-			d = time.Since(ss)
-		}
-	}
-	l(makeLogEntry(res.Request, res, d))
+	l(makeLogEntry(res.Request, res, martian.Duration(res.Request.Context())))
 
 	return nil
 }
