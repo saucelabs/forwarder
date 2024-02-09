@@ -369,13 +369,11 @@ func (hp *HTTPProxy) middlewareStack() martian.RequestResponseModifier {
 
 	if hp.config.LogHTTPMode != httplog.None {
 		lf := httplog.NewLogger(hp.log.Infof, hp.config.LogHTTPMode).LogFunc()
-		fg.AddRequestModifier(lf)
 		fg.AddResponseModifier(lf)
 	}
 
 	if hp.config.PromRegistry != nil {
 		p := middleware.NewPrometheus(hp.config.PromRegistry, hp.config.PromNamespace)
-		stack.AddRequestModifier(p)
 		stack.AddResponseModifier(p)
 	}
 

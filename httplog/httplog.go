@@ -13,7 +13,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/saucelabs/forwarder/internal/martian/log"
+	"github.com/saucelabs/forwarder/internal/martian"
 	"github.com/saucelabs/forwarder/internal/martian/messageview"
 	"github.com/saucelabs/forwarder/middleware"
 )
@@ -167,7 +167,7 @@ func (w *logWriter) ShortURLLine(e middleware.LogEntry) {
 }
 
 func (w *logWriter) trace(e middleware.LogEntry) {
-	if trace := e.Request.Context().Value(log.TraceContextKey); trace != nil {
+	if trace := martian.TraceID(e.Request.Context()); trace != "" {
 		fmt.Fprintf(&w.b, "[%s] ", trace)
 	}
 }
