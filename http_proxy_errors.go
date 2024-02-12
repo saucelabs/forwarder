@@ -59,7 +59,9 @@ func (hp *HTTPProxy) errorResponse(req *http.Request, err error) *http.Response 
 		label = "unexpected_error"
 	}
 
-	hp.metrics.error(label)
+	if label != "-" {
+		hp.metrics.error(label)
+	}
 
 	var body bytes.Buffer
 	body.WriteString(hp.config.Name)
@@ -145,7 +147,7 @@ func handleDenyError(req *http.Request, err error) (code int, msg, label string)
 	if errors.As(err, &denyErr) {
 		code = http.StatusForbidden
 		msg = fmt.Sprintf("proxying is denied to host %q", req.Host)
-		label = "denied"
+		label = "-"
 	}
 
 	return
