@@ -136,6 +136,11 @@ func serve(p *Proxy, l net.Listener) {
 	p.Serve(l)
 }
 
+func setTimeout(p *Proxy, timeout time.Duration) {
+	p.ReadTimeout = timeout
+	p.WriteTimeout = timeout
+}
+
 func TestIntegrationTemporaryTimeout(t *testing.T) {
 	t.Parallel()
 
@@ -145,7 +150,7 @@ func TestIntegrationTemporaryTimeout(t *testing.T) {
 
 	tr := martiantest.NewTransport()
 	p.RoundTripper = tr
-	p.SetTimeout(200 * time.Millisecond)
+	setTimeout(p, 200*time.Millisecond)
 
 	// Start the proxy with a listener that will return a temporary error on
 	// Accept() three times.
@@ -189,7 +194,7 @@ func TestIntegrationHTTP(t *testing.T) {
 
 	tr := martiantest.NewTransport()
 	p.RoundTripper = tr
-	p.SetTimeout(200 * time.Millisecond)
+	setTimeout(p, 200*time.Millisecond)
 
 	tm := martiantest.NewModifier()
 	tm.ResponseFunc(func(res *http.Response) {
@@ -246,7 +251,7 @@ func TestIntegrationHTTP100Continue(t *testing.T) {
 	}
 	defer p.Close()
 
-	p.SetTimeout(2 * time.Second)
+	setTimeout(p, 2*time.Second)
 
 	sl, err := net.Listen("tcp", "[::]:0")
 	if err != nil {
@@ -355,7 +360,7 @@ func TestIntegrationHTTP101SwitchingProtocols(t *testing.T) {
 	}
 	defer p.Close()
 
-	p.SetTimeout(200 * time.Millisecond)
+	setTimeout(p, 200*time.Millisecond)
 
 	sl, err := net.Listen("tcp", "[::]:0")
 	if err != nil {
@@ -469,7 +474,7 @@ func TestIntegrationUnexpectedUpstreamFailure(t *testing.T) {
 	defer p.Close()
 
 	// setting a large proxy timeout
-	p.SetTimeout(1000 * time.Second)
+	setTimeout(p, 1000*time.Second)
 
 	sl, err := net.Listen("tcp", "[::]:0")
 	if err != nil {
@@ -575,7 +580,7 @@ func TestIntegrationHTTPUpstreamProxy(t *testing.T) {
 	utr := martiantest.NewTransport()
 	utr.Respond(299)
 	upstream.RoundTripper = utr
-	upstream.SetTimeout(600 * time.Millisecond)
+	setTimeout(upstream, 600*time.Millisecond)
 
 	go upstream.Serve(ul)
 
@@ -592,7 +597,7 @@ func TestIntegrationHTTPUpstreamProxy(t *testing.T) {
 	proxy.ProxyURL = http.ProxyURL(&url.URL{
 		Host: ul.Addr().String(),
 	})
-	proxy.SetTimeout(600 * time.Millisecond)
+	setTimeout(proxy, 600*time.Millisecond)
 
 	go proxy.Serve(pl)
 
@@ -636,7 +641,7 @@ func TestIntegrationHTTPUpstreamProxyError(t *testing.T) {
 	p.ProxyURL = http.ProxyURL(&url.URL{
 		Host: "[::]:0",
 	})
-	p.SetTimeout(600 * time.Millisecond)
+	setTimeout(p, 600*time.Millisecond)
 
 	tm := martiantest.NewModifier()
 	reserr := errors.New("response error")
@@ -1071,7 +1076,7 @@ func TestIntegrationConnectFunc(t *testing.T) {
 		pr, pw := io.Pipe()
 		return proxyutil.NewResponse(200, nil, req), pipeConn{pr, pw}, nil
 	}
-	p.SetTimeout(200 * time.Millisecond)
+	setTimeout(p, 200*time.Millisecond)
 	defer p.Close()
 
 	go serve(p, l)
@@ -1252,7 +1257,7 @@ func TestIntegrationMITM(t *testing.T) {
 	})
 
 	p.RoundTripper = tr
-	p.SetTimeout(600 * time.Millisecond)
+	setTimeout(p, 600*time.Millisecond)
 
 	ca, priv, err := mitm.NewAuthority("martian.proxy", "Martian Authority", 2*time.Hour)
 	if err != nil {
@@ -1342,7 +1347,7 @@ func TestIntegrationTransparentHTTP(t *testing.T) {
 	tr := martiantest.NewTransport()
 	p.RoundTripper = tr
 
-	p.SetTimeout(200 * time.Millisecond)
+	setTimeout(p, 200*time.Millisecond)
 
 	tm := martiantest.NewModifier()
 	p.RequestModifier = tm
@@ -1490,7 +1495,7 @@ func TestIntegrationFailedRoundTrip(t *testing.T) {
 	trerr := errors.New("round trip error")
 	tr.RespondError(trerr)
 	p.RoundTripper = tr
-	p.SetTimeout(200 * time.Millisecond)
+	setTimeout(p, 200*time.Millisecond)
 
 	go serve(p, l)
 
@@ -1539,7 +1544,7 @@ func TestIntegrationSkipRoundTrip(t *testing.T) {
 	tr := martiantest.NewTransport()
 	tr.Respond(500)
 	p.RoundTripper = tr
-	p.SetTimeout(200 * time.Millisecond)
+	setTimeout(p, 200*time.Millisecond)
 
 	tm := martiantest.NewModifier()
 	p.RequestModifier = tm
@@ -1887,7 +1892,7 @@ func TestIdleTimeout(t *testing.T) {
 	p.RoundTripper = tr
 
 	// Reset read and write timeouts.
-	p.SetTimeout(0)
+	setTimeout(p, 0)
 	p.IdleTimeout = 100 * time.Millisecond
 
 	go p.Serve(newTimeoutListener(l, 0))
@@ -1915,7 +1920,7 @@ func TestReadHeaderTimeout(t *testing.T) {
 	p.RoundTripper = tr
 
 	// Reset read and write timeouts.
-	p.SetTimeout(0)
+	setTimeout(p, 0)
 	p.ReadHeaderTimeout = 100 * time.Millisecond
 
 	go p.Serve(newTimeoutListener(l, 0))
@@ -1949,7 +1954,7 @@ func TestReadHeaderConnectionReset(t *testing.T) {
 	p.RoundTripper = tr
 
 	// Reset read and write timeouts.
-	p.SetTimeout(0)
+	setTimeout(p, 0)
 
 	go p.Serve(newTimeoutListener(l, 0))
 
