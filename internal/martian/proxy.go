@@ -29,6 +29,7 @@ import (
 	"github.com/saucelabs/forwarder/internal/martian/mitm"
 	"github.com/saucelabs/forwarder/internal/martian/nosigpipe"
 	"github.com/saucelabs/forwarder/internal/martian/proxyutil"
+	"golang.org/x/net/http/httpguts"
 )
 
 // Proxy is an HTTP proxy with support for TLS MITM and customizable behavior.
@@ -364,4 +365,11 @@ func (p *Proxy) errorResponse(req *http.Request, err error) *http.Response {
 	}
 
 	return res
+}
+
+func upgradeType(h http.Header) string {
+	if !httpguts.HeaderValuesContainsToken(h["Connection"], "Upgrade") {
+		return ""
+	}
+	return h.Get("Upgrade")
 }

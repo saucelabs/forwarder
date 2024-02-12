@@ -29,7 +29,6 @@ import (
 	"github.com/saucelabs/forwarder/dialvia"
 	"github.com/saucelabs/forwarder/internal/martian/log"
 	"github.com/saucelabs/forwarder/internal/martian/proxyutil"
-	"golang.org/x/net/http/httpguts"
 )
 
 // ErrConnectFallback is returned by a ConnectFunc to indicate
@@ -128,11 +127,4 @@ func (p *Proxy) connectSOCKS5(req *http.Request, proxyURL *url.URL) (*http.Respo
 	}
 
 	return proxyutil.NewResponse(200, http.NoBody, req), conn, nil
-}
-
-func upgradeType(h http.Header) string {
-	if !httpguts.HeaderValuesContainsToken(h["Connection"], "Upgrade") {
-		return ""
-	}
-	return h.Get("Upgrade")
 }
