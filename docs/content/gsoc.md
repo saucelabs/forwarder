@@ -19,33 +19,92 @@ We are looking for students who are passionate about open source and want to con
 
 ## Ideas
 
-We have a list of project ideas that we think would be beneficial for the project.
-However, we are open to new ideas as well.
-If you have a project idea that you think would be beneficial for the project, feel free to reach out to us.
+The following list of ideas is not exhaustive, and we are open to new ideas as well.
+If you have a project idea feel free to reach out to us.
+The projects are sorted by difficulty, with the easiest ones at the top.
 
-### Project Ideas
-
-#### Request recording
-
-Request recording, preferably to a columnar format like Apache Arrow, opens up a lot of possibilities for analysis and debugging.
-
-##### AI-based request analysis
-
-The goal of this project is to use AI to analyze the recorded requests and provide insights into the traffic.
-We can use a SQL LLM to convert user queries into SQL queries and then use a columnar database to analyze the data.
-
-Another possibility is traffic prediction, for instance we would be interested in predicting traffic spikes to allocate resources accordingly.
-
-##### UI or TUI for request analysis
+### UI (or TUI) for request analysis in Forwarder proxy
 
 The goal of this project is to create a user interface for viewing and analyzing the recorded requests.
-There are terminal-based UI libraries like [bubbletea](https://github.com/charmbracelet/bubbletea) that allow for creating exciting TUIs in Go.
+We are open to both web-based and terminal-based UIs.
+There are terminal-based UI libraries like [bubbletea](https://github.com/charmbracelet/bubbletea) that allow for creating very exciting TUIs in Go.
+To do that we'd need to record the requests, and provide a way view them.
 
-#### gRPC visualization and modification
+#### Expected outcomes
 
-The goal of this project is adding dedicated support for gRPC in Forwarder.
-It would allow for visualizing and modifying gRPC traffic.
-We can easily add JavaScript based modification support for gRPC traffic.  
+* In memory request recording
+* UI for viewing the recorded requests
+
+#### Skills required/preferred
+
+* Go
+* TUI or web development
+* SQL
+
+#### Possible mentors
+
+* [Michał Matczuk](github.com/mmatczuk)
+* [Hubert Grochowski](github.com/Choraden)
+
+#### Expected size of project
+
+175 hours, easy
+
+### Request recording and analysis in Forwarder proxy
+
+The goal of this project is to add support for recording and analyzing requests in the Forwarder proxy.
+To do that we'd need to record the requests in a columnar format like Apache Arrow, and then provide a way to analyze the data.
+We could use a SQL LLM to convert user queries into SQL queries and then use a columnar database to analyze the data.
+
+#### Expected outcomes
+
+* Request recording in a columnar format
+* SQL interface for analyzing the recorded requests
+* Text-based UI for analyzing the recorded requests
+
+#### Skills required/preferred
+
+* Go
+* SQL
+* Machine learning
+
+#### Possible mentors
+
+* [Michał Matczuk](github.com/mmatczuk)
+* [Hubert Grochowski](github.com/Choraden)
+
+#### Expected size of project
+
+175 hours, intermediate
+
+### gRPC support in Forwarder proxy
+
+The goal of this project is extending the Forwarder proxy with dedicated support for gRPC. 
+We want to go beyond the HTTP/2 support and provide an idiomatic way for RPC traffic analysis and modification.
+To do that we'd need to review the existing tools and libraries and see how we can integrate them into Forwarder. 
+
+#### Expected outcomes
+
+* Support for encrypted and unencrypted gRPC traffic
+* JavaScript based modification of RPC traffic
+* RPC call based logging
+* (Optional) recording and replaying RPC calls 
+* (Optional) integration with UI
+
+#### Skills required/preferred
+
+* Go
+* gRPC
+* HTTP/2
+
+#### Possible mentors
+
+* [Michał Matczuk](github.com/mmatczuk)
+* [Hubert Grochowski](github.com/Choraden)
+
+#### Expected size of project
+
+175 hours, intermediate
 
 #### Wireguard integration in Forwarder proxy
 
@@ -56,10 +115,52 @@ MITMproxy added a similar feature in October 2022, see [here](https://mitmproxy.
 Our implementation, can be more integrated and robust. 
 Utilizing [Go WireGuard](https://github.com/WireGuard/wireguard-go), extensively used by entities like TailScale, we will seamlessly integrate it directly into the Forwarder proxy. This approach not only ensures better performance but also optimizes the overall usage of the proxy.
 
+#### Expected outcomes
+
+* WireGuard Server integration
+* Seamless mobile device integration
+
+#### Skills required/preferred
+
+* Go
+* WireGuard
+* Networking
+* Mobile development
+
+#### Possible mentors
+
+* [Michał Matczuk](github.com/mmatczuk)
+* [Hubert Grochowski](github.com/Choraden)
+
+#### Expected size of project
+
+350 hours, hard
+
 #### HTTP/3 MITM support in Forwarder proxy
 
 HTTP/3 is the next version of the HTTP protocol and is designed to improve the performance of web traffic.
 This project aims to add support for HTTP/3 in the Forwarder proxy, including MITM support.
+
+#### Expected outcomes
+
+* Support for HTTP/3
+* MITM support for HTTP/3
+* Support for upstream forwarding of HTTP/3
+
+#### Skills required/preferred
+
+* Go
+* HTTP/3
+* Networking
+
+#### Possible mentors
+
+* [Michał Matczuk](github.com/mmatczuk)
+* [Hubert Grochowski](github.com/Choraden)
+
+#### Expected size of project
+
+350 hours, hard
 
 ## How to Apply
 
