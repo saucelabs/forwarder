@@ -230,6 +230,17 @@ func (hp *HTTPProxy) configureHTTPS() error {
 
 func (hp *HTTPProxy) configureProxy() error {
 	hp.proxy = new(martian.Proxy)
+	hp.proxy.AllowHTTP = true
+	hp.proxy.RequestIDHeader = hp.config.RequestIDHeader
+	hp.proxy.ConnectRequestModifier = hp.config.ConnectRequestModifier
+	hp.proxy.ConnectFunc = hp.config.ConnectFunc
+	hp.proxy.ConnectTimeout = 60 * time.Second
+	hp.proxy.WithoutWarning = true
+	hp.proxy.ErrorResponse = hp.errorResponse
+	hp.proxy.IdleTimeout = hp.config.IdleTimeout
+	hp.proxy.ReadTimeout = hp.config.ReadTimeout
+	hp.proxy.ReadHeaderTimeout = hp.config.ReadHeaderTimeout
+	hp.proxy.WriteTimeout = hp.config.WriteTimeout
 
 	if hp.config.MITM != nil {
 		mc, err := newMartianMITMConfig(hp.config.MITM)
@@ -253,19 +264,7 @@ func (hp *HTTPProxy) configureProxy() error {
 		hp.proxy.MITMTLSHandshakeTimeout = hp.config.TLSServerConfig.HandshakeTimeout
 	}
 
-	hp.proxy.AllowHTTP = true
-	hp.proxy.RequestIDHeader = hp.config.RequestIDHeader
-	hp.proxy.ConnectRequestModifier = hp.config.ConnectRequestModifier
-	hp.proxy.ConnectFunc = hp.config.ConnectFunc
-	hp.proxy.ConnectTimeout = 60 * time.Second
-	hp.proxy.WithoutWarning = true
-	hp.proxy.ErrorResponse = hp.errorResponse
-	hp.proxy.IdleTimeout = hp.config.IdleTimeout
-	hp.proxy.ReadTimeout = hp.config.ReadTimeout
-	hp.proxy.ReadHeaderTimeout = hp.config.ReadHeaderTimeout
-	hp.proxy.WriteTimeout = hp.config.WriteTimeout
 	hp.proxy.RoundTripper = hp.transport
-
 	switch {
 	case hp.config.UpstreamProxyFunc != nil:
 		hp.log.Infof("using external proxy function")
