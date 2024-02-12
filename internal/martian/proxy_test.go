@@ -140,11 +140,11 @@ func TestIntegrationTemporaryTimeout(t *testing.T) {
 	t.Parallel()
 
 	l := newListener(t)
-	p := NewProxy()
+	p := new(Proxy)
 	defer p.Close()
 
 	tr := martiantest.NewTransport()
-	p.SetRoundTripper(tr)
+	p.RoundTripper = tr
 	p.SetTimeout(200 * time.Millisecond)
 
 	// Start the proxy with a listener that will return a temporary error on
@@ -184,11 +184,11 @@ func TestIntegrationHTTP(t *testing.T) {
 	t.Parallel()
 
 	l := newListener(t)
-	p := NewProxy()
+	p := new(Proxy)
 	defer p.Close()
 
 	tr := martiantest.NewTransport()
-	p.SetRoundTripper(tr)
+	p.RoundTripper = tr
 	p.SetTimeout(200 * time.Millisecond)
 
 	tm := martiantest.NewModifier()
@@ -240,7 +240,7 @@ func TestIntegrationHTTP100Continue(t *testing.T) {
 	}
 
 	l := newListener(t)
-	p := NewProxy()
+	p := new(Proxy)
 	if *withTLS {
 		p.AllowHTTP = true
 	}
@@ -349,7 +349,7 @@ func TestIntegrationHTTP101SwitchingProtocols(t *testing.T) {
 	t.Parallel()
 
 	l := newListener(t)
-	p := NewProxy()
+	p := new(Proxy)
 	if *withTLS {
 		p.AllowHTTP = true
 	}
@@ -462,7 +462,7 @@ func TestIntegrationUnexpectedUpstreamFailure(t *testing.T) {
 	t.Parallel()
 
 	l := newListener(t)
-	p := NewProxy()
+	p := new(Proxy)
 	if *withTLS {
 		p.AllowHTTP = true
 	}
@@ -569,12 +569,12 @@ func TestIntegrationHTTPUpstreamProxy(t *testing.T) {
 		t.Fatalf("net.Listen(): got %v, want no error", err)
 	}
 
-	upstream := NewProxy()
+	upstream := new(Proxy)
 	defer upstream.Close()
 
 	utr := martiantest.NewTransport()
 	utr.Respond(299)
-	upstream.SetRoundTripper(utr)
+	upstream.RoundTripper = utr
 	upstream.SetTimeout(600 * time.Millisecond)
 
 	go upstream.Serve(ul)
@@ -582,14 +582,14 @@ func TestIntegrationHTTPUpstreamProxy(t *testing.T) {
 	// Start second proxy, will write to upstream proxy.
 	pl := newListener(t)
 
-	proxy := NewProxy()
+	proxy := new(Proxy)
 	if *withTLS {
 		proxy.AllowHTTP = true
 	}
 	defer proxy.Close()
 
 	// Set proxy's upstream proxy to the host:port of the first proxy.
-	proxy.SetUpstreamProxy(&url.URL{
+	proxy.ProxyURL = http.ProxyURL(&url.URL{
 		Host: ul.Addr().String(),
 	})
 	proxy.SetTimeout(600 * time.Millisecond)
@@ -629,11 +629,11 @@ func TestIntegrationHTTPUpstreamProxyError(t *testing.T) {
 	t.Parallel()
 
 	l := newListener(t)
-	p := NewProxy()
+	p := new(Proxy)
 	defer p.Close()
 
 	// Set proxy's upstream proxy to invalid host:port to force failure.
-	p.SetUpstreamProxy(&url.URL{
+	p.ProxyURL = http.ProxyURL(&url.URL{
 		Host: "[::]:0",
 	})
 	p.SetTimeout(600 * time.Millisecond)
@@ -682,7 +682,7 @@ func TestIntegrationTLSHandshakeErrorCallback(t *testing.T) {
 	t.Parallel()
 
 	l := newListener(t)
-	p := NewProxy()
+	p := new(Proxy)
 	defer p.Close()
 
 	// Test TLS server.
@@ -774,7 +774,7 @@ func TestIntegrationConnect(t *testing.T) { //nolint:tparallel // Subtests share
 	t.Parallel()
 
 	l := newListener(t)
-	p := NewProxy()
+	p := new(Proxy)
 	defer p.Close()
 
 	// Test TLS server.
@@ -948,12 +948,12 @@ func TestIntegrationConnectUpstreamProxy(t *testing.T) {
 		t.Fatalf("net.Listen(): got %v, want no error", err)
 	}
 
-	upstream := NewProxy()
+	upstream := new(Proxy)
 	defer upstream.Close()
 
 	utr := martiantest.NewTransport()
 	utr.Respond(299)
-	upstream.SetRoundTripper(utr)
+	upstream.RoundTripper = utr
 
 	ca, priv, err := mitm.NewAuthority("martian.proxy", "Martian Authority", 2*time.Hour)
 	if err != nil {
@@ -971,11 +971,11 @@ func TestIntegrationConnectUpstreamProxy(t *testing.T) {
 	// Start second proxy, will CONNECT to upstream proxy.
 	pl := newListener(t)
 
-	proxy := NewProxy()
+	proxy := new(Proxy)
 	defer proxy.Close()
 
 	// Set proxy's upstream proxy to the host:port of the first proxy.
-	proxy.SetUpstreamProxy(&url.URL{
+	proxy.ProxyURL = http.ProxyURL(&url.URL{
 		Scheme: "http",
 		Host:   ul.Addr().String(),
 	})
@@ -1066,7 +1066,7 @@ func TestIntegrationConnectFunc(t *testing.T) {
 	t.Parallel()
 
 	l := newListener(t)
-	p := NewProxy()
+	p := new(Proxy)
 	p.ConnectFunc = func(req *http.Request) (*http.Response, io.ReadWriteCloser, error) {
 		pr, pw := io.Pipe()
 		return proxyutil.NewResponse(200, nil, req), pipeConn{pr, pw}, nil
@@ -1123,7 +1123,7 @@ func TestIntegrationConnectTerminateTLS(t *testing.T) {
 	t.Parallel()
 
 	l := newListener(t)
-	p := NewProxy()
+	p := new(Proxy)
 	defer p.Close()
 
 	// Test TLS server.
@@ -1145,7 +1145,7 @@ func TestIntegrationConnectTerminateTLS(t *testing.T) {
 		ServerName: "example.com",
 		RootCAs:    roots,
 	}
-	p.SetRoundTripper(rt)
+	p.RoundTripper = rt
 
 	tl, err := net.Listen("tcp", "[::]:0")
 	if err != nil {
@@ -1240,7 +1240,7 @@ func TestIntegrationMITM(t *testing.T) {
 	}
 
 	l := newListener(t)
-	p := NewProxy()
+	p := new(Proxy)
 	defer p.Close()
 
 	tr := martiantest.NewTransport()
@@ -1251,7 +1251,7 @@ func TestIntegrationMITM(t *testing.T) {
 		return res, nil
 	})
 
-	p.SetRoundTripper(tr)
+	p.RoundTripper = tr
 	p.SetTimeout(600 * time.Millisecond)
 
 	ca, priv, err := mitm.NewAuthority("martian.proxy", "Martian Authority", 2*time.Hour)
@@ -1336,15 +1336,11 @@ func TestIntegrationTransparentHTTP(t *testing.T) {
 	t.Parallel()
 
 	l := newListener(t)
-	p := NewProxy()
+	p := new(Proxy)
 	defer p.Close()
 
 	tr := martiantest.NewTransport()
-	p.SetRoundTripper(tr)
-
-	if got, want := p.GetRoundTripper(), tr; got != want {
-		t.Errorf("proxy.GetRoundTripper: got %v, want %v", got, want)
-	}
+	p.RoundTripper = tr
 
 	p.SetTimeout(200 * time.Millisecond)
 
@@ -1416,7 +1412,7 @@ func TestIntegrationTransparentMITM(t *testing.T) {
 	}
 	l = tls.NewListener(l, mc.TLS())
 
-	p := NewProxy()
+	p := new(Proxy)
 	defer p.Close()
 
 	tr := martiantest.NewTransport()
@@ -1427,7 +1423,7 @@ func TestIntegrationTransparentMITM(t *testing.T) {
 		return res, nil
 	})
 
-	p.SetRoundTripper(tr)
+	p.RoundTripper = tr
 
 	tm := martiantest.NewModifier()
 	p.RequestModifier = tm
@@ -1487,13 +1483,13 @@ func TestIntegrationFailedRoundTrip(t *testing.T) {
 	t.Parallel()
 
 	l := newListener(t)
-	p := NewProxy()
+	p := new(Proxy)
 	defer p.Close()
 
 	tr := martiantest.NewTransport()
 	trerr := errors.New("round trip error")
 	tr.RespondError(trerr)
-	p.SetRoundTripper(tr)
+	p.RoundTripper = tr
 	p.SetTimeout(200 * time.Millisecond)
 
 	go serve(p, l)
@@ -1535,14 +1531,14 @@ func TestIntegrationSkipRoundTrip(t *testing.T) {
 	t.Parallel()
 
 	l := newListener(t)
-	p := NewProxy()
+	p := new(Proxy)
 	p.TestingSkipRoundTrip = true
 	defer p.Close()
 
 	// Transport will be skipped, no 500.
 	tr := martiantest.NewTransport()
 	tr.Respond(500)
-	p.SetRoundTripper(tr)
+	p.RoundTripper = tr
 	p.SetTimeout(200 * time.Millisecond)
 
 	tm := martiantest.NewModifier()
@@ -1583,7 +1579,7 @@ func TestHTTPThroughConnectWithMITM(t *testing.T) {
 	t.Parallel()
 
 	l := newListener(t)
-	p := NewProxy()
+	p := new(Proxy)
 	p.TestingSkipRoundTrip = true
 	defer p.Close()
 
@@ -1685,7 +1681,7 @@ func TestTLSHandshakeTimeoutWithMITM(t *testing.T) {
 	t.Parallel()
 
 	l := newListener(t)
-	p := NewProxy()
+	p := new(Proxy)
 	p.MITMTLSHandshakeTimeout = 200 * time.Millisecond
 	p.TestingSkipRoundTrip = true
 	defer p.Close()
@@ -1801,7 +1797,7 @@ func TestServerClosesConnection(t *testing.T) {
 	if err != nil {
 		t.Fatalf("mitm.NewConfig(): got %v, want no error", err)
 	}
-	p := NewProxy()
+	p := new(Proxy)
 	p.MITMConfig = mc
 	defer p.Close()
 
@@ -1863,7 +1859,7 @@ func TestRacyClose(t *testing.T) {
 		}
 		defer l.Close() // to make p.Serve exit
 
-		p := NewProxy()
+		p := new(Proxy)
 		go serve(p, l)
 		defer p.Close()
 
@@ -1884,11 +1880,11 @@ func TestIdleTimeout(t *testing.T) {
 	t.Parallel()
 
 	l := newListener(t)
-	p := NewProxy()
+	p := new(Proxy)
 	defer p.Close()
 
 	tr := martiantest.NewTransport()
-	p.SetRoundTripper(tr)
+	p.RoundTripper = tr
 
 	// Reset read and write timeouts.
 	p.SetTimeout(0)
@@ -1912,11 +1908,11 @@ func TestReadHeaderTimeout(t *testing.T) {
 	t.Parallel()
 
 	l := newListener(t)
-	p := NewProxy()
+	p := new(Proxy)
 	defer p.Close()
 
 	tr := martiantest.NewTransport()
-	p.SetRoundTripper(tr)
+	p.RoundTripper = tr
 
 	// Reset read and write timeouts.
 	p.SetTimeout(0)
@@ -1946,11 +1942,11 @@ func TestReadHeaderConnectionReset(t *testing.T) {
 	t.Parallel()
 
 	l := newListener(t)
-	p := NewProxy()
+	p := new(Proxy)
 	defer p.Close()
 
 	tr := martiantest.NewTransport()
-	p.SetRoundTripper(tr)
+	p.RoundTripper = tr
 
 	// Reset read and write timeouts.
 	p.SetTimeout(0)
@@ -1977,11 +1973,11 @@ func TestConnectRequestModifier(t *testing.T) {
 	t.Parallel()
 
 	l := newListener(t)
-	p := NewProxy()
+	p := new(Proxy)
 	defer p.Close()
 
 	tr := martiantest.NewTransport()
-	p.SetRoundTripper(tr)
+	p.RoundTripper = tr
 
 	headerName, headerValue := "X-Request-ID", "12345"
 	p.ConnectRequestModifier = func(req *http.Request) error {
@@ -2003,7 +1999,7 @@ func TestConnectRequestModifier(t *testing.T) {
 			}
 		}))
 
-	p.SetUpstreamProxy(&url.URL{
+	p.ProxyURL = http.ProxyURL(&url.URL{
 		Scheme: "http",
 		Host:   tl.Addr().String(),
 	})

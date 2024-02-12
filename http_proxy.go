@@ -229,7 +229,7 @@ func (hp *HTTPProxy) configureHTTPS() error {
 }
 
 func (hp *HTTPProxy) configureProxy() error {
-	hp.proxy = martian.NewProxy()
+	hp.proxy = new(martian.Proxy)
 
 	if hp.config.MITM != nil {
 		mc, err := newMartianMITMConfig(hp.config.MITM)
@@ -264,17 +264,7 @@ func (hp *HTTPProxy) configureProxy() error {
 	hp.proxy.ReadTimeout = hp.config.ReadTimeout
 	hp.proxy.ReadHeaderTimeout = hp.config.ReadHeaderTimeout
 	hp.proxy.WriteTimeout = hp.config.WriteTimeout
-	// Martian has an intertwined logic for setting http.Transport and the dialer.
-	// The dialer is wrapped, so that additional syscalls are made to the dialed connections.
-	// As a result the dialer needs to be reset.
-	if tr, ok := hp.transport.(*http.Transport); ok {
-		// Note: The order matters. DialContext needs to be set first.
-		// SetRoundTripper overwrites tr.DialContext with hp.proxy.dial.
-		hp.proxy.SetDialContext(tr.DialContext)
-		hp.proxy.SetRoundTripper(tr)
-	} else {
-		hp.proxy.SetRoundTripper(hp.transport)
-	}
+	hp.proxy.RoundTripper = hp.transport
 
 	switch {
 	case hp.config.UpstreamProxyFunc != nil:
@@ -299,7 +289,7 @@ func (hp *HTTPProxy) configureProxy() error {
 	if hp.config.ProxyLocalhost == DirectProxyLocalhost {
 		hp.proxyFunc = hp.directLocalhost(hp.proxyFunc)
 	}
-	hp.proxy.SetUpstreamProxyFunc(hp.proxyFunc)
+	hp.proxy.ProxyURL = hp.proxyFunc
 
 	mw := hp.middlewareStack()
 	hp.proxy.RequestModifier = mw

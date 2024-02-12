@@ -43,8 +43,8 @@ func (p *Proxy) connect(req *http.Request) (*http.Response, net.Conn, error) {
 	ctx := req.Context()
 
 	var proxyURL *url.URL
-	if p.proxyURL != nil {
-		u, err := p.proxyURL(req)
+	if p.ProxyURL != nil {
+		u, err := p.ProxyURL(req)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -54,7 +54,7 @@ func (p *Proxy) connect(req *http.Request) (*http.Response, net.Conn, error) {
 	if proxyURL == nil {
 		log.Debugf(ctx, "CONNECT to host directly: %s", req.URL.Host)
 
-		conn, err := p.dial(ctx, "tcp", req.URL.Host)
+		conn, err := p.DialContext(ctx, "tcp", req.URL.Host)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -79,9 +79,9 @@ func (p *Proxy) connectHTTP(req *http.Request, proxyURL *url.URL) (res *http.Res
 
 	var d *dialvia.HTTPProxyDialer
 	if proxyURL.Scheme == "https" {
-		d = dialvia.HTTPSProxy(p.dial, proxyURL, p.clientTLSConfig())
+		d = dialvia.HTTPSProxy(p.DialContext, proxyURL, p.clientTLSConfig())
 	} else {
-		d = dialvia.HTTPProxy(p.dial, proxyURL)
+		d = dialvia.HTTPProxy(p.DialContext, proxyURL)
 	}
 	d.ConnectRequestModifier = p.ConnectRequestModifier
 
@@ -107,7 +107,7 @@ func (p *Proxy) connectHTTP(req *http.Request, proxyURL *url.URL) (res *http.Res
 }
 
 func (p *Proxy) clientTLSConfig() *tls.Config {
-	if tr, ok := p.roundTripper.(*http.Transport); ok && tr.TLSClientConfig != nil {
+	if tr, ok := p.RoundTripper.(*http.Transport); ok && tr.TLSClientConfig != nil {
 		return tr.TLSClientConfig.Clone()
 	}
 
@@ -119,7 +119,7 @@ func (p *Proxy) connectSOCKS5(req *http.Request, proxyURL *url.URL) (*http.Respo
 
 	log.Debugf(ctx, "CONNECT with upstream SOCKS5 proxy: %s", proxyURL.Host)
 
-	d := dialvia.SOCKS5Proxy(p.dial, proxyURL)
+	d := dialvia.SOCKS5Proxy(p.DialContext, proxyURL)
 
 	conn, err := d.DialContext(ctx, "tcp", req.URL.Host)
 	if err != nil {
