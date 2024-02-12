@@ -106,7 +106,7 @@ To do that we'd need to review the existing tools and libraries and see how we c
 
 175 hours, intermediate
 
-#### Wireguard integration in Forwarder proxy
+### Wireguard integration in Forwarder proxy
 
 The goal of this project is to incorporate a WireGuard Server into the Forwarder proxy.
 This integration aims to significantly streamline and enhance mobile device integration with Forwarder.
@@ -136,7 +136,7 @@ Utilizing [Go WireGuard](https://github.com/WireGuard/wireguard-go), extensively
 
 350 hours, hard
 
-#### HTTP/3 MITM support in Forwarder proxy
+### HTTP/3 MITM support in Forwarder proxy
 
 HTTP/3 is the next version of the HTTP protocol and is designed to improve the performance of web traffic.
 This project aims to add support for HTTP/3 in the Forwarder proxy, including MITM support.
