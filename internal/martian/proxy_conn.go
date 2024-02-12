@@ -168,7 +168,7 @@ func (p *proxyConn) handleMITM(req *http.Request) error {
 		log.Debugf(ctx, "mitm: negotiated %s for connection: %s", cs.NegotiatedProtocol, req.Host)
 
 		if cs.NegotiatedProtocol == "h2" {
-			return p.MITMConfig.H2Config().Proxy(p.closing, tlsconn, req.URL)
+			return p.MITMConfig.H2Config().Proxy(p.closeCh, tlsconn, req.URL)
 		}
 
 		p.brw.Writer.Reset(tlsconn)
@@ -315,7 +315,7 @@ func (p *proxyConn) handle() error {
 	}
 	defer req.Body.Close()
 
-	if p.Closing() {
+	if p.closing() {
 		return errClose
 	}
 
@@ -423,7 +423,7 @@ func (p *proxyConn) writeResponse(res *http.Response) error {
 		defer p.conn.SetWriteDeadline(time.Time{})
 	}
 
-	if !req.ProtoAtLeast(1, 1) || req.Close || res.Close || p.Closing() {
+	if !req.ProtoAtLeast(1, 1) || req.Close || res.Close || p.closing() {
 		log.Debugf(ctx, "received close request: %v", req.RemoteAddr)
 		res.Close = true
 	}

@@ -122,7 +122,7 @@ type Proxy struct {
 
 	conns     sync.WaitGroup
 	connsMu   sync.Mutex // protects conns.Add/Wait from concurrent access
-	closing   chan bool
+	closeCh   chan bool
 	closeOnce sync.Once
 }
 
@@ -163,7 +163,7 @@ func (p *Proxy) init() {
 			p.BaseContex = context.Background()
 		}
 
-		p.closing = make(chan bool)
+		p.closeCh = make(chan bool)
 	})
 }
 
@@ -176,7 +176,7 @@ func (p *Proxy) Close() {
 	p.closeOnce.Do(func() {
 		log.Infof(context.TODO(), "closing down proxy")
 
-		close(p.closing)
+		close(p.closeCh)
 
 		log.Infof(context.TODO(), "waiting for connections to close")
 		p.connsMu.Lock()
@@ -186,10 +186,10 @@ func (p *Proxy) Close() {
 	})
 }
 
-// Closing returns whether the proxy is in the closing state.
-func (p *Proxy) Closing() bool {
+// closing returns whether the proxy is in the closing state.
+func (p *Proxy) closing() bool {
 	select {
-	case <-p.closing:
+	case <-p.closeCh:
 		return true
 	default:
 		return false
@@ -204,7 +204,7 @@ func (p *Proxy) Serve(l net.Listener) error {
 
 	var delay time.Duration
 	for {
-		if p.Closing() {
+		if p.closing() {
 			return nil
 		}
 
@@ -247,7 +247,7 @@ func (p *Proxy) handleLoop(conn net.Conn) {
 	p.connsMu.Unlock()
 	defer p.conns.Done()
 	defer conn.Close()
-	if p.Closing() {
+	if p.closing() {
 		return
 	}
 
