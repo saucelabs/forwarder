@@ -316,7 +316,7 @@ func (p proxyHandler) handleRequest(rw http.ResponseWriter, req *http.Request) {
 		res.Header.Set("Upgrade", resUpType)
 	}
 
-	if !req.ProtoAtLeast(1, 1) || req.Close || res.Close || p.Closing() {
+	if !req.ProtoAtLeast(1, 1) || req.Close || res.Close || p.closing() {
 		log.Debugf(ctx, "received close request: %v", req.RemoteAddr)
 		res.Close = true
 	}
