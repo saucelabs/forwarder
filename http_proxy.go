@@ -241,8 +241,9 @@ func (hp *HTTPProxy) configureProxy() error {
 		} else {
 			hp.log.Infof("using MITM")
 		}
-		hp.proxy.SetMITM(mc)
 		hp.mitmCACert = mc.CACert()
+
+		hp.proxy.MITMConfig = mc
 
 		if hp.config.MITMDomains != nil {
 			hp.proxy.MITMFilter = func(req *http.Request) bool {

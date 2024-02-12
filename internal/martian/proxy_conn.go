@@ -144,7 +144,7 @@ func (p *proxyConn) handleMITM(req *http.Request) error {
 		tlsconn := tls.Server(&peekedConn{
 			p.conn,
 			io.MultiReader(bytes.NewReader(buf), p.conn),
-		}, p.mitm.TLSForHost(req.Host))
+		}, p.MITMConfig.TLSForHost(req.Host))
 
 		var hctx context.Context
 		if p.MITMTLSHandshakeTimeout > 0 {
@@ -155,7 +155,7 @@ func (p *proxyConn) handleMITM(req *http.Request) error {
 			hctx = ctx
 		}
 		if err = tlsconn.HandshakeContext(hctx); err != nil {
-			p.mitm.HandshakeErrorCallback(req, err)
+			p.MITMConfig.HandshakeErrorCallback(req, err)
 			if isClosedConnError(err) {
 				log.Debugf(ctx, "mitm: connection closed prematurely: %v", err)
 			} else {
@@ -168,7 +168,7 @@ func (p *proxyConn) handleMITM(req *http.Request) error {
 		log.Debugf(ctx, "mitm: negotiated %s for connection: %s", cs.NegotiatedProtocol, req.Host)
 
 		if cs.NegotiatedProtocol == "h2" {
-			return p.mitm.H2Config().Proxy(p.closing, tlsconn, req.URL)
+			return p.MITMConfig.H2Config().Proxy(p.closing, tlsconn, req.URL)
 		}
 
 		p.brw.Writer.Reset(tlsconn)

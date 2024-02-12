@@ -160,8 +160,7 @@ func newProxy(spf []h2.StreamProcessorFactory) (*martian.Proxy, error) {
 		StreamProcessorFactories: spf,
 		EnableDebugLogs:          true,
 	})
-
-	p.SetMITM(mc)
+	p.MITMConfig = mc
 
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{

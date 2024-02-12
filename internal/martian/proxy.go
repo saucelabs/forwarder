@@ -53,6 +53,9 @@ type Proxy struct {
 	// ConnectTimeout specifies the maximum amount of time to connect to upstream before cancelling request.
 	ConnectTimeout time.Duration
 
+	// MITMConfig is config to use for MITMing of CONNECT requests.
+	MITMConfig *mitm.Config
+
 	// MITMFilter specifies a function to determine whether a CONNECT request should be MITMed.
 	MITMFilter func(*http.Request) bool
 
@@ -104,12 +107,12 @@ type Proxy struct {
 
 	roundTripper http.RoundTripper
 	dial         func(context.Context, string, string) (net.Conn, error)
-	mitm         *mitm.Config
-	proxyURL     func(*http.Request) (*url.URL, error)
-	conns        sync.WaitGroup
-	connsMu      sync.Mutex // protects conns.Add/Wait from concurrent access
-	closing      chan bool
-	closeOnce    sync.Once
+
+	proxyURL  func(*http.Request) (*url.URL, error)
+	conns     sync.WaitGroup
+	connsMu   sync.Mutex // protects conns.Add/Wait from concurrent access
+	closing   chan bool
+	closeOnce sync.Once
 
 	reqmod RequestModifier
 	resmod ResponseModifier
@@ -167,11 +170,6 @@ func (p *Proxy) SetUpstreamProxyFunc(f func(*http.Request) (*url.URL, error)) {
 	if tr, ok := p.roundTripper.(*http.Transport); ok {
 		tr.Proxy = f
 	}
-}
-
-// SetMITM sets the config to use for MITMing of CONNECT requests.
-func (p *Proxy) SetMITM(config *mitm.Config) {
-	p.mitm = config
 }
 
 // SetDialContext sets the dial func used to establish a connection.
@@ -323,7 +321,7 @@ func (p *Proxy) readHeaderTimeout() time.Duration {
 }
 
 func (p *Proxy) shouldMITM(req *http.Request) bool {
-	if p.mitm == nil {
+	if p.MITMConfig == nil {
 		return false
 	}
 

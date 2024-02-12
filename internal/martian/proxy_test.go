@@ -700,7 +700,7 @@ func TestIntegrationTLSHandshakeErrorCallback(t *testing.T) {
 
 	var herr error
 	mc.SetHandshakeErrorCallback(func(_ *http.Request, err error) { herr = errors.New("handshake error") })
-	p.SetMITM(mc)
+	p.MITMConfig = mc
 
 	tl, err := net.Listen("tcp", "[::]:0")
 	if err != nil {
@@ -967,7 +967,7 @@ func TestIntegrationConnectUpstreamProxy(t *testing.T) {
 	if err != nil {
 		t.Fatalf("mitm.NewConfig(): got %v, want no error", err)
 	}
-	upstream.SetMITM(mc)
+	upstream.MITMConfig = mc
 
 	go upstream.Serve(ul)
 
@@ -1266,7 +1266,7 @@ func TestIntegrationMITM(t *testing.T) {
 	if err != nil {
 		t.Fatalf("mitm.NewConfig(): got %v, want no error", err)
 	}
-	p.SetMITM(mc)
+	p.MITMConfig = mc
 
 	tm := martiantest.NewModifier()
 	p.SetRequestModifier(tm)
@@ -1607,7 +1607,7 @@ func TestHTTPThroughConnectWithMITM(t *testing.T) {
 	if err != nil {
 		t.Fatalf("mitm.NewConfig(): got %v, want no error", err)
 	}
-	p.SetMITM(mc)
+	p.MITMConfig = mc
 
 	go serve(p, l)
 
@@ -1710,7 +1710,7 @@ func TestTLSHandshakeTimeoutWithMITM(t *testing.T) {
 	if err != nil {
 		t.Fatalf("mitm.NewConfig(): got %v, want no error", err)
 	}
-	p.SetMITM(mc)
+	p.MITMConfig = mc
 
 	go serve(p, l)
 
@@ -1805,7 +1805,7 @@ func TestServerClosesConnection(t *testing.T) {
 		t.Fatalf("mitm.NewConfig(): got %v, want no error", err)
 	}
 	p := NewProxy()
-	p.SetMITM(mc)
+	p.MITMConfig = mc
 	defer p.Close()
 
 	// Start the proxy with a listener that will return a temporary error on
