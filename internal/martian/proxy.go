@@ -27,7 +27,6 @@ import (
 
 	"github.com/saucelabs/forwarder/internal/martian/log"
 	"github.com/saucelabs/forwarder/internal/martian/mitm"
-	"github.com/saucelabs/forwarder/internal/martian/nosigpipe"
 	"github.com/saucelabs/forwarder/internal/martian/proxyutil"
 	"golang.org/x/net/http/httpguts"
 )
@@ -172,11 +171,7 @@ func (p *Proxy) SetUpstreamProxyFunc(f func(*http.Request) (*url.URL, error)) {
 
 // SetDialContext sets the dial func used to establish a connection.
 func (p *Proxy) SetDialContext(dial func(context.Context, string, string) (net.Conn, error)) {
-	p.dial = func(ctx context.Context, network, addr string) (net.Conn, error) {
-		c, e := dial(ctx, network, addr)
-		nosigpipe.IgnoreSIGPIPE(c)
-		return c, e
-	}
+	p.dial = dial
 
 	if tr, ok := p.roundTripper.(*http.Transport); ok {
 		tr.DialContext = p.dial
@@ -221,7 +216,6 @@ func (p *Proxy) Serve(l net.Listener) error {
 		}
 
 		conn, err := l.Accept()
-		nosigpipe.IgnoreSIGPIPE(conn)
 		if err != nil {
 			var nerr net.Error
 			if ok := errors.As(err, &nerr); ok && nerr.Temporary() {
