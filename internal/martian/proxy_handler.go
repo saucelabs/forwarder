@@ -100,7 +100,7 @@ func (p proxyHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 func (p proxyHandler) handleConnectRequest(rw http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 
-	if err := p.reqmod.ModifyRequest(req); err != nil {
+	if err := p.modifyRequest(req); err != nil {
 		log.Debugf(ctx, "error modifying CONNECT request: %v", err)
 		p.writeErrorResponse(rw, req, err)
 		return
@@ -145,7 +145,7 @@ func (p proxyHandler) handleConnectRequest(rw http.ResponseWriter, req *http.Req
 		return
 	}
 
-	if err := p.resmod.ModifyResponse(res); err != nil {
+	if err := p.modifyResponse(res); err != nil {
 		log.Debugf(ctx, "error modifying CONNECT response: %v", err)
 		p.writeErrorResponse(rw, req, err)
 		return
@@ -266,7 +266,7 @@ func (p proxyHandler) handleRequest(rw http.ResponseWriter, req *http.Request) {
 		log.Debugf(ctx, "upgrade request: %s", reqUpType)
 	}
 
-	if err := p.reqmod.ModifyRequest(req); err != nil {
+	if err := p.modifyRequest(req); err != nil {
 		log.Debugf(ctx, "error modifying request: %v", err)
 		p.writeErrorResponse(rw, req, err)
 		return
@@ -302,7 +302,7 @@ func (p proxyHandler) handleRequest(rw http.ResponseWriter, req *http.Request) {
 		log.Debugf(ctx, "upgrade response: %s", resUpType)
 	}
 
-	if err := p.resmod.ModifyResponse(res); err != nil {
+	if err := p.modifyResponse(res); err != nil {
 		log.Debugf(ctx, "error modifying response: %v", err)
 		p.writeErrorResponse(rw, req, err)
 		return
@@ -360,7 +360,7 @@ func (w writeFlusher) CloseWrite() error {
 
 func (p proxyHandler) writeErrorResponse(rw http.ResponseWriter, req *http.Request, err error) {
 	res := p.errorResponse(req, err)
-	if err := p.resmod.ModifyResponse(res); err != nil {
+	if err := p.modifyResponse(res); err != nil {
 		log.Errorf(req.Context(), "error modifying error response: %v", err)
 		if !p.WithoutWarning {
 			proxyutil.Warning(res.Header, err)
