@@ -104,7 +104,7 @@ func TestNopDialer(t *testing.T) {
 		},
 		Host: "foobar",
 	}
-	_, err = p.proxy.GetRoundTripper().RoundTrip(req)
+	_, err = p.proxy.RoundTripper.RoundTrip(req)
 	if !errors.Is(err, nopDialerErr) {
 		t.Fatalf("expected %v, got %v", nopDialerErr, err)
 	}

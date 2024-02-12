@@ -81,6 +81,7 @@ type proxyHandler struct {
 
 // Handler returns proxy as http.Handler, see [proxyHandler] for details.
 func (p *Proxy) Handler() http.Handler {
+	p.init()
 	return proxyHandler{p}
 }
 

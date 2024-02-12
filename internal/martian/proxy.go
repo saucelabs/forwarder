@@ -36,6 +36,17 @@ type Proxy struct {
 	RequestModifier
 	ResponseModifier
 
+	// RoundTripper specifies the round tripper to use for requests.
+	RoundTripper http.RoundTripper
+
+	// DialContext specifies the dial function for creating unencrypted TCP connections.
+	// If not set and the RoundTripper is an *http.Transport, the Transport's DialContext is used.
+	DialContext func(context.Context, string, string) (net.Conn, error)
+
+	// ProxyURL specifies the upstream proxy to use for requests.
+	// If not set and the RoundTripper is an *http.Transport, the Transport's ProxyURL is used.
+	ProxyURL func(*http.Request) (*url.URL, error)
+
 	// AllowHTTP disables automatic HTTP to HTTPS upgrades when the listener is TLS.
 	AllowHTTP bool
 
@@ -107,81 +118,61 @@ type Proxy struct {
 	// TestingSkipRoundTrip skips the round trip for requests and returns a 200 OK response.
 	TestingSkipRoundTrip bool
 
-	roundTripper http.RoundTripper
-	dial         func(context.Context, string, string) (net.Conn, error)
+	initOnce sync.Once
 
-	proxyURL  func(*http.Request) (*url.URL, error)
 	conns     sync.WaitGroup
 	connsMu   sync.Mutex // protects conns.Add/Wait from concurrent access
 	closing   chan bool
 	closeOnce sync.Once
 }
 
-// NewProxy returns a new HTTP proxy.
-func NewProxy() *Proxy {
-	proxy := &Proxy{
-		roundTripper: &http.Transport{
-			// TODO(adamtanner): This forces the http.Transport to not upgrade requests
-			// to HTTP/2 in Go 1.6+. Remove this once Martian can support HTTP/2.
-			TLSNextProto:          make(map[string]func(string, *tls.Conn) http.RoundTripper),
-			Proxy:                 http.ProxyFromEnvironment,
-			TLSHandshakeTimeout:   10 * time.Second,
-			ExpectContinueTimeout: time.Second,
-		},
-		closing: make(chan bool),
+func (p *Proxy) init() {
+	p.initOnce.Do(func() {
+		if p.RoundTripper == nil {
+			p.RoundTripper = &http.Transport{
+				// TODO(adamtanner): This forces the http.Transport to not upgrade requests
+				// to HTTP/2 in Go 1.6+. Remove this once Martian can support HTTP/2.
+				TLSNextProto:          make(map[string]func(string, *tls.Conn) http.RoundTripper),
+				Proxy:                 http.ProxyFromEnvironment,
+				TLSHandshakeTimeout:   10 * time.Second,
+				ExpectContinueTimeout: time.Second,
+			}
+		}
 
-		BaseContex: context.Background(),
-	}
-	proxy.SetDialContext((&net.Dialer{
-		Timeout:   30 * time.Second,
-		KeepAlive: 30 * time.Second,
-	}).DialContext)
-	return proxy
-}
+		if t, ok := p.RoundTripper.(*http.Transport); ok {
+			if p.DialContext == nil {
+				p.DialContext = t.DialContext
+			} else {
+				t.DialContext = p.DialContext
+			}
+			if p.ProxyURL == nil {
+				p.ProxyURL = t.Proxy
+			} else {
+				t.Proxy = p.ProxyURL
+			}
+		}
 
-// GetRoundTripper gets the http.RoundTripper of the proxy.
-func (p *Proxy) GetRoundTripper() http.RoundTripper {
-	return p.roundTripper
-}
+		if p.DialContext == nil {
+			p.DialContext = (&net.Dialer{
+				Timeout:   30 * time.Second,
+				KeepAlive: 30 * time.Second,
+			}).DialContext
+		}
 
-// SetRoundTripper sets the http.RoundTripper of the proxy.
-func (p *Proxy) SetRoundTripper(rt http.RoundTripper) {
-	p.roundTripper = rt
+		if p.BaseContex == nil {
+			p.BaseContex = context.Background()
+		}
 
-	if tr, ok := p.roundTripper.(*http.Transport); ok {
-		tr.TLSNextProto = make(map[string]func(string, *tls.Conn) http.RoundTripper)
-		tr.Proxy = p.proxyURL
-		tr.DialContext = p.dial
-	}
-}
-
-// SetUpstreamProxy sets the proxy that receives requests from this proxy.
-func (p *Proxy) SetUpstreamProxy(proxyURL *url.URL) {
-	p.SetUpstreamProxyFunc(http.ProxyURL(proxyURL))
-}
-
-// SetUpstreamProxyFunc sets proxy function as in http.Transport.Proxy.
-func (p *Proxy) SetUpstreamProxyFunc(f func(*http.Request) (*url.URL, error)) {
-	p.proxyURL = f
-
-	if tr, ok := p.roundTripper.(*http.Transport); ok {
-		tr.Proxy = f
-	}
-}
-
-// SetDialContext sets the dial func used to establish a connection.
-func (p *Proxy) SetDialContext(dial func(context.Context, string, string) (net.Conn, error)) {
-	p.dial = dial
-
-	if tr, ok := p.roundTripper.(*http.Transport); ok {
-		tr.DialContext = p.dial
-	}
+		p.closing = make(chan bool)
+	})
 }
 
 // Close sets the proxy to the closing state so it stops receiving new connections,
 // finishes processing any inflight requests, and closes existing connections without
 // reading anymore requests from them.
 func (p *Proxy) Close() {
+	p.init()
+
 	p.closeOnce.Do(func() {
 		log.Infof(context.TODO(), "closing down proxy")
 
@@ -208,6 +199,8 @@ func (p *Proxy) Closing() bool {
 // Serve accepts connections from the listener and handles the requests.
 func (p *Proxy) Serve(l net.Listener) error {
 	defer l.Close()
+
+	p.init()
 
 	var delay time.Duration
 	for {
@@ -335,7 +328,7 @@ func (p *Proxy) roundTrip(req *http.Request) (*http.Response, error) {
 		return proxyutil.NewResponse(200, http.NoBody, req), nil
 	}
 
-	return p.roundTripper.RoundTrip(req)
+	return p.RoundTripper.RoundTrip(req)
 }
 
 func (p *Proxy) errorResponse(req *http.Request, err error) *http.Response {

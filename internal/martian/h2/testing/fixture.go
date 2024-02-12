@@ -147,7 +147,7 @@ func (f *Fixture) Close() error {
 }
 
 func newProxy(spf []h2.StreamProcessorFactory) (*martian.Proxy, error) {
-	p := martian.NewProxy()
+	p := new(martian.Proxy)
 	mc, err := mitm.NewConfig(CA, CAKey)
 	if err != nil {
 		return nil, fmt.Errorf("creating mitm config: %w", err)
@@ -167,7 +167,7 @@ func newProxy(spf []h2.StreamProcessorFactory) (*martian.Proxy, error) {
 			RootCAs: RootCAs,
 		},
 	}
-	p.SetRoundTripper(tr)
+	p.RoundTripper = tr
 
 	return p, nil
 }
