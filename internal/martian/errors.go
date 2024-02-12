@@ -27,10 +27,7 @@ import (
 	"syscall"
 )
 
-var (
-	errClose = errors.New("closing connection")
-	noop     = Noop("martian")
-)
+var errClose = errors.New("closing connection")
 
 func errno(v error) uintptr {
 	if rv := reflect.ValueOf(v); rv.Kind() == reflect.Uintptr {

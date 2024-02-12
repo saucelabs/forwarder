@@ -187,9 +187,6 @@ func TestIntegrationHTTP(t *testing.T) {
 	p := NewProxy()
 	defer p.Close()
 
-	p.SetRequestModifier(nil)
-	p.SetResponseModifier(nil)
-
 	tr := martiantest.NewTransport()
 	p.SetRoundTripper(tr)
 	p.SetTimeout(200 * time.Millisecond)
@@ -199,8 +196,8 @@ func TestIntegrationHTTP(t *testing.T) {
 		res.Header.Set("Martian-Test", "true")
 	})
 
-	p.SetRequestModifier(tm)
-	p.SetResponseModifier(tm)
+	p.RequestModifier = tm
+	p.ResponseModifier = tm
 
 	go serve(p, l)
 
@@ -295,8 +292,8 @@ func TestIntegrationHTTP100Continue(t *testing.T) {
 	}()
 
 	tm := martiantest.NewModifier()
-	p.SetRequestModifier(tm)
-	p.SetResponseModifier(tm)
+	p.RequestModifier = tm
+	p.ResponseModifier = tm
 
 	go serve(p, l)
 
@@ -407,8 +404,8 @@ func TestIntegrationHTTP101SwitchingProtocols(t *testing.T) {
 	}()
 
 	tm := martiantest.NewModifier()
-	p.SetRequestModifier(tm)
-	p.SetResponseModifier(tm)
+	p.RequestModifier = tm
+	p.ResponseModifier = tm
 
 	go serve(p, l)
 
@@ -516,8 +513,8 @@ func TestIntegrationUnexpectedUpstreamFailure(t *testing.T) {
 	}()
 
 	tm := martiantest.NewModifier()
-	p.SetRequestModifier(tm)
-	p.SetResponseModifier(tm)
+	p.RequestModifier = tm
+	p.ResponseModifier = tm
 
 	go serve(p, l)
 
@@ -645,7 +642,7 @@ func TestIntegrationHTTPUpstreamProxyError(t *testing.T) {
 	reserr := errors.New("response error")
 	tm.ResponseError(reserr)
 
-	p.SetResponseModifier(tm)
+	p.ResponseModifier = tm
 
 	go serve(p, l)
 
@@ -808,8 +805,8 @@ func TestIntegrationConnect(t *testing.T) { //nolint:tparallel // Subtests share
 		req.URL.Host = tl.Addr().String()
 	})
 
-	p.SetRequestModifier(tm)
-	p.SetResponseModifier(tm)
+	p.RequestModifier = tm
+	p.ResponseModifier = tm
 
 	go serve(p, l)
 
@@ -1168,8 +1165,8 @@ func TestIntegrationConnectTerminateTLS(t *testing.T) {
 		req.URL.Host = tl.Addr().String()
 	})
 
-	p.SetRequestModifier(tm)
-	p.SetResponseModifier(tm)
+	p.RequestModifier = tm
+	p.ResponseModifier = tm
 
 	go serve(p, l)
 
@@ -1269,8 +1266,8 @@ func TestIntegrationMITM(t *testing.T) {
 	p.MITMConfig = mc
 
 	tm := martiantest.NewModifier()
-	p.SetRequestModifier(tm)
-	p.SetResponseModifier(tm)
+	p.RequestModifier = tm
+	p.ResponseModifier = tm
 
 	go serve(p, l)
 
@@ -1352,8 +1349,8 @@ func TestIntegrationTransparentHTTP(t *testing.T) {
 	p.SetTimeout(200 * time.Millisecond)
 
 	tm := martiantest.NewModifier()
-	p.SetRequestModifier(tm)
-	p.SetResponseModifier(tm)
+	p.RequestModifier = tm
+	p.ResponseModifier = tm
 
 	go serve(p, l)
 
@@ -1433,8 +1430,8 @@ func TestIntegrationTransparentMITM(t *testing.T) {
 	p.SetRoundTripper(tr)
 
 	tm := martiantest.NewModifier()
-	p.SetRequestModifier(tm)
-	p.SetResponseModifier(tm)
+	p.RequestModifier = tm
+	p.ResponseModifier = tm
 
 	go serve(p, l)
 
@@ -1549,7 +1546,7 @@ func TestIntegrationSkipRoundTrip(t *testing.T) {
 	p.SetTimeout(200 * time.Millisecond)
 
 	tm := martiantest.NewModifier()
-	p.SetRequestModifier(tm)
+	p.RequestModifier = tm
 
 	go serve(p, l)
 
@@ -1596,7 +1593,7 @@ func TestHTTPThroughConnectWithMITM(t *testing.T) {
 			t.Errorf("unexpected method on request handler: %v", req.Method)
 		}
 	})
-	p.SetRequestModifier(tm)
+	p.RequestModifier = tm
 
 	ca, priv, err := mitm.NewAuthority("martian.proxy", "Martian Authority", 2*time.Hour)
 	if err != nil {
@@ -1699,7 +1696,7 @@ func TestTLSHandshakeTimeoutWithMITM(t *testing.T) {
 			t.Errorf("unexpected method on request handler: %v", req.Method)
 		}
 	})
-	p.SetRequestModifier(tm)
+	p.RequestModifier = tm
 
 	ca, priv, err := mitm.NewAuthority("martian.proxy", "Martian Authority", 2*time.Hour)
 	if err != nil {

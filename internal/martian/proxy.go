@@ -34,6 +34,9 @@ import (
 
 // Proxy is an HTTP proxy with support for TLS MITM and customizable behavior.
 type Proxy struct {
+	RequestModifier
+	ResponseModifier
+
 	// AllowHTTP disables automatic HTTP to HTTPS upgrades when the listener is TLS.
 	AllowHTTP bool
 
@@ -113,9 +116,6 @@ type Proxy struct {
 	connsMu   sync.Mutex // protects conns.Add/Wait from concurrent access
 	closing   chan bool
 	closeOnce sync.Once
-
-	reqmod RequestModifier
-	resmod ResponseModifier
 }
 
 // NewProxy returns a new HTTP proxy.
@@ -130,8 +130,6 @@ func NewProxy() *Proxy {
 			ExpectContinueTimeout: time.Second,
 		},
 		closing: make(chan bool),
-		reqmod:  noop,
-		resmod:  noop,
 
 		BaseContex: context.Background(),
 	}
@@ -210,24 +208,6 @@ func (p *Proxy) Closing() bool {
 	default:
 		return false
 	}
-}
-
-// SetRequestModifier sets the request modifier.
-func (p *Proxy) SetRequestModifier(reqmod RequestModifier) {
-	if reqmod == nil {
-		reqmod = noop
-	}
-
-	p.reqmod = reqmod
-}
-
-// SetResponseModifier sets the response modifier.
-func (p *Proxy) SetResponseModifier(resmod ResponseModifier) {
-	if resmod == nil {
-		resmod = noop
-	}
-
-	p.resmod = resmod
 }
 
 // Serve accepts connections from the listener and handles the requests.
@@ -318,6 +298,20 @@ func (p *Proxy) readHeaderTimeout() time.Duration {
 		return p.ReadHeaderTimeout
 	}
 	return p.ReadTimeout
+}
+
+func (p *Proxy) modifyRequest(req *http.Request) error {
+	if p.RequestModifier == nil {
+		return nil
+	}
+	return p.RequestModifier.ModifyRequest(req)
+}
+
+func (p *Proxy) modifyResponse(res *http.Response) error {
+	if p.ResponseModifier == nil {
+		return nil
+	}
+	return p.ResponseModifier.ModifyResponse(res)
 }
 
 func (p *Proxy) shouldMITM(req *http.Request) bool {

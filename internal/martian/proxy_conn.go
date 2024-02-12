@@ -114,7 +114,7 @@ func (p *proxyConn) handleMITM(req *http.Request) error {
 
 	res := proxyutil.NewResponse(200, nil, req)
 
-	if err := p.resmod.ModifyResponse(res); err != nil {
+	if err := p.modifyResponse(res); err != nil {
 		log.Debugf(ctx, "error modifying CONNECT response: %v", err)
 		return p.writeResponse(p.errorResponse(req, err))
 	}
@@ -189,7 +189,7 @@ func (p *proxyConn) handleMITM(req *http.Request) error {
 func (p *proxyConn) handleConnectRequest(req *http.Request) error {
 	ctx := req.Context()
 
-	if err := p.reqmod.ModifyRequest(req); err != nil {
+	if err := p.modifyRequest(req); err != nil {
 		log.Debugf(ctx, "error modifying CONNECT request: %v", err)
 		return p.writeErrorResponse(req, err)
 	}
@@ -236,7 +236,7 @@ func (p *proxyConn) handleConnectRequest(req *http.Request) error {
 		return p.writeErrorResponse(req, cerr)
 	}
 
-	if err := p.resmod.ModifyResponse(res); err != nil {
+	if err := p.modifyResponse(res); err != nil {
 		log.Debugf(ctx, "error modifying CONNECT response: %v", err)
 		return p.writeErrorResponse(req, err)
 	}
@@ -347,7 +347,7 @@ func (p *proxyConn) handle() error {
 		log.Debugf(ctx, "upgrade request: %s", reqUpType)
 	}
 
-	if err := p.reqmod.ModifyRequest(req); err != nil {
+	if err := p.modifyRequest(req); err != nil {
 		log.Debugf(ctx, "error modifying request: %v", err)
 		return p.writeErrorResponse(req, err)
 	}
@@ -381,7 +381,7 @@ func (p *proxyConn) handle() error {
 		log.Debugf(ctx, "upgrade response: %s", resUpType)
 	}
 
-	if err := p.resmod.ModifyResponse(res); err != nil {
+	if err := p.modifyResponse(res); err != nil {
 		log.Debugf(ctx, "error modifying response: %v", err)
 		return p.writeErrorResponse(req, err)
 	}
@@ -403,7 +403,7 @@ func (p *proxyConn) handle() error {
 
 func (p *proxyConn) writeErrorResponse(req *http.Request, err error) error {
 	res := p.errorResponse(req, err)
-	if err := p.resmod.ModifyResponse(res); err != nil {
+	if err := p.modifyResponse(res); err != nil {
 		log.Errorf(req.Context(), "error modifying error response: %v", err)
 		if !p.WithoutWarning {
 			proxyutil.Warning(res.Header, err)

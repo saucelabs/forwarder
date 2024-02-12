@@ -302,8 +302,8 @@ func (hp *HTTPProxy) configureProxy() error {
 	hp.proxy.SetUpstreamProxyFunc(hp.proxyFunc)
 
 	mw := hp.middlewareStack()
-	hp.proxy.SetRequestModifier(mw)
-	hp.proxy.SetResponseModifier(mw)
+	hp.proxy.RequestModifier = mw
+	hp.proxy.ResponseModifier = mw
 
 	return nil
 }
