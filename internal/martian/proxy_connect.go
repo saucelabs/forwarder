@@ -107,7 +107,7 @@ func (p *Proxy) connectHTTP(req *http.Request, proxyURL *url.URL) (res *http.Res
 }
 
 func (p *Proxy) clientTLSConfig() *tls.Config {
-	if tr, ok := p.RoundTripper.(*http.Transport); ok && tr.TLSClientConfig != nil {
+	if tr, ok := p.rt.(*http.Transport); ok && tr.TLSClientConfig != nil {
 		return tr.TLSClientConfig.Clone()
 	}
 
