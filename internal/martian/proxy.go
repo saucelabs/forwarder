@@ -329,6 +329,20 @@ func shouldTerminateTLS(req *http.Request) bool {
 	return b
 }
 
+func (p *Proxy) fixRequestScheme(req *http.Request) {
+	if req.URL.Scheme == "" {
+		req.URL.Scheme = "http"
+		if req.TLS != nil {
+			req.URL.Scheme = "https"
+		}
+	} else if req.URL.Scheme == "http" {
+		if req.TLS != nil && !p.AllowHTTP {
+			log.Infof(req.Context(), "forcing HTTPS inside secure session")
+			req.URL.Scheme = "https"
+		}
+	}
+}
+
 func (p *Proxy) roundTrip(req *http.Request) (*http.Response, error) {
 	if p.TestingSkipRoundTrip {
 		log.Debugf(req.Context(), "skipping round trip")

@@ -330,17 +330,7 @@ func (p *proxyConn) handle() error {
 
 	ctx := req.Context()
 
-	if req.URL.Scheme == "" {
-		req.URL.Scheme = "http"
-		if p.secure {
-			req.URL.Scheme = "https"
-		}
-	} else if req.URL.Scheme == "http" {
-		if p.secure && !p.AllowHTTP {
-			log.Infof(ctx, "forcing HTTPS inside secure session")
-			req.URL.Scheme = "https"
-		}
-	}
+	p.fixRequestScheme(req)
 
 	reqUpType := upgradeType(req.Header)
 	if reqUpType != "" {
