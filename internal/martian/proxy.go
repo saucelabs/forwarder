@@ -331,11 +331,16 @@ func shouldTerminateTLS(req *http.Request) bool {
 
 func (p *Proxy) fixRequestScheme(req *http.Request) {
 	if req.URL.Scheme == "" {
-		req.URL.Scheme = "http"
-		if req.TLS != nil {
+		if proto := req.Header.Get("X-Forwarded-Proto"); proto != "" {
+			req.URL.Scheme = proto
+		} else if req.TLS != nil {
 			req.URL.Scheme = "https"
+		} else {
+			req.URL.Scheme = "http"
 		}
-	} else if req.URL.Scheme == "http" {
+	}
+
+	if req.URL.Scheme == "http" {
 		if req.TLS != nil && !p.AllowHTTP {
 			log.Infof(req.Context(), "forcing HTTPS inside secure session")
 			req.URL.Scheme = "https"
