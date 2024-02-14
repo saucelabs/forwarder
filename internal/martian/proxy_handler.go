@@ -250,17 +250,7 @@ func (p proxyHandler) handleRequest(rw http.ResponseWriter, req *http.Request) {
 	req.ProtoMinor = 1
 	req.RequestURI = ""
 
-	if req.URL.Scheme == "" {
-		req.URL.Scheme = "http"
-		if req.TLS != nil {
-			req.URL.Scheme = "https"
-		}
-	} else if req.URL.Scheme == "http" {
-		if req.TLS != nil && !p.AllowHTTP {
-			log.Infof(ctx, "forcing HTTPS inside secure session")
-			req.URL.Scheme = "https"
-		}
-	}
+	p.fixRequestScheme(req)
 
 	reqUpType := upgradeType(req.Header)
 	if reqUpType != "" {
