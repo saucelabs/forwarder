@@ -206,7 +206,7 @@ func newHTTPProxy(cfg *HTTPProxyConfig, pr PACResolver, cm *CredentialsMatcher, 
 		creds:     cm,
 		transport: rt,
 		log:       log,
-		metrics:   newMetrics(cfg.PromRegistry, cfg.PromNamespace),
+		metrics:   newHTTPProxyMetrics(cfg.PromRegistry, cfg.PromNamespace),
 	}
 
 	if err := hp.configureProxy(); err != nil {
