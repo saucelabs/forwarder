@@ -181,7 +181,7 @@ func (p proxyHandler) handleUpgradeResponse(rw http.ResponseWriter, req *http.Re
 	res.Body = nil
 
 	if err := p.tunnel(resUpType, rw, req, res, uconn); err != nil {
-		log.Errorf(ctx, "%s tunnel: %w", resUpType, err)
+		log.Errorf(ctx, "%s tunnel: %v", resUpType, err)
 		panic(http.ErrAbortHandler)
 	}
 }
