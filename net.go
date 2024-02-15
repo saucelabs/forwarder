@@ -14,6 +14,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/saucelabs/forwarder/log"
 	"github.com/saucelabs/forwarder/ratelimit"
 )
@@ -84,14 +85,6 @@ func Listen(network, address string) (net.Listener, error) {
 	return defaultListenConfig().Listen(context.Background(), network, address)
 }
 
-type ListenerCallbacks interface {
-	// OnAccept is called when a new connection is successfully accepted.
-	OnAccept(net.Conn)
-
-	// OnTLSHandshakeError is called after a TLS handshake errors out.
-	OnTLSHandshakeError(*tls.Conn, error)
-}
-
 type Listener struct {
 	Address             string
 	Log                 log.Logger
@@ -99,9 +92,12 @@ type Listener struct {
 	TLSHandshakeTimeout time.Duration
 	ReadLimit           int64
 	WriteLimit          int64
-	Callbacks           ListenerCallbacks
+
+	PromNamespace string
+	PromRegistry  prometheus.Registerer
 
 	listener net.Listener
+	metrics  *listenerMetrics
 }
 
 func (l *Listener) Listen() error {
@@ -122,6 +118,8 @@ func (l *Listener) Listen() error {
 	}
 
 	l.listener = ll
+	l.metrics = newListenerMetrics(l.PromRegistry, l.PromNamespace)
+
 	return nil
 }
 
@@ -129,26 +127,27 @@ func (l *Listener) Accept() (net.Conn, error) {
 	for {
 		c, err := l.listener.Accept()
 		if err != nil {
+			l.metrics.error()
 			return nil, err
 		}
 
-		if l.Callbacks != nil {
-			l.Callbacks.OnAccept(c)
-		}
-
 		if l.TLSConfig == nil {
+			l.metrics.accept()
 			return c, nil
 		}
 
 		tc, err := l.withTLS(c)
 		if err != nil {
-			l.Log.Errorf("Failed to perform TLS handshake: %v", err)
+			l.Log.Errorf("TLS handshake failed: %v", err)
 			if cerr := tc.Close(); cerr != nil {
-				l.Log.Errorf("Failed to close TLS connection: %v", cerr)
+				l.Log.Errorf("error while closing TLS connection after failed handshake: %v", cerr)
 			}
+			l.metrics.tlsError()
+
 			continue
 		}
 
+		l.metrics.accept()
 		return tc, nil
 	}
 }
@@ -164,19 +163,20 @@ func (l *Listener) withTLS(conn net.Conn) (*tls.Conn, error) {
 		err = tconn.HandshakeContext(ctx)
 		cancel()
 	}
-	if err != nil {
-		if l.Callbacks != nil {
-			l.Callbacks.OnTLSHandshakeError(tconn, err)
-		}
-	}
 
 	return tconn, err
 }
 
 func (l *Listener) Addr() net.Addr {
+	if l.listener == nil {
+		return nil
+	}
 	return l.listener.Addr()
 }
 
 func (l *Listener) Close() error {
+	if l.listener == nil {
+		return nil
+	}
 	return l.listener.Close()
 }

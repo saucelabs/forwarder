@@ -1,0 +1,9 @@
+# HELP test_listener_accepted_total Number of accepted connections
+# TYPE test_listener_accepted_total counter
+test_listener_accepted_total 0
+# HELP test_listener_errors_total Number of listener errors when accepting connections
+# TYPE test_listener_errors_total counter
+test_listener_errors_total 0
+# HELP test_listener_tls_errors_total Number of TLS handshake errors
+# TYPE test_listener_tls_errors_total counter
+test_listener_tls_errors_total 1

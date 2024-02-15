@@ -7,62 +7,164 @@
 package forwarder
 
 import (
-	"context"
 	"crypto/tls"
 	"errors"
+	"fmt"
+	"io"
 	"net"
 	"testing"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/saucelabs/forwarder/log"
+	"github.com/saucelabs/forwarder/utils/certutil"
+	"github.com/saucelabs/forwarder/utils/golden"
 )
 
-func TestListenerListenOnce(t *testing.T) {
-	l := Listener{
-		Address:   "localhost:0",
-		Log:       log.NopLogger,
-		Callbacks: &mockListenerCallback{t: t},
-	}
+func (l *Listener) listenAndWait(t *testing.T) {
+	t.Helper()
 
 	if err := l.Listen(); err != nil {
 		t.Fatal(err)
 	}
+	for {
+		if l.Addr() != nil {
+			break
+		}
+	}
+}
+
+func (l *Listener) acceptAndCopy() {
+	for {
+		conn, err := l.Accept()
+		if err != nil {
+			return
+		}
+		go func() {
+			io.Copy(conn, conn)
+			conn.Close()
+		}()
+	}
+}
+
+func TestListenerListenOnce(t *testing.T) {
+	l := Listener{
+		Address: "localhost:0",
+		Log:     log.NopLogger,
+	}
 	defer l.Close()
+
+	l.listenAndWait(t)
 
 	if err := l.Listen(); err == nil {
 		t.Fatal("l.Listen(): got no error, want error")
 	}
 }
 
-func TestListenerTLSHandshakeTimeout(t *testing.T) {
-	tlsCfg := new(tls.Config)
-	if err := (&TLSServerConfig{HandshakeTimeout: 100 * time.Millisecond}).ConfigureTLSConfig(tlsCfg); err != nil {
-		t.Fatal(err)
-	}
-
-	done := make(chan struct{})
-
+func TestListenerMetricsAccepted(t *testing.T) {
+	r := prometheus.NewRegistry()
 	l := Listener{
-		Address:             "localhost:0",
-		Log:                 log.NopLogger,
-		TLSConfig:           tlsCfg,
-		TLSHandshakeTimeout: 100 * time.Millisecond,
-		Callbacks: &mockListenerCallback{
-			t:    t,
-			done: done,
-		},
-	}
-
-	err := l.Listen()
-	if err != nil {
-		t.Fatal(err)
+		Address:       "localhost:0",
+		Log:           log.NopLogger,
+		PromNamespace: "test",
+		PromRegistry:  r,
 	}
 	defer l.Close()
 
-	go func() {
-		// Accept won't return.
-		_, _ = l.Accept()
-	}()
+	l.listenAndWait(t)
+	go l.acceptAndCopy()
+
+	for i := 0; i < 10; i++ {
+		conn, err := net.Dial("tcp", l.Addr().String())
+		if err != nil {
+			t.Fatalf("net.Dial(): got %v, want no error", err)
+		}
+		fmt.Fprintf(conn, "Hello, World!\n")
+		if _, err := conn.Read(make([]byte, 1)); err != nil {
+			t.Fatal(err)
+		}
+		conn.Close()
+	}
+
+	golden.DiffPrometheusMetrics(t, r)
+}
+
+func TestListenerMetricsAcceptedWithTLS(t *testing.T) {
+	r := prometheus.NewRegistry()
+	l := Listener{
+		Address:       "localhost:0",
+		Log:           log.NopLogger,
+		TLSConfig:     selfSingedCert(),
+		PromNamespace: "test",
+		PromRegistry:  r,
+	}
+	defer l.Close()
+
+	l.listenAndWait(t)
+	go l.acceptAndCopy()
+
+	for i := 0; i < 10; i++ {
+		conn, err := net.Dial("tcp", l.Addr().String())
+		if err != nil {
+			t.Fatalf("net.Dial(): got %v, want no error", err)
+		}
+		conn = tls.Client(conn, &tls.Config{InsecureSkipVerify: true})
+		fmt.Fprintf(conn, "Hello, World!\n")
+		if _, err := conn.Read(make([]byte, 1)); err != nil {
+			t.Fatal(err)
+		}
+		conn.Close()
+	}
+
+	golden.DiffPrometheusMetrics(t, r)
+}
+
+type errListener struct {
+	net.Listener
+}
+
+func (l errListener) Accept() (net.Conn, error) {
+	return nil, errors.New("accept error")
+}
+
+func TestListenerMetricsErrors(t *testing.T) {
+	r := prometheus.NewRegistry()
+	l := Listener{
+		Address:       "localhost:0",
+		Log:           log.NopLogger,
+		PromNamespace: "test",
+		PromRegistry:  r,
+	}
+	defer l.Close()
+
+	l.listenAndWait(t)
+	l.listener = errListener{l.listener}
+
+	go l.acceptAndCopy()
+
+	conn, err := net.Dial("tcp", l.Addr().String())
+	if err != nil {
+		t.Fatalf("net.Dial(): got %v, want no error", err)
+	}
+	conn.Close()
+
+	golden.DiffPrometheusMetrics(t, r)
+}
+
+func TestListenerTLSHandshakeTimeout(t *testing.T) {
+	r := prometheus.NewRegistry()
+	l := Listener{
+		Address:             "localhost:0",
+		Log:                 log.NopLogger,
+		TLSConfig:           selfSingedCert(),
+		TLSHandshakeTimeout: 100 * time.Millisecond,
+		PromNamespace:       "test",
+		PromRegistry:        r,
+	}
+	defer l.Close()
+
+	l.listenAndWait(t)
+	go l.acceptAndCopy()
 
 	conn, err := net.Dial("tcp", l.Addr().String())
 	if err != nil {
@@ -70,20 +172,19 @@ func TestListenerTLSHandshakeTimeout(t *testing.T) {
 	}
 	defer conn.Close()
 
-	<-done
+	time.Sleep(l.TLSHandshakeTimeout * 2)
+
+	golden.DiffPrometheusMetrics(t, r)
 }
 
-type mockListenerCallback struct {
-	t    *testing.T
-	done chan struct{}
-}
-
-func (m *mockListenerCallback) OnAccept(_ net.Conn) {
-}
-
-func (m *mockListenerCallback) OnTLSHandshakeError(_ *tls.Conn, err error) {
-	if !errors.Is(err, context.DeadlineExceeded) {
-		m.t.Errorf("tl.OnTLSHandshakeError(): got %v, want %v", err, context.DeadlineExceeded)
+func selfSingedCert() *tls.Config {
+	ssc := certutil.ECDSASelfSignedCert()
+	ssc.Hosts = append(ssc.Hosts, "localhost")
+	cert, err := ssc.Gen()
+	if err != nil {
+		panic(err)
 	}
-	m.done <- struct{}{}
+	return &tls.Config{
+		Certificates: []tls.Certificate{cert},
+	}
 }
