@@ -15,7 +15,7 @@ type httpProxyMetrics struct {
 	errors *prometheus.CounterVec
 }
 
-func newMetrics(r prometheus.Registerer, namespace string) *httpProxyMetrics {
+func newHTTPProxyMetrics(r prometheus.Registerer, namespace string) *httpProxyMetrics {
 	if r == nil {
 		r = prometheus.NewRegistry() // This registry will be discarded.
 	}
