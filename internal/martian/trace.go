@@ -19,11 +19,16 @@ type traceID struct {
 
 var idSeq atomic.Uint64
 
-func newTraceID() traceID {
+func newTraceID(id string) traceID {
 	t := time.Now()
+	n := idSeq.Add(1)
+
+	if id == "" {
+		id = fmt.Sprintf("%d-%08x", n, uint32(t.UnixNano()))
+	}
 
 	return traceID{
-		id:        fmt.Sprintf("%d-%08x", idSeq.Add(1), uint32(t.UnixNano())),
+		id:        id,
 		createdAt: t,
 	}
 }
