@@ -9,6 +9,7 @@ package forwarder
 import (
 	"context"
 	"crypto/tls"
+	"fmt"
 	"net"
 	"syscall"
 	"time"
@@ -104,6 +105,10 @@ type Listener struct {
 }
 
 func (l *Listener) Listen() error {
+	if l.listener != nil {
+		return fmt.Errorf("already listening on %s", l.Address)
+	}
+
 	ll, err := Listen("tcp", l.Address)
 	if err != nil {
 		return err

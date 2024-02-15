@@ -17,6 +17,23 @@ import (
 	"github.com/saucelabs/forwarder/log"
 )
 
+func TestListenerListenOnce(t *testing.T) {
+	l := Listener{
+		Address:   "localhost:0",
+		Log:       log.NopLogger,
+		Callbacks: &mockListenerCallback{t: t},
+	}
+
+	if err := l.Listen(); err != nil {
+		t.Fatal(err)
+	}
+	defer l.Close()
+
+	if err := l.Listen(); err == nil {
+		t.Fatal("l.Listen(): got no error, want error")
+	}
+}
+
 func TestListenerTLSHandshakeTimeout(t *testing.T) {
 	tlsCfg := new(tls.Config)
 	if err := (&TLSServerConfig{HandshakeTimeout: 100 * time.Millisecond}).ConfigureTLSConfig(tlsCfg); err != nil {
