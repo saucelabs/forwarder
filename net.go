@@ -33,6 +33,9 @@ type DialConfig struct {
 	// KeepAlive enables TCP keep-alive probes for an active network connection.
 	// The keep-alive probes are sent with OS specific intervals.
 	KeepAlive bool
+
+	PromNamespace string
+	PromRegistry  prometheus.Registerer
 }
 
 func DefaultDialConfig() *DialConfig {
@@ -43,7 +46,8 @@ func DefaultDialConfig() *DialConfig {
 }
 
 type Dialer struct {
-	nd net.Dialer
+	nd      net.Dialer
+	metrics *dialerMetrics
 }
 
 func NewDialer(cfg *DialConfig) *Dialer {
@@ -62,12 +66,26 @@ func NewDialer(cfg *DialConfig) *Dialer {
 	}
 
 	return &Dialer{
-		nd: nd,
+		nd:      nd,
+		metrics: newDialerMetrics(cfg.PromRegistry, cfg.PromNamespace),
 	}
 }
 
 func (d *Dialer) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
-	return d.nd.DialContext(ctx, network, address)
+	conn, err := d.nd.DialContext(ctx, network, address)
+	if err != nil {
+		d.metrics.error(address)
+		return nil, err
+	}
+
+	d.metrics.dial(address)
+
+	return &TrackedConn{
+		Conn: conn,
+		OnClose: func() {
+			d.metrics.close(address)
+		},
+	}, nil
 }
 
 func defaultListenConfig() *net.ListenConfig {
