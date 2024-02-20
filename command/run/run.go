@@ -315,6 +315,8 @@ func Command() *cobra.Command {
 		apiServerConfig:     forwarder.DefaultHTTPServerConfig(),
 		logConfig:           log.DefaultConfig(),
 	}
+	c.httpTransportConfig.PromRegistry = c.promReg
+	c.httpTransportConfig.PromNamespace = promNs
 	c.httpProxyConfig.PromRegistry = c.promReg
 	c.httpProxyConfig.PromNamespace = promNs
 	c.apiServerConfig.Addr = "localhost:10000"
