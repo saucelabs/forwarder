@@ -7,6 +7,7 @@
 package forwarder
 
 import (
+	"context"
 	"crypto/tls"
 	"errors"
 	"fmt"
@@ -20,6 +21,56 @@ import (
 	"github.com/saucelabs/forwarder/utils/certutil"
 	"github.com/saucelabs/forwarder/utils/golden"
 )
+
+func TestDialerMetrics(t *testing.T) {
+	l := Listener{
+		Address: "localhost:0",
+		Log:     log.NopLogger,
+	}
+	defer l.Close()
+
+	l.listenAndWait(t)
+	go l.acceptAndCopy()
+
+	r := prometheus.NewRegistry()
+	d := NewDialer(&DialConfig{
+		DialTimeout:   10 * time.Millisecond,
+		PromNamespace: "test",
+		PromRegistry:  r,
+	})
+
+	ctx := context.Background()
+	for i := 0; i < 10; i++ {
+		conn, err := d.DialContext(ctx, "tcp", l.Addr().String())
+		if err != nil {
+			t.Fatalf("d.DialContext(): got %v, want no error", err)
+		}
+		fmt.Fprintf(conn, "Hello, World!\n")
+		if _, err := conn.Read(make([]byte, 1)); err != nil {
+			t.Fatal(err)
+		}
+		conn.Close()
+	}
+
+	golden.DiffPrometheusMetrics(t, r)
+}
+
+func TestDialerMetricsErrors(t *testing.T) {
+	r := prometheus.NewRegistry()
+	d := NewDialer(&DialConfig{
+		DialTimeout:   10 * time.Millisecond,
+		PromNamespace: "test",
+		PromRegistry:  r,
+	})
+
+	ctx := context.Background()
+	_, err := d.DialContext(ctx, "tcp", "localhost:0")
+	if err == nil {
+		t.Fatal("d.DialContext(): got no error, want error")
+	}
+
+	golden.DiffPrometheusMetrics(t, r)
+}
 
 func (l *Listener) listenAndWait(t *testing.T) {
 	t.Helper()
@@ -85,10 +136,6 @@ func TestListenerMetricsAccepted(t *testing.T) {
 		}
 		conn.Close()
 	}
-
-	// Wait for the metrics to be updated.
-	// Somehow, the metrics are not updated immediately.
-	time.Sleep(10 * time.Millisecond)
 
 	golden.DiffPrometheusMetrics(t, r)
 }

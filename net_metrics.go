@@ -7,9 +7,63 @@
 package forwarder
 
 import (
+	"net"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
+
+type dialerMetrics struct {
+	dialed *prometheus.CounterVec
+	errors *prometheus.CounterVec
+	closed *prometheus.CounterVec
+}
+
+func newDialerMetrics(r prometheus.Registerer, namespace string) *dialerMetrics {
+	if r == nil {
+		r = prometheus.NewRegistry() // This registry will be discarded.
+	}
+	f := promauto.With(r)
+	l := []string{"host"}
+
+	return &dialerMetrics{
+		dialed: f.NewCounterVec(prometheus.CounterOpts{
+			Name:      "dialer_dialed_total",
+			Namespace: namespace,
+			Help:      "Number of dialed connections",
+		}, l),
+		errors: f.NewCounterVec(prometheus.CounterOpts{
+			Name:      "dialer_errors_total",
+			Namespace: namespace,
+			Help:      "Number of dialer errors",
+		}, l),
+		closed: f.NewCounterVec(prometheus.CounterOpts{
+			Name:      "dialer_closed_total",
+			Namespace: namespace,
+			Help:      "Number of closed connections",
+		}, l),
+	}
+}
+
+func (m *dialerMetrics) dial(addr string) {
+	m.dialed.WithLabelValues(addr2Host(addr)).Inc()
+}
+
+func (m *dialerMetrics) error(addr string) {
+	m.errors.WithLabelValues(addr2Host(addr)).Inc()
+}
+
+func (m *dialerMetrics) close(addr string) {
+	m.closed.WithLabelValues(addr2Host(addr)).Inc()
+}
+
+func addr2Host(addr string) string {
+	host, _, err := net.SplitHostPort(addr)
+	if err != nil {
+		return "unknown"
+	}
+	return host
+}
 
 type listenerMetrics struct {
 	accepted  prometheus.Counter
