@@ -11,6 +11,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -179,4 +180,45 @@ func (l *Listener) Close() error {
 		return nil
 	}
 	return l.listener.Close()
+}
+
+type TrackedConn struct {
+	net.Conn
+	rx      atomic.Uint64
+	tx      atomic.Uint64
+	onClose func()
+}
+
+func NewTrackedConn(c net.Conn) *TrackedConn {
+	return &TrackedConn{
+		Conn: c,
+	}
+}
+
+func (c *TrackedConn) Read(p []byte) (int, error) {
+	n, err := c.Conn.Read(p)
+	c.rx.Add(uint64(n))
+	return n, err
+}
+
+func (c *TrackedConn) Write(p []byte) (int, error) {
+	n, err := c.Conn.Write(p)
+	c.tx.Add(uint64(n))
+	return n, err
+}
+
+func (c *TrackedConn) Rx() uint64 {
+	return c.rx.Load()
+}
+
+func (c *TrackedConn) Tx() uint64 {
+	return c.tx.Load()
+}
+
+func (c *TrackedConn) Close() error {
+	err := c.Conn.Close()
+	if c.onClose != nil {
+		c.onClose()
+	}
+	return err
 }
