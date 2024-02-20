@@ -15,6 +15,7 @@ type listenerMetrics struct {
 	accepted  prometheus.Counter
 	errors    prometheus.Counter
 	tlsErrors prometheus.Counter
+	closed    prometheus.Counter
 }
 
 func newListenerMetrics(r prometheus.Registerer, namespace string) *listenerMetrics {
@@ -39,6 +40,11 @@ func newListenerMetrics(r prometheus.Registerer, namespace string) *listenerMetr
 			Namespace: namespace,
 			Help:      "Number of TLS handshake errors",
 		}),
+		closed: f.NewCounter(prometheus.CounterOpts{
+			Name:      "listener_closed_total",
+			Namespace: namespace,
+			Help:      "Number of closed connections",
+		}),
 	}
 }
 
@@ -52,4 +58,8 @@ func (m *listenerMetrics) error() {
 
 func (m *listenerMetrics) tlsError() {
 	m.tlsErrors.Inc()
+}
+
+func (m *listenerMetrics) close() {
+	m.closed.Inc()
 }
