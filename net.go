@@ -126,7 +126,7 @@ func (l *Listener) Listen() error {
 
 func (l *Listener) Accept() (net.Conn, error) {
 	for {
-		c, err := l.listener.Accept()
+		conn, err := l.listener.Accept()
 		if err != nil {
 			l.metrics.error()
 			return nil, err
@@ -134,13 +134,13 @@ func (l *Listener) Accept() (net.Conn, error) {
 
 		if l.TLSConfig == nil {
 			l.metrics.accept()
-			return c, nil
+			return conn, nil
 		}
 
-		tc, err := l.withTLS(c)
+		tconn, err := l.withTLS(conn)
 		if err != nil {
 			l.Log.Errorf("TLS handshake failed: %v", err)
-			if cerr := tc.Close(); cerr != nil {
+			if cerr := tconn.Close(); cerr != nil {
 				l.Log.Errorf("error while closing TLS connection after failed handshake: %v", cerr)
 			}
 			l.metrics.tlsError()
@@ -149,7 +149,7 @@ func (l *Listener) Accept() (net.Conn, error) {
 		}
 
 		l.metrics.accept()
-		return tc, nil
+		return tconn, nil
 	}
 }
 
