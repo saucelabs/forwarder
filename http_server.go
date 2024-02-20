@@ -17,7 +17,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/saucelabs/forwarder/httplog"
 	"github.com/saucelabs/forwarder/log"
 	"github.com/saucelabs/forwarder/middleware"
@@ -82,10 +81,8 @@ type HTTPServerConfig struct {
 	ReadHeaderTimeout time.Duration
 	WriteTimeout      time.Duration
 	LogHTTPMode       httplog.Mode
-
-	PromNamespace string
-	PromRegistry  prometheus.Registerer
-	BasicAuth     *url.Userinfo
+	BasicAuth         *url.Userinfo
+	promConfig
 }
 
 func DefaultHTTPServerConfig() *HTTPServerConfig {
