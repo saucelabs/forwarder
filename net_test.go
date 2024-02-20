@@ -86,6 +86,10 @@ func TestListenerMetricsAccepted(t *testing.T) {
 		conn.Close()
 	}
 
+	// Wait for the metrics to be updated.
+	// Somehow, the metrics are not updated immediately.
+	time.Sleep(10 * time.Millisecond)
+
 	golden.DiffPrometheusMetrics(t, r)
 }
 

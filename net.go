@@ -132,8 +132,11 @@ func (l *Listener) Accept() (net.Conn, error) {
 			return nil, err
 		}
 
+		conn = NewTrackedConn(conn)
+
 		if l.TLSConfig == nil {
 			l.metrics.accept()
+			conn.(*TrackedConn).onClose = l.metrics.close //nolint:forcetypeassert // we know it's a TrackedConn
 			return conn, nil
 		}
 
@@ -149,6 +152,7 @@ func (l *Listener) Accept() (net.Conn, error) {
 		}
 
 		l.metrics.accept()
+		conn.(*TrackedConn).onClose = l.metrics.close //nolint:forcetypeassert // we know it's a TrackedConn
 		return tconn, nil
 	}
 }
