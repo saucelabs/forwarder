@@ -16,7 +16,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/saucelabs/forwarder/log"
 	"github.com/saucelabs/forwarder/ratelimit"
 )
@@ -34,8 +33,7 @@ type DialConfig struct {
 	// The keep-alive probes are sent with OS specific intervals.
 	KeepAlive bool
 
-	PromNamespace string
-	PromRegistry  prometheus.Registerer
+	promConfig
 }
 
 func DefaultDialConfig() *DialConfig {
@@ -112,9 +110,7 @@ type Listener struct {
 	TLSHandshakeTimeout time.Duration
 	ReadLimit           int64
 	WriteLimit          int64
-
-	PromNamespace string
-	PromRegistry  prometheus.Registerer
+	promConfig
 
 	listener net.Listener
 	metrics  *listenerMetrics
