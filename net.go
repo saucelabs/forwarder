@@ -147,18 +147,18 @@ func (l *Listener) Accept() (net.Conn, error) {
 			return nil, err
 		}
 
-		conn = &TrackedConn{
-			Conn: conn,
-		}
-
 		if l.TLSConfig == nil {
 			l.metrics.accept()
-			once := sync.Once{}
-			conn.(*TrackedConn).OnClose = func() { once.Do(l.metrics.close) } //nolint:forcetypeassert // we know it's a TrackedConn
-			return conn, nil
+			return &TrackedConn{
+				Conn:    conn,
+				OnClose: l.metrics.close,
+			}, nil
 		}
 
-		tconn, err := l.withTLS(conn)
+		tr := &TrackedConn{
+			Conn: conn,
+		}
+		tconn, err := l.withTLS(tr)
 		if err != nil {
 			l.Log.Errorf("TLS handshake failed: %v", err)
 			if cerr := tconn.Close(); cerr != nil {
@@ -170,8 +170,7 @@ func (l *Listener) Accept() (net.Conn, error) {
 		}
 
 		l.metrics.accept()
-		once := sync.Once{}
-		conn.(*TrackedConn).OnClose = func() { once.Do(l.metrics.close) } //nolint:forcetypeassert // we know it's a TrackedConn
+		tr.OnClose = l.metrics.close
 		return tconn, nil
 	}
 }
@@ -215,10 +214,12 @@ type TrackedConn struct {
 	TrackTraffic bool
 
 	// OnClose is called after the underlying connection is closed and before the Close method returns.
+	// OnClose is called at most once.
 	OnClose func()
 
-	rx atomic.Uint64
-	tx atomic.Uint64
+	rx   atomic.Uint64
+	tx   atomic.Uint64
+	once sync.Once
 }
 
 func (c *TrackedConn) Read(p []byte) (int, error) {
@@ -252,7 +253,7 @@ func (c *TrackedConn) Tx() uint64 {
 func (c *TrackedConn) Close() error {
 	err := c.Conn.Close()
 	if c.OnClose != nil {
-		c.OnClose()
+		c.once.Do(c.OnClose)
 	}
 	return err
 }
