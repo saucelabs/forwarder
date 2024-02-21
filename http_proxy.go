@@ -105,6 +105,7 @@ func DefaultHTTPProxyConfig() *HTTPProxyConfig {
 		HTTPServerConfig: HTTPServerConfig{
 			Protocol:          HTTPScheme,
 			Addr:              ":3128",
+			IdleTimeout:       1 * time.Hour,
 			ReadHeaderTimeout: 1 * time.Minute,
 			TLSServerConfig: TLSServerConfig{
 				HandshakeTimeout: 10 * time.Second,
