@@ -11,6 +11,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net"
+	"sync"
 	"sync/atomic"
 	"syscall"
 	"time"
@@ -138,7 +139,8 @@ func (l *Listener) Accept() (net.Conn, error) {
 
 		if l.TLSConfig == nil {
 			l.metrics.accept()
-			conn.(*TrackedConn).OnClose = l.metrics.close //nolint:forcetypeassert // we know it's a TrackedConn
+			once := sync.Once{}
+			conn.(*TrackedConn).OnClose = func() { once.Do(l.metrics.close) } //nolint:forcetypeassert // we know it's a TrackedConn
 			return conn, nil
 		}
 
@@ -154,7 +156,8 @@ func (l *Listener) Accept() (net.Conn, error) {
 		}
 
 		l.metrics.accept()
-		conn.(*TrackedConn).OnClose = l.metrics.close //nolint:forcetypeassert // we know it's a TrackedConn
+		once := sync.Once{}
+		conn.(*TrackedConn).OnClose = func() { once.Do(l.metrics.close) } //nolint:forcetypeassert // we know it's a TrackedConn
 		return tconn, nil
 	}
 }
