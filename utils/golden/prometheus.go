@@ -22,8 +22,14 @@ import (
 	"github.com/prometheus/common/expfmt"
 )
 
+// WaitMetrics is the time to wait for the metrics to be updated.
+// Somehow, the metrics are not updated immediately at all times.
+var WaitMetrics = 10 * time.Millisecond
+
 func DiffPrometheusMetrics(t *testing.T, p prometheus.Gatherer, filter ...func(*dto.MetricFamily) bool) {
 	t.Helper()
+
+	time.Sleep(WaitMetrics)
 
 	goldenFile := "testdata/" + strings.ReplaceAll(t.Name(), "/", "_") + ".golden.txt"
 	golden, err := os.ReadFile(goldenFile)
