@@ -1,4 +1,4 @@
-// Copyright 2023 Sauce Labs Inc., all rights reserved.
+// Copyright 2022-2024 Sauce Labs Inc., all rights reserved.
 
 package log
 
