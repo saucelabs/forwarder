@@ -207,6 +207,10 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 		}
 	}
 
+	if 2*c.httpTransportConfig.DialTimeout > c.httpProxyConfig.ConnectTimeout {
+		c.httpProxyConfig.ConnectTimeout = 2 * c.httpTransportConfig.DialTimeout
+	}
+
 	g := runctx.NewGroup()
 	{
 		p, err := forwarder.NewHTTPProxy(c.httpProxyConfig, pr, cm, rt, logger.Named("proxy"))
