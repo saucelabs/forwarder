@@ -89,6 +89,7 @@ func DefaultHTTPServerConfig() *HTTPServerConfig {
 	return &HTTPServerConfig{
 		Protocol:          HTTPScheme,
 		Addr:              ":8080",
+		IdleTimeout:       1 * time.Hour,
 		ReadHeaderTimeout: 1 * time.Minute,
 	}
 }
