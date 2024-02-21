@@ -33,7 +33,7 @@ type DialConfig struct {
 	// The keep-alive probes are sent with OS specific intervals.
 	KeepAlive bool
 
-	promConfig
+	PromConfig
 }
 
 func DefaultDialConfig() *DialConfig {
@@ -110,7 +110,7 @@ type Listener struct {
 	TLSHandshakeTimeout time.Duration
 	ReadLimit           int64
 	WriteLimit          int64
-	promConfig
+	PromConfig
 
 	listener net.Listener
 	metrics  *listenerMetrics

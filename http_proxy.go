@@ -542,7 +542,7 @@ func (hp *HTTPProxy) listen() (net.Listener, error) {
 		TLSHandshakeTimeout: hp.config.TLSServerConfig.HandshakeTimeout,
 		ReadLimit:           int64(hp.config.ReadLimit),
 		WriteLimit:          int64(hp.config.WriteLimit),
-		promConfig: promConfig{
+		PromConfig: PromConfig{
 			PromNamespace: hp.config.PromNamespace,
 			PromRegistry:  hp.config.PromRegistry,
 		},

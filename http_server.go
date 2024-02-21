@@ -82,7 +82,7 @@ type HTTPServerConfig struct {
 	WriteTimeout      time.Duration
 	LogHTTPMode       httplog.Mode
 	BasicAuth         *url.Userinfo
-	promConfig
+	PromConfig
 }
 
 func DefaultHTTPServerConfig() *HTTPServerConfig {
