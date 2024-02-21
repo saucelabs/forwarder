@@ -35,7 +35,7 @@ func TestDialerMetrics(t *testing.T) {
 	r := prometheus.NewRegistry()
 	d := NewDialer(&DialConfig{
 		DialTimeout: 10 * time.Millisecond,
-		promConfig: promConfig{
+		PromConfig: PromConfig{
 			PromNamespace: "test",
 			PromRegistry:  r,
 		},
@@ -61,7 +61,7 @@ func TestDialerMetricsErrors(t *testing.T) {
 	r := prometheus.NewRegistry()
 	d := NewDialer(&DialConfig{
 		DialTimeout: 10 * time.Millisecond,
-		promConfig: promConfig{
+		PromConfig: PromConfig{
 			PromNamespace: "test",
 			PromRegistry:  r,
 		},
@@ -121,7 +121,7 @@ func TestListenerMetricsAccepted(t *testing.T) {
 	l := Listener{
 		Address: "localhost:0",
 		Log:     log.NopLogger,
-		promConfig: promConfig{
+		PromConfig: PromConfig{
 			PromNamespace: "test",
 			PromRegistry:  r,
 		},
@@ -152,7 +152,7 @@ func TestListenerMetricsAcceptedWithTLS(t *testing.T) {
 		Address:   "localhost:0",
 		Log:       log.NopLogger,
 		TLSConfig: selfSingedCert(),
-		promConfig: promConfig{
+		PromConfig: PromConfig{
 			PromNamespace: "test",
 			PromRegistry:  r,
 		},
@@ -183,7 +183,7 @@ func TestListenerMetricsClosed(t *testing.T) {
 	l := Listener{
 		Address: "localhost:0",
 		Log:     log.NopLogger,
-		promConfig: promConfig{
+		PromConfig: PromConfig{
 			PromNamespace: "test",
 			PromRegistry:  r,
 		},
@@ -222,7 +222,7 @@ func TestListenerMetricsErrors(t *testing.T) {
 	l := Listener{
 		Address: "localhost:0",
 		Log:     log.NopLogger,
-		promConfig: promConfig{
+		PromConfig: PromConfig{
 			PromNamespace: "test",
 			PromRegistry:  r,
 		},
@@ -250,7 +250,7 @@ func TestListenerTLSHandshakeTimeout(t *testing.T) {
 		Log:                 log.NopLogger,
 		TLSConfig:           selfSingedCert(),
 		TLSHandshakeTimeout: 100 * time.Millisecond,
-		promConfig: promConfig{
+		PromConfig: PromConfig{
 			PromNamespace: "test",
 			PromRegistry:  r,
 		},

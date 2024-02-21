@@ -10,8 +10,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-// promConfig is a configuration for Prometheus metrics.
-type promConfig struct {
+// PromConfig is a configuration for Prometheus metrics.
+type PromConfig struct {
 	PromNamespace string
 	PromRegistry  prometheus.Registerer
 }
