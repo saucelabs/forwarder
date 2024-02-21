@@ -123,6 +123,35 @@ func TestListenerMetricsAcceptedWithTLS(t *testing.T) {
 	golden.DiffPrometheusMetrics(t, r)
 }
 
+func TestListenerMetricsClosed(t *testing.T) {
+	r := prometheus.NewRegistry()
+	l := Listener{
+		Address:       "localhost:0",
+		Log:           log.NopLogger,
+		PromNamespace: "test",
+		PromRegistry:  r,
+	}
+	defer l.Close()
+
+	l.listenAndWait(t)
+	go func() {
+		conn, err := l.Accept()
+		if err != nil {
+			return
+		}
+		conn.Close()
+		conn.Close() // Close twice, the second time should not be counted.
+	}()
+
+	conn, err := net.Dial("tcp", l.Addr().String())
+	if err != nil {
+		t.Fatalf("net.Dial(): got %v, want no error", err)
+	}
+	conn.Close()
+
+	golden.DiffPrometheusMetrics(t, r)
+}
+
 type errListener struct {
 	net.Listener
 }
