@@ -92,6 +92,7 @@ type HTTPProxyConfig struct {
 	ResponseModifiers      []ResponseModifier
 	ConnectRequestModifier func(*http.Request) error
 	ConnectFunc            ConnectFunc
+	ConnectTimeout         time.Duration
 	ReadLimit              SizeSuffix
 	WriteLimit             SizeSuffix
 
@@ -114,6 +115,7 @@ func DefaultHTTPProxyConfig() *HTTPProxyConfig {
 		Name:            "forwarder",
 		ProxyLocalhost:  DenyProxyLocalhost,
 		RequestIDHeader: "X-Request-Id",
+		ConnectTimeout:  60 * time.Second,
 	}
 }
 
@@ -235,7 +237,7 @@ func (hp *HTTPProxy) configureProxy() error {
 	hp.proxy.RequestIDHeader = hp.config.RequestIDHeader
 	hp.proxy.ConnectRequestModifier = hp.config.ConnectRequestModifier
 	hp.proxy.ConnectFunc = hp.config.ConnectFunc
-	hp.proxy.ConnectTimeout = 60 * time.Second
+	hp.proxy.ConnectTimeout = hp.config.ConnectTimeout
 	hp.proxy.WithoutWarning = true
 	hp.proxy.ErrorResponse = hp.errorResponse
 	hp.proxy.IdleTimeout = hp.config.IdleTimeout
