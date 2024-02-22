@@ -26,7 +26,7 @@ type MITMConfig struct {
 
 func DefaultMITMConfig() *MITMConfig {
 	return &MITMConfig{
-		Organization: "Sauce Labs Inc.",
+		Organization: "Forwarder Proxy MITM",
 		Validity:     24 * time.Hour, //nolint:gomnd // 24 hours is a reasonable default
 	}
 }
