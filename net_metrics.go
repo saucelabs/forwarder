@@ -62,6 +62,11 @@ func addr2Host(addr string) string {
 	if err != nil {
 		return "unknown"
 	}
+
+	if isLocalhost(host) {
+		return "localhost"
+	}
+
 	return host
 }
 
