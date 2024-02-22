@@ -57,10 +57,8 @@ type HTTPTransportConfig struct {
 
 func DefaultHTTPTransportConfig() *HTTPTransportConfig {
 	return &HTTPTransportConfig{
-		DialConfig: *DefaultDialConfig(),
-		TLSClientConfig: TLSClientConfig{
-			HandshakeTimeout: 10 * time.Second,
-		},
+		DialConfig:            *DefaultDialConfig(),
+		TLSClientConfig:       *DefaultTLSClientConfig(),
 		IdleConnTimeout:       90 * time.Second,
 		ExpectContinueTimeout: 1 * time.Second,
 		MaxIdleConnsPerHost:   512,

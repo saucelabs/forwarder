@@ -34,6 +34,12 @@ type TLSClientConfig struct {
 	CACertFiles []string
 }
 
+func DefaultTLSClientConfig() *TLSClientConfig {
+	return &TLSClientConfig{
+		HandshakeTimeout: 10 * time.Second,
+	}
+}
+
 func (c *TLSClientConfig) ConfigureTLSConfig(tlsCfg *tls.Config) error {
 	tlsCfg.InsecureSkipVerify = c.InsecureSkipVerify
 
