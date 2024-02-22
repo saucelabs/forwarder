@@ -89,7 +89,7 @@ func (l listener) dial() (net.Conn, error) {
 func newListener(t *testing.T) listener {
 	t.Helper()
 
-	l, err := net.Listen("tcp", "[::]:0")
+	l, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
 		t.Fatalf("net.Listen(): got %v, want no error", err)
 	}
@@ -253,7 +253,7 @@ func TestIntegrationHTTP100Continue(t *testing.T) {
 
 	setTimeout(p, 2*time.Second)
 
-	sl, err := net.Listen("tcp", "[::]:0")
+	sl, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
 		t.Fatalf("net.Listen(): got %v, want no error", err)
 	}
@@ -362,7 +362,7 @@ func TestIntegrationHTTP101SwitchingProtocols(t *testing.T) {
 
 	setTimeout(p, 200*time.Millisecond)
 
-	sl, err := net.Listen("tcp", "[::]:0")
+	sl, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
 		t.Fatalf("net.Listen(): got %v, want no error", err)
 	}
@@ -476,7 +476,7 @@ func TestIntegrationUnexpectedUpstreamFailure(t *testing.T) {
 	// setting a large proxy timeout
 	setTimeout(p, 1000*time.Second)
 
-	sl, err := net.Listen("tcp", "[::]:0")
+	sl, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
 		t.Fatalf("net.Listen(): got %v, want no error", err)
 	}
@@ -569,7 +569,7 @@ func TestIntegrationHTTPUpstreamProxy(t *testing.T) {
 	t.Parallel()
 
 	// Start first proxy to use as upstream.
-	ul, err := net.Listen("tcp", "[::]:0")
+	ul, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
 		t.Fatalf("net.Listen(): got %v, want no error", err)
 	}
@@ -639,7 +639,7 @@ func TestIntegrationHTTPUpstreamProxyError(t *testing.T) {
 
 	// Set proxy's upstream proxy to invalid host:port to force failure.
 	p.ProxyURL = http.ProxyURL(&url.URL{
-		Host: "[::]:0",
+		Host: "localhost:0",
 	})
 	setTimeout(p, 600*time.Millisecond)
 
@@ -704,7 +704,7 @@ func TestIntegrationTLSHandshakeErrorCallback(t *testing.T) {
 	mc.SetHandshakeErrorCallback(func(_ *http.Request, err error) { herr = errors.New("handshake error") })
 	p.MITMConfig = mc
 
-	tl, err := net.Listen("tcp", "[::]:0")
+	tl, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
 		t.Fatalf("tls.Listen(): got %v, want no error", err)
 	}
@@ -792,7 +792,7 @@ func TestIntegrationConnect(t *testing.T) { //nolint:tparallel // Subtests share
 		t.Fatalf("mitm.NewConfig(): got %v, want no error", err)
 	}
 
-	tl, err := net.Listen("tcp", "[::]:0")
+	tl, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
 		t.Fatalf("tls.Listen(): got %v, want no error", err)
 	}
@@ -948,7 +948,7 @@ func TestIntegrationConnectUpstreamProxy(t *testing.T) {
 	t.Parallel()
 
 	// Start first proxy to use as upstream.
-	ul, err := net.Listen("tcp", "[::]:0")
+	ul, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
 		t.Fatalf("net.Listen(): got %v, want no error", err)
 	}
@@ -1152,7 +1152,7 @@ func TestIntegrationConnectTerminateTLS(t *testing.T) {
 	}
 	p.RoundTripper = rt
 
-	tl, err := net.Listen("tcp", "[::]:0")
+	tl, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
 		t.Fatalf("tls.Listen(): got %v, want no error", err)
 	}
@@ -1411,7 +1411,7 @@ func TestIntegrationTransparentMITM(t *testing.T) {
 	//
 	// BUG: tls.Listen will not accept a tls.Config where Certificates is empty,
 	// even though it is supported by tls.Server when GetCertificate is not nil.
-	l, err := net.Listen("tcp", "[::]:0")
+	l, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
 		t.Fatalf("net.Listen(): got %v, want no error", err)
 	}
@@ -1753,7 +1753,7 @@ func TestTLSHandshakeTimeoutWithMITM(t *testing.T) {
 func TestServerClosesConnection(t *testing.T) {
 	t.Parallel()
 
-	dstl, err := net.Listen("tcp", "[::]:0")
+	dstl, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
 		t.Fatalf("Failed to create http listener: %v", err)
 	}
@@ -1788,7 +1788,7 @@ func TestServerClosesConnection(t *testing.T) {
 		conn.Close()
 	}()
 
-	l, err := net.Listen("tcp", "[::]:0")
+	l, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
 		t.Fatalf("net.Listen(): got %v, want no error", err)
 	}
@@ -1858,7 +1858,7 @@ func TestRacyClose(t *testing.T) {
 	t.Parallel()
 
 	openAndConnect := func() {
-		l, err := net.Listen("tcp", "[::]:0")
+		l, err := net.Listen("tcp", "localhost:0")
 		if err != nil {
 			t.Fatalf("net.Listen(): got %v, want no error", err)
 		}
@@ -1993,7 +1993,7 @@ func TestConnectRequestModifier(t *testing.T) {
 		return nil
 	}
 
-	tl, err := net.Listen("tcp", "[::]:0")
+	tl, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
 		t.Fatalf("net.Listen(): got %v, want no error", err)
 	}
