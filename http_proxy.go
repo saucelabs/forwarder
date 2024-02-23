@@ -433,26 +433,8 @@ func (hp *HTTPProxy) directLocalhost(fn ProxyFunc) ProxyFunc {
 	}
 }
 
-// nopResolver is a dns resolver that does not ever dial.
-// It uses only the local resolver.
-// It will look for the address in the /etc/hosts file.
-var localhostResolver = nopResolver() //nolint:gochecknoglobals // This is a local resolver.
-
 func (hp *HTTPProxy) isLocalhost(req *http.Request) bool {
-	h := req.URL.Hostname()
-
-	// Plain old localhost.
-	if h == "localhost" {
-		return true
-	}
-
-	if addrs, err := localhostResolver.LookupHost(context.Background(), h); err == nil {
-		if ip := net.ParseIP(addrs[0]); ip != nil {
-			return ip.IsLoopback()
-		}
-	}
-
-	return false
+	return isLocalhost(req.URL.Hostname())
 }
 
 func (hp *HTTPProxy) setBasicAuth(req *http.Request) error {
