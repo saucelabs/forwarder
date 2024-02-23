@@ -144,7 +144,7 @@ func (p *proxyConn) handleMITM(req *http.Request) error {
 		tlsconn := tls.Server(&peekedConn{
 			p.conn,
 			io.MultiReader(bytes.NewReader(buf), p.conn),
-		}, p.MITMConfig.TLSForHost(req.Host))
+		}, p.MITMConfig.TLSForHost(req.Context(), req.Host))
 
 		var hctx context.Context
 		if p.MITMTLSHandshakeTimeout > 0 {

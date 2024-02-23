@@ -15,6 +15,7 @@
 package mitm
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"net"
@@ -25,6 +26,8 @@ import (
 
 func TestMITM(t *testing.T) {
 	const exampleHostname = "example.com"
+
+	ctx := context.Background()
 
 	ca, priv, err := NewAuthority("martian.proxy", "Martian Authority", 24*time.Hour)
 	if err != nil {
@@ -41,7 +44,7 @@ func TestMITM(t *testing.T) {
 
 	protos := []string{"http/1.1"}
 
-	conf := c.TLS()
+	conf := c.TLS(ctx)
 	if got := conf.NextProtos; !reflect.DeepEqual(got, protos) {
 		t.Errorf("conf.NextProtos: got %v, want %v", got, protos)
 	}
@@ -73,7 +76,7 @@ func TestMITM(t *testing.T) {
 
 	c.SkipTLSVerify(true)
 
-	conf = c.TLSForHost(exampleHostname)
+	conf = c.TLSForHost(ctx, exampleHostname)
 	if got := conf.NextProtos; !reflect.DeepEqual(got, protos) {
 		t.Errorf("conf.NextProtos: got %v, want %v", got, protos)
 	}
@@ -109,6 +112,8 @@ func TestMITM(t *testing.T) {
 func TestCert(t *testing.T) {
 	const exampleHostname = "example.com"
 
+	ctx := context.Background()
+
 	ca, priv, err := NewAuthority("martian.proxy", "Martian Authority", 24*time.Hour)
 	if err != nil {
 		t.Fatalf("NewAuthority(): got %v, want no error", err)
@@ -119,7 +124,7 @@ func TestCert(t *testing.T) {
 		t.Fatalf("NewConfig(): got %v, want no error", err)
 	}
 
-	tlsc, err := c.cert(exampleHostname)
+	tlsc, err := c.cert(ctx, exampleHostname)
 	if err != nil {
 		t.Fatalf("c.cert(%q): got %v, want no error", exampleHostname, err)
 	}
@@ -184,7 +189,7 @@ func TestCert(t *testing.T) {
 	}
 
 	// Retrieve cached certificate.
-	tlsc2, err := c.cert(exampleHostname)
+	tlsc2, err := c.cert(ctx, exampleHostname)
 	if err != nil {
 		t.Fatalf("c.cert(%q): got %v, want no error", exampleHostname, err)
 	}
@@ -193,7 +198,7 @@ func TestCert(t *testing.T) {
 	}
 
 	// TLS certificate for IP.
-	tlsc, err = c.cert("10.0.0.1:8227")
+	tlsc, err = c.cert(ctx, "10.0.0.1:8227")
 	if err != nil {
 		t.Fatalf("c.cert(%q): got %v, want no error", "10.0.0.1:8227", err)
 	}
