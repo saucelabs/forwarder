@@ -1,6 +1,6 @@
 # HELP test_dialer_closed_total Number of closed connections
 # TYPE test_dialer_closed_total counter
-test_dialer_closed_total{host="127.0.0.1"} 10
+test_dialer_closed_total{host="localhost"} 10
 # HELP test_dialer_dialed_total Number of dialed connections
 # TYPE test_dialer_dialed_total counter
-test_dialer_dialed_total{host="127.0.0.1"} 10
+test_dialer_dialed_total{host="localhost"} 10
