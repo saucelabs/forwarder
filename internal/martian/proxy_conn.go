@@ -292,7 +292,7 @@ func (p *proxyConn) tunnel(name string, res *http.Response, crw io.ReadWriteClos
 	log.Debugf(ctx, "switched protocols, proxying %s traffic", name)
 	<-donec
 	<-donec
-	log.Debugf(ctx, "closed %s tunnel", name)
+	log.Debugf(ctx, "closed %s tunnel duration=%s", name, Duration(ctx))
 
 	return nil
 }
