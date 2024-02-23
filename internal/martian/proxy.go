@@ -131,9 +131,6 @@ func (p *Proxy) init() {
 	p.initOnce.Do(func() {
 		if p.RoundTripper == nil {
 			p.rt = &http.Transport{
-				// TODO(adamtanner): This forces the http.Transport to not upgrade requests
-				// to HTTP/2 in Go 1.6+. Remove this once Martian can support HTTP/2.
-				TLSNextProto:          make(map[string]func(string, *tls.Conn) http.RoundTripper),
 				Proxy:                 http.ProxyFromEnvironment,
 				TLSHandshakeTimeout:   10 * time.Second,
 				ExpectContinueTimeout: time.Second,
@@ -143,7 +140,9 @@ func (p *Proxy) init() {
 		}
 
 		if t, ok := p.rt.(*http.Transport); ok {
-			t = t.Clone()
+			// TODO(adamtanner): This forces the http.Transport to not upgrade requests
+			// to HTTP/2 in Go 1.6+. Remove this once Martian can support HTTP/2.
+			t.TLSNextProto = make(map[string]func(string, *tls.Conn) http.RoundTripper)
 
 			if p.DialContext == nil {
 				p.DialContext = t.DialContext
