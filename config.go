@@ -63,17 +63,14 @@ func wildcardPortTo0(val string) string {
 
 // ParseHostPortUser parses a user:password@host:port string into HostUser.
 func ParseHostPortUser(val string) (*HostPortUser, error) {
-	if val == "" {
+	if val == "" || !strings.Contains(val, "@") {
 		return nil, errors.New("expected user[:password]@host:port")
-	}
-	if strings.Index(val, "@") != strings.LastIndex(val, "@") {
-		return nil, errors.New("only one '@' is allowed")
 	}
 
-	up, hp, ok := strings.Cut(val, "@")
-	if !ok {
-		return nil, errors.New("expected user[:password]@host:port")
-	}
+	idx := strings.LastIndex(val, "@")
+
+	up := val[:idx]
+	hp := val[idx:]
 
 	ui, err := ParseUserinfo(up)
 	if err != nil {
