@@ -18,11 +18,13 @@ func TestIsLocalhost(t *testing.T) {
 		{"127.0.0.1", true},
 		{"127.10.20.30", true},
 		{"localhost", true},
+		{"0.0.0.0", true},
 
 		{"notlocalhost", false},
 		{"broadcasthost", false},
 
 		{"::1", true},
+		{"::", true},
 
 		{"::10", false},
 		{"2001:0db8:85a3:0000:0000:8a2e:0370:7334", false},

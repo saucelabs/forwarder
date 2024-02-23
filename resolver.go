@@ -18,7 +18,7 @@ import (
 func lookupStaticHost(string) ([]string, string)
 
 func isLocalhost(host string) bool {
-	if host == "localhost" {
+	if host == "localhost" || host == "0.0.0.0" || host == "::" {
 		return true
 	}
 
