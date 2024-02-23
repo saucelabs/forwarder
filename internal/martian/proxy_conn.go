@@ -273,7 +273,16 @@ func (p *proxyConn) handleUpgradeResponse(res *http.Response) error {
 	return errClose
 }
 
-func (p *proxyConn) tunnel(name string, res *http.Response, crw io.ReadWriteCloser) error {
+func (p *proxyConn) tunnel(name string, res *http.Response, crw io.ReadWriteCloser) (ferr error) {
+	if p.Trace != nil && p.Trace.WroteResponse != nil {
+		defer func() {
+			p.Trace.WroteResponse(WroteResponseInfo{
+				Res: res,
+				Err: ferr,
+			})
+		}()
+	}
+
 	if err := res.Write(p.brw); err != nil {
 		return fmt.Errorf("got error while writing response back to client: %w", err)
 	}
@@ -439,6 +448,8 @@ func (p *proxyConn) writeResponse(res *http.Response) error {
 	} else {
 		err = p.brw.Flush()
 	}
+
+	p.traceWroteResponse(res, err)
 
 	if err != nil {
 		if isClosedConnError(err) {

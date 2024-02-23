@@ -186,7 +186,16 @@ func (p proxyHandler) handleUpgradeResponse(rw http.ResponseWriter, req *http.Re
 	}
 }
 
-func (p proxyHandler) tunnel(name string, rw http.ResponseWriter, req *http.Request, res *http.Response, crw io.ReadWriteCloser) error {
+func (p proxyHandler) tunnel(name string, rw http.ResponseWriter, req *http.Request, res *http.Response, crw io.ReadWriteCloser) (ferr error) {
+	if p.Trace != nil && p.Trace.WroteResponse != nil {
+		defer func() {
+			p.Trace.WroteResponse(WroteResponseInfo{
+				Res: res,
+				Err: ferr,
+			})
+		}()
+	}
+
 	ctx := req.Context()
 
 	var (
@@ -382,6 +391,7 @@ func (p proxyHandler) writeResponse(rw http.ResponseWriter, res *http.Response) 
 	}
 
 	if err != nil {
+		p.traceWroteResponse(res, err)
 		if isClosedConnError(err) {
 			log.Debugf(res.Request.Context(), "connection closed prematurely while writing response: %v", err)
 		} else {
@@ -401,4 +411,6 @@ func (p proxyHandler) writeResponse(rw http.ResponseWriter, res *http.Response) 
 			}
 		}
 	}
+
+	p.traceWroteResponse(res, err)
 }
