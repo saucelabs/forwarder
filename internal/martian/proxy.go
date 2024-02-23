@@ -35,6 +35,7 @@ import (
 type Proxy struct {
 	RequestModifier
 	ResponseModifier
+	Trace *ProxyTrace
 
 	// RoundTripper specifies the round tripper to use for requests.
 	RoundTripper http.RoundTripper
