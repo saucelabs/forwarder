@@ -197,18 +197,25 @@ func (p proxyHandler) tunnel(name string, rw http.ResponseWriter, req *http.Requ
 	case 1:
 		conn, brw, err := rc.Hijack()
 		if err != nil {
+			p.traceWroteResponse(res, err)
 			return err
 		}
 		defer conn.Close()
 
 		if err := res.Write(brw); err != nil {
-			return fmt.Errorf("got error while writing response back to client: %w", err)
+			err := fmt.Errorf("got error while writing response back to client: %w", err)
+			p.traceWroteResponse(res, err)
+			return err
 		}
 		if err := brw.Flush(); err != nil {
-			return fmt.Errorf("got error while flushing response back to client: %w", err)
+			err := fmt.Errorf("got error while flushing response back to client: %w", err)
+			p.traceWroteResponse(res, err)
+			return err
 		}
 		if err := drainBuffer(crw, brw.Reader); err != nil {
-			return fmt.Errorf("got error while draining buffer: %w", err)
+			err := fmt.Errorf("got error while draining buffer: %w", err)
+			p.traceWroteResponse(res, err)
+			return err
 		}
 
 		go copySync(ctx, "outbound "+name, crw, conn, donec)
@@ -218,19 +225,25 @@ func (p proxyHandler) tunnel(name string, rw http.ResponseWriter, req *http.Requ
 		rw.WriteHeader(res.StatusCode)
 
 		if err := rc.Flush(); err != nil {
-			return fmt.Errorf("got error while flushing response back to client: %w", err)
+			err := fmt.Errorf("got error while flushing response back to client: %w", err)
+			p.traceWroteResponse(res, err)
+			return err
 		}
 
 		go copySync(ctx, "outbound "+name, crw, req.Body, donec)
 		go copySync(ctx, "inbound "+name, writeFlusher{rw, rc}, crw, donec)
 	default:
-		return fmt.Errorf("unsupported protocol version: %d", req.ProtoMajor)
+		err := fmt.Errorf("unsupported protocol version: %d", req.ProtoMajor)
+		p.traceWroteResponse(res, err)
+		return err
 	}
 
 	log.Debugf(ctx, "established %s tunnel, proxying traffic", name)
 	<-donec
 	<-donec
 	log.Debugf(ctx, "closed %s tunnel duration=%s", name, ContextDuration(ctx))
+
+	p.traceWroteResponse(res, nil)
 
 	return nil
 }
@@ -374,6 +387,7 @@ func (p proxyHandler) writeResponse(rw http.ResponseWriter, res *http.Response) 
 	}
 
 	if err != nil {
+		p.traceWroteResponse(res, err)
 		if isClosedConnError(err) {
 			log.Debugf(res.Request.Context(), "connection closed prematurely while writing response: %v", err)
 		} else {
@@ -393,4 +407,6 @@ func (p proxyHandler) writeResponse(rw http.ResponseWriter, res *http.Response) 
 			}
 		}
 	}
+
+	p.traceWroteResponse(res, err)
 }
