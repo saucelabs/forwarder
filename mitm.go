@@ -34,6 +34,7 @@ func DefaultMITMConfig() *MITMConfig {
 func (c *MITMConfig) loadCACertificate() (cert tls.Certificate, err error) {
 	if c.CACertFile == "" && c.CAKeyFile == "" {
 		tmpl := certutil.ECDSASelfSignedCert()
+		tmpl.Organization = []string{c.Organization}
 		tmpl.Hosts = nil
 		tmpl.IsCA = true
 		return tmpl.Gen()
