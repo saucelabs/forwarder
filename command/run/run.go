@@ -229,6 +229,12 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 	}
 
 	if c.apiServerConfig.Addr != "" {
+		if err := c.registerGoMemLimitMetric(); err != nil {
+			return fmt.Errorf("register GOMEMLIMIT metric: %w", err)
+		}
+		if err := c.registerGoMaxProcsMetric(); err != nil {
+			return fmt.Errorf("register GOMAXPROCS metrics: %w", err)
+		}
 		if err := c.registerProcMetrics(); err != nil {
 			return fmt.Errorf("register process metrics: %w", err)
 		}
@@ -277,6 +283,36 @@ func (c *command) registerErrorsMetric() (func(name string), error) {
 	return func(name string) {
 		m.WithLabelValues(name).Inc()
 	}, nil
+}
+
+func (c *command) registerGoMemLimitMetric() error {
+	return c.promReg.Register(prometheus.NewGaugeFunc(prometheus.GaugeOpts{
+		Namespace: "go_env",
+		Name:      "gomemlimit",
+		Help:      "Memory limit for the process",
+	}, func() float64 {
+		e := os.Getenv("GOMEMLIMIT")
+		if e == "" {
+			return 0
+		}
+
+		var v forwarder.SizeSuffix
+		if err := v.Set(e); err != nil {
+			return -1
+		}
+
+		return float64(v)
+	}))
+}
+
+func (c *command) registerGoMaxProcsMetric() error {
+	return c.promReg.Register(prometheus.NewGaugeFunc(prometheus.GaugeOpts{
+		Namespace: "go_env",
+		Name:      "gomaxprocs",
+		Help:      "Number of maximum goroutines that can be executed simultaneously",
+	}, func() float64 {
+		return float64(runtime.GOMAXPROCS(0))
+	}))
 }
 
 func (c *command) registerProcMetrics() error {
