@@ -109,7 +109,7 @@ func newListener(t *testing.T) listener {
 	if err != nil {
 		t.Fatalf("mitm.NewConfig(): got %v, want no error", err)
 	}
-	l = tls.NewListener(l, mc.TLS())
+	l = tls.NewListener(l, mc.TLS(context.Background()))
 
 	roots := x509.NewCertPool()
 	roots.AddCert(ca)
@@ -708,7 +708,7 @@ func TestIntegrationTLSHandshakeErrorCallback(t *testing.T) {
 	if err != nil {
 		t.Fatalf("tls.Listen(): got %v, want no error", err)
 	}
-	tl = tls.NewListener(tl, mc.TLS())
+	tl = tls.NewListener(tl, mc.TLS(context.Background()))
 
 	go http.Serve(tl, http.HandlerFunc(
 		func(rw http.ResponseWriter, req *http.Request) {
@@ -796,7 +796,7 @@ func TestIntegrationConnect(t *testing.T) { //nolint:tparallel // Subtests share
 	if err != nil {
 		t.Fatalf("tls.Listen(): got %v, want no error", err)
 	}
-	tl = tls.NewListener(tl, mc.TLS())
+	tl = tls.NewListener(tl, mc.TLS(context.Background()))
 
 	go http.Serve(tl, http.HandlerFunc(
 		func(rw http.ResponseWriter, req *http.Request) {
@@ -1156,7 +1156,7 @@ func TestIntegrationConnectTerminateTLS(t *testing.T) {
 	if err != nil {
 		t.Fatalf("tls.Listen(): got %v, want no error", err)
 	}
-	tl = tls.NewListener(tl, mc.TLS())
+	tl = tls.NewListener(tl, mc.TLS(context.Background()))
 
 	go http.Serve(tl, http.HandlerFunc(
 		func(rw http.ResponseWriter, req *http.Request) {
@@ -1415,7 +1415,7 @@ func TestIntegrationTransparentMITM(t *testing.T) {
 	if err != nil {
 		t.Fatalf("net.Listen(): got %v, want no error", err)
 	}
-	l = tls.NewListener(l, mc.TLS())
+	l = tls.NewListener(l, mc.TLS(context.Background()))
 
 	p := new(Proxy)
 	defer p.Close()

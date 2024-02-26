@@ -110,7 +110,7 @@ func (p *proxyConn) readRequest() (*http.Request, error) {
 func (p *proxyConn) handleMITM(req *http.Request) error {
 	ctx := req.Context()
 
-	log.Debugf(ctx, "mitm: attempting MITM for connection %s", req.Host)
+	log.Debugf(ctx, "mitm: attempting MITM")
 
 	res := proxyutil.NewResponse(200, nil, req)
 
@@ -128,7 +128,7 @@ func (p *proxyConn) handleMITM(req *http.Request) error {
 		if isClosedConnError(err) {
 			log.Debugf(ctx, "mitm: connection closed prematurely: %v", err)
 		} else {
-			log.Errorf(ctx, "mitm: failed to peek connection %s: %v", req.Host, err)
+			log.Errorf(ctx, "mitm: failed to peek connection host=%s: %v", req.Host, err)
 		}
 		return errClose
 	}
@@ -144,7 +144,7 @@ func (p *proxyConn) handleMITM(req *http.Request) error {
 		tlsconn := tls.Server(&peekedConn{
 			p.conn,
 			io.MultiReader(bytes.NewReader(buf), p.conn),
-		}, p.MITMConfig.TLSForHost(req.Host))
+		}, p.MITMConfig.TLSForHost(req.Context(), req.Host))
 
 		var hctx context.Context
 		if p.MITMTLSHandshakeTimeout > 0 {
@@ -159,13 +159,13 @@ func (p *proxyConn) handleMITM(req *http.Request) error {
 			if isClosedConnError(err) {
 				log.Debugf(ctx, "mitm: connection closed prematurely: %v", err)
 			} else {
-				log.Errorf(ctx, "mitm: failed to handshake connection %s: %v", req.Host, err)
+				log.Errorf(ctx, "mitm: failed to handshake connection host=%s: %v", req.Host, err)
 			}
 			return errClose
 		}
 
 		cs := tlsconn.ConnectionState()
-		log.Debugf(ctx, "mitm: negotiated %s for connection: %s", cs.NegotiatedProtocol, req.Host)
+		log.Debugf(ctx, "mitm: negotiated protocol %s", cs.NegotiatedProtocol)
 
 		if cs.NegotiatedProtocol == "h2" {
 			return p.MITMConfig.H2Config().Proxy(p.closeCh, tlsconn, req.URL)
@@ -188,6 +188,7 @@ func (p *proxyConn) handleMITM(req *http.Request) error {
 
 func (p *proxyConn) handleConnectRequest(req *http.Request) error {
 	ctx := req.Context()
+	log.Debugf(ctx, "read CONNECT request host=%s", req.URL.Host)
 
 	if err := p.modifyRequest(req); err != nil {
 		log.Debugf(ctx, "error modifying CONNECT request: %v", err)
@@ -198,7 +199,6 @@ func (p *proxyConn) handleConnectRequest(req *http.Request) error {
 		return p.handleMITM(req)
 	}
 
-	log.Debugf(ctx, "attempting to establish CONNECT tunnel: %s", req.URL.Host)
 	var (
 		res  *http.Response
 		crw  io.ReadWriteCloser
@@ -292,14 +292,12 @@ func (p *proxyConn) tunnel(name string, res *http.Response, crw io.ReadWriteClos
 	log.Debugf(ctx, "switched protocols, proxying %s traffic", name)
 	<-donec
 	<-donec
-	log.Debugf(ctx, "closed %s tunnel", name)
+	log.Debugf(ctx, "closed %s tunnel duration=%s", name, Duration(ctx))
 
 	return nil
 }
 
 func (p *proxyConn) handle() error {
-	log.Debugf(context.TODO(), "waiting for request: %v", p.conn.RemoteAddr())
-
 	req, err := p.readRequest()
 	if err != nil {
 		if errors.Is(err, io.EOF) {

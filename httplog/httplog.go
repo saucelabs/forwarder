@@ -181,7 +181,7 @@ func (w *logWriter) Dump(e middleware.LogEntry) {
 
 func (w *logWriter) dump(e middleware.LogEntry) error {
 	mv := messageview.New()
-	mv.SkipBody(!w.body)
+	mv.SkipBody(!w.body || (e.Request.Method == http.MethodConnect && e.Status/100 == 2))
 
 	// Dump request.
 	{

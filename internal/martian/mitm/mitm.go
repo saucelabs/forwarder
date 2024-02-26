@@ -197,7 +197,7 @@ func (c *Config) CACert() *x509.Certificate {
 
 // TLS returns a *tls.Config that will generate certificates on-the-fly using
 // the SNI extension in the TLS ClientHello.
-func (c *Config) TLS() *tls.Config {
+func (c *Config) TLS(ctx context.Context) *tls.Config {
 	return &tls.Config{
 		InsecureSkipVerify: c.skipVerify,
 		GetCertificate: func(clientHello *tls.ClientHelloInfo) (*tls.Certificate, error) {
@@ -205,7 +205,7 @@ func (c *Config) TLS() *tls.Config {
 				return nil, errors.New("mitm: SNI not provided, failed to build certificate")
 			}
 
-			return c.cert(clientHello.ServerName)
+			return c.cert(ctx, clientHello.ServerName)
 		},
 		NextProtos: []string{"http/1.1"},
 	}
@@ -213,7 +213,7 @@ func (c *Config) TLS() *tls.Config {
 
 // TLSForHost returns a *tls.Config that will generate certificates on-the-fly
 // using SNI from the connection, or fall back to the provided hostname.
-func (c *Config) TLSForHost(hostname string) *tls.Config {
+func (c *Config) TLSForHost(ctx context.Context, hostname string) *tls.Config {
 	nextProtos := []string{"http/1.1"}
 	if c.h2AllowedHost(hostname) {
 		nextProtos = []string{"h2", "http/1.1"}
@@ -226,7 +226,7 @@ func (c *Config) TLSForHost(hostname string) *tls.Config {
 				host = hostname
 			}
 
-			return c.cert(host)
+			return c.cert(ctx, host)
 		},
 		NextProtos: nextProtos,
 	}
@@ -238,7 +238,7 @@ func (c *Config) h2AllowedHost(host string) bool {
 		c.h2Config.AllowedHostsFilter(host)
 }
 
-func (c *Config) cert(hostname string) (*tls.Certificate, error) {
+func (c *Config) cert(ctx context.Context, hostname string) (*tls.Certificate, error) {
 	// Remove the port if it exists.
 	host, _, err := net.SplitHostPort(hostname)
 	if err == nil {
@@ -250,7 +250,7 @@ func (c *Config) cert(hostname string) (*tls.Certificate, error) {
 	c.certmu.RUnlock()
 
 	if ok {
-		log.Debugf(context.TODO(), "mitm: cache hit for %s", hostname)
+		log.Debugf(ctx, "mitm: cache hit for %s", hostname)
 
 		// Check validity of the certificate for hostname match, expiry, etc. In
 		// particular, if the cached certificate has expired, create a new one.
@@ -261,10 +261,10 @@ func (c *Config) cert(hostname string) (*tls.Certificate, error) {
 			return tlsc, nil
 		}
 
-		log.Debugf(context.TODO(), "mitm: invalid certificate in cache for %s", hostname)
+		log.Debugf(ctx, "mitm: invalid certificate in cache for %s", hostname)
 	}
 
-	log.Debugf(context.TODO(), "mitm: cache miss for %s", hostname)
+	log.Debugf(ctx, "mitm: cache miss for %s", hostname)
 
 	serial, err := rand.Int(rand.Reader, MaxSerialNumber)
 	if err != nil {
