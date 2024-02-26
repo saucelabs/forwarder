@@ -1,4 +1,4 @@
-COMPOSE := docker compose -f docker-compose.yaml
+COMPOSE := docker-compose -f docker-compose.yaml
 
 .PHONY: up
 up:
