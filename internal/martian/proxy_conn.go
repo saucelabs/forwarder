@@ -307,6 +307,7 @@ func (p *proxyConn) tunnel(name string, res *http.Response, crw io.ReadWriteClos
 
 func (p *proxyConn) handle() error {
 	req, err := p.readRequest()
+	p.traceReadRequest(req, err)
 	if err != nil {
 		if errors.Is(err, io.EOF) {
 			return errClose
