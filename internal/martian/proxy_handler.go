@@ -251,6 +251,8 @@ func (p proxyHandler) tunnel(name string, rw http.ResponseWriter, req *http.Requ
 // handleRequest handles a request and writes the response to the given http.ResponseWriter.
 // It returns an error if the request.
 func (p proxyHandler) handleRequest(rw http.ResponseWriter, req *http.Request) {
+	p.traceReadRequest(req, nil)
+
 	ctx := req.Context()
 
 	if req.Method == http.MethodConnect {
