@@ -44,11 +44,25 @@ func asCloseWriter(w io.Writer) (closeWriter, bool) {
 	if v.Kind() != reflect.Struct {
 		return nil, false
 	}
+
+	// Check if any of the fields implement closeWriter.
 	for i := 0; i < v.NumField(); i++ {
 		f := v.Field(i)
 		if f.CanInterface() {
 			if cw, ok := f.Interface().(closeWriter); ok {
 				return cw, true
+			}
+		}
+	}
+
+	// Check recursively...
+	for i := 0; i < v.NumField(); i++ {
+		f := v.Field(i)
+		if f.CanInterface() {
+			if w, ok := f.Interface().(io.Writer); ok {
+				if cw, ok := asCloseWriter(w); ok {
+					return cw, true
+				}
 			}
 		}
 	}

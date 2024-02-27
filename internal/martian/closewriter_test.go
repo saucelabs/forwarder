@@ -106,6 +106,30 @@ func TestAsCloseWriter(t *testing.T) {
 				&nopCloseWriterPtrImpl{},
 			},
 		},
+		{
+			name: "embedded nopCloseWriterImpl",
+			w: struct {
+				io.Writer
+			}{
+				struct {
+					io.Writer
+				}{
+					nopCloseWriterImpl{},
+				},
+			},
+		},
+		{
+			name: "embedded ptr nopCloseWriterImpl",
+			w: struct {
+				io.Writer
+			}{
+				&struct {
+					io.Writer
+				}{
+					nopCloseWriterImpl{},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
