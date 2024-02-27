@@ -7,6 +7,7 @@
 package middleware
 
 import (
+	"io"
 	"net/http"
 	"strconv"
 	"time"
@@ -81,56 +82,96 @@ func NewPrometheus(r prometheus.Registerer, namespace string) *Prometheus {
 
 func (p *Prometheus) Wrap(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		reqSize := computeApproximateRequestSize(r)
+		d := newDelegator(w, nil)
+
+		r.Body = bodyCounter(r.Body)
 
 		start := time.Now()
-		d := newDelegator(w, nil)
 		h.ServeHTTP(d, r)
-		elapsed := float64(time.Since(start)) / float64(time.Second)
+		elapsed := time.Since(start).Seconds()
+
 		lv := [2]string{strconv.Itoa(d.Status()), r.Method}
 
 		p.requestsTotal.WithLabelValues(lv[:]...).Inc()
 		p.requestDuration.WithLabelValues(lv[:]...).Observe(elapsed)
+
+		reqSize := int64(0)
+		if c, ok := r.Body.(counter); ok {
+			reqSize = c.Count()
+		}
+
 		p.requestSize.WithLabelValues(lv[:]...).Observe(float64(reqSize))
 		p.responseSize.WithLabelValues(lv[:]...).Observe(float64(d.Written()))
 	})
 }
 
-func computeApproximateRequestSize(r *http.Request) int {
-	s := 0
-	if r.URL != nil {
-		s = len(r.URL.Path)
-	}
-
-	s += len(r.Method)
-	s += len(r.Proto)
-	for name, values := range r.Header {
-		s += len(name)
-		for _, value := range values {
-			s += len(value)
-		}
-	}
-	s += len(r.Host)
-
-	// N.B. r.Form and r.MultipartForm are assumed to be included in r.URL.
-
-	if r.ContentLength != -1 {
-		s += int(r.ContentLength)
-	}
-	return s
+func (p *Prometheus) ModifyRequest(req *http.Request) error {
+	req.Body = bodyCounter(req.Body)
+	return nil
 }
 
 func (p *Prometheus) ModifyResponse(res *http.Response) error {
+	res.Body = bodyCounter(res.Body)
+	return nil
+}
+
+func (p *Prometheus) WroteResponse(res *http.Response) {
+	elapsed := martian.ContextDuration(res.Request.Context()).Seconds()
+
 	req := res.Request
-
-	elapsed := float64(martian.ContextDuration(req.Context())) / float64(time.Second)
-
-	reqSize := computeApproximateRequestSize(req)
 	lv := [2]string{strconv.Itoa(res.StatusCode), req.Method}
 
 	p.requestsTotal.WithLabelValues(lv[:]...).Inc()
 	p.requestDuration.WithLabelValues(lv[:]...).Observe(elapsed)
+
+	reqSize := int64(0)
+	if c, ok := req.Body.(counter); ok {
+		reqSize = c.Count()
+	}
 	p.requestSize.WithLabelValues(lv[:]...).Observe(float64(reqSize))
 
-	return nil
+	resSize := int64(0)
+	if c, ok := res.Body.(counter); ok {
+		resSize = c.Count()
+	}
+	p.responseSize.WithLabelValues(lv[:]...).Observe(float64(resSize))
+}
+
+type counter interface {
+	Count() int64
+}
+
+func bodyCounter(b io.ReadCloser) io.ReadCloser {
+	if b == nil || b == http.NoBody {
+		return b
+	}
+
+	if _, ok := b.(io.ReadWriteCloser); ok {
+		return &rwcBody{body{ReadCloser: b}}
+	}
+
+	return &body{ReadCloser: b}
+}
+
+type body struct {
+	io.ReadCloser
+	n int64
+}
+
+func (b *body) Count() int64 {
+	return b.n
+}
+
+func (b *body) Read(p []byte) (n int, err error) {
+	n, err = b.ReadCloser.Read(p)
+	b.n += int64(n)
+	return
+}
+
+type rwcBody struct {
+	body
+}
+
+func (b *rwcBody) Write(p []byte) (int, error) {
+	return b.ReadCloser.(io.ReadWriteCloser).Write(p) //nolint:forcetypeassert // We know it's a ReadWriteCloser.
 }

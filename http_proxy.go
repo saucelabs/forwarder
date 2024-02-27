@@ -293,9 +293,10 @@ func (hp *HTTPProxy) configureProxy() error {
 	}
 	hp.proxy.ProxyURL = hp.proxyFunc
 
-	mw := hp.middlewareStack()
+	mw, trace := hp.middlewareStack()
 	hp.proxy.RequestModifier = mw
 	hp.proxy.ResponseModifier = mw
+	hp.proxy.Trace = trace
 
 	return nil
 }
@@ -332,7 +333,9 @@ func (hp *HTTPProxy) pacProxy(r *http.Request) (*url.URL, error) {
 	return proxyURL, nil
 }
 
-func (hp *HTTPProxy) middlewareStack() martian.RequestResponseModifier {
+func (hp *HTTPProxy) middlewareStack() (martian.RequestResponseModifier, *martian.ProxyTrace) {
+	var trace *martian.ProxyTrace
+
 	// Wrap stack in a group so that we can run security checks before the httpspec modifiers.
 	topg := fifo.NewGroup()
 	if hp.config.BasicAuth != nil {
@@ -367,13 +370,21 @@ func (hp *HTTPProxy) middlewareStack() martian.RequestResponseModifier {
 
 	if hp.config.PromRegistry != nil {
 		p := middleware.NewPrometheus(hp.config.PromRegistry, hp.config.PromNamespace)
+		stack.AddRequestModifier(p)
 		stack.AddResponseModifier(p)
+
+		trace = new(martian.ProxyTrace)
+		trace.WroteResponse = func(info martian.WroteResponseInfo) {
+			if info.Res != nil {
+				p.WroteResponse(info.Res)
+			}
+		}
 	}
 
 	fg.AddRequestModifier(martian.RequestModifierFunc(hp.setBasicAuth))
 	fg.AddRequestModifier(martian.RequestModifierFunc(setEmptyUserAgent))
 
-	return topg.ToImmutable()
+	return topg.ToImmutable(), trace
 }
 
 func (hp *HTTPProxy) basicAuth(u *url.Userinfo) martian.RequestModifier {
