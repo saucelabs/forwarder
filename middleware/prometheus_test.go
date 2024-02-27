@@ -8,6 +8,7 @@ package middleware
 
 import (
 	"bytes"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -20,16 +21,15 @@ import (
 
 func TestPrometheusWrap(t *testing.T) {
 	pages := []struct {
-		path         string
-		duration     time.Duration
-		status       int
-		requestSize  float64
-		responseSize float64
+		path     string
+		duration time.Duration
+		status   int
+		size     float64
 	}{
-		{"/1", 10 * time.Millisecond, http.StatusOK, 1.05 * kb, 1.05 * kb},
-		{"/2", 100 * time.Millisecond, http.StatusOK, 5.05 * kb, 5.05 * kb},
-		{"/3", 500 * time.Millisecond, http.StatusOK, 10.05 * kb, 10.05 * kb},
-		{"/4", 1000 * time.Millisecond, http.StatusOK, 100.05 * kb, 100.05 * kb},
+		{"/1", 10 * time.Millisecond, http.StatusOK, 1.05 * kb},
+		{"/2", 100 * time.Millisecond, http.StatusOK, 5.05 * kb},
+		{"/3", 500 * time.Millisecond, http.StatusOK, 10.05 * kb},
+		{"/4", 1000 * time.Millisecond, http.StatusOK, 100.05 * kb},
 	}
 
 	h := http.NewServeMux()
@@ -38,7 +38,13 @@ func TestPrometheusWrap(t *testing.T) {
 		h.HandleFunc(p.path, func(w http.ResponseWriter, r *http.Request) {
 			time.Sleep(p.duration)
 			w.WriteHeader(p.status)
-			w.Write(make([]byte, int(p.responseSize)))
+			n, err := io.Copy(w, r.Body)
+			if err != nil {
+				t.Error(err)
+			}
+			if n != int64(p.size) {
+				t.Errorf("expected %d, got %d", int(p.size), n)
+			}
 		})
 	}
 
@@ -47,7 +53,8 @@ func TestPrometheusWrap(t *testing.T) {
 
 	for i := range pages {
 		p := pages[i]
-		r := httptest.NewRequest(http.MethodGet, p.path, bytes.NewBuffer(make([]byte, int(p.requestSize))))
+		b := bytes.NewBuffer(make([]byte, int(p.size)))
+		r := httptest.NewRequest(http.MethodGet, p.path, b)
 		r.RemoteAddr = "localhost:1234"
 		r.URL.Host = "saucelabs.com"
 		w := httptest.NewRecorder()
