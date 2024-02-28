@@ -374,6 +374,11 @@ func (hp *HTTPProxy) middlewareStack() (martian.RequestResponseModifier, *martia
 		stack.AddResponseModifier(p)
 
 		trace = new(martian.ProxyTrace)
+		trace.ReadRequest = func(info martian.ReadRequestInfo) {
+			if info.Req != nil {
+				p.ReadRequest(info.Req)
+			}
+		}
 		trace.WroteResponse = func(info martian.WroteResponseInfo) {
 			if info.Res != nil {
 				p.WroteResponse(info.Res)
