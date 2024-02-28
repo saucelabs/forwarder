@@ -306,11 +306,6 @@ func (p proxyHandler) handleRequest(rw http.ResponseWriter, req *http.Request) {
 		res.Header.Set("Upgrade", resUpType)
 	}
 
-	if !req.ProtoAtLeast(1, 1) || req.Close || res.Close || p.closing() {
-		log.Debugf(ctx, "received close request: %v", req.RemoteAddr)
-		res.Close = true
-	}
-
 	// deal with 101 Switching Protocols responses: (WebSocket, h2c, etc)
 	if res.StatusCode == http.StatusSwitchingProtocols {
 		p.handleUpgradeResponse(rw, req, res)
@@ -362,9 +357,6 @@ func (p proxyHandler) writeErrorResponse(rw http.ResponseWriter, req *http.Reque
 
 func (p proxyHandler) writeResponse(rw http.ResponseWriter, res *http.Response) {
 	copyHeader(rw.Header(), res.Header)
-	if res.Close {
-		res.Header.Set("Connection", "close")
-	}
 	announcedTrailers := addTrailerHeader(rw, res.Trailer)
 	rw.WriteHeader(res.StatusCode)
 

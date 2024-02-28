@@ -411,9 +411,11 @@ func (p *proxyConn) writeResponse(res *http.Response) error {
 		defer p.conn.SetWriteDeadline(time.Time{})
 	}
 
-	if !req.ProtoAtLeast(1, 1) || req.Close || res.Close || p.closing() {
-		log.Debugf(ctx, "received close request: %v", req.RemoteAddr)
+	if req.Close || p.closing() {
 		res.Close = true
+	}
+	if res.Close {
+		res.Header.Add("Connection", "close")
 	}
 
 	var err error
@@ -448,6 +450,7 @@ func (p *proxyConn) writeResponse(res *http.Response) error {
 	}
 
 	if res.Close {
+		log.Debugf(ctx, "closing connection")
 		return errClose
 	}
 
