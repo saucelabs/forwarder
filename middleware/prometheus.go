@@ -123,7 +123,7 @@ func computeApproximateRequestSize(r *http.Request) int {
 func (p *Prometheus) ModifyResponse(res *http.Response) error {
 	req := res.Request
 
-	elapsed := float64(martian.Duration(req.Context())) / float64(time.Second)
+	elapsed := float64(martian.ContextDuration(req.Context())) / float64(time.Second)
 
 	reqSize := computeApproximateRequestSize(req)
 	lv := [2]string{strconv.Itoa(res.StatusCode), req.Method}

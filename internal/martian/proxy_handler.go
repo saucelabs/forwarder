@@ -230,7 +230,7 @@ func (p proxyHandler) tunnel(name string, rw http.ResponseWriter, req *http.Requ
 	log.Debugf(ctx, "established %s tunnel, proxying traffic", name)
 	<-donec
 	<-donec
-	log.Debugf(ctx, "closed %s tunnel duration=%s", name, Duration(ctx))
+	log.Debugf(ctx, "closed %s tunnel duration=%s", name, ContextDuration(ctx))
 
 	return nil
 }

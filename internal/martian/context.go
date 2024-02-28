@@ -36,7 +36,7 @@ func ContextTraceID(ctx context.Context) string {
 	return ""
 }
 
-func Duration(ctx context.Context) time.Duration {
+func ContextDuration(ctx context.Context) time.Duration {
 	if v := ctx.Value(traceIDContextKey); v != nil {
 		return v.(traceID).Duration()
 	}
