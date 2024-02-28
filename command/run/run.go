@@ -55,7 +55,7 @@ type command struct {
 	goleak              bool
 }
 
-func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
+func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) { //nolint:gocyclo // Glue code
 	if f := c.logConfig.File; f != nil {
 		defer f.Close()
 	}
@@ -119,20 +119,16 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 		}
 	}
 
-	var (
-		pr forwarder.PACResolver
-		rt http.RoundTripper
-	)
-
-	{
-		var err error
-		rt, err = forwarder.NewHTTPTransport(c.httpTransportConfig)
+	var pr forwarder.PACResolver
+	if c.pac != nil {
+		// Disable metrics for receiving PAC file.
+		cfg := *c.httpTransportConfig
+		cfg.PromRegistry = nil
+		rt, err := forwarder.NewHTTPTransport(&cfg)
 		if err != nil {
 			return err
 		}
-	}
 
-	if c.pac != nil {
 		script, err := forwarder.ReadURLString(c.pac, rt)
 		if err != nil {
 			return fmt.Errorf("read PAC file: %w", err)
@@ -213,6 +209,12 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 
 	g := runctx.NewGroup()
 	{
+		rt, err := forwarder.NewHTTPTransport(c.httpTransportConfig)
+		if err != nil {
+			return err
+		}
+		rt.DialContext = martianlog.LoggingDialContext(rt.DialContext)
+
 		p, err := forwarder.NewHTTPProxy(c.httpProxyConfig, pr, cm, rt, logger.Named("proxy"))
 		if err != nil {
 			return err
