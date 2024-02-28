@@ -61,7 +61,7 @@ func (l Logger) WrapRoundTripper(rt http.RoundTripper) http.RoundTripper {
 }
 
 func (l Logger) ModifyResponse(res *http.Response) error {
-	l(makeLogEntry(res.Request, res, martian.Duration(res.Request.Context())))
+	l(makeLogEntry(res.Request, res, martian.ContextDuration(res.Request.Context())))
 
 	return nil
 }

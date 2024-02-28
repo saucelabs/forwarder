@@ -60,7 +60,7 @@ func (l TraceIDPrependingLogger) Errorf(ctx context.Context, format string, args
 var _ log.Logger = TraceIDPrependingLogger{}
 
 func (l TraceIDPrependingLogger) format(ctx context.Context, format string) string {
-	if id := TraceID(ctx); id != "" {
+	if id := ContextTraceID(ctx); id != "" {
 		return fmt.Sprintf("[%s] %s", id, format)
 	}
 	return format

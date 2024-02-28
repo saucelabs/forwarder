@@ -86,7 +86,7 @@ func (p *Proxy) Handler() http.Handler {
 }
 
 func (p proxyHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
-	outreq := req.Clone(WithTraceID(p.BaseContex, newTraceID(req.Header.Get(p.RequestIDHeader))))
+	outreq := req.Clone(withTraceID(p.BaseContex, newTraceID(req.Header.Get(p.RequestIDHeader))))
 	if req.ContentLength == 0 {
 		outreq.Body = http.NoBody
 	}
@@ -230,7 +230,7 @@ func (p proxyHandler) tunnel(name string, rw http.ResponseWriter, req *http.Requ
 	log.Debugf(ctx, "established %s tunnel, proxying traffic", name)
 	<-donec
 	<-donec
-	log.Debugf(ctx, "closed %s tunnel duration=%s", name, Duration(ctx))
+	log.Debugf(ctx, "closed %s tunnel duration=%s", name, ContextDuration(ctx))
 
 	return nil
 }

@@ -95,7 +95,7 @@ func (p *proxyConn) readRequest() (*http.Request, error) {
 	if p.secure {
 		req.TLS = &p.cs
 	}
-	req = req.WithContext(WithTraceID(p.BaseContex, newTraceID(req.Header.Get(p.RequestIDHeader))))
+	req = req.WithContext(withTraceID(p.BaseContex, newTraceID(req.Header.Get(p.RequestIDHeader))))
 
 	// Adjust the read deadline if necessary.
 	if !hdrDeadline.Equal(wholeReqDeadline) {
@@ -292,7 +292,7 @@ func (p *proxyConn) tunnel(name string, res *http.Response, crw io.ReadWriteClos
 	log.Debugf(ctx, "switched protocols, proxying %s traffic", name)
 	<-donec
 	<-donec
-	log.Debugf(ctx, "closed %s tunnel duration=%s", name, Duration(ctx))
+	log.Debugf(ctx, "closed %s tunnel duration=%s", name, ContextDuration(ctx))
 
 	return nil
 }

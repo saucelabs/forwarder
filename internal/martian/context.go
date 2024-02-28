@@ -25,18 +25,18 @@ const (
 	traceIDContextKey contextKey = iota
 )
 
-func WithTraceID(ctx context.Context, id traceID) context.Context {
+func withTraceID(ctx context.Context, id traceID) context.Context {
 	return context.WithValue(ctx, traceIDContextKey, id)
 }
 
-func TraceID(ctx context.Context) string {
+func ContextTraceID(ctx context.Context) string {
 	if v := ctx.Value(traceIDContextKey); v != nil {
 		return v.(traceID).id
 	}
 	return ""
 }
 
-func Duration(ctx context.Context) time.Duration {
+func ContextDuration(ctx context.Context) time.Duration {
 	if v := ctx.Value(traceIDContextKey); v != nil {
 		return v.(traceID).Duration()
 	}
