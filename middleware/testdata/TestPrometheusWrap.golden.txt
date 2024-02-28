@@ -29,6 +29,9 @@ test_http_request_size_bytes_bucket{code="200",method="GET",le="1.048576e+07"} 4
 test_http_request_size_bytes_bucket{code="200",method="GET",le="+Inf"} 4
 test_http_request_size_bytes_sum{code="200",method="GET"} 0
 test_http_request_size_bytes_count{code="200",method="GET"} 4
+# HELP test_http_requests_in_flight Current number of HTTP requests being served.
+# TYPE test_http_requests_in_flight gauge
+test_http_requests_in_flight{method="GET"} 0
 # HELP test_http_requests_total Total number of HTTP requests processed.
 # TYPE test_http_requests_total counter
 test_http_requests_total{code="200",method="GET"} 4

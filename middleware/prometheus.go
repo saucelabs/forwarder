@@ -40,10 +40,11 @@ var sizeBuckets = []float64{ //nolint:gochecknoglobals // this is a global varia
 // Unlike the promhttp.InstrumentHandler* chaining, this middleware creates only one delegator per request.
 // It partitions the metrics by HTTP status code, HTTP method, destination host name and source IP.
 type Prometheus struct {
-	requestsTotal   *prometheus.CounterVec
-	requestDuration *prometheus.HistogramVec
-	requestSize     *prometheus.HistogramVec
-	responseSize    *prometheus.HistogramVec
+	requestsInFlight *prometheus.GaugeVec
+	requestsTotal    *prometheus.CounterVec
+	requestDuration  *prometheus.HistogramVec
+	requestSize      *prometheus.HistogramVec
+	responseSize     *prometheus.HistogramVec
 }
 
 func NewPrometheus(r prometheus.Registerer, namespace string) *Prometheus {
@@ -54,6 +55,11 @@ func NewPrometheus(r prometheus.Registerer, namespace string) *Prometheus {
 	l := []string{"code", "method"}
 
 	return &Prometheus{
+		requestsInFlight: f.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: namespace,
+			Name:      "http_requests_in_flight",
+			Help:      "Current number of HTTP requests being served.",
+		}, []string{"method"}),
 		requestsTotal: f.NewCounterVec(prometheus.CounterOpts{
 			Namespace: namespace,
 			Name:      "http_requests_total",
@@ -82,6 +88,8 @@ func NewPrometheus(r prometheus.Registerer, namespace string) *Prometheus {
 
 func (p *Prometheus) Wrap(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		p.requestsInFlight.WithLabelValues(r.Method).Inc()
+
 		d := newDelegator(w, nil)
 
 		r.Body = bodyCounter(r.Body)
@@ -100,6 +108,7 @@ func (p *Prometheus) Wrap(h http.Handler) http.Handler {
 			reqSize = c.Count()
 		}
 
+		p.requestsInFlight.WithLabelValues(r.Method).Dec()
 		p.requestSize.WithLabelValues(lv[:]...).Observe(float64(reqSize))
 		p.responseSize.WithLabelValues(lv[:]...).Observe(float64(d.Written()))
 	})
@@ -115,12 +124,17 @@ func (p *Prometheus) ModifyResponse(res *http.Response) error {
 	return nil
 }
 
+func (p *Prometheus) ReadRequest(req *http.Request) {
+	p.requestsInFlight.WithLabelValues(req.Method).Inc()
+}
+
 func (p *Prometheus) WroteResponse(res *http.Response) {
 	elapsed := martian.ContextDuration(res.Request.Context()).Seconds()
 
 	req := res.Request
 	lv := [2]string{strconv.Itoa(res.StatusCode), req.Method}
 
+	p.requestsInFlight.WithLabelValues(req.Method).Dec()
 	p.requestsTotal.WithLabelValues(lv[:]...).Inc()
 	p.requestDuration.WithLabelValues(lv[:]...).Observe(elapsed)
 
