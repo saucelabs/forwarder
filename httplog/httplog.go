@@ -167,7 +167,7 @@ func (w *logWriter) ShortURLLine(e middleware.LogEntry) {
 }
 
 func (w *logWriter) trace(e middleware.LogEntry) {
-	if trace := martian.TraceID(e.Request.Context()); trace != "" {
+	if trace := martian.ContextTraceID(e.Request.Context()); trace != "" {
 		fmt.Fprintf(&w.b, "[%s] ", trace)
 	}
 }
