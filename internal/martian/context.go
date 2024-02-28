@@ -25,7 +25,7 @@ const (
 	traceIDContextKey contextKey = iota
 )
 
-func WithTraceID(ctx context.Context, id traceID) context.Context {
+func withTraceID(ctx context.Context, id traceID) context.Context {
 	return context.WithValue(ctx, traceIDContextKey, id)
 }
 
