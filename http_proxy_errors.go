@@ -13,6 +13,9 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"os"
+	"reflect"
+	"runtime"
 
 	"github.com/saucelabs/forwarder/internal/martian"
 	"github.com/saucelabs/forwarder/internal/martian/proxyutil"
@@ -34,6 +37,7 @@ var (
 
 func (hp *HTTPProxy) errorResponse(req *http.Request, err error) *http.Response {
 	handlers := []errorHandler{
+		handleWindowsNetError,
 		handleNetError,
 		handleTLSRecordHeader,
 		handleTLSCertificateError,
@@ -82,6 +86,39 @@ func (hp *HTTPProxy) errorResponse(req *http.Request, err error) *http.Response 
 }
 
 type errorHandler func(*http.Request, error) (int, string, string)
+
+func handleWindowsNetError(req *http.Request, err error) (code int, msg, label string) {
+	if runtime.GOOS != "windows" {
+		return
+	}
+
+	var se *os.SyscallError
+	if errors.As(err, &se) {
+		if se.Syscall == "wsarecv" || se.Syscall == "wsasend" {
+			const WSAENETUNREACH = 10051
+			if n := errno(se.Err); n == WSAENETUNREACH {
+				code = http.StatusBadGateway
+				msg = fmt.Sprintf("failed to connect to remote host %q", req.Host)
+
+				label = "net_"
+				if se.Syscall == "wsarecv" {
+					label += "read"
+				} else {
+					label += "write"
+				}
+			}
+		}
+	}
+
+	return
+}
+
+func errno(v error) uintptr {
+	if rv := reflect.ValueOf(v); rv.Kind() == reflect.Uintptr {
+		return uintptr(rv.Uint())
+	}
+	return 0
+}
 
 func handleNetError(req *http.Request, err error) (code int, msg, label string) {
 	var netErr *net.OpError
