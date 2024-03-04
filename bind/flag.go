@@ -153,7 +153,7 @@ func MITMConfig(fs *pflag.FlagSet, mitm *bool, cfg *forwarder.MITMConfig) {
 		"It only works with HTTPS requests, HTTP/2 is not supported. "+
 		"MITM is enabled by default when the --mitm-cacert-file flag is set. "+
 		"If the CA certificate is not provided MITM uses a generated CA certificate. "+
-		"The CA certificate used can be retrieved from the API server .")
+		"The CA certificate used can be retrieved from the API server. ")
 
 	fs.Var(anyflag.NewValueWithRedact[string](cfg.CACertFile, &cfg.CACertFile, func(val string) (string, error) { return val, nil }, RedactBase64),
 		"mitm-cacert-file", "<path or base64>"+
