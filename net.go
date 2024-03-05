@@ -38,7 +38,7 @@ type DialConfig struct {
 
 func DefaultDialConfig() *DialConfig {
 	return &DialConfig{
-		DialTimeout: 10 * time.Second,
+		DialTimeout: 30 * time.Second,
 		KeepAlive:   true,
 	}
 }
