@@ -77,7 +77,7 @@ func dumpPrometheusMetrics(t *testing.T, p prometheus.Gatherer, filters ...func(
 		t.Fatal(err)
 	}
 	var buf bytes.Buffer
-	enc := expfmt.NewEncoder(&buf, expfmt.FmtText)
+	enc := expfmt.NewEncoder(&buf, expfmt.NewFormat(expfmt.TypeTextPlain))
 	for _, mf := range got {
 		ok := true
 		for _, f := range filters {
