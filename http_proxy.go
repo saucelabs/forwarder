@@ -26,7 +26,6 @@ import (
 	"github.com/saucelabs/forwarder/log"
 	"github.com/saucelabs/forwarder/middleware"
 	"github.com/saucelabs/forwarder/pac"
-	"github.com/saucelabs/forwarder/ruleset"
 )
 
 type ProxyLocalhostMode string
@@ -81,12 +80,12 @@ type HTTPProxyConfig struct {
 	HTTPServerConfig
 	Name                   string
 	MITM                   *MITMConfig
-	MITMDomains            *ruleset.RegexpMatcher
+	MITMDomains            Matcher
 	ProxyLocalhost         ProxyLocalhostMode
 	UpstreamProxy          *url.URL
 	UpstreamProxyFunc      ProxyFunc
-	DenyDomains            *ruleset.RegexpMatcher
-	DirectDomains          *ruleset.RegexpMatcher
+	DenyDomains            Matcher
+	DirectDomains          Matcher
 	RequestIDHeader        string
 	RequestModifiers       []RequestModifier
 	ResponseModifiers      []ResponseModifier
@@ -414,7 +413,7 @@ func (hp *HTTPProxy) denyLocalhost() martian.RequestModifier {
 	})
 }
 
-func (hp *HTTPProxy) denyDomains(r *ruleset.RegexpMatcher) martian.RequestModifier {
+func (hp *HTTPProxy) denyDomains(r Matcher) martian.RequestModifier {
 	return martian.RequestModifierFunc(func(req *http.Request) error {
 		if r.Match(req.URL.Hostname()) {
 			return ErrProxyDenied
