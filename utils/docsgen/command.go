@@ -4,7 +4,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package main
+package docsgen
 
 import (
 	"fmt"
@@ -20,7 +20,7 @@ import (
 
 var cmdIndex map[string]int
 
-func writeCommandIndex(cg templates.CommandGroups) error {
+func WriteCommandIndex(cg templates.CommandGroups, cliDir, title string) error {
 	cmdIndex = make(map[string]int)
 
 	f, err := os.Create(path.Join(cliDir, "toc.md"))
@@ -46,7 +46,7 @@ func writeCommandIndex(cg templates.CommandGroups) error {
 
 	fmt.Fprintf(f, "---\nbookHidden: true\n---\n\n")
 
-	fmt.Fprint(f, "# Forwarder CLI\n\n")
+	fmt.Fprintf(f, "# %s CLI\n\n", title)
 	for _, item := range items {
 		fmt.Fprintf(f, "%s\n", item)
 	}
@@ -56,9 +56,9 @@ func writeCommandIndex(cg templates.CommandGroups) error {
 
 const cliWeight = 100
 
-func writeCommandDoc(cmd *cobra.Command) error {
+func WriteCommandDoc(cmd *cobra.Command, cliDir string) error {
 	for _, cmd := range cmd.Commands() {
-		if err := writeCommandDoc(cmd); err != nil {
+		if err := WriteCommandDoc(cmd, cliDir); err != nil {
 			return err
 		}
 	}
@@ -98,9 +98,9 @@ func configFileNote(cmd *cobra.Command) string {
 	)
 }
 
-func writeDefaultConfig(cmd *cobra.Command) error {
+func WriteDefaultConfig(cmd *cobra.Command, cfgDir string) error {
 	for _, cmd := range cmd.Commands() {
-		if err := writeDefaultConfig(cmd); err != nil {
+		if err := WriteDefaultConfig(cmd, cfgDir); err != nil {
 			return err
 		}
 	}

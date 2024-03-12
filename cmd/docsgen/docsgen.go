@@ -14,6 +14,7 @@ import (
 	"path"
 
 	"github.com/saucelabs/forwarder/command/forwarder"
+	"github.com/saucelabs/forwarder/utils/docsgen"
 	"github.com/spf13/cobra"
 )
 
@@ -40,15 +41,15 @@ func main() {
 	cg.Add(&cobra.Command{
 		Use: "forwarder",
 	})
-	if err := writeCommandIndex(cg); err != nil {
+	if err := docsgen.WriteCommandIndex(cg, cliDir, "Forwarder"); err != nil {
 		log.Fatal(err)
 	}
 
-	if err := writeCommandDoc(forwarder.Command()); err != nil {
+	if err := docsgen.WriteCommandDoc(forwarder.Command(), cliDir); err != nil {
 		log.Fatal(err)
 	}
 
-	if err := writeDefaultConfig(forwarder.Command()); err != nil {
+	if err := docsgen.WriteDefaultConfig(forwarder.Command(), cfgDir); err != nil {
 		log.Fatal(err)
 	}
 
