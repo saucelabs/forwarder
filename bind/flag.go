@@ -55,10 +55,10 @@ func DNSConfig(fs *pflag.FlagSet, cfg *osdns.Config) {
 
 func PAC(fs *pflag.FlagSet, pac **url.URL) {
 	fs.VarP(anyflag.NewValue[*url.URL](*pac, pac, fileurl.ParseFilePathOrURL),
-		"pac", "p", "<path or URL>"+
+		"pac", "p", "`<path or URL>`"+
 			"Proxy Auto-Configuration file to use for upstream proxy selection. "+
 			"It can be a local file or a URL, you can also use '-' to read from stdin. "+
-			"The data URI scheme is supported, the format is data:base64,<encoded data>. ")
+			"The data URI scheme is supported, the format is `data:base64,<encoded data>`. ")
 }
 
 func ProxyHeaders(fs *pflag.FlagSet, headers *[]header.Header) {
