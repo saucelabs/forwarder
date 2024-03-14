@@ -30,6 +30,14 @@ If the host is empty, the server will listen on all available interfaces.
 
 Basic authentication credentials to protect the server.
 
+### `--idle-timeout` {#idle-timeout}
+
+* Environment variable: `FORWARDER_IDLE_TIMEOUT`
+* Value Format: `<duration>`
+* Default value: `1h0m0s`
+
+The maximum amount of time to wait for the next request before closing connection.
+
 ### `--protocol` {#protocol}
 
 * Environment variable: `FORWARDER_PROTOCOL`
@@ -54,6 +62,15 @@ The amount of time allowed to read request headers.
 
 TLS certificate to use if the server protocol is https or h2.
 Can be a path to a file or "data:" followed by base64 encoded certificate.
+
+### `--tls-handshake-timeout` {#tls-handshake-timeout}
+
+* Environment variable: `FORWARDER_TLS_HANDSHAKE_TIMEOUT`
+* Value Format: `<duration>`
+* Default value: `0s`
+
+The maximum amount of time to wait for a TLS handshake before closing connection.
+Zero means no limit.
 
 ### `--tls-key-file` {#tls-key-file}
 
@@ -80,6 +97,14 @@ If the host is empty, the server will listen on all available interfaces.
 * Value Format: `<username[:password]>`
 
 Basic authentication credentials to protect the server.
+
+### `--api-idle-timeout` {#api-idle-timeout}
+
+* Environment variable: `FORWARDER_API_IDLE_TIMEOUT`
+* Value Format: `<duration>`
+* Default value: `1h0m0s`
+
+The maximum amount of time to wait for the next request before closing connection.
 
 ### `--api-read-header-timeout` {#api-read-header-timeout}
 

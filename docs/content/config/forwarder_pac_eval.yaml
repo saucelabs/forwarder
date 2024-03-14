@@ -4,7 +4,7 @@
 #
 # Proxy Auto-Configuration file to use for upstream proxy selection. It can be a
 # local file or a URL, you can also use '-' to read from stdin. The data URI
-# scheme is supported, the format is data:base64,<encoded data>.
+# scheme is supported, the format is `data:base64,<encoded data>`.
 #pac: file://pac.js
 
 # --- DNS options ---
@@ -44,7 +44,7 @@
 # The maximum amount of time a dial will wait for a connect to complete. With or
 # without a timeout, the operating system may impose its own earlier timeout.
 # For instance, TCP timeouts are often around 3 minutes. 
-#http-dial-timeout: 10s
+#http-dial-timeout: 30s
 
 # http-idle-conn-timeout <duration>
 #

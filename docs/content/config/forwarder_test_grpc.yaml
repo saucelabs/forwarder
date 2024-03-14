@@ -6,11 +6,22 @@
 # available interfaces.
 #address: localhost:1443
 
+# plain-text <value>
+#
+# Run in plain-text mode i.e. without TLS.
+#plain-text: false
+
 # tls-cert-file <path or base64>
 #
 # TLS certificate to use if the server protocol is https or h2. Can be a path to
 # a file or "data:" followed by base64 encoded certificate.
 #tls-cert-file: 
+
+# tls-handshake-timeout <duration>
+#
+# The maximum amount of time to wait for a TLS handshake before closing
+# connection. Zero means no limit.
+#tls-handshake-timeout: 0s
 
 # tls-key-file <path or base64>
 #

@@ -36,7 +36,7 @@ You can generate a config file by running `forwarder pac eval config-file` comma
 
 Proxy Auto-Configuration file to use for upstream proxy selection.
 It can be a local file or a URL, you can also use '-' to read from stdin.
-The data URI scheme is supported, the format is data:base64,<encoded data>.
+The data URI scheme is supported, the format is `data:base64,<encoded data>`.
 
 ## DNS options
 
@@ -86,7 +86,7 @@ Use this flag multiple times to specify multiple CA certificate files.
 
 * Environment variable: `FORWARDER_HTTP_DIAL_TIMEOUT`
 * Value Format: `<duration>`
-* Default value: `10s`
+* Default value: `30s`
 
 The maximum amount of time a dial will wait for a connect to complete.
 With or without a timeout, the operating system may impose its own earlier timeout.
