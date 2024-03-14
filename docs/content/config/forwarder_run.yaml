@@ -18,6 +18,12 @@
 # specified multiple times to add multiple credentials.
 #credentials: 
 
+# idle-timeout <duration>
+#
+# The maximum amount of time to wait for the next request before closing
+# connection.
+#idle-timeout: 1h0m0s
+
 # name <string>
 #
 # Name of this proxy instance. This value is used in the Via header in requests.
@@ -47,6 +53,12 @@
 # TLS certificate to use if the server protocol is https or h2. Can be a path to
 # a file or "data:" followed by base64 encoded certificate.
 #tls-cert-file: 
+
+# tls-handshake-timeout <duration>
+#
+# The maximum amount of time to wait for a TLS handshake before closing
+# connection. Zero means no limit.
+#tls-handshake-timeout: 10s
 
 # tls-key-file <path or base64>
 #
@@ -89,7 +101,7 @@
 #
 # Proxy Auto-Configuration file to use for upstream proxy selection. It can be a
 # local file or a URL, you can also use '-' to read from stdin. The data URI
-# scheme is supported, the format is data:base64,<encoded data>.
+# scheme is supported, the format is `data:base64,<encoded data>`.
 #pac: 
 
 # proxy [protocol://]host[:port]
@@ -131,7 +143,7 @@
 # HTTP/2 is not supported. MITM is enabled by default when the
 # --mitm-cacert-file flag is set. If the CA certificate is not provided MITM
 # uses a generated CA certificate. The CA certificate used can be retrieved from
-# the API server .
+# the API server. 
 #mitm: false
 
 # mitm-cacert-file <path or base64>
@@ -155,7 +167,7 @@
 # mitm-org <name>
 #
 # Organization name to use in the generated MITM certificates.
-#mitm-org: Sauce Labs Inc.
+#mitm-org: Forwarder Proxy MITM
 
 # mitm-validity <duration>
 #
@@ -199,7 +211,7 @@
 # The maximum amount of time a dial will wait for a connect to complete. With or
 # without a timeout, the operating system may impose its own earlier timeout.
 # For instance, TCP timeouts are often around 3 minutes. 
-#http-dial-timeout: 10s
+#http-dial-timeout: 30s
 
 # http-idle-conn-timeout <duration>
 #
@@ -238,6 +250,12 @@
 #
 # Basic authentication credentials to protect the server.
 #api-basic-auth: 
+
+# api-idle-timeout <duration>
+#
+# The maximum amount of time to wait for the next request before closing
+# connection.
+#api-idle-timeout: 1h0m0s
 
 # api-read-header-timeout <duration>
 #

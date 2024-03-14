@@ -58,6 +58,14 @@ Site or upstream proxy basic authentication credentials.
 The host and port can be set to "*" to match all hosts and ports respectively.
 The flag can be specified multiple times to add multiple credentials.
 
+### `--idle-timeout` {#idle-timeout}
+
+* Environment variable: `FORWARDER_IDLE_TIMEOUT`
+* Value Format: `<duration>`
+* Default value: `1h0m0s`
+
+The maximum amount of time to wait for the next request before closing connection.
+
 ### `--name` {#name}
 
 * Environment variable: `FORWARDER_NAME`
@@ -103,6 +111,15 @@ Accepts binary format (e.g.
 
 TLS certificate to use if the server protocol is https or h2.
 Can be a path to a file or "data:" followed by base64 encoded certificate.
+
+### `--tls-handshake-timeout` {#tls-handshake-timeout}
+
+* Environment variable: `FORWARDER_TLS_HANDSHAKE_TIMEOUT`
+* Value Format: `<duration>`
+* Default value: `10s`
+
+The maximum amount of time to wait for a TLS handshake before closing connection.
+Zero means no limit.
 
 ### `--tls-key-file` {#tls-key-file}
 
@@ -161,7 +178,7 @@ Example: -H "Host: example.com" -H "-User-Agent" -H "-X-*".
 
 Proxy Auto-Configuration file to use for upstream proxy selection.
 It can be a local file or a URL, you can also use '-' to read from stdin.
-The data URI scheme is supported, the format is data:base64,<encoded data>.
+The data URI scheme is supported, the format is `data:base64,<encoded data>`.
 
 ### `-x, --proxy` {#proxy}
 
@@ -215,7 +232,8 @@ Enable Man-in-the-Middle (MITM) mode.
 It only works with HTTPS requests, HTTP/2 is not supported.
 MITM is enabled by default when the --mitm-cacert-file flag is set.
 If the CA certificate is not provided MITM uses a generated CA certificate.
-The CA certificate used can be retrieved from the API server .
+The CA certificate used can be retrieved from the API server.
+
 
 ### `--mitm-cacert-file` {#mitm-cacert-file}
 
@@ -245,7 +263,7 @@ Prefix domains with '-' to exclude requests to certain domains from being MITMed
 
 * Environment variable: `FORWARDER_MITM_ORG`
 * Value Format: `<name>`
-* Default value: `Sauce Labs Inc.`
+* Default value: `Forwarder Proxy MITM`
 
 Organization name to use in the generated MITM certificates.
 
@@ -306,7 +324,7 @@ Use this flag multiple times to specify multiple CA certificate files.
 
 * Environment variable: `FORWARDER_HTTP_DIAL_TIMEOUT`
 * Value Format: `<duration>`
-* Default value: `10s`
+* Default value: `30s`
 
 The maximum amount of time a dial will wait for a connect to complete.
 With or without a timeout, the operating system may impose its own earlier timeout.
@@ -369,6 +387,14 @@ If the host is empty, the server will listen on all available interfaces.
 * Value Format: `<username[:password]>`
 
 Basic authentication credentials to protect the server.
+
+### `--api-idle-timeout` {#api-idle-timeout}
+
+* Environment variable: `FORWARDER_API_IDLE_TIMEOUT`
+* Value Format: `<duration>`
+* Default value: `1h0m0s`
+
+The maximum amount of time to wait for the next request before closing connection.
 
 ### `--api-read-header-timeout` {#api-read-header-timeout}
 

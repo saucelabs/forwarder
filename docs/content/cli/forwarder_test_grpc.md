@@ -6,7 +6,7 @@ title: forwarder test grpc
 
 Usage: `forwarder test grpc [--address <host:port>] [flags]`
 
-Start HTTP/2 gRPC server for testing
+Start gRPC server for testing
 
 **Note:** You can also specify the options as YAML, JSON or TOML file using `--config-file` flag.
 You can generate a config file by running `forwarder test grpc config-file` command.
@@ -23,6 +23,15 @@ You can generate a config file by running `forwarder test grpc config-file` comm
 Address to listen on.
 If the host is empty, the server will listen on all available interfaces.
 
+### `--plain-text` {#plain-text}
+
+* Environment variable: `FORWARDER_PLAIN_TEXT`
+* Value Format: `<value>`
+* Default value: `false`
+
+Run in plain-text mode i.e.
+without TLS.
+
 ### `--tls-cert-file` {#tls-cert-file}
 
 * Environment variable: `FORWARDER_TLS_CERT_FILE`
@@ -30,6 +39,15 @@ If the host is empty, the server will listen on all available interfaces.
 
 TLS certificate to use if the server protocol is https or h2.
 Can be a path to a file or "data:" followed by base64 encoded certificate.
+
+### `--tls-handshake-timeout` {#tls-handshake-timeout}
+
+* Environment variable: `FORWARDER_TLS_HANDSHAKE_TIMEOUT`
+* Value Format: `<duration>`
+* Default value: `0s`
+
+The maximum amount of time to wait for a TLS handshake before closing connection.
+Zero means no limit.
 
 ### `--tls-key-file` {#tls-key-file}
 
