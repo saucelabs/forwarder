@@ -76,6 +76,7 @@ func WriteCommandDoc(cmd *cobra.Command, cliDir string) error {
 		}
 
 		fmt.Fprintf(f, "---\n")
+		fmt.Fprintf(f, "id: %s\n", cmd.Name())
 		fmt.Fprintf(f, "title: %s\n", cobrautil.FullCommandName(cmd))
 		if idx, ok := cmdIndex[cobrautil.FullCommandName(cmd)]; ok {
 			fmt.Fprintf(f, "weight: %d\n", cliWeight+idx)
