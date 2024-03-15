@@ -1,4 +1,5 @@
 ---
+id: server
 title: forwarder pac server
 weight: 103
 ---
