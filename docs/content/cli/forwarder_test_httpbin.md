@@ -1,4 +1,5 @@
 ---
+id: httpbin
 title: forwarder test httpbin
 ---
 
