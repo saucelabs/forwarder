@@ -18,7 +18,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var cmdIndex map[string]int
+var (
+	FlagGroups = forwarder.FlagGroups()
+	EnvPrefix  = forwarder.EnvPrefix
+
+	cmdIndex map[string]int
+)
 
 func WriteCommandIndex(cg templates.CommandGroups, cliDir, title string) error {
 	cmdIndex = make(map[string]int)
@@ -83,7 +88,7 @@ func WriteCommandDoc(cmd *cobra.Command, cliDir string) error {
 		}
 		fmt.Fprintf(f, "---\n\n")
 
-		cobrautil.WriteMarkdownDoc(f, forwarder.FlagGroups(), forwarder.EnvPrefix, cmd)
+		cobrautil.WriteMarkdownDoc(f, FlagGroups, EnvPrefix, cmd)
 
 		return f.Close()
 	}
@@ -112,7 +117,7 @@ func WriteDefaultConfig(cmd *cobra.Command, cfgDir string) error {
 			return err
 		}
 
-		cobrautil.WriteConfigFile(f, forwarder.FlagGroups(), forwarder.ConfigFileFlagName, cmd.Flags())
+		cobrautil.WriteConfigFile(f, FlagGroups, forwarder.ConfigFileFlagName, cmd.Flags())
 
 		return f.Close()
 	}
