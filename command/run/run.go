@@ -7,6 +7,7 @@
 package run
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -30,6 +31,7 @@ import (
 	"github.com/saucelabs/forwarder/utils/cobrautil"
 	"github.com/saucelabs/forwarder/utils/httphandler"
 	"github.com/saucelabs/forwarder/utils/osdns"
+	"github.com/saucelabs/forwarder/utils/promutil"
 	"github.com/spf13/cobra"
 	"go.uber.org/goleak"
 	"go.uber.org/multierr"
@@ -53,9 +55,18 @@ type command struct {
 	apiServerConfig     *forwarder.HTTPServerConfig
 	logConfig           *log.Config
 	goleak              bool
+	descMetrics         bool
 }
 
 func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) { //nolint:gocyclo // Glue code
+	if c.descMetrics {
+		dn, err := os.OpenFile(os.DevNull, os.O_WRONLY, 0)
+		if err != nil {
+			return fmt.Errorf("open %s: %w", os.DevNull, err)
+		}
+		c.logConfig.File = dn
+	}
+
 	if f := c.logConfig.File; f != nil {
 		defer f.Close()
 	}
@@ -268,6 +279,11 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) { //nolint
 		}()
 	}
 
+	if c.descMetrics {
+		return json.NewEncoder(cmd.ErrOrStderr()).
+			Encode(promutil.DescribePrometheusMetrics(c.promReg))
+	}
+
 	return g.Run()
 }
 
@@ -393,7 +409,12 @@ func Command() *cobra.Command {
 	cmd.MarkFlagsMutuallyExclusive("proxy", "pac")
 
 	fs.BoolVar(&c.goleak, "goleak", false, "enable goleak")
-	bind.MarkFlagHidden(cmd, "goleak")
+	fs.BoolVar(&c.descMetrics, "desc-metrics", false, "describe Prometheus metrics as JSON and exit")
+
+	bind.MarkFlagHidden(cmd,
+		"goleak",
+		"desc-metrics",
+	)
 
 	return cmd
 }
