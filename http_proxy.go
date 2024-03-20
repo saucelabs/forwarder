@@ -94,6 +94,7 @@ type HTTPProxyConfig struct {
 	ConnectTimeout         time.Duration
 	ReadLimit              SizeSuffix
 	WriteLimit             SizeSuffix
+	PromHTTPOpts           []middleware.PrometheusOpt
 
 	// TestingHTTPHandler uses Martian's [http.Handler] implementation
 	// over [http.Server] instead of the default TCP server.
@@ -368,7 +369,7 @@ func (hp *HTTPProxy) middlewareStack() (martian.RequestResponseModifier, *martia
 	}
 
 	if hp.config.PromRegistry != nil {
-		p := middleware.NewPrometheus(hp.config.PromRegistry, hp.config.PromNamespace)
+		p := middleware.NewPrometheus(hp.config.PromRegistry, hp.config.PromNamespace, hp.config.PromHTTPOpts...)
 		stack.AddRequestModifier(p)
 		stack.AddResponseModifier(p)
 
