@@ -8,7 +8,6 @@ package golden
 
 import (
 	"bytes"
-	"io"
 	"net/http"
 	"os"
 	"runtime"
@@ -19,7 +18,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
-	"github.com/prometheus/common/expfmt"
+	"github.com/saucelabs/forwarder/utils/promutil"
 )
 
 // WaitMetrics is the time to wait for the metrics to be updated.
@@ -41,7 +40,10 @@ func DiffPrometheusMetrics(t *testing.T, p prometheus.Gatherer, filter ...func(*
 		golden = bytes.ReplaceAll(golden, []byte{'\r'}, nil)
 	}
 
-	got := dumpPrometheusMetrics(t, p, filter...)
+	got, err := promutil.DumpPrometheusMetrics(p, filter...)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	if diff := cmp.Diff(string(golden), got); diff != "" {
 		t.Errorf("unexpected metrics (-want +got):\n%s", diff)
@@ -61,60 +63,10 @@ func DiffPrometheusMetricsHTTP(t *testing.T, url string, filter ...func(*dto.Met
 	}
 	defer res.Body.Close()
 
-	g, err := parseMetricFamilies(res.Body)
+	g, err := promutil.ParseMetricFamilies(res.Body)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	DiffPrometheusMetrics(t, g, filter...)
-}
-
-func dumpPrometheusMetrics(t *testing.T, p prometheus.Gatherer, filters ...func(*dto.MetricFamily) bool) string {
-	t.Helper()
-
-	got, err := p.Gather()
-	if err != nil {
-		t.Fatal(err)
-	}
-	var buf bytes.Buffer
-	enc := expfmt.NewEncoder(&buf, expfmt.NewFormat(expfmt.TypeTextPlain))
-	for _, mf := range got {
-		ok := true
-		for _, f := range filters {
-			if !f(mf) {
-				ok = false
-				break
-			}
-		}
-		if !ok {
-			continue
-		}
-
-		if err := enc.Encode(mf); err != nil {
-			t.Fatal(err)
-		}
-	}
-	return buf.String()
-}
-
-func parseMetricFamilies(reader io.Reader) (*gatherer, error) {
-	var parser expfmt.TextParser
-	mf, err := parser.TextToMetricFamilies(reader)
-	if err != nil {
-		return nil, err
-	}
-
-	return &gatherer{mf: mf}, nil
-}
-
-type gatherer struct {
-	mf map[string]*dto.MetricFamily
-}
-
-func (g *gatherer) Gather() ([]*dto.MetricFamily, error) {
-	res := make([]*dto.MetricFamily, 0, len(g.mf))
-	for _, mf := range g.mf {
-		res = append(res, mf)
-	}
-	return res, nil
 }
