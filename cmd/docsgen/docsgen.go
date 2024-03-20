@@ -37,6 +37,8 @@ func main() {
 		}
 	}
 
+	contentDir := path.Join(*docsDir, "content")
+
 	cg := forwarder.CommandGroups()
 	cg.Add(&cobra.Command{
 		Use: "forwarder",
@@ -50,6 +52,10 @@ func main() {
 	}
 
 	if err := docsgen.WriteDefaultConfig(forwarder.Command(), cfgDir); err != nil {
+		log.Fatal(err)
+	}
+
+	if err := docsgen.WriteCommandProm(forwarder.Command(), contentDir); err != nil {
 		log.Fatal(err)
 	}
 
