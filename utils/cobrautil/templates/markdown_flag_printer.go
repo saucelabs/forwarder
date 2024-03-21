@@ -33,6 +33,7 @@ func (p *MarkdownFlagPrinter) PrintHelpFlag(f *pflag.Flag) {
 
 	body := p.body(f)
 	body = strings.ReplaceAll(body, ". ", ".\n")
+	body = strings.ReplaceAll(body, "<br>", "\n")
 	fmt.Fprintf(p.out, body)
 	fmt.Fprintf(p.out, "\n\n")
 }
