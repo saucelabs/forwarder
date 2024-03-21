@@ -60,7 +60,8 @@ func (p *HelpFlagPrinter) PrintHelpFlag(flag *flag.Flag) {
 	flagStr, usageStr := flagAndUsage[0], strings.Join(flagAndUsage[1:], " ")
 
 	usageWithBreakLines := strings.ReplaceAll(usageStr, "<br>", "\n\n")
-	wrappedUsages := wordwrap.WrapString(usageWithBreakLines, p.wrapLimit-offset)
+	usageWithExamples := strings.ReplaceAll(usageWithBreakLines, "<ex>", "\"")
+	wrappedUsages := wordwrap.WrapString(usageWithExamples, p.wrapLimit-offset)
 	wrappedStr = flagStr + "\n" + wrappedUsages
 	appendTabStr := strings.ReplaceAll(wrappedStr, "\n", "\n\t")
 
