@@ -55,14 +55,12 @@ func (p *HelpFlagPrinter) PrintHelpFlag(flag *flag.Flag) {
 
 	wrappedStr := formatBuf.String()
 	flagAndUsage := strings.Split(formatBuf.String(), "\n")
-	flagStr := flagAndUsage[0]
 
-	// if the flag usage is longer than one line, wrap it again
-	if len(flagAndUsage) > 1 {
-		nextLines := strings.Join(flagAndUsage[1:], " ")
-		wrappedUsages := wordwrap.WrapString(nextLines, p.wrapLimit-offset)
-		wrappedStr = flagStr + "\n" + wrappedUsages
-	}
+	// It always has at least 2 elements.
+	flagStr, nextLines := flagAndUsage[0], strings.Join(flagAndUsage[1:], " ")
+
+	wrappedUsages := wordwrap.WrapString(nextLines, p.wrapLimit-offset)
+	wrappedStr = flagStr + "\n" + wrappedUsages
 	appendTabStr := strings.ReplaceAll(wrappedStr, "\n", "\n\t")
 
 	fmt.Fprintf(p.out, appendTabStr+"\n\n")
