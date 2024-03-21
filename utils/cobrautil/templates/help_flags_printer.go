@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"regexp"
 	"strings"
 	"unicode"
 
@@ -61,7 +62,8 @@ func (p *HelpFlagPrinter) PrintHelpFlag(flag *flag.Flag) {
 
 	usageWithBreakLines := strings.ReplaceAll(usageStr, "<br>", "\n\n")
 	usageWithExamples := strings.ReplaceAll(usageWithBreakLines, "<ex>", "\"")
-	wrappedUsages := wordwrap.WrapString(usageWithExamples, p.wrapLimit-offset)
+	usageWithLinks := withLinks(usageWithExamples)
+	wrappedUsages := wordwrap.WrapString(usageWithLinks, p.wrapLimit-offset)
 	wrappedStr = flagStr + "\n" + wrappedUsages
 	appendTabStr := strings.ReplaceAll(wrappedStr, "\n", "\n\t")
 
@@ -161,6 +163,27 @@ func findValueType(usage string) int {
 	}
 
 	return len(runes)
+}
+
+func withLinks(s string) string {
+	re := regexp.MustCompile(linkPattern)
+
+	result := re.ReplaceAllStringFunc(s, func(match string) string {
+		submatches := re.FindStringSubmatch(match)
+		if len(submatches) < 4 {
+			// If the match does not have two groups (text, root, and path), return the match as is.
+			return match
+		}
+		text, root, path := submatches[1], submatches[2], submatches[3]
+
+		if text != "" {
+			text = text + ": "
+		}
+
+		return text + root + path
+	})
+
+	return result
 }
 
 var envReplacer = strings.NewReplacer(".", "_", "-", "_")

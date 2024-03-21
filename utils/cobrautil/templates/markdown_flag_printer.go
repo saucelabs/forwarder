@@ -10,6 +10,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"regexp"
 	"strings"
 
 	"github.com/spf13/pflag"
@@ -35,9 +36,27 @@ func (p *MarkdownFlagPrinter) PrintHelpFlag(f *pflag.Flag) {
 	body = strings.ReplaceAll(body, ". ", ".\n")
 	body = strings.ReplaceAll(body, "<br>", "\n")
 	body = strings.ReplaceAll(body, "<ex>", "\n```\n")
+	body = withMarkdownLinks(body)
 
 	fmt.Fprintf(p.out, body)
 	fmt.Fprintf(p.out, "\n\n")
+}
+
+func withMarkdownLinks(s string) string {
+	re := regexp.MustCompile(linkPattern)
+
+	result := re.ReplaceAllStringFunc(s, func(match string) string {
+		submatches := re.FindStringSubmatch(match)
+		if len(submatches) < 4 {
+			// If the match does not have two groups (text, root, and path), return the match as is.
+			return match
+		}
+		text, path := submatches[1], submatches[3]
+
+		return fmt.Sprintf("[%s](%s)", text, path)
+	})
+
+	return result
 }
 
 func (p *MarkdownFlagPrinter) header(f *pflag.Flag) string {
