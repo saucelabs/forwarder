@@ -15,7 +15,7 @@ DIST="$ROOT_DIR/dist/forwarder*_linux.aarch64.rpm"
 
 process_flags "$@"
 
-build_image ${IMG} fedora-systemd.Dockerfile
+build_image ${IMG} fedora-systemd.Containerfile
 create_package "${DIST}" forwarder.rpm
 
 podman run -p 3128:3128 -d -v ./forwarder.rpm:/forwarder.rpm --name ${CONTAINER} --replace ${IMG}

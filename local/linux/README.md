@@ -3,7 +3,7 @@ This package provides environments for local testing/developing of the Forwarder
 
 ## Packaging Testing Environment
 The environment is based on Docker image with systemd support and is meant to be used with Podman.
-It provides a Dockerfile to build the container image and a run script.
+It provides a Containerfile to build the container image and a run script.
 
 ### Prerequisites
 

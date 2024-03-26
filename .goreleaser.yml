@@ -143,6 +143,7 @@ dockers:
       - "--label=org.opencontainers.image.title={{ .ProjectName }}"
       - "--label=org.opencontainers.image.revision={{ .FullCommit }}"
       - "--label=org.opencontainers.image.version={{ .Version }}"
+    dockerfile: Containerfile
     extra_files:
       - LICENSE
       - LICENSE.3RD_PARTY
@@ -158,6 +159,7 @@ dockers:
       - "--label=org.opencontainers.image.title={{ .ProjectName }}"
       - "--label=org.opencontainers.image.revision={{ .FullCommit }}"
       - "--label=org.opencontainers.image.version={{ .Version }}"
+    dockerfile: Containerfile
     extra_files:
       - LICENSE
       - LICENSE.3RD_PARTY
