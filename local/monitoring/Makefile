@@ -1,4 +1,5 @@
-COMPOSE := docker-compose -f docker-compose.yaml
+CONTAINER_RUNTIME ?= docker
+COMPOSE := $(CONTAINER_RUNTIME) compose -f compose.yaml
 
 .PHONY: up
 up:
