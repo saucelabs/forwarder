@@ -8,6 +8,7 @@ package ready
 
 import (
 	"fmt"
+	"net"
 	"net/http"
 	"net/http/httputil"
 
@@ -19,7 +20,15 @@ type command struct {
 }
 
 func (c *command) runE(cmd *cobra.Command, _ []string) error {
-	resp, err := http.Get("http://" + c.apiAddr + "/readyz") //nolint:noctx // net/http.Get must not be called
+	host, port, err := net.SplitHostPort(c.apiAddr)
+	if err != nil {
+		return err
+	}
+	if host == "" {
+		host = "localhost"
+	}
+
+	resp, err := http.Get("http://" + net.JoinHostPort(host, port) + "/readyz") //nolint:noctx // net/http.Get must not be called
 	if err != nil {
 		return err
 	}
