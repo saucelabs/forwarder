@@ -2,11 +2,6 @@
 
 To enhance your development and testing environment, this package supports local Prometheus and Grafana instances.
 
-## Prerequisites
-
-- [Docker](https://www.docker.com/) installed on your system
-- [Docker Compose](https://docs.docker.com/compose/) installed on your system
-
 ## Starting and Stopping
 
 Use the following commands to start and stop Prometheus and Grafana containers:
