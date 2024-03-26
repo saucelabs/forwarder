@@ -1,4 +1,7 @@
-COMPOSE := docker-compose -f docker-compose.yaml
+include .env
+
+CONTAINER_RUNTIME ?= docker
+COMPOSE := $(CONTAINER_RUNTIME) compose -f compose.yaml
 
 # Docker tag to be tested.
 ifndef FORWARDER_VERSION
@@ -21,24 +24,28 @@ up:
 down:
 	@$(COMPOSE) down -v --remove-orphans
 
+define container_name
+$(COMPOSE_PROJECT_NAME)-$(1)-1
+endef
+
 .PHONY: term
-term: SRV ?= forwarder-e2e-proxy-1
+term: SRV ?= proxy
 term:
-	@docker kill -s TERM $(SRV)
+	@$(CONTAINER_RUNTIME) kill -s TERM $(call container_name,$(SRV))
 
 .PHONY: dump-logs
 dump-logs:
-	@$(COMPOSE) logs $(SRV)
+	@$(COMPOSE) logs
 
 .PHONY: test
 test: RUN ?= .
 test: e2e.test
-	@docker run --name "test-runner" --network "forwarder-e2e_default" --cpuset-cpus 0 \
+	@docker run --name "test-runner" --network "$(COMPOSE_PROJECT_NAME)_default" --cpuset-cpus 0 \
 	-v "$(CURDIR)/e2e.test:/usr/bin/e2e.test" \
 	-v "$(CURDIR)/certs/ca.crt:/etc/forwarder/certs/ca.crt:ro" \
 	-i --read-only --rm \
-	$(shell docker inspect forwarder-e2e-proxy-1 --format='{{ range .Config.Env }}{{ if eq "FORWARDER" (slice . 0 9) }} -e "{{.}}"{{end}}{{end}}') \
-	$(shell docker inspect forwarder-e2e-httpbin-1 --format='{{ range .Config.Env }}{{ if eq "FORWARDER" (slice . 0 9) }} -e "HTTPBIN{{slice . 9}}"{{end}}{{end}}' 2> /dev/null) \
+	$(shell $(CONTAINER_RUNTIME) inspect $(call container_name,proxy)   --format='{{ range .Config.Env }}{{ if eq "FORWARDER" (slice . 0 9) }} -e "{{.}}"{{end}}{{end}}') \
+	$(shell $(CONTAINER_RUNTIME) inspect $(call container_name,httpbin) --format='{{ range .Config.Env }}{{ if eq "FORWARDER" (slice . 0 9) }} -e "HTTPBIN{{slice . 9}}"{{end}}{{end}}' 2> /dev/null) \
 	$(E2E_TEST_IMAGE) e2e.test -test.run "$(RUN)" -test.shuffle on -test.v $(ARGS)
 
 .PHONY: e2e.test
