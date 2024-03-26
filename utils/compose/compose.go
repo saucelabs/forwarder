@@ -87,7 +87,7 @@ func (c *Compose) up() error {
 }
 
 func (c *Compose) down() error {
-	return runQuietly(c.composeCmd("down", "-v", "--remove-orphans"))
+	return runQuietly(c.composeCmd("down", "-v", "--timeout", "1"))
 }
 
 func (c *Compose) composeCmd(args ...string) *exec.Cmd {
