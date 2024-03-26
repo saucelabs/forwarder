@@ -32,9 +32,9 @@ It would:
 * preserve the environment after the test is finished.
 
 After the test is finished:
-* check the environment setup by looking at the `docker-compose.yml` file in the `e2e` directory,
+* check the environment setup by looking at the `compose.yml` file in the `e2e` directory,
 * run `make dump-logs` to print all the logs to the console,
-* use `docker-compose` or `docker` commands to inspect the running environment. 
+* use `docker compose` or `docker` commands to inspect the running environment. 
 
 The proxy service binds the following ports to the host:
 - 3128 - the proxy port, use the proxy `curl -x <proxy-scheme>://localhost:3128 http://httpbin.org/get`, for https you may nedd to add `--proxy-insecure` flag

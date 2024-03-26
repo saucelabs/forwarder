@@ -13,7 +13,7 @@ E2E_TEST_IMAGE ?= gcr.io/distroless/static:nonroot
 .PHONY: run-e2e
 run-e2e: SETUP ?= .
 run-e2e:
-	@docker pull $(E2E_TEST_IMAGE) > /dev/null 2> /dev/null || true # Best effort to pre-pull image.
+	@$(CONTAINER_RUNTIME) pull $(E2E_TEST_IMAGE) > /dev/null 2> /dev/null || true # Best effort to pre-pull image.
 	@go run . -setup "$(SETUP)" $(SETUP_ARGS)
 
 .PHONY: up
@@ -40,7 +40,7 @@ dump-logs:
 .PHONY: test
 test: RUN ?= .
 test: e2e.test
-	@docker run --name "test-runner" --network "$(COMPOSE_PROJECT_NAME)_default" --cpuset-cpus 0 \
+	@$(CONTAINER_RUNTIME) run --name "test-runner" --network "$(COMPOSE_PROJECT_NAME)_default" --cpuset-cpus 0 \
 	-v "$(CURDIR)/e2e.test:/usr/bin/e2e.test" \
 	-v "$(CURDIR)/certs/ca.crt:/etc/forwarder/certs/ca.crt:ro" \
 	-i --read-only --rm \
