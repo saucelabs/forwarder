@@ -37,7 +37,6 @@ func ProxyService() *Service {
 			"3128:3128",
 			"10000:10000",
 		},
-		HealthCheck: healthCheck(),
 	}
 }
 
@@ -52,7 +51,6 @@ func UpstreamProxyService() *Service {
 		Ports: []string{
 			"10001:10000",
 		},
-		HealthCheck: healthCheck(),
 	}
 }
 
@@ -67,7 +65,6 @@ func HttpbinService() *Service {
 		Ports: []string{
 			"10002:10000",
 		},
-		HealthCheck: healthCheck(),
 	}
 }
 
@@ -227,13 +224,4 @@ func (s *Service) WithWriteLimit(limit string) *Service {
 
 func (s *Service) Service() *compose.Service {
 	return (*compose.Service)(s)
-}
-
-func healthCheck() *compose.HealthCheck {
-	return &compose.HealthCheck{
-		Test:     []string{"CMD", "forwarder", "ready"},
-		Interval: time.Second,
-		Timeout:  3 * time.Second,
-		Retries:  10,
-	}
 }
