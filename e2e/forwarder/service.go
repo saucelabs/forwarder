@@ -80,6 +80,7 @@ func GRPCTestService() *Service {
 			"1443:1443",
 			"10003:10000",
 		},
+		HealthCheck: nopHealthCheck(),
 	}
 	return s.WithProtocol("h2")
 }
@@ -224,4 +225,13 @@ func (s *Service) WithWriteLimit(limit string) *Service {
 
 func (s *Service) Service() *compose.Service {
 	return (*compose.Service)(s)
+}
+
+func nopHealthCheck() *compose.HealthCheck {
+	return &compose.HealthCheck{
+		Test:        []string{"CMD", "/usr/bin/forwarder", "-h"},
+		StartPeriod: 5 * time.Second,
+		Interval:    1 * time.Minute,
+		Retries:     1,
+	}
 }
