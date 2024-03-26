@@ -37,7 +37,7 @@ jobs:
 
       - name: Docker Compose file
         if: failure()
-        run: cat e2e/docker-compose.yaml
+        run: cat e2e/compose.yaml
 
       - name: Docker Logs
         if: failure()
