@@ -17,7 +17,6 @@ import (
 
 type Compose struct {
 	Path     string              `yaml:"-"`
-	Version  string              `yaml:"version"`
 	Services map[string]*Service `yaml:"services,omitempty"`
 	Networks map[string]*Network `yaml:"networks,omitempty"`
 }
@@ -25,7 +24,6 @@ type Compose struct {
 func newCompose() *Compose {
 	return &Compose{
 		Path:     "compose.yaml",
-		Version:  "3.8",
 		Services: make(map[string]*Service),
 		Networks: make(map[string]*Network),
 	}
