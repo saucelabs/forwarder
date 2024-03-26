@@ -24,7 +24,7 @@ type Compose struct {
 
 func newCompose() *Compose {
 	return &Compose{
-		Path:     "docker-compose.yaml",
+		Path:     "compose.yaml",
 		Version:  "3.8",
 		Services: make(map[string]*Service),
 		Networks: make(map[string]*Network),
@@ -85,17 +85,26 @@ func (c *Compose) save(path string) error {
 }
 
 func (c *Compose) up() error {
-	return runQuietly(c.dockerCompose("up", "-d", "--wait", "--force-recreate", "--remove-orphans"))
+	return runQuietly(c.composeCmd("up", "-d", "--wait", "--force-recreate", "--remove-orphans"))
 }
 
 func (c *Compose) down() error {
-	return runQuietly(c.dockerCompose("down", "-v", "--remove-orphans"))
+	return runQuietly(c.composeCmd("down", "-v", "--remove-orphans"))
 }
 
-func (c *Compose) dockerCompose(args ...string) *exec.Cmd {
-	return exec.Command("docker-compose", append([]string{ //nolint:gosec // G204: Subprocess launched with a potential tainted input or cmd arguments
+func (c *Compose) composeCmd(args ...string) *exec.Cmd {
+	rt := os.Getenv("CONTAINER_RUNTIME")
+	if rt == "" {
+		rt = "docker"
+	}
+
+	allArgs := []string{
+		"compose",
 		"-f", c.Path,
-	}, args...)...)
+	}
+	allArgs = append(allArgs, args...)
+
+	return exec.Command(rt, allArgs...)
 }
 
 func runQuietly(cmd *exec.Cmd) error {
