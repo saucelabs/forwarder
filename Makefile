@@ -64,6 +64,8 @@ test:
 coverage:
 	@go tool cover -func=coverage.out
 
+export BUILDAH_FORMAT=docker
+
 .PHONY: update-devel-image
 update-devel-image: CONTAINER_RUNTIME ?= docker
 update-devel-image: TAG=devel
