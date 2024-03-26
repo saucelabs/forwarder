@@ -23,9 +23,6 @@ jobs:
         with:
           go-version: "${{env.GO_VERSION}}"
 
-      - name: Setup Docker Compose v2
-        run: curl -fL https://raw.githubusercontent.com/docker/compose-switch/master/install_on_linux.sh | sudo sh
-
       - name: Generate certificates
         run: make -C e2e/certs certs
 
