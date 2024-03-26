@@ -2,6 +2,10 @@
 install-dependencies:
 	brew install hugo
 
+.PHONY: clean
+clean:
+	@rm -Rf public resources .hugo_build.lock
+
 .PHONY: gen
 gen:
 	@cd ../ && go run ./cmd/docsgen -docs-dir=$(PWD)
