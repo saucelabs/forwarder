@@ -2,7 +2,7 @@
 title: Google Summer of Code
 weight: 7
 
-bookHidden: false
+bookHidden: true
 ---
 
 # Google Summer of Code
