@@ -36,6 +36,17 @@ var sizeBuckets = []float64{ //nolint:gochecknoglobals // this is a global varia
 	10 * mb,
 }
 
+type PrometheusOpt func(*Prometheus)
+
+type PrometheusLabeler func(*http.Request) string
+
+func WithCustomLabeler(label string, labeler PrometheusLabeler) PrometheusOpt {
+	return func(p *Prometheus) {
+		p.label = label
+		p.labeler = labeler
+	}
+}
+
 // Prometheus is a middleware that collects metrics about the HTTP requests and responses.
 // Unlike the promhttp.InstrumentHandler* chaining, this middleware creates only one delegator per request.
 // It partitions the metrics by HTTP status code, HTTP method, destination host name and source IP.
@@ -45,50 +56,69 @@ type Prometheus struct {
 	requestDuration  *prometheus.HistogramVec
 	requestSize      *prometheus.HistogramVec
 	responseSize     *prometheus.HistogramVec
+
+	label   string
+	labeler PrometheusLabeler
 }
 
-func NewPrometheus(r prometheus.Registerer, namespace string) *Prometheus {
+func NewPrometheus(r prometheus.Registerer, namespace string, opts ...PrometheusOpt) *Prometheus {
 	if r == nil {
 		r = prometheus.NewRegistry() // This registry will be discarded.
 	}
 	f := promauto.With(r)
-	l := []string{"code", "method"}
 
-	return &Prometheus{
-		requestsInFlight: f.NewGaugeVec(prometheus.GaugeOpts{
-			Namespace: namespace,
-			Name:      "http_requests_in_flight",
-			Help:      "Current number of HTTP requests being served.",
-		}, []string{"method"}),
-		requestsTotal: f.NewCounterVec(prometheus.CounterOpts{
-			Namespace: namespace,
-			Name:      "http_requests_total",
-			Help:      "Total number of HTTP requests processed.",
-		}, l),
-		requestDuration: f.NewHistogramVec(prometheus.HistogramOpts{
-			Namespace: namespace,
-			Name:      "http_request_duration_seconds",
-			Help:      "The HTTP request latencies in seconds.",
-			Buckets:   prometheus.DefBuckets,
-		}, l),
-		requestSize: f.NewHistogramVec(prometheus.HistogramOpts{
-			Namespace: namespace,
-			Name:      "http_request_size_bytes",
-			Help:      "The HTTP request sizes in bytes.",
-			Buckets:   sizeBuckets,
-		}, l),
-		responseSize: f.NewHistogramVec(prometheus.HistogramOpts{
-			Namespace: namespace,
-			Name:      "http_response_size_bytes",
-			Help:      "The HTTP response sizes in bytes.",
-			Buckets:   sizeBuckets,
-		}, l),
+	p := &Prometheus{}
+	for _, opt := range opts {
+		opt(p)
 	}
+
+	labels := []string{"method"}
+	if p.label != "" {
+		labels = append(labels, p.label)
+	}
+	labelsWithStatus := append([]string{"code"}, labels...)
+
+	p.requestsInFlight = f.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: namespace,
+		Name:      "http_requests_in_flight",
+		Help:      "Current number of HTTP requests being served.",
+	}, labels)
+
+	p.requestsTotal = f.NewCounterVec(prometheus.CounterOpts{
+		Namespace: namespace,
+		Name:      "http_requests_total",
+		Help:      "Total number of HTTP requests processed.",
+	}, labelsWithStatus)
+
+	p.requestDuration = f.NewHistogramVec(prometheus.HistogramOpts{
+		Namespace: namespace,
+		Name:      "http_request_duration_seconds",
+		Help:      "The HTTP request latencies in seconds.",
+		Buckets:   prometheus.DefBuckets,
+	}, labelsWithStatus)
+
+	p.requestSize = f.NewHistogramVec(prometheus.HistogramOpts{
+		Namespace: namespace,
+		Name:      "http_request_size_bytes",
+		Help:      "The HTTP request sizes in bytes.",
+		Buckets:   sizeBuckets,
+	}, labelsWithStatus)
+
+	p.responseSize = f.NewHistogramVec(prometheus.HistogramOpts{
+		Namespace: namespace,
+		Name:      "http_response_size_bytes",
+		Help:      "The HTTP response sizes in bytes.",
+		Buckets:   sizeBuckets,
+	}, labelsWithStatus)
+
+	return p
 }
 
 func (p *Prometheus) Wrap(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		p.requestsInFlight.WithLabelValues(r.Method).Inc()
+		labels := p.labels(r)
+
+		p.requestsInFlight.WithLabelValues(labels...).Inc()
 
 		d := newDelegator(w, nil)
 
@@ -98,19 +128,20 @@ func (p *Prometheus) Wrap(h http.Handler) http.Handler {
 		h.ServeHTTP(d, r)
 		elapsed := time.Since(start).Seconds()
 
-		lv := [2]string{strconv.Itoa(d.Status()), r.Method}
+		statusLabel := strconv.Itoa(d.Status())
+		labelsWithStatus := append([]string{statusLabel}, labels...)
 
-		p.requestsTotal.WithLabelValues(lv[:]...).Inc()
-		p.requestDuration.WithLabelValues(lv[:]...).Observe(elapsed)
+		p.requestsTotal.WithLabelValues(labelsWithStatus...).Inc()
+		p.requestDuration.WithLabelValues(labelsWithStatus...).Observe(elapsed)
 
 		reqSize := int64(0)
 		if c, ok := r.Body.(counter); ok {
 			reqSize = c.Count()
 		}
 
-		p.requestsInFlight.WithLabelValues(r.Method).Dec()
-		p.requestSize.WithLabelValues(lv[:]...).Observe(float64(reqSize))
-		p.responseSize.WithLabelValues(lv[:]...).Observe(float64(d.Written()))
+		p.requestsInFlight.WithLabelValues(labels...).Dec()
+		p.requestSize.WithLabelValues(labelsWithStatus...).Observe(float64(reqSize))
+		p.responseSize.WithLabelValues(labelsWithStatus...).Observe(float64(d.Written()))
 	})
 }
 
@@ -125,30 +156,41 @@ func (p *Prometheus) ModifyResponse(res *http.Response) error {
 }
 
 func (p *Prometheus) ReadRequest(req *http.Request) {
-	p.requestsInFlight.WithLabelValues(req.Method).Inc()
+	p.requestsInFlight.WithLabelValues(p.labels(req)...).Inc()
 }
 
 func (p *Prometheus) WroteResponse(res *http.Response) {
 	elapsed := martian.ContextDuration(res.Request.Context()).Seconds()
 
 	req := res.Request
-	lv := [2]string{strconv.Itoa(res.StatusCode), req.Method}
 
-	p.requestsInFlight.WithLabelValues(req.Method).Dec()
-	p.requestsTotal.WithLabelValues(lv[:]...).Inc()
-	p.requestDuration.WithLabelValues(lv[:]...).Observe(elapsed)
+	labels := p.labels(req)
+	statusLabel := strconv.Itoa(res.StatusCode)
+	labelsWithStatus := append([]string{statusLabel}, labels...)
+
+	p.requestsInFlight.WithLabelValues(labels...).Dec()
+	p.requestsTotal.WithLabelValues(labelsWithStatus...).Inc()
+	p.requestDuration.WithLabelValues(labelsWithStatus...).Observe(elapsed)
 
 	reqSize := int64(0)
 	if c, ok := req.Body.(counter); ok {
 		reqSize = c.Count()
 	}
-	p.requestSize.WithLabelValues(lv[:]...).Observe(float64(reqSize))
+	p.requestSize.WithLabelValues(labelsWithStatus...).Observe(float64(reqSize))
 
 	resSize := int64(0)
 	if c, ok := res.Body.(counter); ok {
 		resSize = c.Count()
 	}
-	p.responseSize.WithLabelValues(lv[:]...).Observe(float64(resSize))
+	p.responseSize.WithLabelValues(labelsWithStatus...).Observe(float64(resSize))
+}
+
+func (p *Prometheus) labels(req *http.Request) []string {
+	labels := []string{req.Method}
+	if p.label != "" {
+		labels = append(labels, p.labeler(req))
+	}
+	return labels
 }
 
 type counter interface {
