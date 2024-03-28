@@ -7,24 +7,34 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"os"
+	"os/signal"
 	"regexp"
 	"strings"
 
+	"github.com/saucelabs/forwarder/e2e/forwarder"
 	"github.com/saucelabs/forwarder/e2e/prometheus"
 	"github.com/saucelabs/forwarder/e2e/setup"
+	"github.com/saucelabs/forwarder/utils/compose"
+	"golang.org/x/exp/maps"
 )
 
 var args = struct {
-	setup      *string
+	setup *string
+	run   *string
+
 	prometheus *bool
 	debug      *bool
+	parallel   *int
 }{
 	setup:      flag.String("setup", "", "Only run setups matching this regexp"),
+	run:        flag.String("run", "", "Only run tests matching this regexp"),
 	prometheus: flag.Bool("prom", false, "Add prometheus to the setup"),
 	debug:      flag.Bool("debug", false, "Enables debug logs and preserves containers after running, this will run only the first matching setup"),
+	parallel:   flag.Int("parallel", 1, "How many setups to run in parallel"),
 }
 
 func setupRegexp() (*regexp.Regexp, error) {
@@ -61,16 +71,57 @@ func main() {
 						srv.Environment["FORWARDER_LOG_LEVEL"] = "debug"
 						srv.Environment["FORWARDER_LOG_HTTP"] = "headers,api:errors"
 					}
+					if srv.Name == forwarder.ProxyServiceName {
+						srv.Ports = append(srv.Ports,
+							"3128:3128",
+							"10000:10000",
+						)
+					}
 				}
 			}
+
+			t := testService(s)
+			s.Compose.Services[t.Name] = t
 		},
-		Debug: *args.debug,
+		Debug:    *args.debug,
+		Parallel: *args.parallel,
 	}
 
-	if err := runner.Run(); err != nil {
+	ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt)
+	if err := runner.Run(ctx); err != nil {
 		fmt.Println(err.Error())
 		os.Exit(1)
 	}
 
 	fmt.Println("PASS")
+}
+
+func testService(s *setup.Setup) *compose.Service {
+	run := *args.run
+	if run == "" {
+		run = s.Run
+	}
+
+	cmd := fmt.Sprintf("-test.run %q -test.shuffle on", run)
+	if *args.debug {
+		cmd += " -test.v"
+	}
+
+	c := &compose.Service{
+		Name:    setup.TestServiceName,
+		Image:   "forwarder-e2e",
+		Command: cmd,
+	}
+
+	p, ok := s.Compose.Services[forwarder.ProxyServiceName]
+	if !ok {
+		panic("proxy service not found")
+	}
+	c.Environment = maps.Clone(p.Environment)
+
+	if h, ok := s.Compose.Services[forwarder.HttpbinServiceName]; ok {
+		c.Environment["HTTPBIN_PROTOCOL"] = h.Environment["FORWARDER_PROTOCOL"]
+	}
+
+	return c
 }
