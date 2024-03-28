@@ -1,62 +1,68 @@
 # Forwarder e2e tests
 
-## Running the e2e tests with the test runner
+## Prerequisites
 
-1. Generate certificates `make -C certs certs`, this can be done once
-1. Build the forwarder image `make -C ../ update-devel-image`, this needs to be done after each forwarder code change
-1. Start the test runner `make run-e2e`
-1. The test runner will run all the tests sequentially and output the results to the console
-1. If one of the test fails, the procedure will stop, test output will be printed
-1. Environment will not be pruned once the error occurred, remember to manually clean it up with `make down` or use the containers to run single test and find bugs 
+### Build the forwarder image
+
+You can either use a ready image from the Docker Hub or build it yourself.
+If using the Docker Hub image simply export FORWARDER_VERSION env variable with the version you want to use.
+
+To build the image yourself run `make -C ../ update-devel-image`, this needs to be done after each forwarder code change.
+You may want to export the `FORWARDER_VERSION=devel` env variable to the version you just built.
+This will allow to use the compose command directly when debugging the tests.
+
+### Generate certificates
+
+Run `make -C certs certs` to generate the certificates needed for the tests.
+
+## Running the tests
+
+The simplest way to run the tests is to use the `make` command.
+It will run all required steps and start the tests.
+
+### Rebuilding the test image
+
+If you want to rebuild the test image run `make update-test-image`, 
+or `make update-test-image run-e2e` to rebuild the image and run the tests.
 
 ### Running specific test
 
-Start the test runner `make run-e2e RUN=<test>` where `<test>` is a regex matching the test name.
-It can be used with `SETUP` to run specific test in specific environment setup.
+Tests are grouped to setups and test cases.
+Setup represents a specific environment configuration and list of test cases to run.
 
-### Running tests for specific environment setup
-
-Start the test runner `make run-e2e SETUP=<setup>` where `<setup>` is a regex matching the setup name.
-
-The defaults setup naming scheme is `defaults-<httpbin-scheme>-<proxy-scheme>-<upstream-scheme>` ex. the `defaults-h2-http-https` setup will use 
-* httpbin with http2 support, 
+Setup naming follows a scheme, the most common setups are `defaults`.
+The defaults setup naming scheme is `defaults-<httpbin-scheme>-<proxy-scheme>-<upstream-scheme>`, ex. `defaults-h2-http-https` setup will use
+* httpbin with http2 support,
 * proxy with http scheme,
 * upstream with https scheme.
 
-### Debugging
+To run specific setups use `make run-e2e SETUP=<setup>` where `<setup>` is a regex matching the setup name.
+To run specific test cases use `make run-e2e RUN=<test>` where `<test>` is a regex matching the test name.
+Note that running specific test cases may require specific setup to be run.
 
-Start the test runner `make run-e2e SETUP=<setup> SETUP_ARGS="-debug"` where `<setup>` is the name of the setup you want to debug.
-It would:
-* enable debug logging in all containers,
-* print test logs,
-* preserve the environment after the test is finished.
+## Debugging
 
-After the test is finished:
-* check the environment setup by looking at the `compose.yml` file in the `e2e` directory,
-* run `make dump-logs` to print all the logs to the console,
-* use `docker compose` or `docker` commands to inspect the running environment. 
+In debug mode only single setup is run, and the environment is preserved after the test is finished.
+Additionally, debug mode enables debug logging in all containers, and port forwarding on the proxy container.
+The setup `compose.yaml` file is stored in the `e2e` directory.
+The default debug compose project name is `forwarder-e2e`.
 
-The proxy service binds the following ports to the host:
-- 3128 - the proxy port, use the proxy `curl -x <proxy-scheme>://localhost:3128 http://httpbin.org/get`, for https you may nedd to add `--proxy-insecure` flag
+To run the tests in debug mode use `make debug SETUP=<setup> RUN=<test>` where `<setup>` is the name of the setup you want to debug and `<test>` is the name of the test you want to debug.
+You may export COMPOSE_PROJECT_NAME env variable to set the project name to something else.
+Once the test is finished you can access the environment with the provided project name.
+
+For example to get the logs from the test run `docker compose -p forwarder-e2e -f compose.yaml logs`.
+
+The following ports are exposed on localhost:
+- 3128 - the proxy port, use the proxy `curl -x <proxy-scheme>://localhost:3128 http://httpbin.org/get`, for https you may need to add `--proxy-insecure` flag
 - 10000 - the API port, navigate to `http://localhost:10000` to see the API index page
 
-#### Prometheus metrics
+You may modify the `e2e/compose.yaml` file to expose additional ports or change the environment configuration.
+To do that run `make down` to stop the environment, modify the file and run `make up` to start the environment again.
 
-Start the test runner `make run-e2e SETUP=<setup> SETUP_ARGS="-debug -prom"` to enable Prometheus metrics collection.
+## Prometheus metrics
+
+Start the test runner `make run-e2e SETUP=<setup> ARGS="-debug -prom"` to enable Prometheus metrics collection.
 Prometheus server is available at `http://localhost:9090`,
 * proxy metrics have `proxy_` prefix
 * upstream proxy metrics have `upstream_` prefix.
-
-### Testing for Go routine leaks
-
-You can kill one of the containers with `make term` ex. `SRV=forwarder-e2e-httpbin-1 make term` to kill the httpbin container and see how the proxy behaves
-
-### Using different forwarder image for testing
-
-If one wants to use different forwarder image use `FORWARDER_VERSION` env variable ex. `FORWARDER_VERSION=1.0.0 make <target>`
-
-## Benchmarking
-
-1. Add benchmark to `bench_test.go` or use an existing one
-1. Run the `make bench` function ex. `RUN=BenchmarkRespBody1k make bench` it will output the profile path directly to the console
-1. Run pprof with the profile output ex. `go tool pprof -http=:8080 /path/to/profiles/cpu`  
