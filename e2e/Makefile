@@ -10,10 +10,14 @@ endif
 
 E2E_TEST_IMAGE ?= gcr.io/distroless/static:nonroot
 
+.PHONY: update-test-image
+update-test-image:
+	@CGO_ENABLED=0 GOOS=linux go test -tags e2e -c -o e2e.test ./tests
+	@$(CONTAINER_RUNTIME) buildx build --network host -t forwarder-e2e -f e2e.Containerfile .
+
 .PHONY: run-e2e
 run-e2e: SETUP ?= .
 run-e2e:
-	@$(CONTAINER_RUNTIME) pull $(E2E_TEST_IMAGE) > /dev/null 2> /dev/null || true # Best effort to pre-pull image.
 	@go run . -setup "$(SETUP)" $(SETUP_ARGS)
 
 .PHONY: up
@@ -47,10 +51,6 @@ test: e2e.test
 	$(shell $(CONTAINER_RUNTIME) inspect $(call container_name,proxy)   --format='{{ range .Config.Env }}{{ if eq "FORWARDER" (slice . 0 9) }} -e "{{.}}"{{end}}{{end}}') \
 	$(shell $(CONTAINER_RUNTIME) inspect $(call container_name,httpbin) --format='{{ range .Config.Env }}{{ if eq "FORWARDER" (slice . 0 9) }} -e "HTTPBIN{{slice . 9}}"{{end}}{{end}}' 2> /dev/null) \
 	$(E2E_TEST_IMAGE) e2e.test -test.run "$(RUN)" -test.shuffle on -test.v $(ARGS)
-
-.PHONY: e2e.test
-e2e.test:
-	@CGO_ENABLED=0 GOOS=linux go test -tags e2e -c -o e2e.test ./tests
 
 .PHONY: bench
 bench: PROFILE ?= 10

@@ -23,11 +23,14 @@ jobs:
         with:
           go-version: "${{env.GO_VERSION}}"
 
+      - name: Build forwarder container
+        run: make update-devel-image
+
       - name: Generate certificates
         run: make -C e2e/certs certs
 
-      - name: Build Docker image
-        run: make update-devel-image
+      - name: Build test container
+        run: make -C e2e update-test-image
 
       - name: Run e2e test
         run: make -C e2e run-e2e
