@@ -25,7 +25,7 @@ The defaults setup naming scheme is `defaults-<httpbin-scheme>-<proxy-scheme>-<u
 
 ### Debugging
 
-Start the test runner `make run-e2e SETUP=<setup> SETUP_ARGS="-debug"` where `<setup>` is the name of the setup you want to debug.
+Start the test runner `make run-e2e SETUP=<setup> ARGS="-debug"` where `<setup>` is the name of the setup you want to debug.
 It would:
 * enable debug logging in all containers,
 * print test logs,
@@ -42,7 +42,7 @@ The proxy service binds the following ports to the host:
 
 #### Prometheus metrics
 
-Start the test runner `make run-e2e SETUP=<setup> SETUP_ARGS="-debug -prom"` to enable Prometheus metrics collection.
+Start the test runner `make run-e2e SETUP=<setup> ARGS="-debug -prom"` to enable Prometheus metrics collection.
 Prometheus server is available at `http://localhost:9090`,
 * proxy metrics have `proxy_` prefix
 * upstream proxy metrics have `upstream_` prefix.

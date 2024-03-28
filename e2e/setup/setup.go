@@ -8,10 +8,13 @@ package setup
 
 import (
 	"fmt"
+	"os"
 	"regexp"
 
 	"github.com/saucelabs/forwarder/utils/compose"
 )
+
+const TestServiceName = "test"
 
 type Setup struct {
 	Name    string
@@ -47,28 +50,78 @@ func (r *Runner) Run() error {
 	return nil
 }
 
-func (r *Runner) runSetup(s *Setup) error {
+func (r *Runner) runSetup(s *Setup) (runErr error) {
 	cmd, err := compose.NewCommand(s.Compose)
 	if err != nil {
 		return err
 	}
 
-	if err := cmd.Up(); err != nil {
-		return fmt.Errorf("compose up: %w", err)
+	defer func() {
+		if runErr != nil {
+			w := os.Stderr
+
+			fmt.Fprintf(w, "%s\n", cmd.Dir())
+
+			if b, err := os.ReadFile(cmd.File()); err != nil {
+				fmt.Fprintf(w, "failed to read compose file: %v\n", err)
+			} else {
+				fmt.Fprintf(w, "\n%s\n", b)
+			}
+
+			fmt.Fprintf(w, "\n")
+
+			if err := cmd.Ps(); err != nil {
+				fmt.Fprintf(w, "failed to ps: %v\n", err)
+			}
+
+			fmt.Fprintf(w, "\n")
+
+			var args []string
+			for name := range s.Compose.Services {
+				if name == TestServiceName {
+					continue
+				}
+				args = append(args, name)
+			}
+			if err := cmd.Logs(args...); err != nil {
+				fmt.Fprintf(w, "failed to get logs: %v\n", err)
+			}
+		}
+	}()
+
+	// Bring up all services except the test service.
+	{
+		args := []string{"-d", "--force-recreate", "--remove-orphans"}
+
+		for name := range s.Compose.Services {
+			if name == TestServiceName {
+				continue
+			}
+			args = append(args, name)
+		}
+
+		if err := cmd.Up(args...); err != nil {
+			return fmt.Errorf("compose up: %w", err)
+		}
 	}
 
-	cb := makeTestCallback(s.Run, r.Debug)()
-	cbErr := cb
+	// Run the test service.
+	{
+		args := []string{"--force-recreate", "--exit-code-from", TestServiceName, TestServiceName}
 
-	if err := cmd.Down(); err != nil {
-		return fmt.Errorf("compose down: %w", err)
+		if err := cmd.Up(args...); err != nil {
+			return err
+		}
 	}
 
-	if cbErr != nil {
-		return fmt.Errorf("test callback: %w", cbErr)
-	}
-
-	if !r.Debug {
+	// Clean up.
+	if r.Debug {
+		w := os.Stderr
+		fmt.Fprintf(w, "left running at %s\n", cmd.Dir())
+	} else {
+		if err := cmd.Down("-v", "--timeout", "1"); err != nil {
+			return fmt.Errorf("compose down: %w", err)
+		}
 		if err := cmd.Close(); err != nil {
 			return fmt.Errorf("close command: %w", err)
 		}

@@ -13,16 +13,22 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/saucelabs/forwarder/e2e/forwarder"
 	"github.com/saucelabs/forwarder/e2e/prometheus"
 	"github.com/saucelabs/forwarder/e2e/setup"
+	"github.com/saucelabs/forwarder/utils/compose"
+	"golang.org/x/exp/maps"
 )
 
 var args = struct {
-	setup      *string
+	setup *string
+	run   *string
+
 	prometheus *bool
 	debug      *bool
 }{
 	setup:      flag.String("setup", "", "Only run setups matching this regexp"),
+	run:        flag.String("run", "", "Only run tests matching this regexp"),
 	prometheus: flag.Bool("prom", false, "Add prometheus to the setup"),
 	debug:      flag.Bool("debug", false, "Enables debug logs and preserves containers after running, this will run only the first matching setup"),
 }
@@ -63,6 +69,9 @@ func main() {
 					}
 				}
 			}
+
+			t := testService(s)
+			s.Compose.Services[t.Name] = t
 		},
 		Debug: *args.debug,
 	}
@@ -73,4 +82,29 @@ func main() {
 	}
 
 	fmt.Println("PASS")
+}
+
+func testService(s *setup.Setup) *compose.Service {
+	run := *args.run
+	if run == "" {
+		run = s.Run
+	}
+
+	c := &compose.Service{
+		Name:    setup.TestServiceName,
+		Image:   "forwarder-e2e",
+		Command: fmt.Sprintf("-test.run %q -test.shuffle on", run),
+	}
+
+	p, ok := s.Compose.Services[forwarder.ProxyServiceName]
+	if !ok {
+		panic("proxy service not found")
+	}
+	c.Environment = maps.Clone(p.Environment)
+
+	if h, ok := s.Compose.Services[forwarder.HttpbinServiceName]; ok {
+		c.Environment["HTTPBIN_PROTOCOL"] = h.Environment["FORWARDER_PROTOCOL"]
+	}
+
+	return c
 }

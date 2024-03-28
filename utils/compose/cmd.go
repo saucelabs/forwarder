@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"slices"
 )
 
 type Command struct {
@@ -70,17 +71,23 @@ func (c *Command) Close() error {
 }
 
 func (c *Command) Up(args ...string) error {
-	if len(args) == 0 {
-		args = []string{"-d", "--wait", "--force-recreate", "--remove-orphans"}
+	if slices.ContainsFunc(args, func(s string) bool { return s == "-d" || s == "--detach" }) {
+		return runSilently(c.cmd("up", args))
 	}
-	return runSilently(c.cmd("up", args))
+
+	return run(c.cmd("up", args))
 }
 
 func (c *Command) Down(args ...string) error {
-	if len(args) == 0 {
-		args = []string{"-v", "--timeout", "1"}
-	}
 	return runSilently(c.cmd("down", args))
+}
+
+func (c *Command) Ps(args ...string) error {
+	return run(c.cmd("ps", args))
+}
+
+func (c *Command) Logs(args ...string) error {
+	return run(c.cmd("logs", args))
 }
 
 func (c *Command) cmd(subcmd string, args []string) *exec.Cmd {
@@ -107,4 +114,10 @@ func runSilently(cmd *exec.Cmd) error {
 		stderr.WriteTo(os.Stderr)
 	}
 	return err
+}
+
+func run(cmd *exec.Cmd) error {
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
 }
