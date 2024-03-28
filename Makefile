@@ -74,10 +74,10 @@ update-devel-image:
 	@ln Containerfile LICENSE LICENSE.3RD_PARTY $(TMPDIR)
 ifeq ($(shell uname),Linux)
 	@CGO_ENABLED=1 GOOS=linux go build -race -o $(TMPDIR)/forwarder ./cmd/forwarder
-	@$(CONTAINER_RUNTIME) buildx build -f Containerfile --build-arg BASE_IMAGE=ubuntu:latest -t saucelabs/forwarder:$(TAG) $(TMPDIR)
+	@$(CONTAINER_RUNTIME) buildx build --network host -f Containerfile --build-arg BASE_IMAGE=ubuntu:latest -t saucelabs/forwarder:$(TAG) $(TMPDIR)
 else
 	@CGO_ENABLED=0 GOOS=linux go build -o $(TMPDIR)/forwarder ./cmd/forwarder
-	@$(CONTAINER_RUNTIME) buildx build -f Containerfile -t saucelabs/forwarder:$(TAG) $(TMPDIR)
+	@$(CONTAINER_RUNTIME) buildx build --network host -f Containerfile -t saucelabs/forwarder:$(TAG) $(TMPDIR)
 endif
 	@rm -rf $(TMPDIR)
 
