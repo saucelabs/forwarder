@@ -7,6 +7,8 @@
 package forwarder
 
 import (
+	"encoding/base64"
+	"os"
 	"strings"
 	"time"
 
@@ -89,12 +91,8 @@ func (s *Service) WithProtocol(protocol string) *Service {
 	s.Environment["FORWARDER_PROTOCOL"] = protocol
 
 	if protocol == "https" || protocol == "h2" {
-		s.Environment["FORWARDER_TLS_CERT_FILE"] = "/etc/forwarder/certs/" + s.Name + ".crt"
-		s.Environment["FORWARDER_TLS_KEY_FILE"] = "/etc/forwarder/private/" + s.Name + ".key"
-		s.Volumes = append(s.Volumes,
-			"./certs/"+s.Name+".crt:/etc/forwarder/certs/"+s.Name+".crt:ro",
-			"./certs/"+s.Name+".key:/etc/forwarder/private/"+s.Name+".key:ro",
-		)
+		s.Environment["FORWARDER_TLS_CERT_FILE"] = fileBase64("./certs/" + s.Name + ".crt")
+		s.Environment["FORWARDER_TLS_KEY_FILE"] = fileBase64("./certs/" + s.Name + ".key")
 	}
 
 	return s
@@ -116,13 +114,8 @@ func (s *Service) WithMITM() *Service {
 }
 
 func (s *Service) WithMITMCACert() *Service {
-	s.Environment["FORWARDER_MITM_CACERT_FILE"] = "/etc/forwarder/certs/mitm-ca.crt"
-	s.Environment["FORWARDER_MITM_CAKEY_FILE"] = "/etc/forwarder/private/mitm-ca.key"
-	s.Volumes = append(s.Volumes,
-		"./certs/ca.crt:/etc/forwarder/certs/mitm-ca.crt:ro",
-		"./certs/ca.key:/etc/forwarder/private/mitm-ca.key:ro",
-	)
-
+	s.Environment["FORWARDER_MITM_CACERT_FILE"] = fileBase64("./certs/ca.crt")
+	s.Environment["FORWARDER_MITM_CAKEY_FILE"] = fileBase64("./certs/ca.key")
 	return s
 }
 
@@ -134,8 +127,7 @@ func (s *Service) WithMITMDomains(domains ...string) *Service {
 func (s *Service) WithUpstream(name, protocol string) *Service {
 	s.Environment["FORWARDER_PROXY"] = protocol + "://" + name + ":3128"
 	if protocol == "https" {
-		s.Environment["FORWARDER_CACERT_FILE"] = "/etc/forwarder/certs/ca-certificates.crt"
-		s.Volumes = append(s.Volumes, "./certs/ca.crt:/etc/forwarder/certs/ca-certificates.crt:ro")
+		s.Environment["FORWARDER_CACERT_FILE"] = fileBase64("./certs/ca.crt")
 	}
 	return s
 }
@@ -151,8 +143,7 @@ func (s *Service) WithCredentials(credentials, address string) *Service {
 }
 
 func (s *Service) WithPac(pac string) *Service {
-	s.Environment["FORWARDER_PAC"] = "/pac.js"
-	s.Volumes = append(s.Volumes, pac+":/pac.js")
+	s.Environment["FORWARDER_PAC"] = fileBase64(pac)
 	return s
 }
 
@@ -225,6 +216,14 @@ func (s *Service) WithWriteLimit(limit string) *Service {
 
 func (s *Service) Service() *compose.Service {
 	return (*compose.Service)(s)
+}
+
+func fileBase64(path string) string {
+	b, err := os.ReadFile(path)
+	if err != nil {
+		panic(err)
+	}
+	return "data:" + base64.StdEncoding.EncodeToString(b)
 }
 
 func nopHealthCheck() *compose.HealthCheck {
