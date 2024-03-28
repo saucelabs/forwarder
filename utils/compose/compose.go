@@ -29,7 +29,7 @@ func New() *Compose {
 	}
 }
 
-func (c *Compose) addService(s *Service) error {
+func (c *Compose) AddService(s *Service) error {
 	if err := s.Validate(); err != nil {
 		return err
 	}
@@ -42,7 +42,7 @@ func (c *Compose) addService(s *Service) error {
 	return nil
 }
 
-func (c *Compose) addNetwork(n *Network) error {
+func (c *Compose) AddNetwork(n *Network) error {
 	if err := n.Validate(); err != nil {
 		return err
 	}

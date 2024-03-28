@@ -27,14 +27,14 @@ func NewBuilder() *Builder {
 
 func (b *Builder) AddService(s ServiceBuilder) *Builder {
 	if b.error == nil {
-		b.error = b.c.addService(s.Service())
+		b.error = b.c.AddService(s.Service())
 	}
 	return b
 }
 
 func (b *Builder) AddNetwork(n *Network) *Builder {
 	if b.error == nil {
-		b.error = b.c.addNetwork(n)
+		b.error = b.c.AddNetwork(n)
 	}
 	return b
 }
