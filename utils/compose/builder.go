@@ -21,7 +21,7 @@ type Builder struct {
 
 func NewBuilder() *Builder {
 	return &Builder{
-		c: newCompose(),
+		c: New(),
 	}
 }
 
