@@ -6,6 +6,12 @@
 
 package compose
 
+import (
+	"os"
+	"path"
+	"strings"
+)
+
 type ServiceBuilder interface {
 	Service() *Service
 }
@@ -25,17 +31,47 @@ func NewBuilder() *Builder {
 	}
 }
 
-func (b *Builder) AddService(s ServiceBuilder) *Builder {
-	if b.error == nil {
-		b.error = b.c.AddService(s.Service())
+func (b *Builder) AddService(sb ServiceBuilder) *Builder {
+	if b.error != nil {
+		return b
 	}
+
+	s := sb.Service()
+
+	for i, v := range s.Volumes {
+		s.Volumes[i] = absVolume(v)
+	}
+
+	b.error = b.c.AddService(s)
+
 	return b
 }
 
-func (b *Builder) AddNetwork(n *Network) *Builder {
-	if b.error == nil {
-		b.error = b.c.AddNetwork(n)
+func absVolume(v string) string {
+	a := strings.Split(v, ":")
+	if path.IsAbs(a[0]) {
+		return v
 	}
+
+	a[0] = path.Join(curDir(), a[0])
+	return strings.Join(a, ":")
+}
+
+func curDir() string {
+	d, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+	return d
+}
+
+func (b *Builder) AddNetwork(n *Network) *Builder {
+	if b.error != nil {
+		return b
+	}
+
+	b.error = b.c.AddNetwork(n)
+
 	return b
 }
 
