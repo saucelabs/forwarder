@@ -21,7 +21,7 @@ type Compose struct {
 	Networks map[string]*Network `yaml:"networks,omitempty"`
 }
 
-func newCompose() *Compose {
+func New() *Compose {
 	return &Compose{
 		Path:     "compose.yaml",
 		Services: make(map[string]*Service),
