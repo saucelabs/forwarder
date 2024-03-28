@@ -1,4 +1,4 @@
-include .env
+export COMPOSE_PROJECT_NAME = forwarder-e2e
 
 CONTAINER_RUNTIME ?= docker
 COMPOSE := $(CONTAINER_RUNTIME) compose -f compose.yaml
