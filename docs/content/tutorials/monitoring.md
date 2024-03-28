@@ -28,8 +28,6 @@ If you are familiar with Prometheus and Grafana stack, you can import the dashbo
    - Paste a Grafana dashboard ID `20100` and click **Load**.
    - Paste dashboard JSON text from [here](https://github.com/saucelabs/forwarder/blob/main/local/monitoring/dashboards/forwarder.json) directly into the text area.
 
-Remember to set the `prom_namespace` variable to the value configured in your Forwarder with the `--prom-namespace` flag.
-
 ## Step-by-Step Installation
 
 Forwarder exposes Prometheus metrics in the API server on the `/metrics` endpoint.
@@ -59,8 +57,6 @@ scrape_configs:
    - Go to the Grafana Dashboard.
    - Click on the `New` or `+` icon select `Import.`
    - Type the following ID to import the dashboard: `20100`.
-1. Run Dashboard with the Right Namespace:
-   - Set the `prom_namespace` variable to the value configured in your Forwarder with the `--prom-namespace` flag.
 
 Congratulations! You have successfully set up monitoring for your Forwarder using Prometheus and Grafana. Adjust the configuration parameters as needed based on your specific setup.
 
