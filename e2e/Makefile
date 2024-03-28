@@ -1,12 +1,8 @@
 export COMPOSE_PROJECT_NAME = forwarder-e2e
+export FORWARDER_VERSION ?= devel
 
 CONTAINER_RUNTIME ?= docker
 COMPOSE := $(CONTAINER_RUNTIME) compose -f compose.yaml
-
-# Docker tag to be tested.
-ifndef FORWARDER_VERSION
-export FORWARDER_VERSION := devel
-endif
 
 E2E_TEST_IMAGE ?= gcr.io/distroless/static:nonroot
 
