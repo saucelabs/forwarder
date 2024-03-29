@@ -8,11 +8,14 @@ package compose
 
 import (
 	"bytes"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"path"
 	"slices"
+	"time"
 )
 
 type Command struct {
@@ -88,6 +91,67 @@ func (c *Command) Ps(args ...string) error {
 
 func (c *Command) Logs(args ...string) error {
 	return run(c.cmd("logs", args))
+}
+
+const healthy = "healthy"
+
+type serviceHealth struct {
+	Service string
+	Health  string
+}
+
+func (c *Command) health() ([]serviceHealth, error) {
+	cmd := c.cmd("ps", []string{"--format", "json"})
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	err := cmd.Run()
+	if err != nil {
+		stdout.WriteTo(os.Stdout)
+		stderr.WriteTo(os.Stderr)
+	}
+
+	var res []serviceHealth
+	dec := json.NewDecoder(&stdout)
+	for dec.More() {
+		var ci serviceHealth
+		if err := dec.Decode(&ci); err != nil { //nolint:musttag // the JSON output is CamelCase
+			return nil, fmt.Errorf("decode container info: %w", err)
+		}
+		res = append(res, ci)
+	}
+	return res, nil
+}
+
+func (c *Command) Wait(interval, timeout time.Duration) error {
+	to := time.NewTimer(timeout)
+	defer to.Stop()
+	t := time.NewTicker(interval)
+	defer t.Stop()
+
+	for {
+		select {
+		case <-to.C:
+			return errors.New("timeout waiting for services to start")
+		case <-t.C:
+			services, err := c.health()
+			if err != nil {
+				return err
+			}
+
+			n := 0
+			for i := range services {
+				s := &services[i]
+				if s.Health == "" || s.Health == healthy {
+					n++
+				}
+			}
+			if n == len(services) {
+				return nil
+			}
+		}
+	}
 }
 
 func (c *Command) cmd(subcmd string, args []string) *exec.Cmd {
