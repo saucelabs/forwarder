@@ -35,10 +35,6 @@ func ProxyService() *Service {
 		Environment: map[string]string{
 			"FORWARDER_API_ADDRESS": ":10000",
 		},
-		Ports: []string{
-			"3128:3128",
-			"10000:10000",
-		},
 	}
 }
 
@@ -49,9 +45,6 @@ func UpstreamProxyService() *Service {
 		Environment: map[string]string{
 			"FORWARDER_API_ADDRESS": ":10000",
 			"FORWARDER_NAME":        UpstreamProxyServiceName,
-		},
-		Ports: []string{
-			"10001:10000",
 		},
 	}
 }
@@ -64,9 +57,6 @@ func HttpbinService() *Service {
 		Environment: map[string]string{
 			"FORWARDER_API_ADDRESS": ":10000",
 		},
-		Ports: []string{
-			"10002:10000",
-		},
 	}
 }
 
@@ -77,10 +67,6 @@ func GRPCTestService() *Service {
 		Command: "test grpc",
 		Environment: map[string]string{
 			"FORWARDER_ADDRESS": ":1443",
-		},
-		Ports: []string{
-			"1443:1443",
-			"10003:10000",
 		},
 		HealthCheck: nopHealthCheck(),
 	}
