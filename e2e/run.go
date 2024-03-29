@@ -106,5 +106,12 @@ func testService(s *setup.Setup) *compose.Service {
 		c.Environment["HTTPBIN_PROTOCOL"] = h.Environment["FORWARDER_PROTOCOL"]
 	}
 
+	if len(s.Compose.Networks) > 0 {
+		c.Network = map[string]compose.ServiceNetwork{}
+		for name := range s.Compose.Networks {
+			c.Network[name] = compose.ServiceNetwork{}
+		}
+	}
+
 	return c
 }
