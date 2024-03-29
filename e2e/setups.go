@@ -223,7 +223,7 @@ func SetupFlagResponseHeader(l *setupList) {
 
 func SetupFlagDNSServer(l *setupList) {
 	const (
-		networkName = "forwarder-e2e_default"
+		networkName = "internal"
 
 		dnsIPAddr        = "192.168.100.2"
 		invalidDNSIPAddr = "192.168.100.3"
