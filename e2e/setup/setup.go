@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"time"
 
 	"github.com/saucelabs/forwarder/utils/compose"
 )
@@ -102,6 +103,14 @@ func (r *Runner) runSetup(s *Setup) (runErr error) {
 
 		if err := cmd.Up(args...); err != nil {
 			return fmt.Errorf("compose up: %w", err)
+		}
+
+		waitTimeout := 10 * time.Second
+		if _, ok := os.LookupEnv("CI"); ok {
+			waitTimeout = 30 * time.Second
+		}
+		if err := cmd.Wait(time.Second, waitTimeout); err != nil {
+			return fmt.Errorf("wait for services: %w", err)
 		}
 	}
 
