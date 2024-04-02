@@ -10,6 +10,11 @@ endif
 
 E2E_TEST_IMAGE ?= gcr.io/distroless/static:nonroot
 
+.PHONY: update-helper-images
+update-helper-images:
+	@$(MAKE) -C dns update-image
+	@$(MAKE) -C sc-2450 update-image
+
 .PHONY: update-test-image
 update-test-image:
 	@CGO_ENABLED=0 GOOS=linux go test -tags e2e -c -o e2e.test ./tests

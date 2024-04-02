@@ -11,6 +11,7 @@ import (
 
 	"github.com/saucelabs/forwarder/e2e/dns"
 	"github.com/saucelabs/forwarder/e2e/forwarder"
+	sc2450 "github.com/saucelabs/forwarder/e2e/sc-2450"
 	"github.com/saucelabs/forwarder/e2e/setup"
 	"github.com/saucelabs/forwarder/utils/compose"
 )
@@ -226,9 +227,8 @@ func SetupFlagDNSServer(l *setupList) {
 
 		dnsIPAddr        = "192.168.100.2"
 		invalidDNSIPAddr = "192.168.100.3"
-
-		httpbinIPAddr = "192.168.100.10"
-		proxyIPAddr   = "192.168.100.11"
+		httpbinIPAddr    = "192.168.100.10"
+		proxyIPAddr      = "192.168.100.11"
 	)
 	for _, s := range []struct {
 		name    string
@@ -255,8 +255,7 @@ func SetupFlagDNSServer(l *setupList) {
 						WithDNSServer(s.servers...).
 						WithDNSTimeout(1 * time.Second)).
 				AddService(
-					dns.Service().
-						WithIP(networkName, dnsIPAddr)).
+					dns.Service(networkName, dnsIPAddr)).
 				AddNetwork(&compose.Network{
 					Name:   networkName,
 					Driver: "bridge",
@@ -461,17 +460,8 @@ func SetupSC2450(l *setupList) {
 				forwarder.HttpbinService()).
 			AddService(
 				forwarder.ProxyService()).
-			AddService(&compose.Service{
-				Name:    "sc-2450",
-				Image:   "python:3",
-				Command: "python /server.py",
-				Volumes: []string{"./sc-2450/server.py:/server.py"},
-				HealthCheck: &compose.HealthCheck{
-					StartPeriod: 5 * time.Second,
-					Retries:     1,
-					Test:        []string{"CMD", "true"},
-				},
-			}).MustBuild(),
+			AddService(sc2450.Service()).
+			MustBuild(),
 		Run: "^TestSC2450$",
 	})
 }
