@@ -107,7 +107,7 @@ func (r *Runner) runSetup(s *Setup) (runErr error) {
 
 		waitTimeout := 10 * time.Second
 		if _, ok := os.LookupEnv("CI"); ok {
-			waitTimeout = 30 * time.Second
+			waitTimeout = 60 * time.Second
 		}
 		if err := cmd.Wait(time.Second, waitTimeout); err != nil {
 			return fmt.Errorf("wait for services: %w", err)
