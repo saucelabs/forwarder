@@ -1,0 +1,10 @@
+FROM python:3-alpine
+
+RUN apk add --no-cache netcat-openbsd
+
+COPY server.py /server.py
+
+CMD ["python", "/server.py"]
+
+HEALTHCHECK --interval=1s --timeout=3s \
+  CMD nc -z localhost 8307 || exit 1
