@@ -4,23 +4,20 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package dns
+package sc2450
 
 import (
 	"github.com/saucelabs/forwarder/utils/compose"
 )
 
 const (
-	ServiceName = "dns"
-	Image       = "e2e-dns"
+	ServiceName = "sc-2450"
+	Image       = "e2e-sc-2450"
 )
 
-func Service(network, ipv4 string) *compose.Service {
+func Service() *compose.Service {
 	return &compose.Service{
 		Name:  ServiceName,
 		Image: Image,
-		Network: map[string]compose.ServiceNetwork{
-			network: {IPv4: ipv4},
-		},
 	}
 }

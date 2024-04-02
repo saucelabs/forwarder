@@ -29,6 +29,9 @@ jobs:
       - name: Generate certificates
         run: make -C e2e/certs certs
 
+      - name: Build test helper containers
+        run: make -C e2e update-helper-images
+
       - name: Build test container
         run: make -C e2e update-test-image
 
