@@ -214,9 +214,6 @@ func fileBase64(path string) string {
 
 func nopHealthCheck() *compose.HealthCheck {
 	return &compose.HealthCheck{
-		Test:        []string{"CMD", "/usr/bin/forwarder", "-h"},
-		StartPeriod: 5 * time.Second,
-		Interval:    1 * time.Minute,
-		Retries:     1,
+		Test: []string{"NONE"},
 	}
 }
