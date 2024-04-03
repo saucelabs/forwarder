@@ -58,8 +58,6 @@ func main() {
 		Setups:      AllSetups(),
 		SetupRegexp: r,
 		Decorate: func(s *setup.Setup) {
-			fmt.Println("running setup", s.Name)
-
 			if *args.prometheus {
 				p := prometheus.Service()
 				s.Compose.Services[p.Name] = p

@@ -7,12 +7,14 @@
 package setup
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"math/rand"
 	"os"
 	"regexp"
 	"slices"
+	"sync"
 	"time"
 
 	"github.com/saucelabs/forwarder/utils/compose"
@@ -42,6 +44,7 @@ type Runner struct {
 	Parallel    int
 
 	td errgroup.Group
+	mu sync.Mutex
 }
 
 func (r *Runner) Run(ctx context.Context) error {
@@ -86,7 +89,10 @@ func (r *Runner) Run(ctx context.Context) error {
 }
 
 func (r *Runner) runSetup(s *Setup) (runErr error) {
-	cmd, err := compose.NewCommand(s.Compose)
+	start := time.Now()
+
+	var stdout, stderr bytes.Buffer
+	cmd, err := compose.NewCommand(s.Compose, &stdout, &stderr)
 	if err != nil {
 		return err
 	}
@@ -106,36 +112,39 @@ func (r *Runner) runSetup(s *Setup) (runErr error) {
 	}()
 
 	defer func() {
-		if runErr != nil {
-			w := os.Stderr
+		// Protect against concurrent writes to stdout/stderr.
+		r.mu.Lock()
+		defer r.mu.Unlock()
 
-			fmt.Fprintf(w, "%s\n", cmd.Dir())
-
-			if b, err := os.ReadFile(cmd.File()); err != nil {
-				fmt.Fprintf(w, "failed to read compose file: %v\n", err)
-			} else {
-				fmt.Fprintf(w, "\n%s\n", b)
-			}
-
-			fmt.Fprintf(w, "\n")
-
-			if err := cmd.Ps(); err != nil {
-				fmt.Fprintf(w, "failed to ps: %v\n", err)
-			}
-
-			fmt.Fprintf(w, "\n")
-
-			var args []string
-			for name := range s.Compose.Services {
-				if name == TestServiceName {
-					continue
-				}
-				args = append(args, name)
-			}
-			if err := cmd.Logs(args...); err != nil {
-				fmt.Fprintf(w, "failed to get logs: %v\n", err)
-			}
+		if runErr == nil {
+			fmt.Fprintf(os.Stdout, "=== setup %s PASS (duration: %s)\n", s.Name, time.Since(start))
+			return
 		}
+
+		w := os.Stderr
+
+		fmt.Fprintf(w, "=== setup %s FAIL (duration: %s)\n", s.Name, time.Since(start))
+
+		if b, err := os.ReadFile(cmd.File()); err != nil {
+			fmt.Fprintf(w, "failed to read compose file: %v\n", err)
+		} else {
+			fmt.Fprintf(w, "\n%s\n", b)
+		}
+
+		fmt.Fprintf(w, "\n")
+
+		if err := cmd.Ps(); err != nil {
+			fmt.Fprintf(w, "failed to ps: %v\n", err)
+		}
+
+		fmt.Fprintf(w, "\n")
+
+		if err := cmd.Logs(); err != nil {
+			fmt.Fprintf(w, "failed to get logs: %v\n", err)
+		}
+
+		stdout.WriteTo(w)
+		stderr.WriteTo(w)
 	}()
 
 	// Bring up all services except the test service.
