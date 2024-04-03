@@ -87,14 +87,14 @@ func (c *Command) Close() error {
 
 func (c *Command) Up(args ...string) error {
 	if slices.ContainsFunc(args, func(s string) bool { return s == "-d" || s == "--detach" }) {
-		return c.runSilently(c.cmd("up", args))
+		return c.quietRun(c.cmd("up", args))
 	}
 
 	return c.run(c.cmd("up", args))
 }
 
 func (c *Command) Down(args ...string) error {
-	return c.runSilently(c.cmd("down", args))
+	return c.quietRun(c.cmd("down", args))
 }
 
 func (c *Command) Ps(args ...string) error {
@@ -179,7 +179,7 @@ func (c *Command) cmd(subcmd string, args []string) *exec.Cmd {
 	return cmd
 }
 
-func (c *Command) runSilently(cmd *exec.Cmd) error {
+func (c *Command) quietRun(cmd *exec.Cmd) error {
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
