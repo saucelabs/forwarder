@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path"
@@ -19,11 +20,13 @@ import (
 )
 
 type Command struct {
-	rt  string
-	dir string
+	rt     string
+	dir    string
+	stdout io.Writer
+	stderr io.Writer
 }
 
-func NewCommand(c *Compose) (*Command, error) {
+func NewCommand(c *Compose, stdout, stderr io.Writer) (*Command, error) {
 	rt := os.Getenv("CONTAINER_RUNTIME")
 	if rt == "" {
 		rt = "docker"
@@ -47,9 +50,18 @@ func NewCommand(c *Compose) (*Command, error) {
 		return nil, fmt.Errorf("close temp file: %w", err)
 	}
 
+	if stdout == nil {
+		stdout = os.Stdout
+	}
+	if stderr == nil {
+		stderr = os.Stderr
+	}
+
 	return &Command{
-		rt:  rt,
-		dir: d,
+		rt:     rt,
+		dir:    d,
+		stdout: stdout,
+		stderr: stderr,
 	}, nil
 }
 
@@ -75,22 +87,22 @@ func (c *Command) Close() error {
 
 func (c *Command) Up(args ...string) error {
 	if slices.ContainsFunc(args, func(s string) bool { return s == "-d" || s == "--detach" }) {
-		return runSilently(c.cmd("up", args))
+		return c.runSilently(c.cmd("up", args))
 	}
 
-	return run(c.cmd("up", args))
+	return c.run(c.cmd("up", args))
 }
 
 func (c *Command) Down(args ...string) error {
-	return runSilently(c.cmd("down", args))
+	return c.runSilently(c.cmd("down", args))
 }
 
 func (c *Command) Ps(args ...string) error {
-	return run(c.cmd("ps", args))
+	return c.run(c.cmd("ps", args))
 }
 
 func (c *Command) Logs(args ...string) error {
-	return run(c.cmd("logs", args))
+	return c.run(c.cmd("logs", args))
 }
 
 const healthy = "healthy"
@@ -108,8 +120,8 @@ func (c *Command) health() ([]serviceHealth, error) {
 
 	err := cmd.Run()
 	if err != nil {
-		stdout.WriteTo(os.Stdout)
-		stderr.WriteTo(os.Stderr)
+		stdout.WriteTo(c.stdout)
+		stderr.WriteTo(c.stderr)
 	}
 
 	var res []serviceHealth
@@ -167,21 +179,21 @@ func (c *Command) cmd(subcmd string, args []string) *exec.Cmd {
 	return cmd
 }
 
-func runSilently(cmd *exec.Cmd) error {
+func (c *Command) runSilently(cmd *exec.Cmd) error {
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 
 	err := cmd.Run()
 	if err != nil {
-		stdout.WriteTo(os.Stdout)
-		stderr.WriteTo(os.Stderr)
+		stdout.WriteTo(c.stdout)
+		stderr.WriteTo(c.stderr)
 	}
 	return err
 }
 
-func run(cmd *exec.Cmd) error {
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+func (c *Command) run(cmd *exec.Cmd) error {
+	cmd.Stdout = c.stdout
+	cmd.Stderr = c.stderr
 	return cmd.Run()
 }
