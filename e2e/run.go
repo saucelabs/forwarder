@@ -69,6 +69,15 @@ func main() {
 						srv.Environment["FORWARDER_LOG_LEVEL"] = "debug"
 						srv.Environment["FORWARDER_LOG_HTTP"] = "headers,api:errors"
 					}
+					switch srv.Name {
+					case forwarder.ProxyServiceName:
+						srv.Ports = append(srv.Ports,
+							"3128:3128",
+							"10000:10000",
+						)
+					case setup.TestServiceName:
+						srv.Command += " -test.v"
+					}
 				}
 			}
 

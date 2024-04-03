@@ -10,6 +10,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"math/rand"
 	"os"
 	"regexp"
@@ -98,7 +99,19 @@ func (r *Runner) runSetup(s *Setup) (runErr error) {
 	}
 
 	defer func() {
-		if !r.Debug {
+		if r.Debug {
+			if err := copyComposeFile(cmd.File()); err != nil {
+				fmt.Fprintf(os.Stderr, "failed to copy compose file: %v\n", err)
+				os.Exit(1)
+			}
+
+			if err := cmd.Close(); err != nil {
+				fmt.Fprintf(os.Stderr, "failed to close compose: %v\n", err)
+				os.Exit(1)
+			}
+
+			fmt.Fprintf(os.Stdout, "To debug, run:\n\n COMPOSE_PROJECT_NAME=%s %s compose <command> ...\n\n", cmd.Runtime(), cmd.Project())
+		} else {
 			r.td.Go(func() error {
 				if err := cmd.Down("-v"); err != nil {
 					return fmt.Errorf("compose down: %w", err)
@@ -172,4 +185,24 @@ func (r *Runner) runSetup(s *Setup) (runErr error) {
 
 	// Run the test service.
 	return cmd.Up("--force-recreate", "--exit-code-from", TestServiceName, TestServiceName)
+}
+
+func copyComposeFile(input string) error {
+	src, err := os.Open(input)
+	if err != nil {
+		return err
+	}
+	defer src.Close()
+
+	dst, err := os.Create("compose.yaml")
+	if err != nil {
+		return err
+	}
+	defer dst.Close()
+
+	if _, err := io.Copy(dst, src); err != nil {
+		return err
+	}
+
+	return dst.Close()
 }

@@ -28,16 +28,13 @@ The defaults setup naming scheme is `defaults-<httpbin-scheme>-<proxy-scheme>-<u
 Start the test runner `make run-e2e SETUP=<setup> ARGS="-debug"` where `<setup>` is the name of the setup you want to debug.
 It would:
 * enable debug logging in all containers,
-* print test logs,
+* enable port forwarding on the proxy container,
 * preserve the environment after the test is finished.
 
-After the test is finished:
-* check the environment setup by looking at the `compose.yml` file in the `e2e` directory,
-* run `make dump-logs` to print all the logs to the console,
-* use `docker compose` or `docker` commands to inspect the running environment. 
+After the test is finished you can access the environment the provided project name. 
 
 The proxy service binds the following ports to the host:
-- 3128 - the proxy port, use the proxy `curl -x <proxy-scheme>://localhost:3128 http://httpbin.org/get`, for https you may nedd to add `--proxy-insecure` flag
+- 3128 - the proxy port, use the proxy `curl -x <proxy-scheme>://localhost:3128 http://httpbin.org/get`, for https you may need to add `--proxy-insecure` flag
 - 10000 - the API port, navigate to `http://localhost:10000` to see the API index page
 
 #### Prometheus metrics
