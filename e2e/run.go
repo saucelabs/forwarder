@@ -7,9 +7,11 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"os"
+	"os/signal"
 	"regexp"
 	"strings"
 
@@ -26,11 +28,13 @@ var args = struct {
 
 	prometheus *bool
 	debug      *bool
+	parallel   *int
 }{
 	setup:      flag.String("setup", "", "Only run setups matching this regexp"),
 	run:        flag.String("run", "", "Only run tests matching this regexp"),
 	prometheus: flag.Bool("prom", false, "Add prometheus to the setup"),
 	debug:      flag.Bool("debug", false, "Enables debug logs and preserves containers after running, this will run only the first matching setup"),
+	parallel:   flag.Int("parallel", 1, "How many setups to run in parallel"),
 }
 
 func setupRegexp() (*regexp.Regexp, error) {
@@ -73,10 +77,12 @@ func main() {
 			t := testService(s)
 			s.Compose.Services[t.Name] = t
 		},
-		Debug: *args.debug,
+		Debug:    *args.debug,
+		Parallel: *args.parallel,
 	}
 
-	if err := runner.Run(); err != nil {
+	ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt)
+	if err := runner.Run(ctx); err != nil {
 		fmt.Println(err.Error())
 		os.Exit(1)
 	}

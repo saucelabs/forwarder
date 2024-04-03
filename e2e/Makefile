@@ -15,5 +15,6 @@ update-helper-images:
 
 .PHONY: run-e2e
 run-e2e: SETUP ?= .
+run-e2e: PARALLEL ?= 2
 run-e2e:
-	@go run . -setup "$(SETUP)" -run "$(RUN)" $(ARGS)
+	@go run . -setup "$(SETUP)" -run "$(RUN)" -parallel $(PARALLEL) $(ARGS)
