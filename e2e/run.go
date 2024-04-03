@@ -16,7 +16,6 @@ import (
 	"strings"
 
 	"github.com/saucelabs/forwarder/e2e/forwarder"
-	"github.com/saucelabs/forwarder/e2e/prometheus"
 	"github.com/saucelabs/forwarder/e2e/setup"
 	"github.com/saucelabs/forwarder/utils/compose"
 	"golang.org/x/exp/maps"
@@ -26,15 +25,13 @@ var args = struct {
 	setup *string
 	run   *string
 
-	prometheus *bool
-	debug      *bool
-	parallel   *int
+	debug    *bool
+	parallel *int
 }{
-	setup:      flag.String("setup", "", "Only run setups matching this regexp"),
-	run:        flag.String("run", "", "Only run tests matching this regexp"),
-	prometheus: flag.Bool("prom", false, "Add prometheus to the setup"),
-	debug:      flag.Bool("debug", false, "Enables debug logs and preserves containers after running, this will run only the first matching setup"),
-	parallel:   flag.Int("parallel", 1, "How many setups to run in parallel"),
+	setup:    flag.String("setup", "", "Only run setups matching this regexp"),
+	run:      flag.String("run", "", "Only run tests matching this regexp"),
+	debug:    flag.Bool("debug", false, "Enables debug logs and preserves containers after running, this will run only the first matching setup"),
+	parallel: flag.Int("parallel", 1, "How many setups to run in parallel"),
 }
 
 func setupRegexp() (*regexp.Regexp, error) {
@@ -58,13 +55,6 @@ func main() {
 		Setups:      AllSetups(),
 		SetupRegexp: r,
 		Decorate: func(s *setup.Setup) {
-			fmt.Println("running setup", s.Name)
-
-			if *args.prometheus {
-				p := prometheus.Service()
-				s.Compose.Services[p.Name] = p
-			}
-
 			if *args.debug {
 				for _, srv := range s.Compose.Services {
 					if strings.HasPrefix(srv.Image, "saucelabs/forwarder") {
