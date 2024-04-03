@@ -22,6 +22,12 @@ import (
 
 const TestServiceName = "test"
 
+var CI bool
+
+func init() {
+	_, CI = os.LookupEnv("CI")
+}
+
 type Setup struct {
 	Name    string
 	Compose *compose.Compose
@@ -69,6 +75,11 @@ func (r *Runner) Run(ctx context.Context) error {
 		if r.Debug {
 			break
 		}
+	}
+
+	// Don't wait for cleanup if running in CI.
+	if CI {
+		return g.Wait()
 	}
 
 	return multierr.Combine(g.Wait(), r.td.Wait())
@@ -143,7 +154,7 @@ func (r *Runner) runSetup(s *Setup) (runErr error) {
 
 	// Wait for services to be ready.
 	waitTimeout := 10 * time.Second
-	if _, ok := os.LookupEnv("CI"); ok {
+	if CI {
 		waitTimeout = 60 * time.Second
 	}
 	if err := cmd.Wait(time.Second, waitTimeout); err != nil {
