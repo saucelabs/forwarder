@@ -39,10 +39,8 @@ The proxy service binds the following ports to the host:
 
 #### Prometheus metrics
 
-Start the test runner `make run-e2e SETUP=<setup> ARGS="-debug -prom"` to enable Prometheus metrics collection.
-Prometheus server is available at `http://localhost:9090`,
-* proxy metrics have `proxy_` prefix
-* upstream proxy metrics have `upstream_` prefix.
+For Prometheus and Grafana setup, go to [local/monitoring](../local/monitoring) and run `make up`.
+It will start Prometheus and Grafana containers and configure Prometheus to scrape the proxy metrics. 
 
 ### Testing for Go routine leaks
 
