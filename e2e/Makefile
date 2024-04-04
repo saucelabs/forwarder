@@ -2,6 +2,9 @@ export FORWARDER_VERSION ?= devel
 
 CONTAINER_RUNTIME ?= docker
 
+.PHONY: all
+all: update-helper-images update-test-image run-e2e
+
 .PHONY: update-helper-images
 update-helper-images:
 	@$(MAKE) -C dns update-image
