@@ -7,13 +7,11 @@
 package setup
 
 import (
-	"github.com/saucelabs/forwarder/utils/compose"
+	"os"
 )
 
-const TestServiceName = "test"
+var CI bool
 
-type Setup struct {
-	Name    string
-	Compose *compose.Compose
-	Run     string
+func init() {
+	_, CI = os.LookupEnv("CI")
 }
