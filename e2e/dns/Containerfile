@@ -1,4 +1,4 @@
-FROM ubuntu/bind9:latest
+FROM docker.io/ubuntu/bind9
 
 COPY db.rpz named.conf.local named.conf.options /etc/bind/
 
