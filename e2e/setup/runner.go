@@ -119,13 +119,13 @@ func (r *Runner) runSetup(s *Setup) (runErr error) {
 		defer r.mu.Unlock()
 
 		if runErr == nil {
-			fmt.Fprintf(os.Stdout, "=== setup %s PASS (%s)\n", s.Name, time.Since(start))
+			fmt.Fprintf(os.Stdout, "=== setup %s PASS (%s)\n", s.Name, time.Since(start).Round(time.Millisecond))
 			return
 		}
 
 		w := os.Stderr
 
-		fmt.Fprintf(w, "=== setup %s FAIL (%s)\n", s.Name, time.Since(start))
+		fmt.Fprintf(w, "=== setup %s FAIL (%s)\n", s.Name, time.Since(start).Round(time.Millisecond))
 
 		if b, err := os.ReadFile(cmd.File()); err != nil {
 			fmt.Fprintf(w, "failed to read compose file: %v\n", err)
