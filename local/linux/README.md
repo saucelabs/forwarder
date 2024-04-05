@@ -1,22 +1,18 @@
-# Local Testing Environment
-This package provides environments for local testing/developing of the Forwarder.
+# Linux Installation Environment
 
-## Packaging Testing Environment
-The environment is based on Docker image with systemd support and is meant to be used with Podman.
-It provides a Containerfile to build the container image and a run script.
+This directory contains the development environment for the Linux installation of Forwarder.
+It's based on Systemd enabled Podman containers.
+Podman installation is required to use this environment.
 
-### Prerequisites
+## Supported distributions
+- Fedora `.rpm`
+- Debian `.deb`
 
-- [Podman](https://podman.io/) installed on your system
+## Usage
 
-### Supported distributions
-- Debian - `.deb`
-- Fedora - `.rpm`
-
-### Getting started
-- `./run.sh` will build the container image, release the package and run the container.
-- Use `--force-build-image` to always rebuild image before running.
-- Use `--force-release` to always release package before running.
-
-### Notes
-- The scripts use bash as the shell. Make sure your bash sees other executables in the right version.
+1. Create packages for the distributions you want to test with `make dist`.
+1. Run the containers with `make debian` or `make fedora`, this will create the containers install packages and start the services.
+1. Check the Makefile for available commands. Example commands include:
+	- `make shell` to enter the container
+	- `make logs` to see the logs of the service
+1. To stop the containers run `make down`.
