@@ -1,0 +1,2 @@
+log-level: debug
+log-http: proxy:short-url
