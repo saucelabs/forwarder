@@ -6,17 +6,44 @@ After=network-online.target
 Type=simple
 User=forwarder
 Group=forwarder
-LimitCORE=infinity
-EnvironmentFile=/etc/default/forwarder
 ExecStart=/usr/bin/forwarder run
-TimeoutStartSec=900
-TimeoutStopSec=900
+EnvironmentFile=/etc/default/forwarder
+
+PrivateDevices=true
+PrivateTmp=true
+ProtectClock=true
+ProtectControlGroups=true
+ProtectHostname=true
+ProtectKernelLogs=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+ProtectProc=invisible
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
+RestrictRealtime=true
+MemoryDenyWriteExecute=true
+NoNewPrivileges=true
+LockPersonality=true
+ProcSubset=pid
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+# Uncomment the following lines if your service requires binding to ports <1024.
+#AmbientCapabilities=CAP_NET_BIND_SERVICE
+#CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+
 KillMode=process
 Restart=on-failure
+RestartSec=30s
 RestartPreventExitStatus=1
+TimeoutStartSec=60
+TimeoutStopSec=600
+
+SyslogIdentifier=forwarder
 StandardOutput=journal
 StandardError=journal
 SyslogLevelPrefix=false
+
+LimitCORE=infinity
+LimitNPROC=64
 
 [Install]
 WantedBy=multi-user.target
