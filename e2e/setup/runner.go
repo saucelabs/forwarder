@@ -53,6 +53,10 @@ func (r *Runner) Run(ctx context.Context) error {
 	}
 
 	for i := range setups {
+		if ctx.Err() != nil {
+			break
+		}
+
 		s := &setups[i]
 
 		if r.SetupRegexp != nil && !r.SetupRegexp.MatchString(s.Name) {
