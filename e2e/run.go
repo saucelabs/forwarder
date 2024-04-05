@@ -7,6 +7,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"flag"
 	"fmt"
@@ -92,15 +93,17 @@ func testService(s *setup.Setup) *compose.Service {
 		run = s.Run
 	}
 
-	cmd := fmt.Sprintf("-test.run %q -test.shuffle on", run)
+	var cmd bytes.Buffer
 	if *args.debug {
-		cmd += " -test.v"
+		cmd.WriteString("-test.v ")
 	}
+	fmt.Fprintf(&cmd, "-test.run %q -test.shuffle on -services %s",
+		run, strings.Join(maps.Keys(s.Compose.Services), ","))
 
 	c := &compose.Service{
 		Name:    setup.TestServiceName,
 		Image:   "forwarder-e2e",
-		Command: cmd,
+		Command: cmd.String(),
 	}
 
 	p, ok := s.Compose.Services[forwarder.ProxyServiceName]
