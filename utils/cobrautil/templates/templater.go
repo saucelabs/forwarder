@@ -97,7 +97,7 @@ func (templater *templater) HelpFunc() func(*cobra.Command, []string) {
 		t := template.New("help")
 		t.Funcs(templater.templateFuncs())
 		template.Must(t.Parse(templater.HelpTemplate))
-		out := term.NewWordWrapWriter(c.OutOrStderr(), DefaultWrapLimit)
+		out := term.NewWordWrapWriter(c.OutOrStdout(), DefaultWrapLimit)
 		err := t.Execute(out, c)
 		if err != nil {
 			c.Println(err)
@@ -110,7 +110,7 @@ func (templater *templater) UsageFunc(exposedFlags ...string) func(*cobra.Comman
 		t := template.New("usage")
 		t.Funcs(templater.templateFuncs(exposedFlags...))
 		template.Must(t.Parse(templater.UsageTemplate))
-		out := term.NewWordWrapWriter(c.OutOrStderr(), DefaultWrapLimit)
+		out := term.NewWordWrapWriter(c.OutOrStdout(), DefaultWrapLimit)
 		return t.Execute(out, c)
 	}
 }
