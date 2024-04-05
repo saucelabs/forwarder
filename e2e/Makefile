@@ -38,3 +38,8 @@ down: COMPOSE_PROJECT_NAME ?= $(DEBUG_PROJECT_NAME)
 down:
 	@$(CONTAINER_RUNTIME) compose down
 
+.PHONY: logs
+logs: COMPOSE_PROJECT_NAME ?= $(DEBUG_PROJECT_NAME)
+logs: SRV ?= test
+logs:
+	@$(CONTAINER_RUNTIME) compose logs $(SRV)
