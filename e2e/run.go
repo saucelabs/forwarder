@@ -78,7 +78,21 @@ func main() {
 		Parallel: *args.parallel,
 	}
 
-	ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt)
+	ctx, cancel := context.WithCancel(context.Background())
+
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	go func() {
+		<-c
+
+		fmt.Println("Stopping...")
+		cancel()
+
+		for range c {
+			fmt.Println("Waiting for running tests to finish...")
+		}
+	}()
+
 	if err := runner.Run(ctx); err != nil {
 		fmt.Println(err.Error())
 		os.Exit(1)
