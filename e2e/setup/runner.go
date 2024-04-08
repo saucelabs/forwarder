@@ -22,11 +22,13 @@ import (
 )
 
 type Runner struct {
-	Setups      []Setup
-	SetupRegexp *regexp.Regexp
-	Decorate    func(*Setup)
-	Debug       bool
-	Parallel    int
+	Setups        []Setup
+	SetupRegexp   *regexp.Regexp
+	Decorate      func(*Setup)
+	OnComposeUp   func(*Setup)
+	OnComposeDown func(*Setup)
+	Debug         bool
+	Parallel      int
 
 	td errgroup.Group
 	mu sync.Mutex
@@ -73,7 +75,9 @@ func (r *Runner) Run(ctx context.Context) error {
 			r.Decorate(s)
 		}
 		g.Go(func() error {
-			return r.runSetup(s)
+			err := r.runSetup(s)
+
+			return err
 		})
 		if r.Debug {
 			break
@@ -110,6 +114,9 @@ func (r *Runner) runSetup(s *Setup) (runErr error) {
 			r.td.Go(func() error {
 				if err := cmd.Down("-v"); err != nil {
 					return fmt.Errorf("compose down: %w", err)
+				}
+				if r.OnComposeDown != nil {
+					r.OnComposeDown(s)
 				}
 				if err := cmd.Close(); err != nil {
 					return fmt.Errorf("compose close: %w", err)
@@ -165,6 +172,9 @@ func (r *Runner) runSetup(s *Setup) (runErr error) {
 		args = append(args, name)
 	}
 
+	if r.OnComposeUp != nil {
+		r.OnComposeUp(s)
+	}
 	if err := cmd.Up(args...); err != nil {
 		return fmt.Errorf("compose up: %w", err)
 	}
