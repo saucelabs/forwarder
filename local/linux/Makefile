@@ -33,7 +33,7 @@ fedora: forwarder.rpm
 
 .PHONY: .up
 .up:
-	@podman run -p 3128:3128 -d -v ./forwarder.$(EXT):/forwarder.$(EXT) --name forwarder-testing --replace $(IMG)
+	@podman run -p 3128:3128 -d -v ./forwarder.$(EXT):/forwarder.$(EXT) --privileged --name forwarder-testing --replace $(IMG)
 	@podman exec forwarder-testing $(INSTALL_CMD) "/forwarder.$(EXT)"
 	@podman cp ./forwarder.yaml forwarder-testing:/etc/forwarder/forwarder.yaml
 	@podman exec forwarder-testing systemctl start forwarder
