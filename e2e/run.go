@@ -15,6 +15,7 @@ import (
 	"os/signal"
 	"regexp"
 	"strings"
+	"sync"
 
 	"github.com/saucelabs/forwarder/e2e/forwarder"
 	"github.com/saucelabs/forwarder/e2e/setup"
@@ -52,6 +53,9 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Protect setups using custom networks from running in parallel.
+	var networkMu sync.Mutex
+
 	runner := setup.Runner{
 		Setups:      AllSetups(),
 		SetupRegexp: r,
@@ -73,6 +77,16 @@ func main() {
 
 			t := testService(s)
 			s.Compose.Services[t.Name] = t
+		},
+		OnComposeUp: func(s *setup.Setup) {
+			if len(s.Compose.Networks) > 0 {
+				networkMu.Lock()
+			}
+		},
+		OnComposeDown: func(s *setup.Setup) {
+			if len(s.Compose.Networks) > 0 {
+				networkMu.Unlock()
+			}
 		},
 		Debug:    *args.debug,
 		Parallel: *args.parallel,
