@@ -18,7 +18,6 @@ import (
 	"time"
 
 	"github.com/saucelabs/forwarder/utils/compose"
-	"go.uber.org/multierr"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -52,6 +51,14 @@ func (r *Runner) Run(ctx context.Context) error {
 		g.SetLimit(p)
 	}
 
+	if !CI {
+		defer func() {
+			if err := r.td.Wait(); err != nil {
+				fmt.Fprintf(os.Stderr, "teardown error: %v\n", err)
+			}
+		}()
+	}
+
 	for i := range setups {
 		if ctx.Err() != nil {
 			break
@@ -73,12 +80,7 @@ func (r *Runner) Run(ctx context.Context) error {
 		}
 	}
 
-	// Don't wait for cleanup if running in CI.
-	if CI {
-		return g.Wait()
-	}
-
-	return multierr.Combine(g.Wait(), r.td.Wait())
+	return g.Wait()
 }
 
 func (r *Runner) runSetup(s *Setup) (runErr error) {
