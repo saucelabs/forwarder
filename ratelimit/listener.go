@@ -18,13 +18,21 @@ type Listener struct {
 	txLimiter *rate.Limiter
 }
 
-func NewListener(l net.Listener, rxBandwidth, txBandwidth int64) *Listener {
+// NewListener creates a new rate-limited listener.
+// The readLimit and writeLimit should be seen from the perspective of a peer that opens a connection to this listener.
+// How much they can read and write, respectively.
+// Limits are in bytes per second.
+func NewListener(l net.Listener, readLimit, writeLimit int64) *Listener {
+	// Notice that the readLimit should be seen from the perspective of a peer that opens a connection to this listener.
+	// Thus, the readLimit is in fact a txBandwidth - How much data can be sent to the peer that opened the connection,
+	// controls how much data they can *read*.
+	// The same goes for writeLimit.
 	var rxLimiter, txLimiter *rate.Limiter
-	if rxBandwidth > 0 {
-		rxLimiter = newRateLimiter(rxBandwidth)
+	if readLimit > 0 {
+		txLimiter = newRateLimiter(readLimit)
 	}
-	if txBandwidth > 0 {
-		txLimiter = newRateLimiter(txBandwidth)
+	if writeLimit > 0 {
+		rxLimiter = newRateLimiter(writeLimit)
 	}
 
 	return &Listener{
