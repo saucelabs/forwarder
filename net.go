@@ -127,10 +127,7 @@ func (l *Listener) Listen() error {
 	}
 
 	if rl, wl := l.ReadLimit, l.WriteLimit; rl > 0 || wl > 0 {
-		// Notice that the ReadLimit stands for the read limit *from* a proxy, and the WriteLimit
-		// stands for the write limit *to* a proxy, thus the ReadLimit is in fact
-		// a txBandwidth and the WriteLimit is a rxBandwidth.
-		ll = ratelimit.NewListener(ll, wl, rl)
+		ll = ratelimit.NewListener(ll, rl, wl)
 	}
 
 	l.listener = ll
