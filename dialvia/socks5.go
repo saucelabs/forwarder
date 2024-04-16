@@ -36,7 +36,7 @@ func SOCKS5Proxy(dial ContextDialerFunc, proxyURL *url.URL) *SOCKS5ProxyDialer {
 	}
 }
 
-func (d *SOCKS5ProxyDialer) DialContext(_ context.Context, network, addr string) (net.Conn, error) {
+func (d *SOCKS5ProxyDialer) DialContext(ctx context.Context, network, addr string) (net.Conn, error) {
 	u := d.proxyURL.User
 	var auth *proxy.Auth
 	if u != nil {
@@ -59,5 +59,10 @@ func (d *SOCKS5ProxyDialer) DialContext(_ context.Context, network, addr string)
 		return nil, err
 	}
 
-	return sd.Dial(network, addr)
+	sdctx := sd.(contextDialer) //nolint:forcetypeassert // I want it to panic if it's not a ContextDialerFunc.
+	return sdctx.DialContext(ctx, network, addr)
+}
+
+type contextDialer interface {
+	DialContext(context.Context, string, string) (net.Conn, error)
 }
