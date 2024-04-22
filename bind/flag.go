@@ -94,11 +94,10 @@ func HTTPProxyConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPProxyConfig, lcfg *lo
 	LogConfig(fs, lcfg)
 
 	fs.VarP(anyflag.NewValueWithRedact[*url.URL](cfg.UpstreamProxy, &cfg.UpstreamProxy, forwarder.ParseProxyURL, RedactURL),
-		"proxy", "x", "[protocol://]host[:port]"+
+		"proxy", "x", "<[protocol://]host:port>"+
 			"Upstream proxy to use. "+
 			"The supported protocols are: http, https, socks5. "+
 			"No protocol specified will be treated as HTTP proxy. "+
-			"If the port number is not specified, it is assumed to be 1080. "+
 			"The basic authentication username and password can be specified in the host string e.g. user:pass@host:port. "+
 			"Alternatively, you can use the -c, --credentials flag to specify the credentials. "+
 			"If both are specified, the proxy flag takes precedence. ")
