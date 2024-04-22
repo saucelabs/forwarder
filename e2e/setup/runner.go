@@ -181,7 +181,7 @@ func (r *Runner) runSetup(s *Setup) (runErr error) {
 	}
 
 	// Wait for services to be ready.
-	waitTimeout := 10 * time.Second
+	waitTimeout := 15 * time.Second
 	if CI {
 		waitTimeout = 60 * time.Second
 	}
