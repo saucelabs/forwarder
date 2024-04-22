@@ -75,9 +75,10 @@ func (r *Runner) Run(ctx context.Context) error {
 			r.Decorate(s)
 		}
 		g.Go(func() error {
-			err := r.runSetup(s)
-
-			return err
+			if err := r.runSetup(s); err != nil {
+				return fmt.Errorf("setup %s: %w", s.Name, err)
+			}
+			return nil
 		})
 		if r.Debug {
 			break
