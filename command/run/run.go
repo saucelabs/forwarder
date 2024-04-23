@@ -45,7 +45,7 @@ type command struct {
 	credentials         []*forwarder.HostPortUser
 	denyDomains         []ruleset.RegexpListItem
 	directDomains       []ruleset.RegexpListItem
-	proxyHeaders        []header.Header
+	connectHeaders      []header.Header
 	requestHeaders      []header.Header
 	responseHeaders     []header.Header
 	httpProxyConfig     *forwarder.HTTPProxyConfig
@@ -183,12 +183,12 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) { //nolint
 		c.httpProxyConfig.DirectDomains = dd
 	}
 
-	if len(c.proxyHeaders) > 0 {
+	if len(c.connectHeaders) > 0 {
 		c.httpProxyConfig.ConnectRequestModifier = func(req *http.Request) error {
 			if req.Header == nil {
 				req.Header = http.Header{}
 			}
-			for _, h := range c.proxyHeaders {
+			for _, h := range c.connectHeaders {
 				h.Apply(req.Header)
 			}
 			return nil
@@ -394,7 +394,7 @@ func Command() *cobra.Command {
 	bind.Credentials(fs, &c.credentials)
 	bind.DenyDomains(fs, &c.denyDomains)
 	bind.DirectDomains(fs, &c.directDomains)
-	bind.ProxyHeaders(fs, &c.proxyHeaders)
+	bind.ConnectHeaders(fs, &c.connectHeaders)
 	bind.RequestHeaders(fs, &c.requestHeaders)
 	bind.ResponseHeaders(fs, &c.responseHeaders)
 	bind.HTTPProxyConfig(fs, c.httpProxyConfig, c.logConfig)
@@ -405,6 +405,11 @@ func Command() *cobra.Command {
 		{Name: "api", Param: &c.apiServerConfig.LogHTTPMode},
 		{Name: "proxy", Param: &c.httpProxyConfig.LogHTTPMode},
 	})
+
+	bind.ProxyHeaders(fs, &c.connectHeaders)
+	fs.Lookup("proxy-header").Deprecated = "--connect-header"
+	cmd.MarkFlagsMutuallyExclusive("proxy-header", "connect-header")
+
 	bind.AutoMarkFlagFilename(cmd)
 	cmd.MarkFlagsMutuallyExclusive("proxy", "pac")
 
