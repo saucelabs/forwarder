@@ -83,7 +83,12 @@ func (p *Proxy) connectHTTP(req *http.Request, proxyURL *url.URL) (res *http.Res
 	} else {
 		d = dialvia.HTTPProxy(p.DialContext, proxyURL)
 	}
-	d.ConnectRequestModifier = p.ConnectRequestModifier
+	d.ConnectRequestModifier = func(req *http.Request) error {
+		if p.RequestModifier == nil {
+			return nil
+		}
+		return p.RequestModifier.ModifyRequest(req)
+	}
 
 	if p.ConnectTimeout > 0 {
 		var cancel context.CancelFunc
