@@ -56,10 +56,6 @@ type Proxy struct {
 	// If empty, no action is taken, and the proxy will generate a new request ID.
 	RequestIDHeader string
 
-	// ConnectRequestModifier modifies CONNECT requests to upstream proxy.
-	// If ConnectPassthrough is enabled, this is ignored.
-	ConnectRequestModifier func(*http.Request) error
-
 	// ConnectFunc specifies a function to dial network connections for CONNECT requests.
 	// Implementations can return ErrConnectFallback to indicate that the CONNECT request should be handled by martian.
 	ConnectFunc ConnectFunc
