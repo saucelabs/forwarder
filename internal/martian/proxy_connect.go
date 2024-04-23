@@ -83,6 +83,7 @@ func (p *Proxy) connectHTTP(req *http.Request, proxyURL *url.URL) (res *http.Res
 	} else {
 		d = dialvia.HTTPProxy(p.DialContext, proxyURL)
 	}
+	d.ProxyConnectHeader = req.Header.Clone()
 
 	if p.ConnectTimeout > 0 {
 		var cancel context.CancelFunc
