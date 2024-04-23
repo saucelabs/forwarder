@@ -78,22 +78,21 @@ var ErrConnectFallback = martian.ErrConnectFallback
 
 type HTTPProxyConfig struct {
 	HTTPServerConfig
-	Name                   string
-	MITM                   *MITMConfig
-	MITMDomains            Matcher
-	ProxyLocalhost         ProxyLocalhostMode
-	UpstreamProxy          *url.URL
-	UpstreamProxyFunc      ProxyFunc
-	DenyDomains            Matcher
-	DirectDomains          Matcher
-	RequestIDHeader        string
-	RequestModifiers       []RequestModifier
-	ResponseModifiers      []ResponseModifier
-	ConnectRequestModifier func(*http.Request) error
-	ConnectFunc            ConnectFunc
-	ConnectTimeout         time.Duration
-	ReadLimit              SizeSuffix
-	WriteLimit             SizeSuffix
+	Name              string
+	MITM              *MITMConfig
+	MITMDomains       Matcher
+	ProxyLocalhost    ProxyLocalhostMode
+	UpstreamProxy     *url.URL
+	UpstreamProxyFunc ProxyFunc
+	DenyDomains       Matcher
+	DirectDomains     Matcher
+	RequestIDHeader   string
+	RequestModifiers  []RequestModifier
+	ResponseModifiers []ResponseModifier
+	ConnectFunc       ConnectFunc
+	ConnectTimeout    time.Duration
+	ReadLimit         SizeSuffix
+	WriteLimit        SizeSuffix
 
 	// TestingHTTPHandler uses Martian's [http.Handler] implementation
 	// over [http.Server] instead of the default TCP server.
@@ -234,7 +233,6 @@ func (hp *HTTPProxy) configureProxy() error {
 	hp.proxy = new(martian.Proxy)
 	hp.proxy.AllowHTTP = true
 	hp.proxy.RequestIDHeader = hp.config.RequestIDHeader
-	hp.proxy.ConnectRequestModifier = hp.config.ConnectRequestModifier
 	hp.proxy.ConnectFunc = hp.config.ConnectFunc
 	hp.proxy.ConnectTimeout = hp.config.ConnectTimeout
 	hp.proxy.WithoutWarning = true
