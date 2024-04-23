@@ -58,7 +58,7 @@ type command struct {
 	descMetrics         bool
 }
 
-func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) { //nolint:gocyclo // Glue code
+func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 	if c.descMetrics {
 		dn, err := os.OpenFile(os.DevNull, os.O_WRONLY, 0)
 		if err != nil {
@@ -183,24 +183,7 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) { //nolint
 		c.httpProxyConfig.DirectDomains = dd
 	}
 
-	if len(c.connectHeaders) > 0 {
-		c.httpProxyConfig.ConnectRequestModifier = func(req *http.Request) error {
-			if req.Header == nil {
-				req.Header = http.Header{}
-			}
-			for _, h := range c.connectHeaders {
-				h.Apply(req.Header)
-			}
-			return nil
-		}
-	}
-
-	if len(c.requestHeaders) > 0 {
-		c.httpProxyConfig.RequestModifiers = append(c.httpProxyConfig.RequestModifiers, header.Headers(c.requestHeaders))
-	}
-	if len(c.responseHeaders) > 0 {
-		c.httpProxyConfig.ResponseModifiers = append(c.httpProxyConfig.ResponseModifiers, header.Headers(c.responseHeaders))
-	}
+	c.configureHeadersModifiers()
 
 	if c.mitm || c.mitmConfig.CACertFile != "" || len(c.mitmDomains) > 0 {
 		c.httpProxyConfig.MITM = c.mitmConfig
@@ -285,6 +268,30 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) { //nolint
 	}
 
 	return g.Run()
+}
+
+func (c *command) configureHeadersModifiers() {
+	if len(c.connectHeaders) > 0 || len(c.requestHeaders) > 0 {
+		connectHeaders := header.Headers(c.connectHeaders)
+		requestHeaders := header.Headers(c.requestHeaders)
+		m := forwarder.RequestModifierFunc(func(req *http.Request) error {
+			if req.Method == http.MethodConnect {
+				return connectHeaders.ModifyRequest(req)
+			}
+			return requestHeaders.ModifyRequest(req)
+		})
+		c.httpProxyConfig.RequestModifiers = append(c.httpProxyConfig.RequestModifiers, m)
+	}
+	if len(c.responseHeaders) > 0 {
+		headers := header.Headers(c.responseHeaders)
+		m := forwarder.ResponseModifierFunc(func(resp *http.Response) error {
+			if req := resp.Request; req != nil && req.Method == http.MethodConnect {
+				return nil
+			}
+			return headers.ModifyResponse(resp)
+		})
+		c.httpProxyConfig.ResponseModifiers = append(c.httpProxyConfig.ResponseModifiers, m)
+	}
 }
 
 func (c *command) registerErrorsMetric() (func(name string), error) {
