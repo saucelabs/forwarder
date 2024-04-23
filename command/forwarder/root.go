@@ -53,6 +53,7 @@ func FlagGroups() templates.FlagGroups {
 				"deny-domains",
 
 				"header",
+				"connect-header",
 				"proxy-header",
 				"response-header",
 			},
