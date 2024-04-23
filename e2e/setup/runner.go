@@ -35,7 +35,7 @@ type Runner struct {
 }
 
 func (r *Runner) Run(ctx context.Context) error {
-	g, _ := errgroup.WithContext(ctx)
+	g, ctx := errgroup.WithContext(ctx)
 
 	p := r.Parallel
 	if r.Debug {
@@ -75,6 +75,9 @@ func (r *Runner) Run(ctx context.Context) error {
 			r.Decorate(s)
 		}
 		g.Go(func() error {
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
 			if err := r.runSetup(s); err != nil {
 				return fmt.Errorf("setup %s: %w", s.Name, err)
 			}
