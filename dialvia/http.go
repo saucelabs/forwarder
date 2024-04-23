@@ -17,6 +17,8 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+
+	"golang.org/x/exp/maps"
 )
 
 type HTTPProxyDialer struct {
@@ -24,7 +26,7 @@ type HTTPProxyDialer struct {
 	proxyURL  *url.URL
 	tlsConfig *tls.Config
 
-	ConnectRequestModifier func(req *http.Request) error
+	ProxyConnectHeader http.Header
 }
 
 func HTTPProxy(dial ContextDialerFunc, proxyURL *url.URL) *HTTPProxyDialer {
@@ -124,13 +126,7 @@ func (d *HTTPProxyDialer) DialContextR(ctx context.Context, network, addr string
 		auth := u.Username() + ":" + pass
 		req.Header.Add("Proxy-Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(auth)))
 	}
-
-	if cm := d.ConnectRequestModifier; cm != nil {
-		if err := cm(&req); err != nil {
-			conn.Close()
-			return nil, nil, err
-		}
-	}
+	maps.Copy(req.Header, d.ProxyConnectHeader)
 
 	if err := req.Write(pbw); err != nil {
 		conn.Close()
