@@ -158,8 +158,10 @@ func (r *Runner) runSetup(s *Setup) (runErr error) {
 
 		fmt.Fprintf(w, "\n")
 
-		if err := cmd.Logs(); err != nil {
-			fmt.Fprintf(w, "failed to get logs: %v\n", err)
+		for _, srv := range append(r.services(s), TestServiceName) {
+			if err := cmd.Logs(srv); err != nil {
+				fmt.Fprintf(w, "failed to get logs: %v\n", err)
+			}
 		}
 
 		stdout.WriteTo(w)
