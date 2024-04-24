@@ -38,6 +38,7 @@ func AllSetups() []setup.Setup {
 	SetupFlagProxyLocalhost(l)
 	SetupFlagHeader(l)
 	SetupFlagResponseHeader(l)
+	SetupFlagConnectHeader(l)
 	SetupFlagDNSServer(l)
 	SetupFlagInsecure(l)
 	SetupFlagMITMCACert(l)
@@ -218,6 +219,25 @@ func SetupFlagResponseHeader(l *setupList) {
 					WithResponseHeader("test-resp-add:test-resp-value,-test-resp-rm,-resp-rm-pref*,test-resp-empty;")).
 			MustBuild(),
 		Run: "^TestFlagResponseHeader$",
+	})
+}
+
+func SetupFlagConnectHeader(l *setupList) {
+	l.Add(setup.Setup{
+		Name: "flag-connect-header",
+		Compose: compose.NewBuilder().
+			AddService(
+				forwarder.HttpbinService().
+					WithProtocol("https")).
+			AddService(
+				forwarder.ProxyService().
+					WithUpstream(forwarder.UpstreamProxyServiceName, "https").
+					WithConnectHeader("Proxy-Authorization:Basic dXNlcjpjb25uZWN0LWhlYWRlcg==")).
+			AddService(forwarder.UpstreamProxyService().
+				WithProtocol("https").
+				WithBasicAuth("user:connect-header")).
+			MustBuild(),
+		Run: "^TestFlagConnectHeader$",
 	})
 }
 
