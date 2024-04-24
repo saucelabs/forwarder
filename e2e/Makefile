@@ -24,7 +24,7 @@ run-e2e:
 DEBUG_PROJECT_NAME := forwarder-e2e-debug
 
 .PHONY: debug
-debug: COMPOSE_PROJECT_NAME ?= $(DEBUG_PROJECT_NAME)
+debug: export COMPOSE_PROJECT_NAME ?= $(DEBUG_PROJECT_NAME)
 debug:
 	@$(MAKE) run-e2e ARGS="-debug"
 
