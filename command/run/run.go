@@ -7,6 +7,7 @@
 package run
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -208,6 +209,7 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 			return err
 		}
 		rt.DialContext = martianlog.LoggingDialContext(rt.DialContext)
+		c.transportWithProxyConnectHeader(rt)
 
 		p, err := forwarder.NewHTTPProxy(c.httpProxyConfig, pr, cm, rt, logger.Named("proxy"))
 		if err != nil {
@@ -291,6 +293,18 @@ func (c *command) configureHeadersModifiers() {
 			return headers.ModifyResponse(resp)
 		})
 		c.httpProxyConfig.ResponseModifiers = append(c.httpProxyConfig.ResponseModifiers, m)
+	}
+}
+
+func (c *command) transportWithProxyConnectHeader(tr *http.Transport) {
+	if len(c.connectHeaders) > 0 {
+		tr.GetProxyConnectHeader = func(_ context.Context, _ *url.URL, _ string) (http.Header, error) {
+			h := make(http.Header, len(c.connectHeaders))
+			for _, ch := range c.connectHeaders {
+				ch.Apply(h)
+			}
+			return h, nil
+		}
 	}
 }
 
