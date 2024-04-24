@@ -8,7 +8,6 @@ package compose
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -117,23 +116,35 @@ func (c *Command) Logs(args ...string) error {
 
 const healthy = "healthy"
 
+type serviceHealth struct {
+	Service string
+	Health  string
+}
+
+func (sh serviceHealth) String() string {
+	return fmt.Sprintf("%s: %s", sh.Service, sh.Health)
+}
+
 func (c *Command) Wait(interval, timeout time.Duration, services []string) error {
 	to := time.NewTimer(timeout)
 	defer to.Stop()
 	t := time.NewTicker(interval)
 	defer t.Stop()
 
+	lastStatus := make([]serviceHealth, len(services))
+
 	for {
 		select {
 		case <-to.C:
-			return errors.New("timeout waiting for services to start")
+			return fmt.Errorf("timeout waiting for services to be healthy: %v", lastStatus)
 		case <-t.C:
 			n := 0
-			for _, s := range services {
+			for i, s := range services {
 				h := c.serviceHealth(s)
 				if h == "" || h == healthy {
 					n++
 				}
+				lastStatus[i] = serviceHealth{Service: s, Health: h}
 			}
 			if n == len(services) {
 				return nil
