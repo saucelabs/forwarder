@@ -8,7 +8,6 @@ package compose
 
 import (
 	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -16,11 +15,13 @@ import (
 	"os/exec"
 	"path"
 	"slices"
+	"strings"
 	"time"
 )
 
 type Command struct {
 	rt     string
+	sep    string
 	dir    string
 	stdout io.Writer
 	stderr io.Writer
@@ -30,6 +31,11 @@ func NewCommand(c *Compose, dir string, stdout, stderr io.Writer) (*Command, err
 	rt := os.Getenv("CONTAINER_RUNTIME")
 	if rt == "" {
 		rt = "docker"
+	}
+
+	sep := "_"
+	if rt == "docker" || hasDockerCompose() {
+		sep = "-"
 	}
 
 	if dir == "" {
@@ -62,6 +68,7 @@ func NewCommand(c *Compose, dir string, stdout, stderr io.Writer) (*Command, err
 
 	return &Command{
 		rt:     rt,
+		sep:    sep,
 		dir:    dir,
 		stdout: stdout,
 		stderr: stderr,
@@ -110,36 +117,7 @@ func (c *Command) Logs(args ...string) error {
 
 const healthy = "healthy"
 
-type serviceHealth struct {
-	Service string
-	Health  string
-}
-
-func (c *Command) health() ([]serviceHealth, error) {
-	cmd := c.cmd("ps", []string{"--format", "json"})
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-
-	err := cmd.Run()
-	if err != nil {
-		stdout.WriteTo(c.stdout)
-		stderr.WriteTo(c.stderr)
-	}
-
-	var res []serviceHealth
-	dec := json.NewDecoder(&stdout)
-	for dec.More() {
-		var ci serviceHealth
-		if err := dec.Decode(&ci); err != nil { //nolint:musttag // the JSON output is CamelCase
-			return nil, fmt.Errorf("decode container info: %w", err)
-		}
-		res = append(res, ci)
-	}
-	return res, nil
-}
-
-func (c *Command) Wait(interval, timeout time.Duration) error {
+func (c *Command) Wait(interval, timeout time.Duration, services []string) error {
 	to := time.NewTimer(timeout)
 	defer to.Stop()
 	t := time.NewTicker(interval)
@@ -150,15 +128,10 @@ func (c *Command) Wait(interval, timeout time.Duration) error {
 		case <-to.C:
 			return errors.New("timeout waiting for services to start")
 		case <-t.C:
-			services, err := c.health()
-			if err != nil {
-				return err
-			}
-
 			n := 0
-			for i := range services {
-				s := &services[i]
-				if s.Health == "" || s.Health == healthy {
+			for _, s := range services {
+				h := c.serviceHealth(s)
+				if h == "" || h == healthy {
 					n++
 				}
 			}
@@ -167,6 +140,38 @@ func (c *Command) Wait(interval, timeout time.Duration) error {
 			}
 		}
 	}
+}
+
+func (c *Command) serviceHealth(s string) string {
+	args := []string{
+		"inspect",
+		"--format",
+		"{{.State.Health.Status}}",
+		c.serviceContainerName(s),
+	}
+
+	cmd := exec.Command(c.rt, args...) //nolint:gosec // this is a command runner
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	if err := cmd.Run(); err != nil {
+		if bytes.Contains(stderr.Bytes(), []byte("no such object")) {
+			return "no such object"
+		}
+		if bytes.Contains(stderr.Bytes(), []byte("nil pointer evaluating *define.HealthCheckResults.Status")) {
+			return ""
+		}
+
+		stdout.WriteTo(c.stdout)
+		stderr.WriteTo(c.stderr)
+	}
+
+	return strings.TrimSpace(stdout.String())
+}
+
+func (c *Command) serviceContainerName(s string) string {
+	return fmt.Sprintf("%s%s%s%s1", c.Project(), c.sep, s, c.sep)
 }
 
 func (c *Command) cmd(subcmd string, args []string) *exec.Cmd {
@@ -199,4 +204,9 @@ func (c *Command) run(cmd *exec.Cmd) error {
 	cmd.Stdout = c.stdout
 	cmd.Stderr = c.stderr
 	return cmd.Run()
+}
+
+func hasDockerCompose() bool {
+	_, err := exec.LookPath("docker-compose")
+	return err == nil
 }
