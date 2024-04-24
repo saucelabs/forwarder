@@ -168,13 +168,7 @@ func (r *Runner) runSetup(s *Setup) (runErr error) {
 
 	// Bring up all services except the test service.
 	args := []string{"-d", "--force-recreate", "--remove-orphans"}
-
-	for name := range s.Compose.Services {
-		if name == TestServiceName {
-			continue
-		}
-		args = append(args, name)
-	}
+	args = append(args, r.services(s)...)
 
 	if r.OnComposeUp != nil {
 		r.OnComposeUp(s)
@@ -188,10 +182,21 @@ func (r *Runner) runSetup(s *Setup) (runErr error) {
 	if CI {
 		waitTimeout = 60 * time.Second
 	}
-	if err := cmd.Wait(time.Second, waitTimeout); err != nil {
+	if err := cmd.Wait(time.Second, waitTimeout, r.services(s)); err != nil {
 		return fmt.Errorf("wait for services: %w", err)
 	}
 
 	// Run the test service.
 	return cmd.Up("--force-recreate", "--exit-code-from", TestServiceName, TestServiceName)
+}
+
+func (r *Runner) services(s *Setup) []string {
+	res := make([]string, 0, len(s.Compose.Services))
+	for name := range s.Compose.Services {
+		if name == TestServiceName {
+			continue
+		}
+		res = append(res, name)
+	}
+	return res
 }
