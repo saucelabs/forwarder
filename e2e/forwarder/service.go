@@ -148,6 +148,11 @@ func (s *Service) WithResponseHeader(header string) *Service {
 	return s
 }
 
+func (s *Service) WithConnectHeader(header string) *Service {
+	s.Environment["FORWARDER_CONNECT_HEADER"] = header
+	return s
+}
+
 func (s *Service) WithGoleak() *Service {
 	s.Environment["FORWARDER_GOLEAK"] = enabled
 	return s

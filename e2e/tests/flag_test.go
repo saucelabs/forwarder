@@ -9,17 +9,21 @@
 package tests
 
 import (
+	"bufio"
 	"bytes"
+	"context"
 	"crypto/x509"
 	"fmt"
 	"net"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/saucelabs/forwarder/dialvia"
 	"github.com/saucelabs/forwarder/e2e/forwarder"
 )
 
@@ -69,6 +73,55 @@ func setHeader(key, value string) func(r *http.Request) {
 	return func(r *http.Request) {
 		r.Header.Set(key, value)
 	}
+}
+
+func TestFlagConnectHeader(t *testing.T) {
+	// The CONNECT request issued by http.Transport.RoundTrip().
+	// It should set connect headers with http.Transport.GetProxyConnectHeader().
+	t.Run("http.Transport", func(t *testing.T) {
+		req, err := http.NewRequest(http.MethodGet, "https://httpbin:8080/status/200", http.NoBody)
+		if err != nil {
+			t.Fatal(err)
+		}
+		// Explicitly set the scheme to https.
+		// Proxy automatically downgrades to http if connection is not secure.
+		req.Header.Set("X-Forwarded-Proto", "https")
+
+		d := net.Dialer{}
+		conn, err := d.Dial("tcp", "proxy:3128")
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer conn.Close()
+
+		if err := req.Write(conn); err != nil {
+			t.Fatal(err)
+		}
+
+		resp, err := http.ReadResponse(bufio.NewReader(conn), req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		resp.Body.Close()
+		if resp.StatusCode != http.StatusOK {
+			t.Fatalf("expected status %d, got %d", http.StatusOK, resp.StatusCode)
+		}
+	})
+
+	// The CONNECT request is received by the proxy.
+	// Headers should be rewritten to upstream proxy CONNECT request.
+	t.Run("dialvia", func(t *testing.T) {
+		proxyURL, err := url.Parse(proxy)
+		if err != nil {
+			t.Fatal(err)
+		}
+		d := dialvia.HTTPProxy((&net.Dialer{}).DialContext, proxyURL)
+		c, err := d.DialContext(context.Background(), "tcp", "httpbin:8080")
+		if err != nil {
+			t.Fatal(err)
+		}
+		c.Close()
+	})
 }
 
 var httpbinDNS = serviceScheme("HTTPBIN_PROTOCOL") + "://httpbin.local:8080"
