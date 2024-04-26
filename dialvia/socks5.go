@@ -10,6 +10,7 @@ import (
 	"context"
 	"net"
 	"net/url"
+	"time"
 
 	"golang.org/x/net/proxy"
 )
@@ -17,6 +18,8 @@ import (
 type SOCKS5ProxyDialer struct {
 	dial     ContextDialerFunc
 	proxyURL *url.URL
+
+	Timeout time.Duration
 }
 
 func SOCKS5Proxy(dial ContextDialerFunc, proxyURL *url.URL) *SOCKS5ProxyDialer {
@@ -37,6 +40,12 @@ func SOCKS5Proxy(dial ContextDialerFunc, proxyURL *url.URL) *SOCKS5ProxyDialer {
 }
 
 func (d *SOCKS5ProxyDialer) DialContext(ctx context.Context, network, addr string) (net.Conn, error) {
+	if d.Timeout > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, d.Timeout)
+		defer cancel()
+	}
+
 	u := d.proxyURL.User
 	var auth *proxy.Auth
 	if u != nil {
