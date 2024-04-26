@@ -113,7 +113,7 @@ func DefaultHTTPProxyConfig() *HTTPProxyConfig {
 		Name:            "forwarder",
 		ProxyLocalhost:  DenyProxyLocalhost,
 		RequestIDHeader: "X-Request-Id",
-		ConnectTimeout:  60 * time.Second,
+		ConnectTimeout:  60 * time.Second, // http.Transport sets a constant 1m timeout for CONNECT requests.
 	}
 }
 
