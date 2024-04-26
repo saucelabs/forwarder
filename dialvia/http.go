@@ -17,6 +17,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"time"
 
 	"golang.org/x/exp/maps"
 )
@@ -26,6 +27,7 @@ type HTTPProxyDialer struct {
 	proxyURL  *url.URL
 	tlsConfig *tls.Config
 
+	Timeout            time.Duration
 	ProxyConnectHeader http.Header
 }
 
@@ -99,6 +101,12 @@ func (d *HTTPProxyDialer) DialContext(ctx context.Context, network, addr string)
 func (d *HTTPProxyDialer) DialContextR(ctx context.Context, network, addr string) (*http.Response, net.Conn, error) {
 	if network != "tcp" && network != "tcp4" && network != "tcp6" {
 		return nil, nil, fmt.Errorf("unsupported network: %s", network)
+	}
+
+	if d.Timeout > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, d.Timeout)
+		defer cancel()
 	}
 
 	conn, err := d.dial(ctx, "tcp", d.proxyURL.Host)
