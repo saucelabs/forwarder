@@ -17,7 +17,6 @@
 package martian
 
 import (
-	"context"
 	"crypto/tls"
 	"errors"
 	"fmt"
@@ -83,13 +82,9 @@ func (p *Proxy) connectHTTP(req *http.Request, proxyURL *url.URL) (res *http.Res
 	} else {
 		d = dialvia.HTTPProxy(p.DialContext, proxyURL)
 	}
+	d.Timeout = p.ConnectTimeout
 	d.ProxyConnectHeader = req.Header.Clone()
 
-	if p.ConnectTimeout > 0 {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, p.ConnectTimeout)
-		defer cancel()
-	}
 	res, conn, err = d.DialContextR(ctx, "tcp", req.URL.Host)
 
 	if res != nil {
@@ -120,6 +115,7 @@ func (p *Proxy) connectSOCKS5(req *http.Request, proxyURL *url.URL) (*http.Respo
 	log.Debugf(ctx, "CONNECT with upstream SOCKS5 proxy: %s", proxyURL.Host)
 
 	d := dialvia.SOCKS5Proxy(p.DialContext, proxyURL)
+	d.Timeout = p.ConnectTimeout
 
 	conn, err := d.DialContext(ctx, "tcp", req.URL.Host)
 	if err != nil {
