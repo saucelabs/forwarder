@@ -1379,12 +1379,192 @@
       "type": "timeseries"
     },
     {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "description": "The size of HTTP requests (less or equal).",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "scaleDistribution": {
+              "type": "linear"
+            }
+          },
+          "fieldMinMax": false
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 8,
+        "x": 0,
+        "y": 17
+      },
+      "id": 26,
+      "options": {
+        "calculate": false,
+        "calculation": {
+          "xBuckets": {
+            "mode": "size",
+            "value": ""
+          },
+          "yBuckets": {
+            "mode": "size"
+          }
+        },
+        "cellGap": 1,
+        "cellValues": {
+          "unit": "reqps"
+        },
+        "color": {
+          "exponent": 2,
+          "fill": "blue",
+          "mode": "opacity",
+          "reverse": false,
+          "scale": "exponential",
+          "scheme": "RdBu",
+          "steps": 11
+        },
+        "exemplars": {
+          "color": "rgba(255,0,255,0.7)"
+        },
+        "filterValues": {
+          "le": 1e-9
+        },
+        "legend": {
+          "show": false
+        },
+        "rowsFrame": {
+          "layout": "auto"
+        },
+        "tooltip": {
+          "mode": "single",
+          "showColorScale": false,
+          "yHistogram": false
+        },
+        "yAxis": {
+          "axisPlacement": "left",
+          "reverse": false,
+          "unit": "decbytes"
+        }
+      },
+      "pluginVersion": "10.4.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "editorMode": "code",
+          "expr": "sum by (le) (rate(${prom_namespace}_http_request_size_bytes_bucket{job=~\"$job\", instance=~\"$instance\", $labels}[$__rate_interval]))",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "title": "HTTP Requests Size (LE)",
+      "type": "heatmap"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "description": "The size of HTTP responses (less or equal).",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "scaleDistribution": {
+              "type": "linear"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 8,
+        "x": 8,
+        "y": 17
+      },
+      "id": 27,
+      "options": {
+        "calculate": false,
+        "cellGap": 1,
+        "cellValues": {
+          "unit": "reqps"
+        },
+        "color": {
+          "exponent": 2,
+          "fill": "blue",
+          "mode": "opacity",
+          "reverse": false,
+          "scale": "exponential",
+          "scheme": "RdBu",
+          "steps": 11
+        },
+        "exemplars": {
+          "color": "rgba(255,0,255,0.7)"
+        },
+        "filterValues": {
+          "le": 1e-9
+        },
+        "legend": {
+          "show": false
+        },
+        "rowsFrame": {
+          "layout": "auto"
+        },
+        "tooltip": {
+          "mode": "single",
+          "showColorScale": false,
+          "yHistogram": false
+        },
+        "yAxis": {
+          "axisPlacement": "left",
+          "reverse": false,
+          "unit": "decbytes"
+        }
+      },
+      "pluginVersion": "10.4.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
+          "editorMode": "code",
+          "expr": "sum by(le) (rate(${prom_namespace}_http_response_size_bytes_bucket{job=~\"$job\", instance=~\"$instance\", $labels}[$__rate_interval]))",
+          "hide": false,
+          "instant": false,
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "title": "HTTP Responses Size (LE)",
+      "type": "heatmap"
+    },
+    {
       "collapsed": false,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 17
+        "y": 23
       },
       "id": 7,
       "panels": [],
@@ -1457,7 +1637,7 @@
         "h": 5,
         "w": 9,
         "x": 0,
-        "y": 18
+        "y": 24
       },
       "id": 9,
       "options": {
@@ -1559,7 +1739,7 @@
         "h": 5,
         "w": 9,
         "x": 9,
-        "y": 18
+        "y": 24
       },
       "id": 13,
       "options": {
@@ -1656,7 +1836,7 @@
         "h": 5,
         "w": 6,
         "x": 18,
-        "y": 18
+        "y": 24
       },
       "id": 12,
       "options": {
@@ -1757,7 +1937,7 @@
         "h": 5,
         "w": 9,
         "x": 0,
-        "y": 23
+        "y": 29
       },
       "id": 18,
       "options": {
@@ -1858,7 +2038,7 @@
         "h": 5,
         "w": 6,
         "x": 9,
-        "y": 23
+        "y": 29
       },
       "id": 20,
       "options": {
@@ -1927,7 +2107,7 @@
         "h": 5,
         "w": 3,
         "x": 15,
-        "y": 23
+        "y": 29
       },
       "id": 19,
       "options": {
@@ -1942,10 +2122,11 @@
           "fields": "",
           "values": false
         },
+        "showPercentChange": false,
         "textMode": "auto",
         "wideLayout": true
       },
-      "pluginVersion": "10.2.2",
+      "pluginVersion": "10.4.2",
       "targets": [
         {
           "datasource": {
@@ -2032,7 +2213,7 @@
         "h": 5,
         "w": 6,
         "x": 18,
-        "y": 23
+        "y": 29
       },
       "id": 8,
       "options": {
@@ -2075,7 +2256,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 28
+        "y": 34
       },
       "id": 5,
       "panels": [],
@@ -2113,7 +2294,7 @@
         "h": 3,
         "w": 6,
         "x": 0,
-        "y": 29
+        "y": 35
       },
       "id": 4,
       "options": {
@@ -2128,11 +2309,12 @@
           "fields": "",
           "values": false
         },
+        "showPercentChange": false,
         "text": {},
         "textMode": "name",
         "wideLayout": true
       },
-      "pluginVersion": "10.2.2",
+      "pluginVersion": "10.4.2",
       "targets": [
         {
           "datasource": {
@@ -2182,7 +2364,7 @@
         "h": 3,
         "w": 3,
         "x": 6,
-        "y": 29
+        "y": 35
       },
       "id": 10,
       "options": {
@@ -2200,7 +2382,7 @@
         "textMode": "name",
         "wideLayout": true
       },
-      "pluginVersion": "10.2.2",
+      "pluginVersion": "10.4.2",
       "targets": [
         {
           "datasource": {
