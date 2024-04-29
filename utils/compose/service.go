@@ -25,6 +25,7 @@ type Service struct {
 	HealthCheck *HealthCheck              `yaml:"healthcheck,omitempty"`
 	Network     map[string]ServiceNetwork `yaml:"networks,omitempty"`
 	Privileged  bool                      `yaml:"privileged,omitempty"`
+	CPUs        int                       `yaml:"cpus,omitempty"`
 	CPUSet      string                    `yaml:"cpuset,omitempty"`
 }
 
