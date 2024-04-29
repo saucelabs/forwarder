@@ -56,12 +56,19 @@ func main() {
 	// Protect setups using custom networks from running in parallel.
 	var networkMu sync.Mutex
 
+	// Get number of CPUs and set GOMAXPROCS to 1 for each service.
 	runner := setup.Runner{
 		Setups:      AllSetups(),
 		SetupRegexp: r,
 		Decorate: func(s *setup.Setup) {
-			if *args.debug {
-				for _, srv := range s.Compose.Services {
+			for _, srv := range s.Compose.Services {
+				if srv.Environment == nil {
+					srv.Environment = make(map[string]string, 1)
+				}
+				srv.Environment["GOMAXPROCS"] = "1"
+				srv.CPUs = 1
+
+				if *args.debug {
 					if strings.HasPrefix(srv.Image, "saucelabs/forwarder") {
 						srv.Environment["FORWARDER_LOG_LEVEL"] = "debug"
 						srv.Environment["FORWARDER_LOG_HTTP"] = "headers,api:errors"
@@ -132,13 +139,17 @@ func testService(s *setup.Setup) *compose.Service {
 		Name:    setup.TestServiceName,
 		Image:   "forwarder-e2e",
 		Command: cmd.String(),
+		Environment: map[string]string{
+			"GOMAXPROCS": "1",
+		},
+		CPUSet: "0",
 	}
 
 	p, ok := s.Compose.Services[forwarder.ProxyServiceName]
 	if !ok {
 		panic("proxy service not found")
 	}
-	c.Environment = maps.Clone(p.Environment)
+	maps.Copy(c.Environment, p.Environment)
 
 	if h, ok := s.Compose.Services[forwarder.HttpbinServiceName]; ok {
 		c.Environment["HTTPBIN_PROTOCOL"] = h.Environment["FORWARDER_PROTOCOL"]
