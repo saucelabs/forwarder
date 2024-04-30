@@ -47,4 +47,7 @@ func TestViaModifier(t *testing.T) {
 	if err := m.ModifyRequest(req); err == nil {
 		t.Fatal("ModifyRequest(): got nil, want request loop error")
 	}
+	if !req.Close {
+		t.Fatalf("req.Close: got %v, want true", req.Close)
+	}
 }

@@ -53,6 +53,7 @@ func (m *ViaModifier) ModifyRequest(req *http.Request) error {
 
 	if v := req.Header.Get("Via"); v != "" {
 		if m.hasLoop(v) {
+			req.Close = true
 			return martian.ErrorStatus{
 				Err:    fmt.Errorf("via: detected request loop, header contains %s", via),
 				Status: 400,
