@@ -319,8 +319,10 @@ func (p *Proxy) shouldMITM(req *http.Request) bool {
 	return true
 }
 
+const terminateTLSHeader = "X-Martian-Terminate-TLS"
+
 func shouldTerminateTLS(req *http.Request) bool {
-	h := req.Header.Get("X-Martian-Terminate-TLS")
+	h := req.Header.Get(terminateTLSHeader)
 	if h == "" {
 		return false
 	}

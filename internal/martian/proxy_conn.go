@@ -190,6 +190,9 @@ func (p *proxyConn) handleConnectRequest(req *http.Request) error {
 	ctx := req.Context()
 	log.Debugf(ctx, "read CONNECT request host=%s", req.URL.Host)
 
+	terminateTLS := shouldTerminateTLS(req)
+	req.Header.Del(terminateTLSHeader)
+
 	if err := p.modifyRequest(req); err != nil {
 		log.Debugf(ctx, "error modifying CONNECT request: %v", err)
 		return p.writeErrorResponse(req, err)
@@ -215,7 +218,7 @@ func (p *proxyConn) handleConnectRequest(req *http.Request) error {
 			defer cconn.Close()
 			crw = cconn
 
-			if shouldTerminateTLS(req) {
+			if terminateTLS {
 				log.Debugf(ctx, "attempting to terminate TLS on CONNECT tunnel: %s", req.URL.Host)
 				tconn := tls.Client(cconn, p.clientTLSConfig())
 				if err := tconn.Handshake(); err == nil {

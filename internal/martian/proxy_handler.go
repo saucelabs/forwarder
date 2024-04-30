@@ -101,6 +101,9 @@ func (p proxyHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 func (p proxyHandler) handleConnectRequest(rw http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 
+	terminateTLS := shouldTerminateTLS(req)
+	req.Header.Del(terminateTLSHeader)
+
 	if err := p.modifyRequest(req); err != nil {
 		log.Debugf(ctx, "error modifying CONNECT request: %v", err)
 		p.writeErrorResponse(rw, req, err)
@@ -124,7 +127,7 @@ func (p proxyHandler) handleConnectRequest(rw http.ResponseWriter, req *http.Req
 			defer cconn.Close()
 			crw = cconn
 
-			if shouldTerminateTLS(req) {
+			if terminateTLS {
 				log.Debugf(ctx, "attempting to terminate TLS on CONNECT tunnel: %s", req.URL.Host)
 				tconn := tls.Client(cconn, p.clientTLSConfig())
 				if err := tconn.Handshake(); err == nil {
