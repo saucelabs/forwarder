@@ -82,4 +82,23 @@ func TestSetForwardHeaders(t *testing.T) {
 	if got, want := req.Header.Get(xfu), "https://preserved.host.com/foo?x=y"; got != want {
 		t.Errorf("req.Header.Get(%q): got %q, want %q", xfh, got, want)
 	}
+
+	// Test that the modifier does not set headers for CONNECT requests.
+	req, err = http.NewRequest(http.MethodConnect, "http://martian.local", http.NoBody)
+	if err != nil {
+		t.Fatalf("http.NewRequest(): got %v, want no error", err)
+	}
+
+	if got, want := req.Header.Get(xfp), ""; got != want {
+		t.Errorf("req.Header.Get(%q): got %q, want %q", xfp, got, want)
+	}
+	if got, want := req.Header.Get(xff), ""; got != want {
+		t.Errorf("req.Header.Get(%q): got %q, want %q", xff, got, want)
+	}
+	if got, want := req.Header.Get(xfh), ""; got != want {
+		t.Errorf("req.Header.Get(%q): got %q, want %q", xfh, got, want)
+	}
+	if got, want := req.Header.Get(xfu), ""; got != want {
+		t.Errorf("req.Header.Get(%q): got %q, want %q", xfh, got, want)
+	}
 }

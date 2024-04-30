@@ -33,6 +33,10 @@ import (
 func NewForwardedModifier() martian.RequestModifier {
 	return martian.RequestModifierFunc(
 		func(req *http.Request) error {
+			if req.Method == http.MethodConnect {
+				return nil
+			}
+
 			if v := req.Header.Get("X-Forwarded-Proto"); v == "" {
 				req.Header.Set("X-Forwarded-Proto", req.URL.Scheme)
 			}
