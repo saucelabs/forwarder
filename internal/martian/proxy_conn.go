@@ -295,8 +295,14 @@ func (p *proxyConn) tunnel(name string, res *http.Response, crw io.ReadWriteClos
 
 	ctx := res.Request.Context()
 	donec := make(chan struct{}, 2)
-	go copySync(ctx, "outbound "+name, crw, p.conn, donec)
-	go copySync(ctx, "inbound "+name, p.conn, crw, donec)
+	if err := p.copyPool.Invoke(copySyncArgs{ctx, "outbound " + name, crw, p.conn, donec}); err != nil {
+		log.Errorf(ctx, "failed to invoke copy sync: %v", err)
+		donec <- struct{}{}
+	}
+	if err := p.copyPool.Invoke(copySyncArgs{ctx, "inbound " + name, p.conn, crw, donec}); err != nil {
+		log.Errorf(ctx, "failed to invoke copy sync: %v", err)
+		donec <- struct{}{}
+	}
 
 	log.Debugf(ctx, "switched protocols, proxying %s traffic", name)
 	<-donec

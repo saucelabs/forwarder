@@ -62,3 +62,11 @@ func copySync(ctx context.Context, name string, w io.Writer, r io.Reader, donec 
 	log.Debugf(ctx, "%s tunnel finished copying", name)
 	donec <- struct{}{}
 }
+
+type copySyncArgs struct {
+	ctx   context.Context //nolint:containedctx // It's func arg.
+	name  string
+	w     io.Writer
+	r     io.Reader
+	donec chan<- struct{}
+}

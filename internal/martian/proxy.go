@@ -119,6 +119,7 @@ type Proxy struct {
 	initOnce sync.Once
 
 	rt        http.RoundTripper
+	copyPool  *ants.MultiPoolWithFunc
 	conns     sync.WaitGroup
 	connsMu   sync.Mutex // protects conns.Add/Wait from concurrent access
 	closeCh   chan bool
@@ -163,6 +164,15 @@ func (p *Proxy) init() {
 			}).DialContext
 		}
 
+		var err error
+		p.copyPool, err = ants.NewMultiPoolWithFunc(20, unlimitedPoolSize, func(i any) {
+			args := i.(copySyncArgs) //nolint:forcetypeassert // It's copySyncArgs.
+			copySync(args.ctx, args.name, args.w, args.r, args.donec)
+		}, ants.LeastTasks, ants.WithExpiryDuration(5*time.Minute))
+		if err != nil {
+			panic(err) // This checks if arguments are valid.
+		}
+
 		if p.BaseContex == nil {
 			p.BaseContex = context.Background()
 		}
@@ -187,6 +197,8 @@ func (p *Proxy) Close() {
 		p.conns.Wait()
 		p.connsMu.Unlock()
 		log.Infof(context.TODO(), "all connections closed")
+
+		p.copyPool.ReleaseTimeout(5 * time.Second)
 	})
 }
 

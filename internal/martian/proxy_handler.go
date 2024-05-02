@@ -221,8 +221,14 @@ func (p proxyHandler) tunnel(name string, rw http.ResponseWriter, req *http.Requ
 			return err
 		}
 
-		go copySync(ctx, "outbound "+name, crw, conn, donec)
-		go copySync(ctx, "inbound "+name, conn, crw, donec)
+		if err := p.copyPool.Invoke(copySyncArgs{ctx, "outbound " + name, crw, conn, donec}); err != nil {
+			log.Errorf(ctx, "failed to invoke copy sync: %v", err)
+			donec <- struct{}{}
+		}
+		if err := p.copyPool.Invoke(copySyncArgs{ctx, "inbound " + name, conn, crw, donec}); err != nil {
+			log.Errorf(ctx, "failed to invoke copy sync: %v", err)
+			donec <- struct{}{}
+		}
 	case 2:
 		copyHeader(rw.Header(), res.Header)
 		rw.WriteHeader(res.StatusCode)
@@ -233,8 +239,14 @@ func (p proxyHandler) tunnel(name string, rw http.ResponseWriter, req *http.Requ
 			return err
 		}
 
-		go copySync(ctx, "outbound "+name, crw, req.Body, donec)
-		go copySync(ctx, "inbound "+name, writeFlusher{rw, rc}, crw, donec)
+		if err := p.copyPool.Invoke(copySyncArgs{ctx, "outbound " + name, crw, req.Body, donec}); err != nil {
+			log.Errorf(ctx, "failed to invoke copy sync: %v", err)
+			donec <- struct{}{}
+		}
+		if err := p.copyPool.Invoke(copySyncArgs{ctx, "inbound " + name, writeFlusher{rw, rc}, crw, donec}); err != nil {
+			log.Errorf(ctx, "failed to invoke copy sync: %v", err)
+			donec <- struct{}{}
+		}
 	default:
 		err := fmt.Errorf("unsupported protocol version: %d", req.ProtoMajor)
 		p.traceWroteResponse(res, err)
