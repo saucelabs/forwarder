@@ -25,6 +25,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/panjf2000/ants/v2"
 	"github.com/saucelabs/forwarder/internal/martian/log"
 	"github.com/saucelabs/forwarder/internal/martian/mitm"
 	"github.com/saucelabs/forwarder/internal/martian/proxyutil"
@@ -199,11 +200,21 @@ func (p *Proxy) closing() bool {
 	}
 }
 
+const unlimitedPoolSize = 0
+
 // Serve accepts connections from the listener and handles the requests.
 func (p *Proxy) Serve(l net.Listener) error {
 	defer l.Close()
 
 	p.init()
+
+	connHandler, err := ants.NewMultiPoolWithFunc(20, unlimitedPoolSize, func(i any) {
+		p.handleLoop(i.(net.Conn)) //nolint:forcetypeassert // It's net.Conn.
+	}, ants.LeastTasks, ants.WithExpiryDuration(5*time.Minute))
+	if err != nil {
+		return err
+	}
+	defer connHandler.ReleaseTimeout(1 * time.Second)
 
 	var delay time.Duration
 	for {
@@ -240,7 +251,10 @@ func (p *Proxy) Serve(l net.Listener) error {
 		delay = 0
 		log.Debugf(context.TODO(), "accepted connection from %s", conn.RemoteAddr())
 
-		go p.handleLoop(conn)
+		if err := connHandler.Invoke(conn); err != nil {
+			log.Errorf(context.TODO(), "failed to invoke connection handler: %v", err)
+			conn.Close()
+		}
 	}
 }
 
