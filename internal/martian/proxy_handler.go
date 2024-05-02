@@ -194,7 +194,7 @@ func (p proxyHandler) tunnel(name string, rw http.ResponseWriter, req *http.Requ
 
 	var (
 		rc    = http.NewResponseController(rw)
-		donec = make(chan bool, 2)
+		donec = make(chan struct{}, 2)
 	)
 	switch req.ProtoMajor {
 	case 1:
