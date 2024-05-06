@@ -7,4 +7,4 @@ $TTL 60
                           30m)         ; minimum
                    IN     NS    localhost.
 
-httpbin.local  A        192.168.100.10
+httpbin.local  A        150.150.100.10
