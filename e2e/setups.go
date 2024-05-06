@@ -245,10 +245,10 @@ func SetupFlagDNSServer(l *setupList) {
 	const (
 		networkName = "internal"
 
-		dnsIPAddr        = "192.168.100.2"
-		invalidDNSIPAddr = "192.168.100.3"
-		httpbinIPAddr    = "192.168.100.10"
-		proxyIPAddr      = "192.168.100.11"
+		dnsIPAddr        = "150.150.100.2"
+		invalidDNSIPAddr = "150.150.100.3"
+		httpbinIPAddr    = "150.150.100.10"
+		proxyIPAddr      = "150.150.100.11"
 	)
 	for _, s := range []struct {
 		name    string
@@ -282,9 +282,9 @@ func SetupFlagDNSServer(l *setupList) {
 					IPAM: compose.IPAM{
 						Config: []compose.IPAMConfig{
 							{
-								Subnet:  "192.168.100.0/24",
-								Gateway: "192.168.100.1",
-								IPRange: "192.168.100.10/29",
+								Subnet:  "150.150.100.0/24",
+								Gateway: "150.150.100.1",
+								IPRange: "150.150.100.10/29",
 							},
 						},
 					},
