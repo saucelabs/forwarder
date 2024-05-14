@@ -29,17 +29,17 @@ debug:
 	@$(MAKE) run-e2e ARGS="-debug"
 
 .PHONY: up
-up: COMPOSE_PROJECT_NAME ?= $(DEBUG_PROJECT_NAME)
+up: export COMPOSE_PROJECT_NAME ?= $(DEBUG_PROJECT_NAME)
 up:
 	@$(CONTAINER_RUNTIME) compose up -d
 
 .PHONY: down
-down: COMPOSE_PROJECT_NAME ?= $(DEBUG_PROJECT_NAME)
+down: export COMPOSE_PROJECT_NAME ?= $(DEBUG_PROJECT_NAME)
 down:
 	@$(CONTAINER_RUNTIME) compose down
 
 .PHONY: logs
-logs: COMPOSE_PROJECT_NAME ?= $(DEBUG_PROJECT_NAME)
+logs: export COMPOSE_PROJECT_NAME ?= $(DEBUG_PROJECT_NAME)
 logs: SRV ?= test
 logs:
 	@$(CONTAINER_RUNTIME) compose logs $(SRV)
