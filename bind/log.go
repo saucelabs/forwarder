@@ -36,6 +36,14 @@ func (f httplogFlag) Replace(vals []string) (err error) {
 	return
 }
 
+func (f httplogFlag) String() string {
+	if len(f.SliceValue.GetSlice()) == 0 {
+		return httplog.DefaultMode.String()
+	}
+
+	return f.SliceValue.String()
+}
+
 func httplogUpdate(dst, src []NamedParam[httplog.Mode]) {
 	changed := make([]bool, len(dst))
 
