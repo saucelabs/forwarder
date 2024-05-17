@@ -83,7 +83,7 @@ func NewLogger(logFunc func(format string, args ...any), mode Mode) *Logger {
 
 func (l *Logger) LogFunc() middleware.Logger {
 	switch l.mode {
-	case "", None:
+	case None:
 		return func(e middleware.LogEntry) {}
 	case ShortURL:
 		return func(e middleware.LogEntry) {
