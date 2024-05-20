@@ -35,7 +35,7 @@ func (p *YamlFlagPrinter) PrintHelpFlag(f *pflag.Flag) {
 		deprecated = fmt.Sprintf("\nDEPRECATED: %s", f.Deprecated)
 	}
 
-	usage = strings.ReplaceAll(usage, "<br>", "\n\n")
+	usage = strings.ReplaceAll(usage, "<br>", "\n")
 	usage = strings.ReplaceAll(usage, "<code>", "\"")
 	usage = strings.ReplaceAll(usage, "</code>", "\"")
 	usage = withLinks(usage)
