@@ -128,11 +128,27 @@ Path to the log file, if empty, logs to stdout.
 
 * Environment variable: `FORWARDER_LOG_HTTP`
 * Value Format: `[api|server:]<none|short-url|url|headers|body|errors>,...`
+* Default value: `errors`
 
 HTTP request and response logging mode.
-Setting this to none disables logging.
-The short-url mode logs [scheme://]host[/path] instead of the full URL.
-The error mode logs request line and headers if status code is greater than or equal to 500.
+
+
+Modes: 
+
+- none: no logging
+- short-url: logs [scheme://]host[/path] instead of the full URL
+- url: logs the full URL including query parameters
+- headers: logs request line and headers
+- body: logs request line, headers, and body
+- errors: logs request line and headers if status code is greater than or equal to 500
+
+Modes for different modules can be specified separated by commas.
+
+Example: 
+```
+--log-http=api:errors,proxy:headers,url
+```
+ specifies that the API module logs errors, the proxy module logs headers, and anything else logs full URL.
 
 ### `--log-level` {#log-level}
 
