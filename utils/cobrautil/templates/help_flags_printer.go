@@ -60,7 +60,7 @@ func (p *HelpFlagPrinter) PrintHelpFlag(flag *flag.Flag) {
 	// It always has at least 2 elements.
 	flagStr, usageStr := flagAndUsage[0], strings.Join(flagAndUsage[1:], " ")
 
-	usageWithBreakLines := strings.ReplaceAll(usageStr, "<br>", "\n\n")
+	usageWithBreakLines := strings.ReplaceAll(usageStr, "<br>", "\n")
 	usageWithCodeBlocks := strings.ReplaceAll(strings.ReplaceAll(usageWithBreakLines, "<code>", "\""), "</code>", "\"")
 	usageWithLinks := withLinks(usageWithCodeBlocks)
 	wrappedUsages := wordwrap.WrapString(usageWithLinks, p.wrapLimit-offset)
