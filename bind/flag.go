@@ -327,9 +327,20 @@ func HTTPLogConfig(fs *pflag.FlagSet, cfg []NamedParam[httplog.Mode]) {
 
 	fs.Var(f, "log-http", valueType+",... "+
 		"HTTP request and response logging mode. "+
-		"Setting this to none disables logging. "+
-		"The short-url mode logs [scheme://]host[/path] instead of the full URL. "+
-		"The error mode logs request line and headers if status code is greater than or equal to 500. ")
+		"<br><br>"+
+		"Modes: "+
+		"<ul>"+
+		"<li>none: no logging"+
+		"<li>short-url: logs [scheme://]host[/path] instead of the full URL"+
+		"<li>url: logs the full URL including query parameters"+
+		"<li>headers: logs request line and headers"+
+		"<li>body: logs request line, headers, and body"+
+		"<li>errors: logs request line and headers if status code is greater than or equal to 500"+
+		"</ul>"+
+		"Modes for different modules can be specified separated by commas. "+
+		"<br>"+
+		"Example: <code>--log-http=api:errors,proxy:headers,url</code> "+
+		"specifies that the API module logs errors, the proxy module logs headers, and anything else logs full URL. ")
 }
 
 func TLSServerConfig(fs *pflag.FlagSet, cfg *forwarder.TLSServerConfig, namePrefix string) {
