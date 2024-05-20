@@ -61,6 +61,9 @@ func (p *HelpFlagPrinter) PrintHelpFlag(flag *flag.Flag) {
 	flagStr, usage := flagAndUsage[0], strings.Join(flagAndUsage[1:], " ")
 
 	usage = strings.ReplaceAll(usage, "<br>", "\n")
+	usage = strings.ReplaceAll(usage, "<ul>", "")
+	usage = strings.ReplaceAll(usage, "<li>", "\n- ")
+	usage = strings.ReplaceAll(usage, "</ul>", "\n\n")
 	usage = strings.ReplaceAll(usage, "<code>", "\"")
 	usage = strings.ReplaceAll(usage, "</code>", "\"")
 	usage = withLinks(usage)
