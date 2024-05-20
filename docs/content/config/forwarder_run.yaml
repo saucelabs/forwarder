@@ -74,6 +74,12 @@
 
 # --- Proxy options ---
 
+# connect-header <header>
+#
+# Add or remove CONNECT request headers. See the documentation for the -H,
+# --header flag for more details on the format.
+#connect-header: 
+
 # deny-domains [-]<regexp>,...
 #
 # Deny requests to the specified domains. Prefix domains with '-' to exclude
@@ -104,20 +110,21 @@
 # scheme is supported, the format is `data:base64,<encoded data>`.
 #pac: 
 
-# proxy [protocol://]host[:port]
+# proxy <[protocol://]host:port>
 #
 # Upstream proxy to use. The supported protocols are: http, https, socks5. No
-# protocol specified will be treated as HTTP proxy. If the port number is not
-# specified, it is assumed to be 1080. The basic authentication username and
-# password can be specified in the host string e.g. user:pass@host:port.
-# Alternatively, you can use the -c, --credentials flag to specify the
-# credentials. If both are specified, the proxy flag takes precedence.
+# protocol specified will be treated as HTTP proxy. The basic authentication
+# username and password can be specified in the host string e.g.
+# user:pass@host:port. Alternatively, you can use the -c, --credentials flag to
+# specify the credentials. If both are specified, the proxy flag takes
+# precedence.
 #proxy: 
 
 # proxy-header <header>
 #
-# Add or remove HTTP headers on the CONNECT request to the upstream proxy. See
-# the documentation for the -H, --header flag for more details on the format.
+# Use --connect-header flag instead.
+# 
+DEPRECATED: --connect-header
 #proxy-header: 
 
 # proxy-localhost <allow|deny|direct>

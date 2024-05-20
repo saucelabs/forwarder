@@ -143,6 +143,14 @@ Accepts binary format (e.g.
 
 ## Proxy options
 
+### `--connect-header` {#connect-header}
+
+* Environment variable: `FORWARDER_CONNECT_HEADER`
+* Value Format: `<header>`
+
+Add or remove CONNECT request headers.
+See the documentation for the -H, --header flag for more details on the format.
+
 ### `--deny-domains` {#deny-domains}
 
 * Environment variable: `FORWARDER_DENY_DOMAINS`
@@ -184,12 +192,11 @@ The data URI scheme is supported, the format is `data:base64,<encoded data>`.
 ### `-x, --proxy` {#proxy}
 
 * Environment variable: `FORWARDER_PROXY`
-* Value Format: `[protocol://]host[:port]`
+* Value Format: `<[protocol://]host:port>`
 
 Upstream proxy to use.
 The supported protocols are: http, https, socks5.
 No protocol specified will be treated as HTTP proxy.
-If the port number is not specified, it is assumed to be 1080.
 The basic authentication username and password can be specified in the host string e.g.
 user:pass@host:port.
 Alternatively, you can use the -c, --credentials flag to specify the credentials.
@@ -200,8 +207,9 @@ If both are specified, the proxy flag takes precedence.
 * Environment variable: `FORWARDER_PROXY_HEADER`
 * Value Format: `<header>`
 
-Add or remove HTTP headers on the CONNECT request to the upstream proxy.
-See the documentation for the -H, --header flag for more details on the format.
+DEPRECATED: --connect-header
+
+Use --connect-header flag instead.
 
 ### `--proxy-localhost` {#proxy-localhost}
 
