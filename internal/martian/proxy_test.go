@@ -1301,6 +1301,9 @@ func TestIntegrationMITM(t *testing.T) {
 	if got, want := res.StatusCode, 200; got != want {
 		t.Errorf("res.StatusCode: got %d, want %d", got, want)
 	}
+	if res.ContentLength != -1 {
+		t.Errorf("res.ContentLength: got %d, want -1", res.ContentLength)
+	}
 
 	roots := x509.NewCertPool()
 	roots.AddCert(ca)
