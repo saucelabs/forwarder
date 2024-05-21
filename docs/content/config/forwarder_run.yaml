@@ -133,8 +133,8 @@
 # proxy-header <header>
 #
 # Use --connect-header flag instead.
-# 
-DEPRECATED: --connect-header
+#
+# DEPRECATED: --connect-header
 #proxy-header: 
 
 # proxy-localhost <allow|deny|direct>
