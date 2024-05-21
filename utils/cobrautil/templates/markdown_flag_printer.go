@@ -38,6 +38,8 @@ func (p *MarkdownFlagPrinter) PrintHelpFlag(f *pflag.Flag) {
 	body = strings.ReplaceAll(body, "<ul>", "\n")
 	body = strings.ReplaceAll(body, "<li>", "\n- ")
 	body = strings.ReplaceAll(body, "</ul>", "\n\n")
+	body = strings.ReplaceAll(body, "<code>", "`")
+	body = strings.ReplaceAll(body, "</code>", "`")
 	body = strings.ReplaceAll(body, "<code-block>", "\n```\n")
 	body = strings.ReplaceAll(body, "</code-block>", "\n```\n")
 	body = withMarkdownLinks(body)
