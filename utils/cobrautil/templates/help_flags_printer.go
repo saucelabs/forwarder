@@ -67,6 +67,8 @@ func (p *HelpFlagPrinter) PrintHelpFlag(flag *flag.Flag) {
 	usage = strings.ReplaceAll(usage, "<code>", "\"")
 	usage = strings.ReplaceAll(usage, "</code>", "\"")
 	usage = withLinks(usage)
+	usage = strings.TrimSpace(usage)
+
 	usage = wordwrap.WrapString(usage, p.wrapLimit-offset)
 	wrappedStr = flagStr + "\n" + usage
 	appendTabStr := strings.ReplaceAll(wrappedStr, "\n", "\n\t")

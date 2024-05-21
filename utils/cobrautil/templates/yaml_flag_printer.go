@@ -42,6 +42,7 @@ func (p *YamlFlagPrinter) PrintHelpFlag(f *pflag.Flag) {
 	usage = strings.ReplaceAll(usage, "<code>", "\"")
 	usage = strings.ReplaceAll(usage, "</code>", "\"")
 	usage = withLinks(usage)
+	usage = strings.TrimSpace(usage)
 
 	fmt.Fprintf(p.out, "# %s%s\n#\n", f.Name, name)
 	for _, l := range strings.Split(wordwrap.WrapString(usage, p.wrapLimit-2), "\n") {

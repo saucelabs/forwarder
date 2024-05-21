@@ -41,6 +41,7 @@ func (p *MarkdownFlagPrinter) PrintHelpFlag(f *pflag.Flag) {
 	body = strings.ReplaceAll(body, "<code>", "\n```\n")
 	body = strings.ReplaceAll(body, "</code>", "\n```\n")
 	body = withMarkdownLinks(body)
+	body = strings.TrimSpace(body)
 
 	fmt.Fprintf(p.out, body)
 	fmt.Fprintf(p.out, "\n\n")
