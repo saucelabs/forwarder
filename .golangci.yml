@@ -84,6 +84,7 @@ issues:
     - "string `https?` has \\d+ occurrences"
     - "importShadow: shadow of imported package 'url'"
     - "commentedOutCode: may want to remove commented-out code"
+    - "grpc.Dial is deprecated: use NewClient instead"
   exclude-rules:
     - path: _test\.go
       linters:
