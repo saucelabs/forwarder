@@ -30,11 +30,6 @@ func NewYamlFlagPrinter(out io.Writer, wrapLimit uint) *YamlFlagPrinter {
 func (p *YamlFlagPrinter) PrintHelpFlag(f *pflag.Flag) {
 	name, usage := flagNameAndUsage(f)
 
-	deprecated := ""
-	if f.Deprecated != "" {
-		deprecated = fmt.Sprintf("\nDEPRECATED: %s", f.Deprecated)
-	}
-
 	usage = strings.ReplaceAll(usage, "<br>", "\n")
 	usage = strings.ReplaceAll(usage, "<ul>", "")
 	usage = strings.ReplaceAll(usage, "<li>", "\n- ")
@@ -48,8 +43,8 @@ func (p *YamlFlagPrinter) PrintHelpFlag(f *pflag.Flag) {
 	for _, l := range strings.Split(wordwrap.WrapString(usage, p.wrapLimit-2), "\n") {
 		fmt.Fprintf(p.out, "# %s\n", l)
 	}
-	if deprecated != "" {
-		fmt.Fprintf(p.out, "# %s\n", deprecated)
+	if f.Deprecated != "" {
+		fmt.Fprintf(p.out, "#\n# DEPRECATED: %s\n", f.Deprecated)
 	}
 	fmt.Fprintf(p.out, "#%s: %s\n\n", f.Name, p.defaultValue(f))
 }
