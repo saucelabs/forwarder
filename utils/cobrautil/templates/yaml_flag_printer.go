@@ -30,16 +30,8 @@ func NewYamlFlagPrinter(out io.Writer, wrapLimit uint) *YamlFlagPrinter {
 func (p *YamlFlagPrinter) PrintHelpFlag(f *pflag.Flag) {
 	name, usage := flagNameAndUsage(f)
 
-	usage = strings.ReplaceAll(usage, "<br>", "\n")
-	usage = strings.ReplaceAll(usage, "<ul>", "")
-	usage = strings.ReplaceAll(usage, "<li>", "\n- ")
-	usage = strings.ReplaceAll(usage, "</ul>", "\n\n")
-	usage = strings.ReplaceAll(usage, "<code>", "")
-	usage = strings.ReplaceAll(usage, "</code>", "")
-	usage = strings.ReplaceAll(usage, "<code-block>", "\"")
-	usage = strings.ReplaceAll(usage, "</code-block>", "\"")
+	usage = p.replaceHTML(usage)
 	usage = withLinks(usage)
-	usage = strings.TrimSpace(usage)
 
 	fmt.Fprintf(p.out, "# %s%s\n#\n", f.Name, name)
 	for _, l := range strings.Split(wordwrap.WrapString(usage, p.wrapLimit-2), "\n") {
@@ -49,6 +41,23 @@ func (p *YamlFlagPrinter) PrintHelpFlag(f *pflag.Flag) {
 		fmt.Fprintf(p.out, "#\n# DEPRECATED: %s\n", f.Deprecated)
 	}
 	fmt.Fprintf(p.out, "#%s: %s\n\n", f.Name, p.defaultValue(f))
+}
+
+func (p *YamlFlagPrinter) replaceHTML(s string) string {
+	r := strings.NewReplacer(
+		"<br>", "\n",
+		"<ul>", "",
+		"<li>", "\n- ",
+		"</ul>", "\n\n",
+		"<code>", "",
+		"</code>", "",
+		"<code-block>", "\"",
+		"</code-block>", "\"",
+	)
+
+	s = r.Replace(s)
+	s = strings.TrimSpace(s)
+	return s
 }
 
 func (p *YamlFlagPrinter) defaultValue(f *pflag.Flag) string {

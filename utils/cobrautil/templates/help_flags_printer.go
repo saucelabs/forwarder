@@ -59,23 +59,31 @@ func (p *HelpFlagPrinter) PrintHelpFlag(flag *flag.Flag) {
 
 	// It always has at least 2 elements.
 	flagStr, usage := flagAndUsage[0], strings.Join(flagAndUsage[1:], " ")
-
-	usage = strings.ReplaceAll(usage, "<br>", "\n")
-	usage = strings.ReplaceAll(usage, "<ul>", "")
-	usage = strings.ReplaceAll(usage, "<li>", "\n- ")
-	usage = strings.ReplaceAll(usage, "</ul>", "\n\n")
-	usage = strings.ReplaceAll(usage, "<code>", "")
-	usage = strings.ReplaceAll(usage, "</code>", "")
-	usage = strings.ReplaceAll(usage, "<code-block>", "\"")
-	usage = strings.ReplaceAll(usage, "</code-block>", "\"")
+	usage = p.replaceHTML(usage)
 	usage = withLinks(usage)
-	usage = strings.TrimSpace(usage)
-
 	usage = wordwrap.WrapString(usage, p.wrapLimit-offset)
+
 	wrappedStr = flagStr + "\n" + usage
 	appendTabStr := strings.ReplaceAll(wrappedStr, "\n", "\n\t")
 
 	fmt.Fprintf(p.out, appendTabStr+"\n\n")
+}
+
+func (p *HelpFlagPrinter) replaceHTML(s string) string {
+	r := strings.NewReplacer(
+		"<br>", "\n",
+		"<ul>", "",
+		"<li>", "\n- ",
+		"</ul>", "\n\n",
+		"<code>", "",
+		"</code>", "",
+		"<code-block>", "\"",
+		"</code-block>", "\"",
+	)
+
+	s = r.Replace(s)
+	s = strings.TrimSpace(s)
+	return s
 }
 
 // writeFlag will output the help flag based
