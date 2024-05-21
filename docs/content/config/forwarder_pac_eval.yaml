@@ -12,7 +12,7 @@
 # dns-round-robin <value>
 #
 # If more than one DNS server is specified with the --dns-server flag, passing
-# this flag will enable round-robin selection. 
+# this flag will enable round-robin selection.
 #dns-round-robin: false
 
 # dns-server <ip>[:<port>]
@@ -26,7 +26,7 @@
 
 # dns-timeout <duration>
 #
-# Timeout for dialing DNS servers. Only used if DNS servers are specified. 
+# Timeout for dialing DNS servers. Only used if DNS servers are specified.
 #dns-timeout: 5s
 
 # --- HTTP client options ---
@@ -43,20 +43,20 @@
 #
 # The maximum amount of time a dial will wait for a connect to complete. With or
 # without a timeout, the operating system may impose its own earlier timeout.
-# For instance, TCP timeouts are often around 3 minutes. 
+# For instance, TCP timeouts are often around 3 minutes.
 #http-dial-timeout: 30s
 
 # http-idle-conn-timeout <duration>
 #
 # The maximum amount of time an idle (keep-alive) connection will remain idle
-# before closing itself. Zero means no limit. 
+# before closing itself. Zero means no limit.
 #http-idle-conn-timeout: 1m30s
 
 # http-response-header-timeout <duration>
 #
 # The amount of time to wait for a server's response headers after fully writing
 # the request (including its body, if any).This time does not include the time
-# to read the response body. Zero means no limit. 
+# to read the response body. Zero means no limit.
 #http-response-header-timeout: 0s
 
 # http-tls-handshake-timeout <duration>
@@ -68,6 +68,6 @@
 # insecure <value>
 #
 # Don't verify the server's certificate chain and host name. Enable to work with
-# self-signed certificates. 
+# self-signed certificates.
 #insecure: false
 

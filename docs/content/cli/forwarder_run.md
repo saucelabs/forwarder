@@ -243,7 +243,6 @@ MITM is enabled by default when the --mitm-cacert-file flag is set.
 If the CA certificate is not provided MITM uses a generated CA certificate.
 The CA certificate used can be retrieved from the API server.
 
-
 ### `--mitm-cacert-file` {#mitm-cacert-file}
 
 * Environment variable: `FORWARDER_MITM_CACERT_FILE`
@@ -284,7 +283,6 @@ Organization name to use in the generated MITM certificates.
 
 Validity period of the generated MITM certificates.
 
-
 ## DNS options
 
 ### `--dns-round-robin` {#dns-round-robin}
@@ -294,7 +292,6 @@ Validity period of the generated MITM certificates.
 * Default value: `false`
 
 If more than one DNS server is specified with the --dns-server flag, passing this flag will enable round-robin selection.
-
 
 ### `-n, --dns-server` {#dns-server}
 
@@ -315,7 +312,6 @@ The port is optional, if not specified the default port is 53.
 
 Timeout for dialing DNS servers.
 Only used if DNS servers are specified.
-
 
 ## HTTP client options
 
@@ -339,7 +335,6 @@ The maximum amount of time a dial will wait for a connect to complete.
 With or without a timeout, the operating system may impose its own earlier timeout.
 For instance, TCP timeouts are often around 3 minutes.
 
-
 ### `--http-idle-conn-timeout` {#http-idle-conn-timeout}
 
 * Environment variable: `FORWARDER_HTTP_IDLE_CONN_TIMEOUT`
@@ -349,7 +344,6 @@ For instance, TCP timeouts are often around 3 minutes.
 The maximum amount of time an idle (keep-alive) connection will remain idle before closing itself.
 Zero means no limit.
 
-
 ### `--http-response-header-timeout` {#http-response-header-timeout}
 
 * Environment variable: `FORWARDER_HTTP_RESPONSE_HEADER_TIMEOUT`
@@ -358,7 +352,6 @@ Zero means no limit.
 
 The amount of time to wait for a server's response headers after fully writing the request (including its body, if any).This time does not include the time to read the response body.
 Zero means no limit.
-
 
 ### `--http-tls-handshake-timeout` {#http-tls-handshake-timeout}
 
@@ -377,7 +370,6 @@ Zero means no limit.
 
 Don't verify the server's certificate chain and host name.
 Enable to work with self-signed certificates.
-
 
 ## API server options
 
