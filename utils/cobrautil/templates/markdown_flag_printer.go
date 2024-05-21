@@ -33,20 +33,29 @@ func (p *MarkdownFlagPrinter) PrintHelpFlag(f *pflag.Flag) {
 	fmt.Fprint(p.out, "\n\n")
 
 	body := p.body(f)
-	body = strings.ReplaceAll(body, ". ", ".\n")
-	body = strings.ReplaceAll(body, "<br>", "\n")
-	body = strings.ReplaceAll(body, "<ul>", "\n")
-	body = strings.ReplaceAll(body, "<li>", "\n- ")
-	body = strings.ReplaceAll(body, "</ul>", "\n\n")
-	body = strings.ReplaceAll(body, "<code>", "`")
-	body = strings.ReplaceAll(body, "</code>", "`")
-	body = strings.ReplaceAll(body, "<code-block>", "\n```\n")
-	body = strings.ReplaceAll(body, "</code-block>", "\n```\n")
+	body = p.replaceHTML(body)
 	body = withMarkdownLinks(body)
-	body = strings.TrimSpace(body)
 
 	fmt.Fprintf(p.out, body)
 	fmt.Fprintf(p.out, "\n\n")
+}
+
+func (p *MarkdownFlagPrinter) replaceHTML(s string) string {
+	r := strings.NewReplacer(
+		". ", ".\n",
+		"<br>", "\n",
+		"<ul>", "\n",
+		"<li>", "\n- ",
+		"</ul>", "\n\n",
+		"<code>", "`",
+		"</code>", "`",
+		"<code-block>", "\n```\n",
+		"</code-block>", "\n```\n",
+	)
+
+	s = r.Replace(s)
+	s = strings.TrimSpace(s)
+	return s
 }
 
 func withMarkdownLinks(s string) string {
