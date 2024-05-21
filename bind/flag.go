@@ -353,7 +353,7 @@ func HTTPLogConfig(fs *pflag.FlagSet, cfg []NamedParam[httplog.Mode]) {
 		"</ul>"+
 		"Modes for different modules can be specified separated by commas. "+
 		"<br>"+
-		"Example: <code>--log-http=api:errors,proxy:headers,url</code> "+
+		"Example: <code-block>--log-http=api:errors,proxy:headers,url</code-block> "+
 		"specifies that the API module logs errors, the proxy module logs headers, and anything else logs full URL. ")
 }
 
