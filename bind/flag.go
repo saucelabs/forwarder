@@ -60,10 +60,10 @@ func PAC(fs *pflag.FlagSet, pac **url.URL) {
 			"<br><br>"+
 			"Syntax:"+
 			"<ul>"+
-			"<li>File: /path/to/file.pac"+
-			"<li>URL: http://example.com/proxy.pac"+
-			"<li>Embed: data:base64,<base64 encoded data>"+
-			"<li>Stdin: -"+
+			"<li>File: <code>/path/to/file.pac</code>"+
+			"<li>URL: <code>http://example.com/proxy.pac</code>"+
+			"<li>Embed: <code>data:base64,<base64 encoded data></code>"+
+			"<li>Stdin: <code>-</code>"+
 			"</ul>")
 }
 
@@ -161,8 +161,8 @@ func DirectDomains(fs *pflag.FlagSet, cfg *[]ruleset.RegexpListItem) {
 const pathOrBase64Syntax = "<br><br>" +
 	"Syntax:" +
 	"<ul>" +
-	"<li>File: /path/to/file.pac" +
-	"<li>Embed: data:base64,<base64 encoded data>" +
+	"<li>File: <code>/path/to/file.pac</code>" +
+	"<li>Embed: <code>data:base64,<base64 encoded data></code>" +
 	"</ul>"
 
 func MITMConfig(fs *pflag.FlagSet, mitm *bool, cfg *forwarder.MITMConfig) {

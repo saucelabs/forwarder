@@ -90,8 +90,8 @@ TLS certificate to use if the server protocol is https or h2.
 
 Syntax:
 
-- File: /path/to/file.pac
-- Embed: data:base64,<base64 encoded data>
+- File: `/path/to/file.pac`
+- Embed: `data:base64,<base64 encoded data>`
 
 ### `--tls-handshake-timeout` {#tls-handshake-timeout}
 
@@ -112,8 +112,8 @@ TLS private key to use if the server protocol is https or h2.
 
 Syntax:
 
-- File: /path/to/file.pac
-- Embed: data:base64,<base64 encoded data>
+- File: `/path/to/file.pac`
+- Embed: `data:base64,<base64 encoded data>`
 
 ## Proxy options
 
@@ -128,10 +128,10 @@ Proxy Auto-Configuration file to use for upstream proxy selection.
 
 Syntax:
 
-- File: /path/to/file.pac
-- URL: http://example.com/proxy.pac
-- Embed: data:base64,<base64 encoded data>
-- Stdin: -
+- File: `/path/to/file.pac`
+- URL: `http://example.com/proxy.pac`
+- Embed: `data:base64,<base64 encoded data>`
+- Stdin: `-`
 
 ## DNS options
 
@@ -176,8 +176,8 @@ Use this flag multiple times to specify multiple CA certificate files.
 
 Syntax:
 
-- File: /path/to/file.pac
-- Embed: data:base64,<base64 encoded data>
+- File: `/path/to/file.pac`
+- Embed: `data:base64,<base64 encoded data>`
 
 ### `--http-dial-timeout` {#http-dial-timeout}
 

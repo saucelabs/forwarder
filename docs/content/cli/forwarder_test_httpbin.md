@@ -66,8 +66,8 @@ TLS certificate to use if the server protocol is https or h2.
 
 Syntax:
 
-- File: /path/to/file.pac
-- Embed: data:base64,<base64 encoded data>
+- File: `/path/to/file.pac`
+- Embed: `data:base64,<base64 encoded data>`
 
 ### `--tls-handshake-timeout` {#tls-handshake-timeout}
 
@@ -88,8 +88,8 @@ TLS private key to use if the server protocol is https or h2.
 
 Syntax:
 
-- File: /path/to/file.pac
-- Embed: data:base64,<base64 encoded data>
+- File: `/path/to/file.pac`
+- Embed: `data:base64,<base64 encoded data>`
 
 ## API server options
 
