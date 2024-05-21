@@ -50,8 +50,11 @@
 
 # tls-cert-file <path or base64>
 #
-# TLS certificate to use if the server protocol is https or h2. Can be a path to
-# a file or "data:" followed by base64 encoded certificate.
+# TLS certificate to use if the server protocol is https or h2. 
+# 
+# Syntax:
+# - File: /path/to/file.pac
+# - Embed: data:base64,<base64 encoded data>
 #tls-cert-file: 
 
 # tls-handshake-timeout <duration>
@@ -62,8 +65,11 @@
 
 # tls-key-file <path or base64>
 #
-# TLS private key to use if the server protocol is https or h2. Can be a path to
-# a file or "data:" followed by base64 encoded key.
+# TLS private key to use if the server protocol is https or h2. 
+# 
+# Syntax:
+# - File: /path/to/file.pac
+# - Embed: data:base64,<base64 encoded data>
 #tls-key-file: 
 
 # write-limit <bandwidth>
@@ -105,9 +111,13 @@
 
 # pac <path or URL>
 #
-# Proxy Auto-Configuration file to use for upstream proxy selection. It can be a
-# local file or a URL, you can also use '-' to read from stdin. The data URI
-# scheme is supported, the format is `data:base64,<encoded data>`.
+# Proxy Auto-Configuration file to use for upstream proxy selection. 
+# 
+# Syntax:
+# - File: /path/to/file.pac
+# - URL: http://example.com/proxy.pac
+# - Embed: data:base64,<base64 encoded data>
+# - Stdin: -
 #pac: 
 
 # proxy <[protocol://]host:port>
@@ -157,7 +167,11 @@ DEPRECATED: --connect-header
 #
 # CA certificate file to use for generating MITM certificates. If the file is
 # not specified, a generated CA certificate will be used. See the documentation
-# for the --mitm flag for more details.
+# for the --mitm flag for more details. 
+# 
+# Syntax:
+# - File: /path/to/file.pac
+# - Embed: data:base64,<base64 encoded data>
 #mitm-cacert-file: 
 
 # mitm-cakey-file <path or base64>
@@ -208,9 +222,12 @@ DEPRECATED: --connect-header
 # cacert-file <path or base64>
 #
 # Add your own CA certificates to verify against. The system root certificates
-# will be used in addition to any certificates in this list. Can be a path to a
-# file or "data:" followed by base64 encoded certificate. Use this flag multiple
-# times to specify multiple CA certificate files.
+# will be used in addition to any certificates in this list. Use this flag
+# multiple times to specify multiple CA certificate files.
+# 
+# Syntax:
+# - File: /path/to/file.pac
+# - Embed: data:base64,<base64 encoded data>
 #cacert-file: 
 
 # http-dial-timeout <duration>

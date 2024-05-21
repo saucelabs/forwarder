@@ -57,8 +57,14 @@ func PAC(fs *pflag.FlagSet, pac **url.URL) {
 	fs.VarP(anyflag.NewValue[*url.URL](*pac, pac, fileurl.ParseFilePathOrURL),
 		"pac", "p", "`<path or URL>`"+
 			"Proxy Auto-Configuration file to use for upstream proxy selection. "+
-			"It can be a local file or a URL, you can also use '-' to read from stdin. "+
-			"The data URI scheme is supported, the format is `data:base64,<encoded data>`. ")
+			"<br><br>"+
+			"Syntax:"+
+			"<ul>"+
+			"<li>File: /path/to/file.pac"+
+			"<li>URL: http://example.com/proxy.pac"+
+			"<li>Embed: data:base64,<base64 encoded data>"+
+			"<li>Stdin: -"+
+			"</ul>")
 }
 
 func ProxyHeaders(fs *pflag.FlagSet, headers *[]header.Header) {
@@ -152,6 +158,13 @@ func DirectDomains(fs *pflag.FlagSet, cfg *[]ruleset.RegexpListItem) {
 			"This flag takes precedence over the PAC script.")
 }
 
+const pathOrBase64Syntax = "<br><br>" +
+	"Syntax:" +
+	"<ul>" +
+	"<li>File: /path/to/file.pac" +
+	"<li>Embed: data:base64,<base64 encoded data>" +
+	"</ul>"
+
 func MITMConfig(fs *pflag.FlagSet, mitm *bool, cfg *forwarder.MITMConfig) {
 	fs.BoolVar(mitm, "mitm", *mitm, ""+
 		"Enable Man-in-the-Middle (MITM) mode. "+
@@ -164,7 +177,8 @@ func MITMConfig(fs *pflag.FlagSet, mitm *bool, cfg *forwarder.MITMConfig) {
 		"mitm-cacert-file", "<path or base64>"+
 			"CA certificate file to use for generating MITM certificates. "+
 			"If the file is not specified, a generated CA certificate will be used. "+
-			"See the documentation for the --mitm flag for more details. ")
+			"See the documentation for the --mitm flag for more details. "+
+			pathOrBase64Syntax)
 
 	fs.Var(anyflag.NewValueWithRedact[string](cfg.CAKeyFile, &cfg.CAKeyFile, func(val string) (string, error) { return val, nil }, RedactBase64),
 		"mitm-cakey-file", "<path or base64>"+
@@ -234,8 +248,8 @@ func TLSClientConfig(fs *pflag.FlagSet, cfg *forwarder.TLSClientConfig) {
 		"cacert-file", "<path or base64>"+
 			"Add your own CA certificates to verify against. "+
 			"The system root certificates will be used in addition to any certificates in this list. "+
-			"Can be a path to a file or \"data:\" followed by base64 encoded certificate. "+
-			"Use this flag multiple times to specify multiple CA certificate files. ")
+			"Use this flag multiple times to specify multiple CA certificate files."+
+			pathOrBase64Syntax)
 }
 
 func HTTPServerConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPServerConfig, prefix string, schemes ...forwarder.Scheme) {
@@ -351,12 +365,12 @@ func TLSServerConfig(fs *pflag.FlagSet, cfg *forwarder.TLSServerConfig, namePref
 	fs.Var(anyflag.NewValueWithRedact[string](cfg.CertFile, &cfg.CertFile, func(val string) (string, error) { return val, nil }, RedactBase64),
 		namePrefix+"tls-cert-file", "<path or base64>"+
 			"TLS certificate to use if the server protocol is https or h2. "+
-			"Can be a path to a file or \"data:\" followed by base64 encoded certificate. ")
+			pathOrBase64Syntax)
 
 	fs.Var(anyflag.NewValueWithRedact[string](cfg.KeyFile, &cfg.KeyFile, func(val string) (string, error) { return val, nil }, RedactBase64),
 		namePrefix+"tls-key-file", "<path or base64>"+
 			"TLS private key to use if the server protocol is https or h2. "+
-			"Can be a path to a file or \"data:\" followed by base64 encoded key. ")
+			pathOrBase64Syntax)
 }
 
 func LogConfig(fs *pflag.FlagSet, cfg *log.Config) {
