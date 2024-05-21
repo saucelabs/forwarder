@@ -36,8 +36,14 @@ You can generate a config file by running `forwarder pac eval config-file` comma
 * Default value: `file://pac.js`
 
 Proxy Auto-Configuration file to use for upstream proxy selection.
-It can be a local file or a URL, you can also use '-' to read from stdin.
-The data URI scheme is supported, the format is `data:base64,<encoded data>`.
+
+
+Syntax:
+
+- File: /path/to/file.pac
+- URL: http://example.com/proxy.pac
+- Embed: data:base64,<base64 encoded data>
+- Stdin: -
 
 ## DNS options
 
@@ -78,8 +84,12 @@ Only used if DNS servers are specified.
 
 Add your own CA certificates to verify against.
 The system root certificates will be used in addition to any certificates in this list.
-Can be a path to a file or "data:" followed by base64 encoded certificate.
 Use this flag multiple times to specify multiple CA certificate files.
+
+Syntax:
+
+- File: /path/to/file.pac
+- Embed: data:base64,<base64 encoded data>
 
 ### `--http-dial-timeout` {#http-dial-timeout}
 

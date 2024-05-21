@@ -111,7 +111,12 @@ Accepts binary format (e.g.
 * Value Format: `<path or base64>`
 
 TLS certificate to use if the server protocol is https or h2.
-Can be a path to a file or "data:" followed by base64 encoded certificate.
+
+
+Syntax:
+
+- File: /path/to/file.pac
+- Embed: data:base64,<base64 encoded data>
 
 ### `--tls-handshake-timeout` {#tls-handshake-timeout}
 
@@ -128,7 +133,12 @@ Zero means no limit.
 * Value Format: `<path or base64>`
 
 TLS private key to use if the server protocol is https or h2.
-Can be a path to a file or "data:" followed by base64 encoded key.
+
+
+Syntax:
+
+- File: /path/to/file.pac
+- Embed: data:base64,<base64 encoded data>
 
 ### `--write-limit` {#write-limit}
 
@@ -186,8 +196,14 @@ Example: -H "Host: example.com" -H "-User-Agent" -H "-X-*".
 * Value Format: `<path or URL>`
 
 Proxy Auto-Configuration file to use for upstream proxy selection.
-It can be a local file or a URL, you can also use '-' to read from stdin.
-The data URI scheme is supported, the format is `data:base64,<encoded data>`.
+
+
+Syntax:
+
+- File: /path/to/file.pac
+- URL: http://example.com/proxy.pac
+- Embed: data:base64,<base64 encoded data>
+- Stdin: -
 
 ### `-x, --proxy` {#proxy}
 
@@ -251,6 +267,12 @@ The CA certificate used can be retrieved from the API server.
 CA certificate file to use for generating MITM certificates.
 If the file is not specified, a generated CA certificate will be used.
 See the documentation for the --mitm flag for more details.
+
+
+Syntax:
+
+- File: /path/to/file.pac
+- Embed: data:base64,<base64 encoded data>
 
 ### `--mitm-cakey-file` {#mitm-cakey-file}
 
@@ -322,8 +344,12 @@ Only used if DNS servers are specified.
 
 Add your own CA certificates to verify against.
 The system root certificates will be used in addition to any certificates in this list.
-Can be a path to a file or "data:" followed by base64 encoded certificate.
 Use this flag multiple times to specify multiple CA certificate files.
+
+Syntax:
+
+- File: /path/to/file.pac
+- Embed: data:base64,<base64 encoded data>
 
 ### `--http-dial-timeout` {#http-dial-timeout}
 

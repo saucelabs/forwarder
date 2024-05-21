@@ -30,8 +30,11 @@
 
 # tls-cert-file <path or base64>
 #
-# TLS certificate to use if the server protocol is https or h2. Can be a path to
-# a file or "data:" followed by base64 encoded certificate.
+# TLS certificate to use if the server protocol is https or h2. 
+# 
+# Syntax:
+# - File: /path/to/file.pac
+# - Embed: data:base64,<base64 encoded data>
 #tls-cert-file: 
 
 # tls-handshake-timeout <duration>
@@ -42,8 +45,11 @@
 
 # tls-key-file <path or base64>
 #
-# TLS private key to use if the server protocol is https or h2. Can be a path to
-# a file or "data:" followed by base64 encoded key.
+# TLS private key to use if the server protocol is https or h2. 
+# 
+# Syntax:
+# - File: /path/to/file.pac
+# - Embed: data:base64,<base64 encoded data>
 #tls-key-file: 
 
 # --- API server options ---

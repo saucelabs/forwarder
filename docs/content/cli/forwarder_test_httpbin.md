@@ -62,7 +62,12 @@ The amount of time allowed to read request headers.
 * Value Format: `<path or base64>`
 
 TLS certificate to use if the server protocol is https or h2.
-Can be a path to a file or "data:" followed by base64 encoded certificate.
+
+
+Syntax:
+
+- File: /path/to/file.pac
+- Embed: data:base64,<base64 encoded data>
 
 ### `--tls-handshake-timeout` {#tls-handshake-timeout}
 
@@ -79,7 +84,12 @@ Zero means no limit.
 * Value Format: `<path or base64>`
 
 TLS private key to use if the server protocol is https or h2.
-Can be a path to a file or "data:" followed by base64 encoded key.
+
+
+Syntax:
+
+- File: /path/to/file.pac
+- Embed: data:base64,<base64 encoded data>
 
 ## API server options
 
