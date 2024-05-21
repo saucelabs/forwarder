@@ -822,6 +822,9 @@ func TestIntegrationConnect(t *testing.T) { //nolint:tparallel // Subtests share
 		if got, want := res.StatusCode, 200; got != want {
 			t.Fatalf("res.StatusCode: got %d, want %d", got, want)
 		}
+		if res.ContentLength != -1 {
+			t.Fatalf("res.ContentLength: got %d, want -1", res.ContentLength)
+		}
 
 		if !tm.RequestModified() {
 			t.Error("tm.RequestModified(): got false, want true")
