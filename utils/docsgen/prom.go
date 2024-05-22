@@ -7,8 +7,6 @@
 package docsgen
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -16,12 +14,11 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/saucelabs/forwarder/utils/cobrautil"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/saucelabs/forwarder/utils/promutil"
-	"github.com/spf13/cobra"
 )
 
-func WriteCommandProm(cmd *cobra.Command, promDir string) error {
+func WriteCommandProm(commandName string, p prometheus.Collector, promDir string) error {
 	f, err := os.Create(path.Join(promDir, "metrics.md"))
 	if err != nil {
 		return err
@@ -34,33 +31,9 @@ func WriteCommandProm(cmd *cobra.Command, promDir string) error {
 
 	fmt.Fprintf(f, "# Prometheus Metrics\n\n")
 
-	for _, cmd := range cmd.Commands() {
-		if !cmd.IsAvailableCommand() || cmd.Flags().Lookup("desc-metrics") == nil {
-			continue
-		}
-		// We need to copy the command because Execute() calls the root command which messes up the flags.
-		c := cobra.Command{
-			Run:  cmd.Run,
-			RunE: cmd.RunE,
-		}
-		c.Flags().AddFlagSet(cmd.Flags())
-
-		var buf bytes.Buffer
-		c.SetOut(io.Discard)
-		c.SetErr(&buf)
-		c.SetArgs([]string{"--desc-metrics"})
-		if err := c.Execute(); err != nil {
-			return err
-		}
-
-		var desc []promutil.Desc
-		if err := json.NewDecoder(&buf).Decode(&desc); err != nil {
-			return err
-		}
-
-		fmt.Fprintf(f, "## %s\n", cobrautil.FullCommandName(cmd))
-		writePromMarkdown(f, desc)
-	}
+	fmt.Fprintf(f, "## %s\n", commandName)
+	desc := promutil.DescribePrometheusMetrics(p)
+	writePromMarkdown(f, desc)
 
 	return f.Close()
 }

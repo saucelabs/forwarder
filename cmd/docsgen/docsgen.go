@@ -14,6 +14,7 @@ import (
 	"path"
 
 	"github.com/saucelabs/forwarder/command/forwarder"
+	"github.com/saucelabs/forwarder/command/run"
 	"github.com/saucelabs/forwarder/utils/docsgen"
 	"github.com/spf13/cobra"
 )
@@ -55,7 +56,12 @@ func main() {
 		log.Fatal(err)
 	}
 
-	if err := docsgen.WriteCommandProm(forwarder.Command(), contentDir); err != nil {
+	p, err := run.Metrics()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if err := docsgen.WriteCommandProm("forwarder run", p, contentDir); err != nil {
 		log.Fatal(err)
 	}
 
