@@ -8,8 +8,8 @@ package run
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -32,7 +32,6 @@ import (
 	"github.com/saucelabs/forwarder/utils/cobrautil"
 	"github.com/saucelabs/forwarder/utils/httphandler"
 	"github.com/saucelabs/forwarder/utils/osdns"
-	"github.com/saucelabs/forwarder/utils/promutil"
 	"github.com/spf13/cobra"
 	"go.uber.org/goleak"
 	"go.uber.org/multierr"
@@ -55,19 +54,12 @@ type command struct {
 	mitmDomains         []ruleset.RegexpListItem
 	apiServerConfig     *forwarder.HTTPServerConfig
 	logConfig           *log.Config
-	goleak              bool
-	descMetrics         bool
+
+	dryRun bool
+	goleak bool
 }
 
 func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
-	if c.descMetrics {
-		dn, err := os.OpenFile(os.DevNull, os.O_WRONLY, 0)
-		if err != nil {
-			return fmt.Errorf("open %s: %w", os.DevNull, err)
-		}
-		c.logConfig.File = dn
-	}
-
 	if f := c.logConfig.File; f != nil {
 		defer f.Close()
 	}
@@ -260,9 +252,8 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 		}()
 	}
 
-	if c.descMetrics {
-		return json.NewEncoder(cmd.ErrOrStderr()).
-			Encode(promutil.DescribePrometheusMetrics(c.promReg))
+	if c.dryRun {
+		return nil
 	}
 
 	return g.Run()
@@ -381,20 +372,7 @@ func (c *command) constMetric(name, help string, labels prometheus.Labels) prome
 const promNs = "forwarder"
 
 func Command() *cobra.Command {
-	c := command{
-		promReg:             prometheus.NewRegistry(),
-		dnsConfig:           osdns.DefaultConfig(),
-		httpTransportConfig: forwarder.DefaultHTTPTransportConfig(),
-		httpProxyConfig:     forwarder.DefaultHTTPProxyConfig(),
-		mitmConfig:          forwarder.DefaultMITMConfig(),
-		apiServerConfig:     forwarder.DefaultHTTPServerConfig(),
-		logConfig:           log.DefaultConfig(),
-	}
-	c.httpTransportConfig.PromRegistry = c.promReg
-	c.httpTransportConfig.PromNamespace = promNs
-	c.httpProxyConfig.PromRegistry = c.promReg
-	c.httpProxyConfig.PromNamespace = promNs
-	c.apiServerConfig.Addr = "localhost:10000"
+	c := makeCommand()
 
 	cmd := &cobra.Command{
 		Use:     "run [--address <host:port>] [--pac <path or url>] [--credentials <username:password@host:port>]...",
@@ -431,14 +409,54 @@ func Command() *cobra.Command {
 	cmd.MarkFlagsMutuallyExclusive("proxy", "pac")
 
 	fs.BoolVar(&c.goleak, "goleak", false, "enable goleak")
-	fs.BoolVar(&c.descMetrics, "desc-metrics", false, "describe Prometheus metrics as JSON and exit")
 
 	bind.MarkFlagHidden(cmd,
 		"goleak",
-		"desc-metrics",
 	)
 
 	return cmd
+}
+
+func Metrics() (*prometheus.Registry, error) {
+	c := makeCommand()
+	c.logConfig = &log.Config{
+		Level: log.ErrorLevel,
+		File:  os.NewFile(10, os.DevNull),
+	}
+	c.dryRun = true
+
+	cmd := &cobra.Command{
+		Use:                "run",
+		RunE:               c.runE,
+		DisableFlagParsing: true,
+	}
+	cmd.SetOut(io.Discard)
+	cmd.SetErr(io.Discard)
+
+	if err := cmd.Execute(); err != nil {
+		return nil, err
+	}
+
+	return c.promReg, nil
+}
+
+func makeCommand() command {
+	c := command{
+		promReg:             prometheus.NewRegistry(),
+		dnsConfig:           osdns.DefaultConfig(),
+		httpTransportConfig: forwarder.DefaultHTTPTransportConfig(),
+		httpProxyConfig:     forwarder.DefaultHTTPProxyConfig(),
+		mitmConfig:          forwarder.DefaultMITMConfig(),
+		apiServerConfig:     forwarder.DefaultHTTPServerConfig(),
+		logConfig:           log.DefaultConfig(),
+	}
+	c.httpTransportConfig.PromRegistry = c.promReg
+	c.httpTransportConfig.PromNamespace = promNs
+	c.httpProxyConfig.PromRegistry = c.promReg
+	c.httpProxyConfig.PromNamespace = promNs
+	c.apiServerConfig.Addr = "localhost:10000"
+
+	return c
 }
 
 const long = `Start HTTP (forward) proxy server.
