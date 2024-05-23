@@ -12,10 +12,12 @@ import (
 	"os"
 	"path"
 	"slices"
+	"sort"
 	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/saucelabs/forwarder/utils/promutil"
+	"golang.org/x/exp/maps"
 )
 
 func WriteCommandProm(commandName string, p prometheus.Collector, promDir string) error {
@@ -62,7 +64,10 @@ func writePromMarkdown(f io.Writer, desc []promutil.Desc) {
 		if len(d.ConstLabels)+len(d.VariableLabels) > 0 {
 			fmt.Fprintf(f, "\nLabels:\n")
 		}
-		for k := range d.ConstLabels {
+
+		cl := maps.Keys(d.ConstLabels)
+		sort.Strings(cl)
+		for _, k := range cl {
 			fmt.Fprintf(f, "  - %s\n", k)
 		}
 		for _, k := range d.VariableLabels {
