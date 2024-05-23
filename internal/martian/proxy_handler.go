@@ -332,13 +332,6 @@ func (p proxyHandler) handleRequest(rw http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func newWriteFlusher(rw http.ResponseWriter) writeFlusher {
-	return writeFlusher{
-		rw: rw,
-		rc: http.NewResponseController(rw),
-	}
-}
-
 type writeFlusher struct {
 	rw io.Writer
 	rc *http.ResponseController
@@ -385,9 +378,14 @@ func (p proxyHandler) writeResponse(rw http.ResponseWriter, res *http.Response) 
 	}
 
 	var err error
-	if shouldFlush(res) {
-		err = copyBody(newWriteFlusher(rw), res.Body)
-	} else {
+	switch {
+	case isTextEventStream(res):
+		w := newPatternFlushWriter(rw, http.NewResponseController(rw), sseFlushPattern)
+		err = copyBody(w, res.Body)
+	case shouldChunk(res):
+		w := newPatternFlushWriter(rw, http.NewResponseController(rw), chunkFlushPattern)
+		err = copyBody(w, res.Body)
+	default:
 		err = copyBody(rw, res.Body)
 	}
 

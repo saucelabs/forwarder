@@ -441,9 +441,14 @@ func (p *proxyConn) writeResponse(res *http.Response) error {
 		// Add support for Server Sent Events - relay HTTP chunks and flush after each chunk.
 		// This is safe for events that are smaller than the buffer io.Copy uses (32KB).
 		// If the event is larger than the buffer, the event will be split into multiple chunks.
-		if shouldFlush(res) {
-			err = res.Write(flushAfterChunkWriter{p.brw.Writer})
-		} else {
+		switch {
+		case isTextEventStream(res):
+			w := newPatternFlushWriter(p.brw.Writer, p.brw.Writer, sseFlushPattern)
+			err = res.Write(w)
+		case shouldChunk(res):
+			w := newPatternFlushWriter(p.brw.Writer, p.brw.Writer, chunkFlushPattern)
+			err = res.Write(w)
+		default:
 			err = res.Write(p.brw)
 		}
 	}

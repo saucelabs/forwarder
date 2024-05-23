@@ -17,22 +17,40 @@
 package martian
 
 import (
-	"bufio"
 	"bytes"
 	"io"
 	"mime"
 	"net/http"
 )
 
-func shouldFlush(res *http.Response) bool {
-	if res.Request.Method == http.MethodHead {
+var (
+	sseFlushPattern   = [2]byte{'\n', '\n'}
+	chunkFlushPattern = [2]byte{'\r', '\n'}
+)
+
+func shouldChunk(res *http.Response) bool {
+	if res.ProtoMajor != 1 || res.ProtoMinor != 1 {
 		return false
 	}
-	if res.StatusCode == http.StatusNoContent || res.StatusCode == http.StatusNotModified {
+	if res.ContentLength != -1 {
 		return false
 	}
 
-	return isTextEventStream(res) || res.ContentLength == -1
+	// Please read 3.3.2 and 3.3.3 of RFC 7230 for more details https://datatracker.ietf.org/doc/html/rfc7230#section-3.3.2.
+	if res.Request.Method == http.MethodHead {
+		return false
+	}
+	// The 204/304 response MUST NOT contain a
+	// message-body, and thus is always terminated by the first empty line
+	// after the header fields.
+	if res.StatusCode == http.StatusNoContent || res.StatusCode == http.StatusNotModified {
+		return false
+	}
+	if res.StatusCode < 200 {
+		return false
+	}
+
+	return true
 }
 
 func isTextEventStream(res *http.Response) bool {
@@ -40,20 +58,6 @@ func isTextEventStream(res *http.Response) bool {
 	resCT := res.Header.Get("Content-Type")
 	baseCT, _, _ := mime.ParseMediaType(resCT)
 	return baseCT == "text/event-stream"
-}
-
-// flushAfterChunkWriter works with net/http/internal.chunkedWriter and forces a flush after each chunk is written.
-// There is also net/http/internal.FlushAfterChunkWriter that does the same thing nicer, but it is not available.
-type flushAfterChunkWriter struct {
-	*bufio.Writer
-}
-
-func (w flushAfterChunkWriter) WriteString(s string) (n int, err error) {
-	n, err = w.Writer.WriteString(s)
-	if s == "\r\n" && err == nil {
-		err = w.Flush()
-	}
-	return
 }
 
 type flusher interface {
