@@ -18,6 +18,8 @@ package martian
 
 import (
 	"bufio"
+	"bytes"
+	"io"
 	"mime"
 	"net/http"
 )
@@ -51,5 +53,45 @@ func (w flushAfterChunkWriter) WriteString(s string) (n int, err error) {
 	if s == "\r\n" && err == nil {
 		err = w.Flush()
 	}
+	return
+}
+
+type flusher interface {
+	Flush() error
+}
+
+// patternFlushWriter is an io.Writer that flushes when a pattern is detected.
+type patternFlushWriter struct {
+	w       io.Writer
+	f       flusher
+	pattern [2]byte
+
+	last byte
+}
+
+func newPatternFlushWriter(w io.Writer, f flusher, pattern [2]byte) *patternFlushWriter {
+	return &patternFlushWriter{
+		w:       w,
+		f:       f,
+		pattern: pattern,
+	}
+}
+
+func (w *patternFlushWriter) Write(p []byte) (n int, err error) {
+	n, err = w.w.Write(p)
+	if err != nil {
+		return
+	}
+
+	if (w.last == w.pattern[0] && n > 0 && p[0] == w.pattern[1]) || bytes.LastIndex(p, w.pattern[:]) != -1 {
+		err = w.f.Flush()
+	}
+
+	if n > 0 {
+		w.last = p[n-1]
+	} else {
+		w.last = 0
+	}
+
 	return
 }
