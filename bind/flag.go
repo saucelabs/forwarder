@@ -69,8 +69,7 @@ func PAC(fs *pflag.FlagSet, pac **url.URL) {
 
 func ProxyHeaders(fs *pflag.FlagSet, headers *[]header.Header) {
 	fs.Var(anyflag.NewSliceValueWithRedact[header.Header](*headers, headers, header.ParseHeader, RedactHeader),
-		"proxy-header", "<header>"+
-			"Use --connect-header flag instead.")
+		"proxy-header", "<header>")
 }
 
 func ConnectHeaders(fs *pflag.FlagSet, headers *[]header.Header) {
