@@ -424,9 +424,19 @@ func (p *proxyConn) writeResponse(res *http.Response) error {
 		defer p.conn.SetWriteDeadline(time.Time{})
 	}
 
-	if req.Close || p.closing() {
+	if p.closing() {
 		res.Close = true
+	} else {
+		if req.Close {
+			res.Close = true
+		}
+		// Support CONNECT over HTTP/1.0.
+		// If connect is successful, the connection should not be closed.
+		if req.Method == http.MethodConnect && res.StatusCode/100 == 2 {
+			res.Close = false
+		}
 	}
+
 	if res.Close {
 		res.Header.Add("Connection", "close")
 	}
