@@ -34,8 +34,10 @@ func (p *YamlFlagPrinter) PrintHelpFlag(f *pflag.Flag) {
 	usage = withLinks(usage)
 
 	fmt.Fprintf(p.out, "# %s%s\n#\n", f.Name, name)
-	for _, l := range strings.Split(wordwrap.WrapString(usage, p.wrapLimit-2), "\n") {
-		fmt.Fprintf(p.out, "# %s\n", l)
+	if usage != "" {
+		for _, l := range strings.Split(wordwrap.WrapString(usage, p.wrapLimit-2), "\n") {
+			fmt.Fprintf(p.out, "# %s\n", l)
+		}
 	}
 	if f.Deprecated != "" {
 		fmt.Fprintf(p.out, "#\n# DEPRECATED: %s\n", f.Deprecated)
