@@ -77,8 +77,8 @@ func (p *HelpFlagPrinter) replaceHTML(s string) string {
 		"</ul>", "\n\n",
 		"<code>", "",
 		"</code>", "",
-		"<code-block>", "\"",
-		"</code-block>", "\"",
+		"<code-block>", "\n\n",
+		"</code-block>", "\n\n",
 	)
 
 	s = r.Replace(s)
