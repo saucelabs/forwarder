@@ -352,9 +352,8 @@ func HTTPLogConfig(fs *pflag.FlagSet, cfg []NamedParam[httplog.Mode]) {
 		"<li>errors: logs request line and headers if status code is greater than or equal to 500"+
 		"</ul>"+
 		"Modes for different modules can be specified separated by commas. "+
-		"<br>"+
-		"Example: <code-block>--log-http=api:errors,proxy:headers,url</code-block> "+
-		"specifies that the API module logs errors, the proxy module logs headers, and anything else logs full URL. ")
+		"The following example specifies that the API module logs errors, the proxy module logs headers, and anything else logs full URL. "+
+		"<code-block>--log-http=api:errors,proxy:headers,url</code-block>")
 }
 
 func TLSServerConfig(fs *pflag.FlagSet, cfg *forwarder.TLSServerConfig, namePrefix string) {

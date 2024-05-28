@@ -253,12 +253,11 @@ Modes:
 - errors: logs request line and headers if status code is greater than or equal to 500
 
 Modes for different modules can be specified separated by commas.
+The following example specifies that the API module logs errors, the proxy module logs headers, and anything else logs full URL.
 
-Example: 
 ```
 --log-http=api:errors,proxy:headers,url
 ```
- specifies that the API module logs errors, the proxy module logs headers, and anything else logs full URL.
 
 ### `--log-level` {#log-level}
 
