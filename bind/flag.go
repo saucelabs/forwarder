@@ -57,7 +57,7 @@ func PAC(fs *pflag.FlagSet, pac **url.URL) {
 	fs.VarP(anyflag.NewValue[*url.URL](*pac, pac, fileurl.ParseFilePathOrURL),
 		"pac", "p", "`<path or URL>`"+
 			"Proxy Auto-Configuration file to use for upstream proxy selection. "+
-			"<br><br>"+
+			"<p/>"+
 			"Syntax:"+
 			"<ul>"+
 			"<li>File: <code>/path/to/file.pac</code>"+
@@ -158,7 +158,7 @@ func DirectDomains(fs *pflag.FlagSet, cfg *[]ruleset.RegexpListItem) {
 			"This flag takes precedence over the PAC script.")
 }
 
-const pathOrBase64Syntax = "<br><br>" +
+const pathOrBase64Syntax = "<p/>" +
 	"Syntax:" +
 	"<ul>" +
 	"<li>File: <code>/path/to/file.pac</code>" +
@@ -341,7 +341,7 @@ func HTTPLogConfig(fs *pflag.FlagSet, cfg []NamedParam[httplog.Mode]) {
 
 	fs.Var(f, "log-http", valueType+",... "+
 		"HTTP request and response logging mode. "+
-		"<br><br>"+
+		"<p/>"+
 		"Modes: "+
 		"<ul>"+
 		"<li>none: no logging"+
