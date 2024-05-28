@@ -43,7 +43,7 @@ func (p *MarkdownFlagPrinter) PrintHelpFlag(f *pflag.Flag) {
 func (p *MarkdownFlagPrinter) replaceHTML(s string) string {
 	r := strings.NewReplacer(
 		". ", ".\n",
-		"<br>", "\n",
+		"<p/>", "\n\n",
 		"<ul>", "\n",
 		"<li>", "\n- ",
 		"</ul>", "\n\n",

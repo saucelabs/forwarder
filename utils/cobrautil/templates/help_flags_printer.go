@@ -71,7 +71,7 @@ func (p *HelpFlagPrinter) PrintHelpFlag(flag *flag.Flag) {
 
 func (p *HelpFlagPrinter) replaceHTML(s string) string {
 	r := strings.NewReplacer(
-		"<br>", "\n",
+		"<p/>", "\n\n",
 		"<ul>", "",
 		"<li>", "\n- ",
 		"</ul>", "\n\n",

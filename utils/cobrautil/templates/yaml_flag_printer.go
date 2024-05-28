@@ -45,7 +45,7 @@ func (p *YamlFlagPrinter) PrintHelpFlag(f *pflag.Flag) {
 
 func (p *YamlFlagPrinter) replaceHTML(s string) string {
 	r := strings.NewReplacer(
-		"<br>", "\n",
+		"<p/>", "\n\n",
 		"<ul>", "",
 		"<li>", "\n- ",
 		"</ul>", "\n\n",
