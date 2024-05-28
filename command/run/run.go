@@ -402,7 +402,7 @@ func Command() *cobra.Command {
 	})
 
 	bind.ProxyHeaders(fs, &c.connectHeaders)
-	fs.Lookup("proxy-header").Deprecated = "--connect-header"
+	fs.Lookup("proxy-header").Deprecated = "use --connect-header flag instead"
 	cmd.MarkFlagsMutuallyExclusive("proxy-header", "connect-header")
 
 	bind.AutoMarkFlagFilename(cmd)
