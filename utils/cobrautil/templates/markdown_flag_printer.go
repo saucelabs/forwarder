@@ -49,11 +49,12 @@ func (p *MarkdownFlagPrinter) replaceHTML(s string) string {
 		"</ul>", "\n\n",
 		"<code>", "`",
 		"</code>", "`",
-		"<code-block>", "\n```\n",
-		"</code-block>", "\n```\n",
+		"<code-block>", "\n\n```\n",
+		"</code-block>", "\n```\n\n",
 	)
 
 	s = r.Replace(s)
+	s = strings.ReplaceAll(s, "\n\n\n", "\n\n")
 	s = strings.TrimSpace(s)
 	return s
 }
