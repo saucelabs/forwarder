@@ -87,7 +87,6 @@ The amount of time allowed to read request headers.
 
 TLS certificate to use if the server protocol is https or h2.
 
-
 Syntax:
 
 - File: `/path/to/file.pac`
@@ -109,7 +108,6 @@ Zero means no limit.
 
 TLS private key to use if the server protocol is https or h2.
 
-
 Syntax:
 
 - File: `/path/to/file.pac`
@@ -124,7 +122,6 @@ Syntax:
 * Default value: `file://pac.js`
 
 Proxy Auto-Configuration file to use for upstream proxy selection.
-
 
 Syntax:
 
@@ -241,7 +238,6 @@ Path to the log file, if empty, logs to stdout.
 * Default value: `errors`
 
 HTTP request and response logging mode.
-
 
 Modes: 
 

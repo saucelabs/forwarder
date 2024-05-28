@@ -37,7 +37,6 @@ You can generate a config file by running `forwarder pac eval config-file` comma
 
 Proxy Auto-Configuration file to use for upstream proxy selection.
 
-
 Syntax:
 
 - File: `/path/to/file.pac`

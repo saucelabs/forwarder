@@ -63,7 +63,6 @@ The amount of time allowed to read request headers.
 
 TLS certificate to use if the server protocol is https or h2.
 
-
 Syntax:
 
 - File: `/path/to/file.pac`
@@ -84,7 +83,6 @@ Zero means no limit.
 * Value Format: `<path or base64>`
 
 TLS private key to use if the server protocol is https or h2.
-
 
 Syntax:
 
@@ -141,7 +139,6 @@ Path to the log file, if empty, logs to stdout.
 * Default value: `errors`
 
 HTTP request and response logging mode.
-
 
 Modes: 
 
