@@ -40,7 +40,6 @@ without TLS.
 
 TLS certificate to use if the server protocol is https or h2.
 
-
 Syntax:
 
 - File: `/path/to/file.pac`
@@ -61,7 +60,6 @@ Zero means no limit.
 * Value Format: `<path or base64>`
 
 TLS private key to use if the server protocol is https or h2.
-
 
 Syntax:
 

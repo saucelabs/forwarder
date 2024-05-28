@@ -112,7 +112,6 @@ Accepts binary format (e.g.
 
 TLS certificate to use if the server protocol is https or h2.
 
-
 Syntax:
 
 - File: `/path/to/file.pac`
@@ -133,7 +132,6 @@ Zero means no limit.
 * Value Format: `<path or base64>`
 
 TLS private key to use if the server protocol is https or h2.
-
 
 Syntax:
 
@@ -197,7 +195,6 @@ Example: -H "Host: example.com" -H "-User-Agent" -H "-X-*".
 
 Proxy Auto-Configuration file to use for upstream proxy selection.
 
-
 Syntax:
 
 - File: `/path/to/file.pac`
@@ -223,9 +220,7 @@ If both are specified, the proxy flag takes precedence.
 * Environment variable: `FORWARDER_PROXY_HEADER`
 * Value Format: `<header>`
 
-DEPRECATED: --connect-header
-
-Use --connect-header flag instead.
+DEPRECATED: use --connect-header flag instead
 
 ### `--proxy-localhost` {#proxy-localhost}
 
@@ -267,7 +262,6 @@ The CA certificate used can be retrieved from the API server.
 CA certificate file to use for generating MITM certificates.
 If the file is not specified, a generated CA certificate will be used.
 See the documentation for the --mitm flag for more details.
-
 
 Syntax:
 
@@ -447,7 +441,6 @@ Path to the log file, if empty, logs to stdout.
 * Default value: `errors`
 
 HTTP request and response logging mode.
-
 
 Modes: 
 
