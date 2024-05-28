@@ -1249,7 +1249,7 @@ func TestIntegrationMITM(t *testing.T) {
 
 	l := newListener(t)
 	p := new(Proxy)
-	defer p.Close()
+	t.Cleanup(p.Close)
 
 	tr := martiantest.NewTransport()
 	tr.Func(func(req *http.Request) (*http.Response, error) {
@@ -1279,68 +1279,104 @@ func TestIntegrationMITM(t *testing.T) {
 
 	go serve(p, l)
 
-	conn, err := l.dial()
-	if err != nil {
-		t.Fatalf("net.Dial(): got %v, want no error", err)
-	}
-	defer conn.Close()
+	testRoundTrip := func(t *testing.T, conn net.Conn) {
+		t.Helper()
 
-	req, err := http.NewRequest(http.MethodConnect, "//example.com:443", http.NoBody)
-	if err != nil {
-		t.Fatalf("http.NewRequest(): got %v, want no error", err)
+		roots := x509.NewCertPool()
+		roots.AddCert(ca)
+
+		tlsconn := tls.Client(conn, &tls.Config{
+			ServerName: "example.com",
+			RootCAs:    roots,
+		})
+		defer tlsconn.Close()
+
+		req, err := http.NewRequest(http.MethodGet, "https://example.com", http.NoBody)
+		if err != nil {
+			t.Fatalf("http.NewRequest(): got %v, want no error", err)
+		}
+
+		// GET / HTTP/1.1
+		// Host: example.com
+		if err := req.Write(tlsconn); err != nil {
+			t.Fatalf("req.Write(): got %v, want no error", err)
+		}
+
+		// Response from MITM proxy.
+		res, err := http.ReadResponse(bufio.NewReader(tlsconn), req)
+		if err != nil {
+			t.Fatalf("http.ReadResponse(): got %v, want no error", err)
+		}
+		defer res.Body.Close()
+
+		if got, want := res.StatusCode, 200; got != want {
+			t.Errorf("res.StatusCode: got %d, want %d", got, want)
+		}
+		if got, want := res.Header.Get("Request-Scheme"), "https"; got != want {
+			t.Errorf("res.Header.Get(%q): got %q, want %q", "Request-Scheme", got, want)
+		}
 	}
 
-	// CONNECT example.com:443 HTTP/1.1
-	// Host: example.com
-	if err := req.Write(conn); err != nil {
-		t.Fatalf("req.Write(): got %v, want no error", err)
-	}
+	t.Run("http11", func(t *testing.T) {
+		t.Parallel()
 
-	// Response MITM'd from proxy.
-	res, err := http.ReadResponse(bufio.NewReader(conn), req)
-	if err != nil {
-		t.Fatalf("http.ReadResponse(): got %v, want no error", err)
-	}
-	if got, want := res.StatusCode, 200; got != want {
-		t.Errorf("res.StatusCode: got %d, want %d", got, want)
-	}
-	if res.ContentLength != -1 {
-		t.Errorf("res.ContentLength: got %d, want -1", res.ContentLength)
-	}
+		conn, err := l.dial()
+		if err != nil {
+			t.Fatalf("net.Dial(): got %v, want no error", err)
+		}
+		defer conn.Close()
 
-	roots := x509.NewCertPool()
-	roots.AddCert(ca)
+		req, err := http.NewRequest(http.MethodConnect, "//example.com:443", http.NoBody)
+		if err != nil {
+			t.Fatalf("http.NewRequest(): got %v, want no error", err)
+		}
 
-	tlsconn := tls.Client(conn, &tls.Config{
-		ServerName: "example.com",
-		RootCAs:    roots,
+		// CONNECT example.com:443 HTTP/1.1
+		// Host: example.com
+		if err := req.Write(conn); err != nil {
+			t.Fatalf("req.Write(): got %v, want no error", err)
+		}
+
+		// Response MITM'd from proxy.
+		res, err := http.ReadResponse(bufio.NewReader(conn), req)
+		if err != nil {
+			t.Fatalf("http.ReadResponse(): got %v, want no error", err)
+		}
+		if got, want := res.StatusCode, 200; got != want {
+			t.Errorf("res.StatusCode: got %d, want %d", got, want)
+		}
+		if res.ContentLength != -1 {
+			t.Errorf("res.ContentLength: got %d, want -1", res.ContentLength)
+		}
+
+		testRoundTrip(t, conn)
 	})
-	defer tlsconn.Close()
 
-	req, err = http.NewRequest(http.MethodGet, "https://example.com", http.NoBody)
-	if err != nil {
-		t.Fatalf("http.NewRequest(): got %v, want no error", err)
-	}
+	t.Run("http10", func(t *testing.T) {
+		t.Parallel()
 
-	// GET / HTTP/1.1
-	// Host: example.com
-	if err := req.Write(tlsconn); err != nil {
-		t.Fatalf("req.Write(): got %v, want no error", err)
-	}
+		conn, err := l.dial()
+		if err != nil {
+			t.Fatalf("net.Dial(): got %v, want no error", err)
+		}
+		defer conn.Close()
 
-	// Response from MITM proxy.
-	res, err = http.ReadResponse(bufio.NewReader(tlsconn), req)
-	if err != nil {
-		t.Fatalf("http.ReadResponse(): got %v, want no error", err)
-	}
-	defer res.Body.Close()
+		// CONNECT example.com:443 HTTP/1.0
+		fmt.Fprintf(conn, "CONNECT %s HTTP/1.0\r\nContent-Length: 0\r\n\r\n", "example.com:443")
 
-	if got, want := res.StatusCode, 200; got != want {
-		t.Errorf("res.StatusCode: got %d, want %d", got, want)
-	}
-	if got, want := res.Header.Get("Request-Scheme"), "https"; got != want {
-		t.Errorf("res.Header.Get(%q): got %q, want %q", "Request-Scheme", got, want)
-	}
+		// Response from skipped round trip.
+		res, err := http.ReadResponse(bufio.NewReader(conn), nil)
+		if err != nil {
+			t.Fatalf("http.ReadResponse(): got %v, want no error", err)
+		}
+		defer res.Body.Close()
+
+		if got, want := res.StatusCode, 200; got != want {
+			t.Errorf("res.StatusCode: got %d, want %d", got, want)
+		}
+
+		testRoundTrip(t, conn)
+	})
 }
 
 func TestIntegrationTransparentHTTP(t *testing.T) {
