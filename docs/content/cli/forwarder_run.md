@@ -182,11 +182,22 @@ This flag takes precedence over the PAC script.
 * Value Format: `<header>`
 
 Add or remove HTTP request headers.
-Use the format "name: value" to add a header, "name;" to set the header to empty value, "-name" to remove the header, "-name*" to remove headers by prefix.
+
+Use the format:
+
+- name:value to add a header
+- name; to set the header to empty value
+- -name to remove the header
+- -name* to remove headers by prefix
+
 The header name will be normalized to canonical form.
 The header value should not contain any newlines or carriage returns.
 The flag can be specified multiple times.
-Example: -H "Host: example.com" -H "-User-Agent" -H "-X-*".
+The following example removes the User-Agent header and all headers starting with X-.
+
+```
+-H "-User-Agent" -H "-X-*"
+```
 
 ### `-p, --pac` {#pac}
 
