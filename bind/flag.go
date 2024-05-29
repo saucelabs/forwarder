@@ -90,7 +90,7 @@ func RequestHeaders(fs *pflag.FlagSet, headers *[]header.Header) {
 			"The header name will be normalized to canonical form. "+
 			"The header value should not contain any newlines or carriage returns. "+
 			"The flag can be specified multiple times. "+
-			"Example: -H \"Host: example.com\" -H \"-User-Agent\" -H \"-X-*\". ")
+			"Example: -H \"-User-Agent\" -H \"-X-*\". ")
 }
 
 func ResponseHeaders(fs *pflag.FlagSet, headers *[]header.Header) {
