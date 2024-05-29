@@ -83,14 +83,19 @@ func RequestHeaders(fs *pflag.FlagSet, headers *[]header.Header) {
 	fs.VarP(anyflag.NewSliceValueWithRedact[header.Header](*headers, headers, header.ParseHeader, RedactHeader),
 		"header", "H", "<header>"+
 			"Add or remove HTTP request headers. "+
-			"Use the format \"name: value\" to add a header, "+
-			"\"name;\" to set the header to empty value, "+
-			"\"-name\" to remove the header, "+
-			"\"-name*\" to remove headers by prefix. "+
+			"<p/>"+
+			"Use the format:"+
+			"<ul>"+
+			"<li>name:value to add a header"+
+			"<li>name; to set the header to empty value"+
+			"<li>-name to remove the header"+
+			"<li>-name* to remove headers by prefix"+
+			"</ul>"+
 			"The header name will be normalized to canonical form. "+
 			"The header value should not contain any newlines or carriage returns. "+
 			"The flag can be specified multiple times. "+
-			"Example: -H \"-User-Agent\" -H \"-X-*\". ")
+			"The following example removes the User-Agent header and all headers starting with X-. "+
+			"<code-block>-H \"-User-Agent\" -H \"-X-*\"</code-block>")
 }
 
 func ResponseHeaders(fs *pflag.FlagSet, headers *[]header.Header) {
