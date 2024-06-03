@@ -41,6 +41,41 @@ func (*nopCloseWriterPtrImpl) CloseWrite() error {
 	return nil
 }
 
+type nopReadCloserImpl struct {
+	io.Reader
+	io.Closer
+	nopCloseWriterImpl
+}
+
+type nopReadCloserPtrImpl struct {
+	io.Reader
+	io.Closer
+	nopCloseWriterPtrImpl
+}
+
+type body struct {
+	io.ReadCloser
+	n int64
+}
+
+func (b *body) Count() int64 {
+	return b.n
+}
+
+func (b *body) Read(p []byte) (n int, err error) {
+	n, err = b.ReadCloser.Read(p)
+	b.n += int64(n)
+	return
+}
+
+type rwcBody struct {
+	body
+}
+
+func (b *rwcBody) Write(p []byte) (int, error) {
+	return b.ReadCloser.(io.ReadWriteCloser).Write(p) //nolint:forcetypeassert // We know it's a ReadWriteCloser.
+}
+
 func TestAsCloseWriter(t *testing.T) {
 	tests := []struct {
 		name string
@@ -129,6 +164,14 @@ func TestAsCloseWriter(t *testing.T) {
 					nopCloseWriterImpl{},
 				},
 			},
+		},
+		{
+			"rwcBody",
+			&rwcBody{body{ReadCloser: nopReadCloserImpl{}}},
+		},
+		{
+			"rwcBody ptr",
+			&rwcBody{body{ReadCloser: &nopReadCloserPtrImpl{}}},
 		},
 	}
 
