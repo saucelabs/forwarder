@@ -60,10 +60,13 @@ brews:
       owner: saucelabs
       name: homebrew-tap
       token: "{{ .Env.TAP_GITHUB_TOKEN }}"
+    commit_author:
+      name: "Sauce Connect Bot"
+      email: "scdev@saucelabs.com"
     directory: Formula
     goarm: "7"
-    homepage: https://github.com/saucelabs/forwarder
-    description: Fast HTTP(S) proxy with PAC support
+    homepage: https://forwarder-proxy.io
+    description: Forward MITM proxy with PAC support
     license: MPL-2.0
     test: |
       system "#{bin}/forwarder version"
