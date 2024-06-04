@@ -76,6 +76,24 @@ brews:
       zsh_completion.install "completions/forwarder.zsh" => "_forwarder"
       fish_completion.install "completions/forwarder.fish"
 
+# winget pushes commits to forwarder branch in our winget-pkgs fork.
+# It is required to create a pull request to the upstream winget-pkgs repository
+# after the release to get the package published.
+winget:
+  - repository:
+      owner: saucelabs
+      name: winget-pkgs
+      token: "{{ .Env.TAP_GITHUB_TOKEN }}"
+      branch: forwarder
+    commit_author:
+      name: "Sauce Connect Bot"
+      email: "scdev@saucelabs.com"
+    publisher: SauceLabs
+    publisher_url: https://saucelabs.com
+    short_description: Forward MITM proxy with PAC support
+    homepage: https://forwarder-proxy.io
+    license: MPL-2.0
+
 nfpms:
   - package_name: "{{ .ProjectName }}"
     file_name_template: "{{ .ProjectName }}-{{ .Version }}_{{ .Os }}.{{ .Arch }}"
