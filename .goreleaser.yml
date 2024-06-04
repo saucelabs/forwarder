@@ -1,3 +1,5 @@
+version: 2
+
 project_name: forwarder
 
 before:
@@ -58,7 +60,7 @@ brews:
       owner: saucelabs
       name: homebrew-tap
       token: "{{ .Env.TAP_GITHUB_TOKEN }}"
-    folder: Formula
+    directory: Formula
     goarm: "7"
     homepage: https://github.com/saucelabs/forwarder
     description: Fast HTTP(S) proxy with PAC support
