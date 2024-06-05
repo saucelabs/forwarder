@@ -4,54 +4,28 @@ title: Windows
 
 # Install Forwarder on Windows
 
-### Unpack the zip file
+### Install Forwarder
 
-{{< tabs "windows-install" >}}
-{{< tab "ARM64" >}}
-```powershell
-mkdir C:\forwarder
-Invoke-WebRequest -Uri {{< data "latest" "windows.aarch64.zip" >}} -OutFile forwarder.zip
-Expand-Archive -Path forwarder.zip -DestinationPath C:\forwarder
-```
-{{< /tab >}}
-{{< tab "x86-64" >}}
-```powershell
-mkdir C:\forwarder
-Invoke-WebRequest -Uri {{< data "latest" "windows.x86_64.zip" >}} -OutFile forwarder.zip
-Expand-Archive -Path forwarder.zip -DestinationPath C:\forwarder
-```
-{{< /tab >}}
-{{< /tabs >}}
-
-### Add the binary to PATH  
-
-Add `C:\forwarder` to `PATH` environment variable
+Run the following command to install Forwarder:
 
 ```powershell
-$currentPath = [System.Environment]::GetEnvironmentVariable('PATH', [System.EnvironmentVariableTarget]::Machine)
-$newPath = "$currentPath;C:\forwarder"
-[System.Environment]::SetEnvironmentVariable('PATH', $newPath, [System.EnvironmentVariableTarget]::Machine)
+winget install SauceLabs.forwarder
 ```
 
-### Add completion
+Open a new PowerShell window after installation to use the `forwarder` command.
 
-Open PowerShell and check if you already have a profile.
+### Add PowerShell command completion
+
+Run the following script to add command completion to PowerShell:
 
 ```powershell
-Test-Path $PROFILE
+if (-Not (Test-Path -Path $PROFILE)) {
+    New-Item -ItemType File -Path $PROFILE -Force
+}
+Add-Content -Path $PROFILE -Value "Invoke-Expression (forwarder completion powershell | Out-String)"
 ```
 
-If the command returns `False`, create a new profile.
-
-```powershell
-New-Item -ItemType File -Path $PROFILE -Force
-```
-
-Add PowerShell completion to the profile.
-
-```powershell
-Add-Content -Path $PROFILE -Value ". C:\forwarder\completions\forwarder.ps1"
-```
+Open a new PowerShell window to use the `forwarder` command with completion.
 
 ### Edit config file
 
@@ -60,11 +34,12 @@ You can use default configuration or configure Forwarder with flags or environme
 See CLI reference for more details.
 
 ```powershell
-notepad C:\forwarder\forwarder.yaml
+forwarder run config-file > forwarder.yaml
+notepad forwarder.yaml
 ```
 
 ### Start Forwarder
 
 ```powershell
-forwarder.exe run --config-file C:\forwarder\forwarder.yaml
+forwarder run --config-file C:\forwarder\forwarder.yaml
 ```
