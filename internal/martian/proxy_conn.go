@@ -366,7 +366,8 @@ func (p *proxyConn) handle() error {
 		if isClosedConnError(err) {
 			log.Debugf(ctx, "connection closed prematurely: %v", err)
 		} else {
-			log.Errorf(ctx, "failed to round trip: %v", err)
+			log.Errorf(ctx, "failed to round trip host=%s method=%s path=%s: %v",
+				req.Host, req.Method, req.URL.Path, err)
 		}
 		return p.writeErrorResponse(req, err)
 	}
