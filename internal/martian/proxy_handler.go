@@ -294,7 +294,8 @@ func (p proxyHandler) handleRequest(rw http.ResponseWriter, req *http.Request) {
 		if isClosedConnError(err) {
 			log.Debugf(ctx, "connection closed prematurely: %v", err)
 		} else {
-			log.Errorf(ctx, "failed to round trip: %v", err)
+			log.Errorf(ctx, "failed to round trip host=%s method=%s path=%s: %v",
+				req.Host, req.Method, req.URL.Path, err)
 		}
 		p.writeErrorResponse(rw, req, err)
 		return
