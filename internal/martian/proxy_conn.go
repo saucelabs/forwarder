@@ -295,7 +295,7 @@ func (p *proxyConn) tunnel(name string, res *http.Response, crw io.ReadWriteClos
 	}
 
 	ctx := res.Request.Context()
-	donec := make(chan bool, 2)
+	donec := make(chan struct{}, 2)
 	go copySync(ctx, "outbound "+name, crw, p.conn, donec)
 	go copySync(ctx, "inbound "+name, p.conn, crw, donec)
 
