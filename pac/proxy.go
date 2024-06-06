@@ -47,9 +47,11 @@ var noProxy = Proxy{ //nolint:gochecknoglobals // it's a constant
 // Proxy specifies proxy to be used as parsed from FindProxyForURL result.
 // See ParseResult for details.
 type Proxy struct {
-	Mode Mode
-	Host string
-	Port string
+	Mode     Mode
+	Host     string
+	Port     string
+	Username string
+	Password string
 }
 
 // URL returns proxy URL as used in http.Transport.Proxy() (it returns nil if proxy is DIRECT).
@@ -65,6 +67,7 @@ func (p Proxy) URL() *url.URL {
 	return &url.URL{
 		Scheme: strings.ToLower(m.String()),
 		Host:   net.JoinHostPort(p.Host, p.Port),
+		User:   url.UserPassword(p.Username, p.Password),
 	}
 }
 
@@ -119,14 +122,32 @@ func parseProxy(s string) (Proxy, error) {
 	if !ok {
 		return noProxy, errors.New("missing host:port")
 	}
+
+	var username, password string
+	if strings.Contains(hostport, "@") {
+		// if hostport has @ in it, extract it
+		// in form of username:password@host:port
+		var userpass string
+		userpass, hostport, ok = strings.Cut(hostport, "@")
+		if !ok {
+			return noProxy, fmt.Errorf("invalid proxy hostport: %s", hostport)
+		}
+		username, password, ok = strings.Cut(userpass, ":")
+		if !ok {
+			return noProxy, fmt.Errorf("invalid proxy auth identifier: %s", userpass)
+		}
+	}
+
 	host, port, err := net.SplitHostPort(hostport)
 	if err != nil {
 		return noProxy, fmt.Errorf("split host:port: %w", err)
 	}
 	return Proxy{
-		Mode: parseMode(mode),
-		Host: host,
-		Port: port,
+		Mode:     parseMode(mode),
+		Host:     host,
+		Port:     port,
+		Username: username,
+		Password: password,
 	}, nil
 }
 
