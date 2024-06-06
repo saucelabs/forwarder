@@ -43,7 +43,7 @@ var copyBufPool = sync.Pool{
 	},
 }
 
-func copySync(ctx context.Context, name string, w io.Writer, r io.Reader, donec chan<- bool) {
+func copySync(ctx context.Context, name string, w io.Writer, r io.Reader, donec chan<- struct{}) {
 	bufp := copyBufPool.Get().(*[]byte) //nolint:forcetypeassert // It's *[]byte.
 	buf := *bufp
 	defer copyBufPool.Put(bufp)
@@ -60,5 +60,5 @@ func copySync(ctx context.Context, name string, w io.Writer, r io.Reader, donec 
 	}
 
 	log.Debugf(ctx, "%s tunnel finished copying", name)
-	donec <- true
+	donec <- struct{}{}
 }
