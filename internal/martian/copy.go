@@ -43,22 +43,38 @@ var copyBufPool = sync.Pool{
 	},
 }
 
-func copySync(ctx context.Context, name string, w io.Writer, r io.Reader, donec chan<- struct{}) {
+func bicopy(ctx context.Context, cc ...copier) {
+	donec := make(chan struct{}, len(cc))
+	for i := range cc {
+		go cc[i].copy(ctx, donec)
+	}
+	for range cc {
+		<-donec
+	}
+}
+
+type copier struct {
+	name string
+	dst  io.Writer
+	src  io.Reader
+}
+
+func (c copier) copy(ctx context.Context, donec chan<- struct{}) {
 	bufp := copyBufPool.Get().(*[]byte) //nolint:forcetypeassert // It's *[]byte.
 	buf := *bufp
 	defer copyBufPool.Put(bufp)
 
-	if _, err := io.CopyBuffer(w, r, buf); err != nil && !isClosedConnError(err) {
-		log.Errorf(ctx, "failed to copy %s tunnel: %v", name, err)
+	if _, err := io.CopyBuffer(c.dst, c.src, buf); err != nil && !isClosedConnError(err) {
+		log.Errorf(ctx, "failed to copy %s tunnel: %v", c.name, err)
 	}
-	if cw, ok := asCloseWriter(w); ok {
+	if cw, ok := asCloseWriter(c.dst); ok {
 		cw.CloseWrite()
-	} else if pw, ok := w.(*io.PipeWriter); ok {
+	} else if pw, ok := c.dst.(*io.PipeWriter); ok {
 		pw.Close()
 	} else {
-		log.Errorf(ctx, "cannot close write side of %s tunnel (%T)", name, w)
+		log.Errorf(ctx, "cannot close write side of %s tunnel (%T)", c.name, c.dst)
 	}
 
-	log.Debugf(ctx, "%s tunnel finished copying", name)
+	log.Debugf(ctx, "%s tunnel finished copying", c.name)
 	donec <- struct{}{}
 }
