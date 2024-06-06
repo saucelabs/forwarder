@@ -192,10 +192,9 @@ func (p proxyHandler) handleUpgradeResponse(rw http.ResponseWriter, req *http.Re
 func (p proxyHandler) tunnel(name string, rw http.ResponseWriter, req *http.Request, res *http.Response, crw io.ReadWriteCloser) error {
 	ctx := req.Context()
 
-	var (
-		rc    = http.NewResponseController(rw)
-		donec = make(chan bool, 2)
-	)
+	rc := http.NewResponseController(rw)
+	donec := make(chan struct{}, 2)
+
 	switch req.ProtoMajor {
 	case 1:
 		conn, brw, err := rc.Hijack()
