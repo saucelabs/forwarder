@@ -190,11 +190,9 @@ func (p proxyHandler) handleUpgradeResponse(rw http.ResponseWriter, req *http.Re
 }
 
 func (p proxyHandler) tunnel(name string, rw http.ResponseWriter, req *http.Request, res *http.Response, crw io.ReadWriteCloser) error {
-	ctx := req.Context()
-
 	rc := http.NewResponseController(rw)
-	donec := make(chan struct{}, 2)
 
+	var cc []copier
 	switch req.ProtoMajor {
 	case 1:
 		conn, brw, err := rc.Hijack()
@@ -220,8 +218,10 @@ func (p proxyHandler) tunnel(name string, rw http.ResponseWriter, req *http.Requ
 			return err
 		}
 
-		go copySync(ctx, "outbound "+name, crw, conn, donec)
-		go copySync(ctx, "inbound "+name, conn, crw, donec)
+		cc = []copier{
+			{"outbound " + name, crw, conn},
+			{"inbound " + name, conn, crw},
+		}
 	case 2:
 		copyHeader(rw.Header(), res.Header)
 		rw.WriteHeader(res.StatusCode)
@@ -232,17 +232,20 @@ func (p proxyHandler) tunnel(name string, rw http.ResponseWriter, req *http.Requ
 			return err
 		}
 
-		go copySync(ctx, "outbound "+name, crw, req.Body, donec)
-		go copySync(ctx, "inbound "+name, writeFlusher{rw, rc}, crw, donec)
+		cc = []copier{
+			{"outbound " + name, crw, req.Body},
+			{"inbound " + name, writeFlusher{rw, rc}, crw},
+		}
 	default:
 		err := fmt.Errorf("unsupported protocol version: %d", req.ProtoMajor)
 		p.traceWroteResponse(res, err)
 		return err
 	}
 
+	ctx := req.Context()
+
 	log.Debugf(ctx, "established %s tunnel, proxying traffic", name)
-	<-donec
-	<-donec
+	bicopy(ctx, cc...)
 	log.Debugf(ctx, "closed %s tunnel duration=%s", name, ContextDuration(ctx))
 
 	p.traceWroteResponse(res, nil)
