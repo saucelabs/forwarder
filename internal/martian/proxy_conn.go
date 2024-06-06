@@ -295,13 +295,12 @@ func (p *proxyConn) tunnel(name string, res *http.Response, crw io.ReadWriteClos
 	}
 
 	ctx := res.Request.Context()
-	donec := make(chan struct{}, 2)
-	go copySync(ctx, "outbound "+name, crw, p.conn, donec)
-	go copySync(ctx, "inbound "+name, p.conn, crw, donec)
 
 	log.Debugf(ctx, "switched protocols, proxying %s traffic", name)
-	<-donec
-	<-donec
+	bicopy(ctx,
+		copier{"outbound " + name, crw, p.conn},
+		copier{"inbound " + name, p.conn, crw},
+	)
 	log.Debugf(ctx, "closed %s tunnel duration=%s", name, ContextDuration(ctx))
 
 	p.traceWroteResponse(res, nil)
