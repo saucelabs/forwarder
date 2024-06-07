@@ -30,6 +30,9 @@ const (
 )
 
 func (m Mode) String() string {
+	if m == "" {
+		return DefaultMode.String()
+	}
 	return string(m)
 }
 
