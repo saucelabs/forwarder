@@ -332,7 +332,7 @@ func HTTPLogConfig(fs *pflag.FlagSet, cfg []NamedParam[httplog.Mode]) {
 
 	var flagValue []NamedParam[httplog.Mode]
 	f := httplogFlag{
-		SliceValue: anyflag.NewSliceValue[NamedParam[httplog.Mode]](flagValue, &flagValue, parse),
+		SliceValue: anyflag.NewSliceValue[NamedParam[httplog.Mode]](cfg, &flagValue, parse),
 		update: func() {
 			httplogUpdate(cfg, flagValue)
 		},
