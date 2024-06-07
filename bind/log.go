@@ -7,6 +7,8 @@
 package bind
 
 import (
+	"strings"
+
 	"github.com/mmatczuk/anyflag"
 	"github.com/saucelabs/forwarder/httplog"
 )
@@ -37,11 +39,34 @@ func (f httplogFlag) Replace(vals []string) (err error) {
 }
 
 func (f httplogFlag) String() string {
-	if len(f.SliceValue.GetSlice()) == 0 {
+	s := f.SliceValue.GetSlice()
+	if len(s) == 0 {
 		return httplog.DefaultMode.String()
 	}
 
-	return f.SliceValue.String()
+	// Check if all modes are the same.
+	// If not, print all (name,mode) pairs.
+	for i := 1; i < len(s); i++ {
+		_, m1, _ := strings.Cut(s[i-1], ":")
+		if m1 == "" {
+			m1 = s[i-1]
+		}
+		_, m2, _ := strings.Cut(s[i], ":")
+		if m2 == "" {
+			m2 = s[i]
+		}
+		if m1 != m2 {
+			return f.SliceValue.String()
+		}
+	}
+
+	// All modes are the same - print only the mode.
+	_, m, _ := strings.Cut(s[0], ":")
+	if m == "" {
+		m = s[0]
+	}
+
+	return m
 }
 
 func httplogUpdate(dst, src []NamedParam[httplog.Mode]) {
