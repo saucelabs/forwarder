@@ -284,7 +284,6 @@ func SetupFlagDNSServer(l *setupList) {
 							{
 								Subnet:  "150.150.100.0/24",
 								Gateway: "150.150.100.1",
-								IPRange: "150.150.100.10/29",
 							},
 						},
 					},
