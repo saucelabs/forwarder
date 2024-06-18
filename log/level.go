@@ -6,14 +6,14 @@
 
 package log
 
-type Level string
+type Level int32
 
 const (
-	ErrorLevel Level = "error"
-	InfoLevel  Level = "info"
-	DebugLevel Level = "debug"
+	ErrorLevel Level = iota
+	InfoLevel
+	DebugLevel
 )
 
 func (l Level) String() string {
-	return string(l)
+	return [3]string{"error", "info", "debug"}[l]
 }
