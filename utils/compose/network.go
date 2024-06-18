@@ -17,7 +17,6 @@ import (
 type IPAMConfig struct {
 	Subnet  string `yaml:"subnet"`
 	Gateway string `yaml:"gateway"`
-	IPRange string `yaml:"ip_range"`
 }
 
 func (c *IPAMConfig) Validate() error {
@@ -26,9 +25,6 @@ func (c *IPAMConfig) Validate() error {
 	}
 	if err := validateIP(c.Gateway); err != nil {
 		return fmt.Errorf("network gateway is invalid %w", err)
-	}
-	if err := validateIPWithMask(c.IPRange); err != nil {
-		return fmt.Errorf("network IP range is invalid %w", err)
 	}
 	return nil
 }
