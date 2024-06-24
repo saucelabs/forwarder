@@ -33,14 +33,19 @@ func Debug() *Logger {
 type Option func(*Logger)
 
 func New(cfg *flog.Config, opts ...Option) *Logger {
-	var w io.Writer = os.Stdout
+	var (
+		w io.Writer = os.Stdout
+		c io.Closer
+	)
 	if cfg.File != nil {
 		w = cfg.File
+		c = cfg.File
 	}
 
 	l := Logger{
-		log:   log.New(w, "", log.Ldate|log.Ltime|log.Lmicroseconds|log.LUTC),
-		level: cfg.Level,
+		log:    log.New(w, "", log.Ldate|log.Ltime|log.Lmicroseconds|log.LUTC),
+		level:  cfg.Level,
+		closer: c,
 	}
 	for _, opt := range opts {
 		opt(&l)
@@ -54,6 +59,7 @@ type Logger struct {
 	labels []string
 	name   string
 	level  flog.Level
+	closer io.Closer
 
 	errorPfx string
 	infoPfx  string
@@ -123,4 +129,11 @@ func (sl *Logger) Debugf(format string, args ...any) {
 // Unwrap returns the underlying log.Logger pointer.
 func (sl *Logger) Unwrap() *log.Logger {
 	return sl.log
+}
+
+func (sl *Logger) Close() error {
+	if sl.closer == nil {
+		return nil
+	}
+	return sl.closer.Close()
 }
