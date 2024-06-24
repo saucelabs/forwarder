@@ -6,6 +6,10 @@
 
 package log
 
+import (
+	"os"
+)
+
 // Logger is the logger used by the forwarder package.
 type Logger interface {
 	Errorf(format string, args ...any)
@@ -26,3 +30,10 @@ func (l nopLogger) Infof(_ string, _ ...any) {
 
 func (l nopLogger) Debugf(_ string, _ ...any) {
 }
+
+var (
+	DefaultFileFlags = os.O_CREATE | os.O_APPEND | os.O_WRONLY
+
+	DefaultFileMode os.FileMode = 0o600
+	DefaultDirMode  os.FileMode = 0o700
+)

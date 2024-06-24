@@ -378,7 +378,7 @@ func TLSServerConfig(fs *pflag.FlagSet, cfg *forwarder.TLSServerConfig, namePref
 
 func LogConfig(fs *pflag.FlagSet, cfg *log.Config) {
 	fs.VarP(newOSFileFlag(anyflag.NewValue[*os.File](nil, &cfg.File,
-		forwarder.OpenFileParser(os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600, 0o700)), &cfg.File),
+		forwarder.OpenFileParser(log.DefaultFileFlags, log.DefaultFileMode, log.DefaultDirMode)), &cfg.File),
 		"log-file", "", "<path>"+
 			"Path to the log file, if empty, logs to stdout. ")
 
