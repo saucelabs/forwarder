@@ -38,8 +38,9 @@ func New(cfg *flog.Config, opts ...Option) *Logger {
 		c io.Closer
 	)
 	if cfg.File != nil {
-		w = cfg.File
-		c = cfg.File
+		r := flog.NewRotatableFile(cfg.File)
+		w = r
+		c = r
 	}
 
 	l := Logger{
