@@ -7,6 +7,8 @@
 package httpbin
 
 import (
+	"fmt"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/saucelabs/forwarder"
 	"github.com/saucelabs/forwarder/bind"
@@ -31,6 +33,12 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 		defer f.Close()
 	}
 	logger := stdlog.New(c.logConfig)
+
+	defer func() {
+		if err := logger.Close(); err != nil {
+			fmt.Fprintf(cmd.ErrOrStderr(), "close logger: %s\n", err)
+		}
+	}()
 
 	defer func() {
 		if cmdErr != nil {

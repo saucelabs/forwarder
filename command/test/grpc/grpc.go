@@ -9,6 +9,7 @@ package grpc
 import (
 	"context"
 	"crypto/tls"
+	"fmt"
 	"net"
 
 	"github.com/saucelabs/forwarder"
@@ -37,6 +38,12 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 		defer f.Close()
 	}
 	logger := stdlog.New(c.logConfig)
+
+	defer func() {
+		if err := logger.Close(); err != nil {
+			fmt.Fprintf(cmd.ErrOrStderr(), "close logger: %s\n", err)
+		}
+	}()
 
 	defer func() {
 		if cmdErr != nil {
