@@ -70,6 +70,12 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 	logger := stdlog.New(c.logConfig, stdlog.WithOnError(onError))
 
 	defer func() {
+		if err := logger.Close(); err != nil {
+			fmt.Fprintf(cmd.ErrOrStderr(), "close logger: %s\n", err)
+		}
+	}()
+
+	defer func() {
 		if cmdErr != nil {
 			logger.Errorf("fatal error exiting: %s", cmdErr)
 			cmd.SilenceErrors = true
