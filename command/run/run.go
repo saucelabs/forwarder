@@ -87,6 +87,17 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 
 	var ep []forwarder.APIEndpoint
 
+	ep = append(ep, forwarder.APIEndpoint{
+		Path: "/log/reopen",
+		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if err := logger.Reopen(); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+			} else {
+				w.WriteHeader(http.StatusOK)
+			}
+		}),
+	})
+
 	{
 		var (
 			cfg []byte
