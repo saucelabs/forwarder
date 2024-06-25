@@ -130,6 +130,13 @@ func (sl *Logger) Unwrap() *log.Logger {
 	return sl.log
 }
 
+func (sl *Logger) Reopen() error {
+	if sl.file == nil {
+		return nil
+	}
+	return sl.file.Reopen()
+}
+
 func (sl *Logger) Close() error {
 	if sl.file == nil {
 		return nil
