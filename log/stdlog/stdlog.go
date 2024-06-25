@@ -33,20 +33,18 @@ func Debug() *Logger {
 type Option func(*Logger)
 
 func New(cfg *flog.Config, opts ...Option) *Logger {
-	var (
-		w io.Writer = os.Stdout
-		c io.Closer
-	)
+	var w io.Writer = os.Stdout
+
+	var f *flog.RotatableFile
 	if cfg.File != nil {
-		r := flog.NewRotatableFile(cfg.File)
-		w = r
-		c = r
+		f = flog.NewRotatableFile(cfg.File)
+		w = f
 	}
 
 	l := Logger{
-		log:    log.New(w, "", log.Ldate|log.Ltime|log.Lmicroseconds|log.LUTC),
-		level:  cfg.Level,
-		closer: c,
+		log:   log.New(w, "", log.Ldate|log.Ltime|log.Lmicroseconds|log.LUTC),
+		file:  f,
+		level: cfg.Level,
 	}
 	for _, opt := range opts {
 		opt(&l)
@@ -57,10 +55,10 @@ func New(cfg *flog.Config, opts ...Option) *Logger {
 // Logger implements the forwarder.Logger interface using the standard log package.
 type Logger struct {
 	log    *log.Logger
+	file   *flog.RotatableFile
 	labels []string
 	name   string
 	level  flog.Level
-	closer io.Closer
 
 	errorPfx string
 	infoPfx  string
@@ -133,8 +131,8 @@ func (sl *Logger) Unwrap() *log.Logger {
 }
 
 func (sl *Logger) Close() error {
-	if sl.closer == nil {
+	if sl.file == nil {
 		return nil
 	}
-	return sl.closer.Close()
+	return sl.file.Close()
 }
