@@ -254,6 +254,11 @@ func TLSClientConfig(fs *pflag.FlagSet, cfg *forwarder.TLSClientConfig) {
 			"The system root certificates will be used in addition to any certificates in this list. "+
 			"Use this flag multiple times to specify multiple CA certificate files."+
 			pathOrBase64Syntax)
+
+	fs.StringVar(&cfg.KeyLogFile, "http-tls-keylog-file", cfg.KeyLogFile, "<path>"+
+		"File to log TLS master secrets in NSS key log format. "+
+		"By default, the value is taken from the SSLKEYLOGFILE environment variable. "+
+		"It can be used to allow external programs such as Wireshark to decrypt TLS connections. ")
 }
 
 func HTTPServerConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPServerConfig, prefix string, schemes ...forwarder.Scheme) {
