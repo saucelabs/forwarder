@@ -32,11 +32,17 @@ type TLSClientConfig struct {
 	// CACertFiles is a list of paths to CA certificate files.
 	// If this is set, the system root CA pool will be supplemented with certificates from these files.
 	CACertFiles []string
+
+	// KeyLogFile optionally specifies a destination for TLS master secrets
+	// in NSS key log format that can be used to allow external programs
+	// such as Wireshark to decrypt TLS connections.
+	KeyLogFile string
 }
 
 func DefaultTLSClientConfig() *TLSClientConfig {
 	return &TLSClientConfig{
 		HandshakeTimeout: 10 * time.Second,
+		KeyLogFile:       os.Getenv("SSLKEYLOGFILE"),
 	}
 }
 
@@ -45,6 +51,14 @@ func (c *TLSClientConfig) ConfigureTLSConfig(tlsCfg *tls.Config) error {
 
 	if err := c.loadRootCAs(tlsCfg); err != nil {
 		return fmt.Errorf("load CAs: %w", err)
+	}
+
+	if c.KeyLogFile != "" {
+		f, err := os.OpenFile(c.KeyLogFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0o600)
+		if err != nil {
+			return fmt.Errorf("open key log file: %w", err)
+		}
+		tlsCfg.KeyLogWriter = f
 	}
 
 	return nil
