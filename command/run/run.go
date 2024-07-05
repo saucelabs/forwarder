@@ -129,6 +129,10 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 		}
 	}
 
+	if c.httpTransportConfig.TLSClientConfig.KeyLogFile != "" {
+		logger.Infof("using TLS key logging, writing to %s", c.httpTransportConfig.TLSClientConfig.KeyLogFile)
+	}
+
 	var pr forwarder.PACResolver
 	if c.pac != nil {
 		// Disable metrics for receiving PAC file.
