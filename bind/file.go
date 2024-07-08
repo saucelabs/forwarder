@@ -9,25 +9,29 @@ package bind
 import (
 	"os"
 
+	"github.com/mmatczuk/anyflag"
 	"github.com/spf13/pflag"
 )
 
-// osFileFlag allows to print the file name instead of the file descriptor.
-type osFileFlag struct {
-	pflag.Value
+// FileFlag wraps anyflag.NewValue[*os.File] to fix the String() method.
+// When the file is nil, it returns an empty string.
+type FileFlag struct {
+	anyflag.Value[*os.File]
 	f **os.File
 }
 
-func (f *osFileFlag) String() string {
+func (f *FileFlag) String() string {
 	if *f.f == nil {
 		return ""
 	}
 	return (*f.f).Name()
 }
 
-func newOSFileFlag(v pflag.Value, f **os.File) pflag.Value {
+func NewFileFlag(f **os.File, p func(val string) (*os.File, error)) pflag.Value {
 	if f == nil {
 		panic("nil pointer")
 	}
-	return &osFileFlag{v, f}
+
+	v := anyflag.NewValue[*os.File](*f, f, p)
+	return &FileFlag{*v, f}
 }
