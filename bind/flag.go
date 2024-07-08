@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"net/netip"
 	"net/url"
-	"os"
 	"strings"
 
 	"github.com/mmatczuk/anyflag"
@@ -382,8 +381,7 @@ func TLSServerConfig(fs *pflag.FlagSet, cfg *forwarder.TLSServerConfig, namePref
 }
 
 func LogConfig(fs *pflag.FlagSet, cfg *log.Config) {
-	fs.VarP(newOSFileFlag(anyflag.NewValue[*os.File](nil, &cfg.File,
-		forwarder.OpenFileParser(log.DefaultFileFlags, log.DefaultFileMode, log.DefaultDirMode)), &cfg.File),
+	fs.VarP(NewFileFlag(&cfg.File, forwarder.OpenFileParser(log.DefaultFileFlags, log.DefaultFileMode, log.DefaultDirMode)),
 		"log-file", "", "<path>"+
 			"Path to the log file, if empty, logs to stdout. "+
 			"The file is reopened on SIGHUP to allow log rotation using external tools. ")
