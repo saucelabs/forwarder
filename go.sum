@@ -59,8 +59,8 @@ github.com/mitchellh/go-wordwrap v1.0.1 h1:TLuKupo69TCn6TQSyGxwI1EblZZEsQ0vMlAFQ
 github.com/mitchellh/go-wordwrap v1.0.1/go.mod h1:R62XHJLzvMFRBbcrT7m7WgmE1eOyTSsCt+hzestvNj0=
 github.com/mitchellh/mapstructure v1.5.0 h1:jeMsZIYE/09sWLaz43PL7Gy6RuMjD2eJVyuac5Z2hdY=
 github.com/mitchellh/mapstructure v1.5.0/go.mod h1:bFUtVrKA4DC2yAKiSyO/QUcy7e+RRV2QTWOzhPopBRo=
-github.com/mmatczuk/anyflag v0.0.0-20240105091245-c64b70bf5d41 h1:YRrHzEpNLEEpefVq2Ve9hOj/jA3QdYwoJhPGOqdAhnw=
-github.com/mmatczuk/anyflag v0.0.0-20240105091245-c64b70bf5d41/go.mod h1:PT22bA6vWBzPL8tAeK2XCMvWOQ4e19yY3MJIgnTZRaE=
+github.com/mmatczuk/anyflag v0.0.0-20240709090339-eb9e24cd1b44 h1:Ds9W8Yj5ti4kQXITpCozfNNibS1fUA8+aK2T5th0vXE=
+github.com/mmatczuk/anyflag v0.0.0-20240709090339-eb9e24cd1b44/go.mod h1:PT22bA6vWBzPL8tAeK2XCMvWOQ4e19yY3MJIgnTZRaE=
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 h1:C3w9PqII01/Oq1c1nUAm88MOHcQC9l5mIlSMApZMrHA=
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822/go.mod h1:+n7T8mK8HuQTcFwEeznm/DIxMOiR9yIdICNftLE1DvQ=
 github.com/pelletier/go-toml/v2 v2.2.2 h1:aYUidT7k73Pcl9nb2gScu7NSrKCSHIDE89b3+6Wq+LM=
