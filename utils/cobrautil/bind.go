@@ -19,11 +19,13 @@ import (
 
 var envReplacer = strings.NewReplacer(".", "_", "-", "_") //nolint:gochecknoglobals // false positive
 
+type ViperOpt func(*viper.Viper)
+
 // BindAll updates the given command flags with values from the environment variables and config file.
 // The supported formats are: JSON, YAML, TOML, HCL, and Java properties.
 // The file format is determined by the file extension, if not specified the default format is YAML.
 // The following precedence order of configuration sources is used: command flags, environment variables, config file, default values.
-func BindAll(cmd *cobra.Command, envPrefix, configFileFlagName string) error {
+func BindAll(cmd *cobra.Command, envPrefix, configFileFlagName string, opts ...ViperOpt) error {
 	v := viper.New()
 
 	// Flags
@@ -49,6 +51,10 @@ func BindAll(cmd *cobra.Command, envPrefix, configFileFlagName string) error {
 				return err
 			}
 		}
+	}
+
+	for _, opt := range opts {
+		opt(v)
 	}
 
 	return BindFromViper(cmd, v)
