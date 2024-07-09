@@ -9,6 +9,7 @@ package bind
 import (
 	"fmt"
 	"net/url"
+	"os"
 	"strings"
 
 	"github.com/saucelabs/forwarder/header"
@@ -38,4 +39,11 @@ func RedactBase64(s string) string {
 	}
 
 	return s
+}
+
+func DisplayFileName(f *os.File) string {
+	if f == nil {
+		return ""
+	}
+	return f.Name()
 }
