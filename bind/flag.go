@@ -382,8 +382,8 @@ func TLSServerConfig(fs *pflag.FlagSet, cfg *forwarder.TLSServerConfig, namePref
 }
 
 func LogConfig(fs *pflag.FlagSet, cfg *log.Config) {
-	fs.VarP(anyflag.NewValueWithRedact[*os.File](cfg.File, &cfg.File,
-		forwarder.OpenFileParser(log.DefaultFileFlags, log.DefaultFileMode, log.DefaultDirMode), DisplayFileName),
+	fs.VarP(struct{ pflag.Value }{anyflag.NewValueWithRedact[*os.File](cfg.File, &cfg.File,
+		forwarder.OpenFileParser(log.DefaultFileFlags, log.DefaultFileMode, log.DefaultDirMode), DisplayFileName)},
 		"log-file", "", "<path>"+
 			"Path to the log file, if empty, logs to stdout. "+
 			"The file is reopened on SIGHUP to allow log rotation using external tools. ")
