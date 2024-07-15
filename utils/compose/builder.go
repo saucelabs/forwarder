@@ -39,6 +39,10 @@ func (b *Builder) AddService(sb ServiceBuilder) *Builder {
 	s := sb.Service()
 
 	for i, v := range s.Volumes {
+		nv, _, ok := strings.Cut(v, ":")
+		if ok && b.c.Volumes[nv] != nil {
+			continue
+		}
 		s.Volumes[i] = absVolume(v)
 	}
 
@@ -71,6 +75,16 @@ func (b *Builder) AddNetwork(n *Network) *Builder {
 	}
 
 	b.error = b.c.AddNetwork(n)
+
+	return b
+}
+
+func (b *Builder) AddVolume(v string) *Builder {
+	if b.error != nil {
+		return b
+	}
+
+	b.error = b.c.AddVolume(v)
 
 	return b
 }

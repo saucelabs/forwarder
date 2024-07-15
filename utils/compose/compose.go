@@ -7,6 +7,7 @@
 package compose
 
 import (
+	"errors"
 	"fmt"
 	"io"
 
@@ -16,12 +17,14 @@ import (
 type Compose struct {
 	Services map[string]*Service `yaml:"services,omitempty"`
 	Networks map[string]*Network `yaml:"networks,omitempty"`
+	Volumes  map[string]*Volume  `yaml:"volumes,omitempty"`
 }
 
 func New() *Compose {
 	return &Compose{
 		Services: make(map[string]*Service),
 		Networks: make(map[string]*Network),
+		Volumes:  make(map[string]*Volume),
 	}
 }
 
@@ -47,6 +50,20 @@ func (c *Compose) AddNetwork(n *Network) error {
 	}
 
 	c.Networks[n.Name] = n
+
+	return nil
+}
+
+func (c *Compose) AddVolume(v string) error {
+	if v == "" {
+		return errors.New("volume is required")
+	}
+
+	if c.Volumes[v] != nil {
+		return nil
+	}
+
+	c.Volumes[v] = &Volume{}
 
 	return nil
 }
