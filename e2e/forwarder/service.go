@@ -53,7 +53,7 @@ func HttpbinService() *Service {
 	return &Service{
 		Name:    HttpbinServiceName,
 		Image:   Image,
-		Command: "test httpbin",
+		Command: []string{"test", "httpbin"},
 		Environment: map[string]string{
 			"FORWARDER_API_ADDRESS": ":10000",
 		},
@@ -64,7 +64,7 @@ func GRPCTestService() *Service {
 	s := &Service{
 		Name:    GRPCTestServiceName,
 		Image:   Image,
-		Command: "test grpc",
+		Command: []string{"test", "grpc"},
 		Environment: map[string]string{
 			"FORWARDER_ADDRESS": ":1443",
 		},

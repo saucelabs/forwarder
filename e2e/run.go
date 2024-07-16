@@ -7,7 +7,6 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"flag"
 	"fmt"
@@ -128,17 +127,19 @@ func testService(s *setup.Setup) *compose.Service {
 		run = s.Run
 	}
 
-	var cmd bytes.Buffer
+	var cmd []string
 	if *args.debug {
-		cmd.WriteString("-test.v ")
+		cmd = append(cmd, "-test.v")
 	}
-	fmt.Fprintf(&cmd, "-test.run %q -test.shuffle on -services %s",
-		run, strings.Join(maps.Keys(s.Compose.Services), ","))
+	cmd = append(cmd,
+		"-test.run", run,
+		"-test.shuffle", "on",
+		"-services", strings.Join(maps.Keys(s.Compose.Services), ","))
 
 	c := &compose.Service{
 		Name:    setup.TestServiceName,
 		Image:   "forwarder-e2e",
-		Command: cmd.String(),
+		Command: cmd,
 		Environment: map[string]string{
 			"GOMAXPROCS": "1",
 		},

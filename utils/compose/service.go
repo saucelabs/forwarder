@@ -18,7 +18,7 @@ type ServiceNetwork struct {
 type Service struct {
 	Name        string                    `yaml:"-"`
 	Image       string                    `yaml:"image,omitempty"`
-	Command     string                    `yaml:"command,omitempty"`
+	Command     []string                  `yaml:"command,omitempty"`
 	Environment map[string]string         `yaml:"environment,omitempty"`
 	Ports       []string                  `yaml:"ports,omitempty"`
 	Volumes     []string                  `yaml:"volumes,omitempty"`
