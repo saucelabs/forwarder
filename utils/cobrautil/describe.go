@@ -27,18 +27,11 @@ const (
 	YAML
 )
 
-func DescribeFlags(fs *pflag.FlagSet, format DescribeFormat) ([]byte, error) {
-	return FlagsDescriber{
-		Format:         format,
-		ShowNotChanged: true,
-	}.DescribeFlags(fs)
-}
-
 type FlagsDescriber struct {
-	Format         DescribeFormat
-	Unredacted     bool
-	ShowNotChanged bool
-	ShowHidden     bool
+	Format          DescribeFormat
+	Unredacted      bool
+	ShowChangedOnly bool
+	ShowHidden      bool
 }
 
 func (d FlagsDescriber) DescribeFlags(fs *pflag.FlagSet) ([]byte, error) {
@@ -48,10 +41,10 @@ func (d FlagsDescriber) DescribeFlags(fs *pflag.FlagSet) ([]byte, error) {
 		if f.Name == "help" {
 			return
 		}
-		if !d.ShowNotChanged && !f.Changed {
+		if !f.Changed && d.ShowChangedOnly {
 			return
 		}
-		if !d.ShowHidden && f.Hidden {
+		if f.Hidden && !d.ShowHidden {
 			return
 		}
 

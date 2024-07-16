@@ -57,17 +57,21 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 			err error
 		)
 
-		d := cobrautil.FlagsDescriber{
-			Format: cobrautil.Plain,
-		}
-		cfg, err = d.DescribeFlags(cmd.Flags())
+		cfg, err = cobrautil.FlagsDescriber{
+			Format:          cobrautil.Plain,
+			ShowChangedOnly: true,
+			ShowHidden:      true,
+		}.DescribeFlags(cmd.Flags())
 		if err != nil {
 			return err
 		}
 		logger.Infof("configuration\n%s", cfg)
 
-		d.ShowNotChanged = true
-		cfg, err = d.DescribeFlags(cmd.Flags())
+		cfg, err = cobrautil.FlagsDescriber{
+			Format:          cobrautil.Plain,
+			ShowChangedOnly: false,
+			ShowHidden:      true,
+		}.DescribeFlags(cmd.Flags())
 		if err != nil {
 			return err
 		}

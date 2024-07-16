@@ -148,7 +148,7 @@ func testDescribeFlags(t *testing.T, f DescribeFormat, expected []string) { //no
 				return fs
 			},
 			decorate: func(d *FlagsDescriber) {
-				d.ShowNotChanged = false
+				d.ShowChangedOnly = true
 			},
 		},
 		{
@@ -186,8 +186,8 @@ func testDescribeFlags(t *testing.T, f DescribeFormat, expected []string) { //no
 		tc := tests[i]
 		t.Run(tc.name, func(t *testing.T) {
 			d := FlagsDescriber{
-				Format:         f,
-				ShowNotChanged: true,
+				Format:          f,
+				ShowChangedOnly: false,
 			}
 			if tc.decorate != nil {
 				tc.decorate(&d)
