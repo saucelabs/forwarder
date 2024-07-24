@@ -95,6 +95,8 @@ func (p proxyHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	}
 	outreq.Close = false
 
+	fixConnectReqContentLength(outreq)
+
 	p.handleRequest(rw, outreq)
 }
 

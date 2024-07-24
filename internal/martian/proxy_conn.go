@@ -92,6 +92,7 @@ func (p *proxyConn) readRequest() (*http.Request, error) {
 	if err != nil {
 		return nil, err
 	}
+	fixConnectReqContentLength(req)
 	if p.secure {
 		req.TLS = &p.cs
 	}

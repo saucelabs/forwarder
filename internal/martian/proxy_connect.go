@@ -30,6 +30,19 @@ import (
 	"github.com/saucelabs/forwarder/internal/martian/proxyutil"
 )
 
+func fixConnectReqContentLength(req *http.Request) {
+	if req.Method != http.MethodConnect {
+		return
+	}
+
+	if req.Header.Get("Content-Length") != "" {
+		log.Infof(req.Context(), "CONNECT request with Content-Length: %s, ignoring content length",
+			req.Header.Get("Content-Length"))
+	}
+
+	req.ContentLength = -1
+}
+
 // ErrConnectFallback is returned by a ConnectFunc to indicate
 // that the CONNECT request should be handled by martian.
 var ErrConnectFallback = errors.New("martian: connect fallback")
