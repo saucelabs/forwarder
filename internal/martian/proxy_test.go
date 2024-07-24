@@ -1077,7 +1077,7 @@ func TestIntegrationConnectFunc(t *testing.T) {
 	p := new(Proxy)
 	p.ConnectFunc = func(req *http.Request) (*http.Response, io.ReadWriteCloser, error) {
 		pr, pw := io.Pipe()
-		return proxyutil.NewResponse(200, nil, req), pipeConn{pr, pw}, nil
+		return newConnectResponse(req), pipeConn{pr, pw}, nil
 	}
 	setTimeout(p, 200*time.Millisecond)
 	defer p.Close()

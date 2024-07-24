@@ -27,7 +27,6 @@ import (
 
 	"github.com/saucelabs/forwarder/dialvia"
 	"github.com/saucelabs/forwarder/internal/martian/log"
-	"github.com/saucelabs/forwarder/internal/martian/proxyutil"
 )
 
 func fixConnectReqContentLength(req *http.Request) {
@@ -71,7 +70,7 @@ func (p *Proxy) connect(req *http.Request) (*http.Response, net.Conn, error) {
 			return nil, nil, err
 		}
 
-		return proxyutil.NewResponse(200, http.NoBody, req), conn, nil
+		return newConnectResponse(req), conn, nil
 	}
 
 	switch proxyURL.Scheme {
@@ -103,7 +102,7 @@ func (p *Proxy) connectHTTP(req *http.Request, proxyURL *url.URL) (res *http.Res
 	if res != nil {
 		if res.StatusCode/100 == 2 {
 			res.Body.Close()
-			return proxyutil.NewResponse(200, http.NoBody, req), conn, nil
+			return newConnectResponse(req), conn, nil
 		}
 
 		// If the proxy returns a non-2xx response, return it to the client.
@@ -135,5 +134,21 @@ func (p *Proxy) connectSOCKS5(req *http.Request, proxyURL *url.URL) (*http.Respo
 		return nil, nil, err
 	}
 
-	return proxyutil.NewResponse(200, http.NoBody, req), conn, nil
+	return newConnectResponse(req), conn, nil
+}
+
+func newConnectResponse(req *http.Request) *http.Response {
+	ok := http.StatusOK
+	return &http.Response{
+		Status:     fmt.Sprintf("%d %s", ok, http.StatusText(ok)),
+		StatusCode: ok,
+		Proto:      req.Proto,
+		ProtoMajor: req.ProtoMajor,
+		ProtoMinor: req.ProtoMinor,
+
+		Body:          http.NoBody,
+		ContentLength: -1,
+
+		Request: req,
+	}
 }
