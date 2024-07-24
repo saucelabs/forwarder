@@ -240,8 +240,6 @@ func (p *proxyConn) handleConnectRequest(req *http.Request) error {
 		return p.writeErrorResponse(req, cerr)
 	}
 
-	res.ContentLength = -1
-
 	if err := p.modifyResponse(res); err != nil {
 		log.Debugf(ctx, "error modifying CONNECT response: %v", err)
 		return p.writeErrorResponse(req, err)
@@ -252,6 +250,7 @@ func (p *proxyConn) handleConnectRequest(req *http.Request) error {
 		return p.writeResponse(res)
 	}
 
+	res.ContentLength = -1
 	if err := p.tunnel("CONNECT", res, crw); err != nil {
 		log.Errorf(ctx, "CONNECT tunnel: %v", err)
 	}
