@@ -146,6 +146,8 @@ func newConnectResponse(req *http.Request) *http.Response {
 		ProtoMajor: req.ProtoMajor,
 		ProtoMinor: req.ProtoMinor,
 
+		Header: make(http.Header),
+
 		Body:          http.NoBody,
 		ContentLength: -1,
 
