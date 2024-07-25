@@ -69,8 +69,9 @@ func delayHandler(w http.ResponseWriter, r *http.Request) {
 	case <-r.Context().Done():
 		t.Stop()
 	case <-t.C:
-		w.WriteHeader(http.StatusOK)
 	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
 // statusHandler implements the /status/{code} endpoint.
