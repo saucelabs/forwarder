@@ -65,6 +65,8 @@ func delayHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	t := time.NewTimer(time.Duration(ms) * time.Millisecond)
+	defer t.Stop()
+
 	select {
 	case <-r.Context().Done():
 		t.Stop()
