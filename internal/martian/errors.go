@@ -25,6 +25,7 @@ import (
 	"runtime"
 	"strings"
 	"syscall"
+	_ "unsafe" // for go:linkname
 )
 
 var errClose = errors.New("closing connection")
@@ -36,6 +37,9 @@ func errno(v error) uintptr {
 	return 0
 }
 
+//go:linkname h2ErrClosedBody golang.org/x/net/http2.h2ErrClosedBody
+var h2ErrClosedBody error //nolint:errname // this is an exported variable from golang.org/x/net/http2
+
 // isClosedConnError reports whether err is an error from use of a closed network connection.
 func isClosedConnError(err error) bool {
 	if err == nil {
@@ -45,7 +49,8 @@ func isClosedConnError(err error) bool {
 	if errors.Is(err, io.EOF) ||
 		errors.Is(err, io.ErrUnexpectedEOF) ||
 		errors.Is(err, syscall.ECONNABORTED) ||
-		errors.Is(err, syscall.ECONNRESET) {
+		errors.Is(err, syscall.ECONNRESET) ||
+		errors.Is(err, h2ErrClosedBody) {
 		return true
 	}
 
