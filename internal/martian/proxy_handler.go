@@ -221,8 +221,8 @@ func (p proxyHandler) tunnel(name string, rw http.ResponseWriter, req *http.Requ
 		}
 
 		cc = []copier{
-			{"outbound " + name, crw, conn},
-			{"inbound " + name, conn, crw},
+			{"upstream " + name, crw, conn},
+			{"downstream " + name, conn, crw},
 		}
 	case 2:
 		copyHeader(rw.Header(), res.Header)
@@ -235,8 +235,8 @@ func (p proxyHandler) tunnel(name string, rw http.ResponseWriter, req *http.Requ
 		}
 
 		cc = []copier{
-			{"outbound " + name, crw, req.Body},
-			{"inbound " + name, makeH2Writer(rw, rc, req), crw},
+			{"upstream " + name, crw, req.Body},
+			{"downstream " + name, makeH2Writer(rw, rc, req), crw},
 		}
 	default:
 		err := fmt.Errorf("unsupported protocol version: %d", req.ProtoMajor)

@@ -301,8 +301,8 @@ func (p *proxyConn) tunnel(name string, res *http.Response, crw io.ReadWriteClos
 
 	log.Debugf(ctx, "switched protocols, proxying %s traffic", name)
 	bicopy(ctx,
-		copier{"outbound " + name, crw, p.conn},
-		copier{"inbound " + name, p.conn, crw},
+		copier{"upstream " + name, crw, p.conn},
+		copier{"downstream " + name, p.conn, crw},
 	)
 	log.Debugf(ctx, "closed %s tunnel duration=%s", name, ContextDuration(ctx))
 
