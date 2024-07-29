@@ -55,7 +55,7 @@ func basicAuthHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-// delayHandler implements the /delay/{seconds} endpoint.
+// delayHandler implements the /delay/{milliseconds} endpoint.
 func delayHandler(w http.ResponseWriter, r *http.Request) {
 	p := r.URL.Path[len("/delay/"):]
 
