@@ -113,8 +113,7 @@ func (p *proxyConn) handleMITM(req *http.Request) error {
 
 	log.Debugf(ctx, "mitm: attempting MITM")
 
-	res := proxyutil.NewResponse(200, nil, req)
-	res.ContentLength = -1
+	res := newConnectResponse(req)
 
 	if err := p.modifyResponse(res); err != nil {
 		log.Debugf(ctx, "error modifying CONNECT response: %v", err)
