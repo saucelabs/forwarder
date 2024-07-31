@@ -2,6 +2,8 @@ ARG BASE_IMAGE=gcr.io/distroless/static:nonroot
 
 FROM ${BASE_IMAGE}
 
+ENV PLATFORM=container
+
 COPY LICENSE /licenses/
 COPY LICENSE.3RD_PARTY /licenses/
 COPY forwarder /usr/bin
