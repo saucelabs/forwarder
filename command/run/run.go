@@ -228,7 +228,7 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 		}
 	}
 
-	if c.apiServerConfig.Addr != "" {
+	{
 		if err := c.registerGoMemLimitMetric(); err != nil {
 			return fmt.Errorf("register GOMEMLIMIT metric: %w", err)
 		}
@@ -248,14 +248,16 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 				Handler: httphandler.Version(version.Version, version.Time, version.Commit),
 			},
 		}, ep...)
-
 		h := forwarder.NewAPIHandler("Forwarder "+version.Version, c.promReg, nil, ep...)
-		a, err := forwarder.NewHTTPServer(c.apiServerConfig, h, logger.Named("api"))
-		if err != nil {
-			return err
+
+		if c.apiServerConfig.Addr != "" {
+			a, err := forwarder.NewHTTPServer(c.apiServerConfig, h, logger.Named("api"))
+			if err != nil {
+				return err
+			}
+			defer a.Close()
+			g.Add(a.Run)
 		}
-		defer a.Close()
-		g.Add(a.Run)
 	}
 
 	if c.goleak {
