@@ -7,28 +7,74 @@
 package ready
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"net/http"
 	"net/http/httputil"
+	"os"
+	"strings"
+	"time"
 
+	"github.com/saucelabs/forwarder"
 	"github.com/spf13/cobra"
 )
 
+type Config struct {
+	APIAddress    string
+	APIUnixSocket string
+	Endpoint      string
+	Timeout       time.Duration
+}
+
+func DefaultConfig() Config {
+	return Config{
+		APIAddress:    "localhost:10000",
+		APIUnixSocket: forwarder.APIUnixSocket,
+		Endpoint:      "/readyz",
+		Timeout:       2 * time.Second,
+	}
+}
+
 type command struct {
+	Config
 	apiAddr string
 }
 
 func (c *command) runE(cmd *cobra.Command, _ []string) error {
-	host, port, err := net.SplitHostPort(c.apiAddr)
+	var (
+		addr string
+		tr   http.Transport
+	)
+	if socketPath, ok := strings.CutPrefix(c.apiAddr, "unix:"); ok {
+		addr = c.apiAddr
+		tr.DialContext = func(_ context.Context, _, _ string) (net.Conn, error) {
+			return net.Dial("unix", socketPath)
+		}
+	} else {
+		host, port, err := net.SplitHostPort(c.apiAddr)
+		if err != nil {
+			return err
+		}
+		if host == "" {
+			host = "localhost"
+		}
+		addr = net.JoinHostPort(host, port)
+	}
+
+	httpc := http.Client{
+		Transport: &tr,
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), c.Timeout)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx,
+		http.MethodGet, fmt.Sprintf("http://%s%s", addr, c.Endpoint), http.NoBody)
 	if err != nil {
 		return err
 	}
-	if host == "" {
-		host = "localhost"
-	}
-
-	resp, err := http.Get("http://" + net.JoinHostPort(host, port) + "/readyz") //nolint:noctx // net/http.Get must not be called
+	resp, err := httpc.Do(req)
 	if err != nil {
 		return err
 	}
@@ -50,8 +96,16 @@ func (c *command) runE(cmd *cobra.Command, _ []string) error {
 }
 
 func Command() *cobra.Command {
+	return CommandWithConfig(DefaultConfig())
+}
+
+func CommandWithConfig(cfg Config) *cobra.Command {
 	c := command{
-		apiAddr: "localhost:10000",
+		Config:  cfg,
+		apiAddr: cfg.APIAddress,
+	}
+	if os.Getenv("PLATFORM") == "container" {
+		c.apiAddr = "unix:" + cfg.APIUnixSocket
 	}
 
 	cmd := &cobra.Command{
