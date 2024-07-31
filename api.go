@@ -18,6 +18,10 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
+// APIUnixSocket is the path to the Unix socket for the API server.
+// It is currently only used in containerized environments.
+const APIUnixSocket = "/tmp/forwarder.sock"
+
 // APIHandler serves API endpoints.
 // It provides health and readiness endpoints prometheus metrics, and pprof debug endpoints.
 type APIHandler struct {
