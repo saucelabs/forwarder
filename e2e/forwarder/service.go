@@ -43,20 +43,17 @@ func UpstreamProxyService() *Service {
 		Name:  UpstreamProxyServiceName,
 		Image: Image,
 		Environment: map[string]string{
-			"FORWARDER_API_ADDRESS": ":10000",
-			"FORWARDER_NAME":        UpstreamProxyServiceName,
+			"FORWARDER_NAME": UpstreamProxyServiceName,
 		},
 	}
 }
 
 func HttpbinService() *Service {
 	return &Service{
-		Name:    HttpbinServiceName,
-		Image:   Image,
-		Command: []string{"test", "httpbin"},
-		Environment: map[string]string{
-			"FORWARDER_API_ADDRESS": ":10000",
-		},
+		Name:        HttpbinServiceName,
+		Image:       Image,
+		Command:     []string{"test", "httpbin"},
+		Environment: map[string]string{},
 	}
 }
 
