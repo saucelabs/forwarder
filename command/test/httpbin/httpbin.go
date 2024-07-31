@@ -7,6 +7,7 @@
 package httpbin
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -19,12 +20,12 @@ import (
 	"github.com/saucelabs/forwarder/runctx"
 	"github.com/saucelabs/forwarder/utils/cobrautil"
 	"github.com/saucelabs/forwarder/utils/httpbin"
+	"github.com/saucelabs/forwarder/utils/httpx"
 	"github.com/spf13/cobra"
 )
 
 type command struct {
 	httpServerConfig *forwarder.HTTPServerConfig
-	apiServerConfig  *forwarder.HTTPServerConfig
 	logConfig        *log.Config
 }
 
@@ -74,29 +75,30 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 		logger.Debugf("all configuration\n%s\n\n", cfg)
 	}
 
+	g := runctx.NewGroup()
+
 	s, err := forwarder.NewHTTPServer(c.httpServerConfig, httpbin.Handler(), logger.Named("server"))
 	if err != nil {
 		return err
 	}
 	defer s.Close()
+	g.Add(s.Run)
 
-	r := prometheus.NewRegistry()
-	a, err := forwarder.NewHTTPServer(c.apiServerConfig, forwarder.NewAPIHandler("HTTPBin "+version.Version, r, nil), logger.Named("api"))
-	if err != nil {
-		return err
-	}
-	defer a.Close()
+	g.Add(func(ctx context.Context) error {
+		logger.Named("api").Infof("HTTP server listen socket path=%s", forwarder.APIUnixSocket)
+		r := prometheus.NewRegistry()
+		h := forwarder.NewAPIHandler("HTTPBin "+version.Version, r, nil)
+		return httpx.ServeUnixSocket(ctx, h, forwarder.APIUnixSocket)
+	})
 
-	return runctx.NewGroup(s.Run, a.Run).Run()
+	return g.Run()
 }
 
 func Command() *cobra.Command {
 	c := command{
 		httpServerConfig: forwarder.DefaultHTTPServerConfig(),
-		apiServerConfig:  forwarder.DefaultHTTPServerConfig(),
 		logConfig:        log.DefaultConfig(),
 	}
-	c.apiServerConfig.Addr = "localhost:10000"
 
 	cmd := &cobra.Command{
 		Use:   "httpbin [--protocol <http|https|h2>] [--address <host:port>] [flags]",
@@ -106,9 +108,7 @@ func Command() *cobra.Command {
 
 	fs := cmd.Flags()
 	bind.HTTPServerConfig(fs, c.httpServerConfig, "")
-	bind.HTTPServerConfig(fs, c.apiServerConfig, "api", forwarder.HTTPScheme)
 	bind.HTTPLogConfig(fs, []bind.NamedParam[httplog.Mode]{
-		{Name: "api", Param: &c.apiServerConfig.LogHTTPMode},
 		{Name: "server", Param: &c.httpServerConfig.LogHTTPMode},
 	})
 	bind.LogConfig(fs, c.logConfig)
