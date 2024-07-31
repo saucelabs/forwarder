@@ -31,6 +31,7 @@ import (
 	"github.com/saucelabs/forwarder/runctx"
 	"github.com/saucelabs/forwarder/utils/cobrautil"
 	"github.com/saucelabs/forwarder/utils/httphandler"
+	"github.com/saucelabs/forwarder/utils/httpx"
 	"github.com/saucelabs/forwarder/utils/osdns"
 	"github.com/spf13/cobra"
 	"go.uber.org/goleak"
@@ -249,6 +250,13 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 			},
 		}, ep...)
 		h := forwarder.NewAPIHandler("Forwarder "+version.Version, c.promReg, nil, ep...)
+
+		if os.Getenv("PLATFORM") == "container" {
+			g.Add(func(ctx context.Context) error {
+				logger.Named("api").Infof("HTTP server listen socket path=%s", forwarder.APIUnixSocket)
+				return httpx.ServeUnixSocket(ctx, h, forwarder.APIUnixSocket)
+			})
+		}
 
 		if c.apiServerConfig.Addr != "" {
 			a, err := forwarder.NewHTTPServer(c.apiServerConfig, h, logger.Named("api"))
