@@ -126,6 +126,13 @@
 # limit.
 #http-tls-handshake-timeout: 10s
 
+# http-tls-keylog-file <path>
+#
+# File to log TLS master secrets in NSS key log format. By default, the value is
+# taken from the SSLKEYLOGFILE environment variable. It can be used to allow
+# external programs such as Wireshark to decrypt TLS connections.
+#http-tls-keylog-file: 
+
 # insecure <value>
 #
 # Don't verify the server's certificate chain and host name. Enable to work with
@@ -136,7 +143,8 @@
 
 # log-file <path>
 #
-# Path to the log file, if empty, logs to stdout.
+# Path to the log file, if empty, logs to stdout. The file is reopened on SIGHUP
+# to allow log rotation using external tools.
 #log-file: 
 
 # log-http <none|short-url|url|headers|body|errors>,... 

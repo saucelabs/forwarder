@@ -89,40 +89,6 @@ Syntax:
 - File: `/path/to/file.pac`
 - Embed: `data:base64,<base64 encoded data>`
 
-## API server options
-
-### `--api-address` {#api-address}
-
-* Environment variable: `FORWARDER_API_ADDRESS`
-* Value Format: `<host:port>`
-* Default value: `localhost:10000`
-
-The server address to listen on.
-If the host is empty, the server will listen on all available interfaces.
-
-### `--api-basic-auth` {#api-basic-auth}
-
-* Environment variable: `FORWARDER_API_BASIC_AUTH`
-* Value Format: `<username[:password]>`
-
-Basic authentication credentials to protect the server.
-
-### `--api-idle-timeout` {#api-idle-timeout}
-
-* Environment variable: `FORWARDER_API_IDLE_TIMEOUT`
-* Value Format: `<duration>`
-* Default value: `1h0m0s`
-
-The maximum amount of time to wait for the next request before closing connection.
-
-### `--api-read-header-timeout` {#api-read-header-timeout}
-
-* Environment variable: `FORWARDER_API_READ_HEADER_TIMEOUT`
-* Value Format: `<duration>`
-* Default value: `1m0s`
-
-The amount of time allowed to read request headers.
-
 ## Logging options
 
 ### `--log-file` {#log-file}
@@ -131,11 +97,12 @@ The amount of time allowed to read request headers.
 * Value Format: `<path>`
 
 Path to the log file, if empty, logs to stdout.
+The file is reopened on SIGHUP to allow log rotation using external tools.
 
 ### `--log-http` {#log-http}
 
 * Environment variable: `FORWARDER_LOG_HTTP`
-* Value Format: `[api|server:]<none|short-url|url|headers|body|errors>,...`
+* Value Format: `<none|short-url|url|headers|body|errors>,...`
 * Default value: `errors`
 
 HTTP request and response logging mode.

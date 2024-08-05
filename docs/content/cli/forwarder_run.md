@@ -393,6 +393,15 @@ Zero means no limit.
 The maximum amount of time waiting to wait for a TLS handshake.
 Zero means no limit.
 
+### `--http-tls-keylog-file` {#http-tls-keylog-file}
+
+* Environment variable: `FORWARDER_HTTP_TLS_KEYLOG_FILE`
+* Value Format: `<path>`
+
+File to log TLS master secrets in NSS key log format.
+By default, the value is taken from the SSLKEYLOGFILE environment variable.
+It can be used to allow external programs such as Wireshark to decrypt TLS connections.
+
 ### `--insecure` {#insecure}
 
 * Environment variable: `FORWARDER_INSECURE`
@@ -444,6 +453,7 @@ The amount of time allowed to read request headers.
 * Value Format: `<path>`
 
 Path to the log file, if empty, logs to stdout.
+The file is reopened on SIGHUP to allow log rotation using external tools.
 
 ### `--log-http` {#log-http}
 

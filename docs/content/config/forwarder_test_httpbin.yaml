@@ -52,38 +52,15 @@
 # - Embed: data:base64,<base64 encoded data>
 #tls-key-file: 
 
-# --- API server options ---
-
-# api-address <host:port>
-#
-# The server address to listen on. If the host is empty, the server will listen
-# on all available interfaces.
-#api-address: localhost:10000
-
-# api-basic-auth <username[:password]>
-#
-# Basic authentication credentials to protect the server.
-#api-basic-auth: 
-
-# api-idle-timeout <duration>
-#
-# The maximum amount of time to wait for the next request before closing
-# connection.
-#api-idle-timeout: 1h0m0s
-
-# api-read-header-timeout <duration>
-#
-# The amount of time allowed to read request headers.
-#api-read-header-timeout: 1m0s
-
 # --- Logging options ---
 
 # log-file <path>
 #
-# Path to the log file, if empty, logs to stdout.
+# Path to the log file, if empty, logs to stdout. The file is reopened on SIGHUP
+# to allow log rotation using external tools.
 #log-file: 
 
-# log-http [api|server:]<none|short-url|url|headers|body|errors>,... 
+# log-http <none|short-url|url|headers|body|errors>,... 
 #
 # HTTP request and response logging mode. 
 # 

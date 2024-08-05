@@ -74,6 +74,7 @@ Syntax:
 * Value Format: `<path>`
 
 Path to the log file, if empty, logs to stdout.
+The file is reopened on SIGHUP to allow log rotation using external tools.
 
 ### `--log-level` {#log-level}
 
