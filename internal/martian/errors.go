@@ -37,8 +37,14 @@ func errno(v error) uintptr {
 	return 0
 }
 
-//go:linkname h2ErrClosedBody golang.org/x/net/http2.h2ErrClosedBody
+//go:linkname h2ErrClosedBody golang.org/x/net/http2.errClosedBody
 var h2ErrClosedBody error //nolint:errname // this is an exported variable from golang.org/x/net/http2
+
+func init() {
+	if h2ErrClosedBody == nil {
+		panic("http2.errClosedBody not linked")
+	}
+}
 
 // isClosedConnError reports whether err is an error from use of a closed network connection.
 func isClosedConnError(err error) bool {
