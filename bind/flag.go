@@ -244,7 +244,7 @@ func TLSClientConfig(fs *pflag.FlagSet, cfg *forwarder.TLSClientConfig) {
 		"http-tls-handshake-timeout", cfg.HandshakeTimeout,
 		"The maximum amount of time waiting to wait for a TLS handshake. Zero means no limit.")
 
-	fs.BoolVar(&cfg.InsecureSkipVerify, "insecure", cfg.InsecureSkipVerify,
+	fs.BoolVar(&cfg.Insecure, "insecure", cfg.Insecure,
 		"Don't verify the server's certificate chain and host name. "+
 			"Enable to work with self-signed certificates. ")
 
