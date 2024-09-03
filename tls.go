@@ -21,13 +21,13 @@ type TLSClientConfig struct {
 	// wait for a TLS handshake. Zero means no timeout.
 	HandshakeTimeout time.Duration
 
-	// InsecureSkipVerify controls whether a client verifies the server's
-	// certificate chain and host name. If InsecureSkipVerify is true, crypto/tls
+	// Insecure controls whether a client verifies the server's
+	// certificate chain and host name. If Insecure is true, crypto/tls
 	// accepts any certificate presented by the server and any host name in that
 	// certificate. In this mode, TLS is susceptible to machine-in-the-middle
 	// attacks unless custom verification is used. This should be used only for
 	// testing or in combination with VerifyConnection or VerifyPeerCertificate.
-	InsecureSkipVerify bool
+	Insecure bool
 
 	// CACertFiles is a list of paths to CA certificate files.
 	// If this is set, the system root CA pool will be supplemented with certificates from these files.
@@ -47,7 +47,7 @@ func DefaultTLSClientConfig() *TLSClientConfig {
 }
 
 func (c *TLSClientConfig) ConfigureTLSConfig(tlsCfg *tls.Config) error {
-	tlsCfg.InsecureSkipVerify = c.InsecureSkipVerify
+	tlsCfg.InsecureSkipVerify = c.Insecure
 
 	if err := c.loadRootCAs(tlsCfg); err != nil {
 		return fmt.Errorf("load CAs: %w", err)
