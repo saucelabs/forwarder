@@ -66,7 +66,6 @@ func (g *Group) RunContext(ctx context.Context) error {
 	}
 
 	for _, fn := range g.funcs {
-		fn := fn
 		eg.Go(func() error { return fn(ctx) })
 	}
 

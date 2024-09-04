@@ -444,7 +444,7 @@ func (p *proxyConn) writeResponse(res *http.Response) error {
 	}
 
 	var err error
-	if req.Method == "HEAD" && res.Body == http.NoBody {
+	if req.Method == http.MethodHead && res.Body == http.NoBody {
 		// The http package is misbehaving when writing a HEAD response.
 		// See https://github.com/golang/go/issues/62015 for details.
 		// This works around the issue by writing the response manually.

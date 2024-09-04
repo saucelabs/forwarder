@@ -419,7 +419,7 @@ func TestStream(t *testing.T) {
 			}()
 
 			var sent []*tspb.EchoRequest
-			for i := 0; i < 5; i++ {
+			for range 5 {
 				payload := make([]byte, 20*1024)
 				rand.Read(payload)
 				req := &tspb.EchoRequest{

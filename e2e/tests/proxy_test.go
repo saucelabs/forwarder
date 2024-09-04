@@ -89,7 +89,7 @@ func TestProxyAuthRequired(t *testing.T) {
 func TestProxyBytesStreamN(t *testing.T) {
 	var sizes []int
 	with := func(size, n int) {
-		for i := 0; i < n; i++ {
+		for range n {
 			sizes = append(sizes, size)
 		}
 	}
@@ -104,7 +104,7 @@ func TestProxyBytesStreamN(t *testing.T) {
 		wg      sync.WaitGroup
 	)
 
-	for i := 0; i < workers; i++ {
+	for range workers {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -201,7 +201,7 @@ func TestProxyWebSocket(t *testing.T) {
 		t.Fatalf("Subprotocol: %s\n", subprotocol)
 	}
 
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		message := fmt.Sprintf("hello %d", i)
 		err := conn.WriteMessage(websocket.TextMessage, []byte(message))
 		if err != nil {
@@ -306,7 +306,7 @@ func TestProxyReuseConnection(t *testing.T) {
 		}
 	})
 
-	for i := 0; i < 2; i++ {
+	for range 2 {
 		r, w := io.Pipe()
 
 		written := make(chan struct{})

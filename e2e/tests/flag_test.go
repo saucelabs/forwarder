@@ -265,7 +265,7 @@ func testRateLimitHelper(t *testing.T, workers int, expectedTime, epsilon time.D
 	var wg sync.WaitGroup
 
 	ts := time.Now()
-	for i := 0; i < workers; i++ {
+	for range workers {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()

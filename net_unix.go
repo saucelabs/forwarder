@@ -15,7 +15,7 @@ import (
 )
 
 func enableTCPKeepAlive(fd uintptr) {
-	if err := syscall.SetsockoptInt(int(fd), syscall.SOL_SOCKET, syscall.SO_KEEPALIVE, 1); err != nil {
+	if err := syscall.SetsockoptInt(int(fd), syscall.SOL_SOCKET, syscall.SO_KEEPALIVE, 1); err != nil { //nolint:gosec // integer overflow conversion uintptr -> int
 		fmt.Fprintf(os.Stderr, "failed to set SO_KEEPALIVE: %v\n", err)
 	}
 }
