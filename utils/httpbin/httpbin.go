@@ -125,7 +125,7 @@ func streamBytesHandler(w http.ResponseWriter, r *http.Request) {
 // It reads the request body and sends back the number of bytes read in a `Body-Size` header.
 func countBytesHandler(w http.ResponseWriter, r *http.Request) {
 	n, _ := io.Copy(io.Discard, r.Body) //nolint:errcheck // best effort
-	w.Header().Set("body-size", strconv.FormatInt(n, 10))
+	w.Header().Set("Body-Size", strconv.FormatInt(n, 10))
 	w.WriteHeader(http.StatusOK)
 }
 

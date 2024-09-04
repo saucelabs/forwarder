@@ -101,7 +101,7 @@ func TestHTTPProxyDialerDialContext(t *testing.T) {
 				// Write a response with data.
 				pbw := bufio.NewWriter(conn)
 				proxyutil.NewResponse(200, nil, req).Write(pbw)
-				for i := 0; i < 100; i++ {
+				for i := range 100 {
 					fmt.Fprintf(pbw, "hello %d\n", i)
 				}
 				return pbw.Flush()

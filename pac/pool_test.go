@@ -36,7 +36,7 @@ func TestProxyResolverPoolHammering(t *testing.T) {
 	}
 
 	var wg sync.WaitGroup
-	for i := 0; i < 10000; i++ {
+	for range 10000 {
 		wg.Add(1)
 		go func() {
 			if _, err := pool.FindProxyForURL(defaultQueryURL, ""); err != nil {

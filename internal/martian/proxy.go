@@ -220,8 +220,8 @@ func (p *Proxy) Serve(l net.Listener) error {
 				} else {
 					delay *= 2
 				}
-				if max := time.Second; delay > max {
-					delay = max
+				if delay > time.Second {
+					delay = time.Second
 				}
 
 				log.Debugf(context.TODO(), "temporary error on accept: %v", err)
@@ -319,7 +319,7 @@ func (p *Proxy) shouldMITM(req *http.Request) bool {
 	return true
 }
 
-const terminateTLSHeader = "X-Martian-Terminate-TLS"
+const terminateTLSHeader = "X-Martian-Terminate-Tls"
 
 func shouldTerminateTLS(req *http.Request) bool {
 	h := req.Header.Get(terminateTLSHeader)

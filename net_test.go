@@ -42,7 +42,7 @@ func TestDialerMetrics(t *testing.T) {
 	})
 
 	ctx := context.Background()
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		conn, err := d.DialContext(ctx, "tcp", l.Addr().String())
 		if err != nil {
 			t.Fatalf("d.DialContext(): got %v, want no error", err)
@@ -131,7 +131,7 @@ func TestListenerMetricsAccepted(t *testing.T) {
 	l.listenAndWait(t)
 	go l.acceptAndCopy()
 
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		conn, err := net.Dial("tcp", l.Addr().String())
 		if err != nil {
 			t.Fatalf("net.Dial(): got %v, want no error", err)
@@ -162,7 +162,7 @@ func TestListenerMetricsAcceptedWithTLS(t *testing.T) {
 	l.listenAndWait(t)
 	go l.acceptAndCopy()
 
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		conn, err := net.Dial("tcp", l.Addr().String())
 		if err != nil {
 			t.Fatalf("net.Dial(): got %v, want no error", err)

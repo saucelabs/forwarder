@@ -43,7 +43,7 @@ func parseDesc(s string) Desc {
 }
 
 func parseDescNameAndHelp(s string) (name, help string) {
-	fmt.Fscanf(strings.NewReader(s), "Desc{fqName: %q, help: %q}", &name, &help)
+	fmt.Fscanf(strings.NewReader(s), "Desc{fqName: %q, help: %q}", &name, &help) //nolint:errcheck // reading from a string can't fail
 	return
 }
 

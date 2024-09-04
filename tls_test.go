@@ -26,7 +26,6 @@ func TestTLSClientConfigInsecure(t *testing.T) {
 	cc.ConfigureTLSConfig(&tlsCfg)
 
 	for _, c := range tls.InsecureCipherSuites() {
-		c := c
 		t.Run(c.Name, func(t *testing.T) {
 			t.Parallel()
 			if c.Name == "TLS_ECDHE_ECDSA_WITH_RC4_128_SHA" {

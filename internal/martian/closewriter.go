@@ -54,7 +54,7 @@ func valueAsCloseWriter(v reflect.Value) (closeWriter, bool) {
 		return nil, false
 	}
 
-	for i := 0; i < v.NumField(); i++ {
+	for i := range v.NumField() {
 		f := v.Field(i)
 
 		if f.CanInterface() {
@@ -64,7 +64,7 @@ func valueAsCloseWriter(v reflect.Value) (closeWriter, bool) {
 		}
 	}
 
-	for i := 0; i < v.NumField(); i++ {
+	for i := range v.NumField() {
 		if cw, ok := valueAsCloseWriter(v.Field(i)); ok {
 			return cw, true
 		}

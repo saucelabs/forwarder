@@ -215,7 +215,7 @@ func ParseDNSAddress(val string) (netip.AddrPort, error) {
 		if err != nil {
 			return empty, fmt.Errorf("port: %w", err)
 		}
-		p = uint16(u)
+		p = uint16(u) //nolint:gosec // 16-bit port
 	}
 
 	ap := netip.AddrPortFrom(a, p)

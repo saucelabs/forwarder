@@ -1208,11 +1208,11 @@ func TestIntegrationConnectTerminateTLS(t *testing.T) {
 	if err != nil {
 		t.Fatalf("http.NewRequest(): got %v, want no error", err)
 	}
-	req.Header.Set("X-Martian-Terminate-TLS", "true")
+	req.Header.Set("X-Martian-Terminate-Tls", "true")
 
 	// CONNECT example.com:443 HTTP/1.1
 	// Host: example.com
-	// X-Martian-Terminate-TLS: true
+	// X-Martian-Terminate-Tls: true
 	//
 	// Rewritten to CONNECT to host:port in CONNECT request modifier.
 	if err := req.Write(conn); err != nil {
@@ -1938,7 +1938,7 @@ func TestRacyClose(t *testing.T) {
 	}
 
 	// Repeat a bunch of times to make failures more repeatable.
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		openAndConnect()
 	}
 }
