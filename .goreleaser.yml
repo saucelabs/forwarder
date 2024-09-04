@@ -20,6 +20,7 @@ builds:
     flags:
       - -trimpath
     ldflags:
+      - -checklinkname=0
       - -extldflags '-static'
       - -X 'github.com/saucelabs/forwarder/internal/version.Version={{ .Version }}'
       - -X 'github.com/saucelabs/forwarder/internal/version.Time={{ .Date }}'

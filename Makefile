@@ -1,6 +1,8 @@
 export GOBIN ?= $(CURDIR)/bin
 export PATH  := $(GOBIN):$(PATH)
 
+GOLD = -ldflags "-checklinkname=0"
+
 include .version
 
 ifneq ($(shell expr $(MAKE_VERSION) \>= 4), 1)
@@ -58,7 +60,7 @@ lint:
 
 .PHONY: test
 test:
-	@go test -timeout 120s -short -race -cover -coverprofile=coverage.out ./...
+	@go test $(GOLD) -timeout 120s -short -race -cover -coverprofile=coverage.out ./...
 
 .PHONY: coverage
 coverage:
@@ -73,10 +75,10 @@ update-devel-image: TMPDIR:=$(shell mktemp -d)
 update-devel-image:
 	@ln Containerfile LICENSE LICENSE.3RD_PARTY $(TMPDIR)
 ifeq ($(shell uname),Linux)
-	@CGO_ENABLED=1 GOOS=linux go build -race -o $(TMPDIR)/forwarder ./cmd/forwarder
+	@CGO_ENABLED=1 GOOS=linux go build $(GOLD) -race -o $(TMPDIR)/forwarder ./cmd/forwarder
 	@$(CONTAINER_RUNTIME) buildx build --network host -f Containerfile --build-arg BASE_IMAGE=ubuntu:latest -t saucelabs/forwarder:$(TAG) $(TMPDIR)
 else
-	@CGO_ENABLED=0 GOOS=linux go build -o $(TMPDIR)/forwarder ./cmd/forwarder
+	@CGO_ENABLED=0 GOOS=linux go build $(GOLD) -o $(TMPDIR)/forwarder ./cmd/forwarder
 	@$(CONTAINER_RUNTIME) buildx build --network host -f Containerfile -t saucelabs/forwarder:$(TAG) $(TMPDIR)
 endif
 	@rm -rf $(TMPDIR)
@@ -90,9 +92,9 @@ LICENSE.3RD_PARTY: LICENSE.3RD_PARTY.tpl go.mod go.sum
 .PHONY: run
 run: .forwarder.yaml
 run:
-	@GOMAXPROCS=1 go run ./cmd/forwarder run --config-file .forwarder.yaml
+	@GOMAXPROCS=1 go run $(GOLD) ./cmd/forwarder run --config-file .forwarder.yaml
 
 .PHONY: run-race
 run-race: .forwarder.yaml
 run-race:
-	@go run --race ./cmd/forwarder run --config-file .forwarder.yaml
+	@go run $(GOLD) --race ./cmd/forwarder run --config-file .forwarder.yaml
