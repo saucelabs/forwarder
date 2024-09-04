@@ -4,12 +4,13 @@ run:
   build-tags:
     - e2e
   tests: true
-  skip-files:
-    - mock_.*\\.go
-  silent: true
 
 linters:
   disable-all: true
   enable:
     - gci
     - gofumpt
+
+issues:
+  exclude-files:
+    - mock_.*\\.go

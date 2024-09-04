@@ -3,12 +3,6 @@ run:
   timeout: 5m
   build-tags:
     - e2e
-  skip-files:
-    - middleware/delegator.go
-    - utils/cobrautil/templates
-    - utils/cobrautil/term
-    - sizesuffix
-  silent: true
 
 linters:
   enable-all: true
@@ -16,10 +10,8 @@ linters:
     - bodyclose
     - contextcheck
     - cyclop
-    - deadcode
     - depguard
     - exhaustive
-    - exhaustivestruct
     - exhaustruct
     - funlen
     - gochecknoglobals
@@ -27,21 +19,14 @@ linters:
     - goconst
     - godox
     - goerr113
-    - golint
     - gomnd
     - gomoddirectives
-    - ifshort
     - inamedparam
-    - interfacer
     - ireturn
-    - maligned
+    - mnd
     - nlreturn
     - nonamedreturns
-    - nosnakecase
-    - scopelint
-    - structcheck
     - tagliatelle
-    - varcheck
     - varnamelen
     - wrapcheck
     - wsl
@@ -68,6 +53,10 @@ linters-settings:
       regexp:
         year: "2024"
     template-path: .go-header-template.yml
+  revive:
+    rules:
+      - name: unused-parameter
+        disabled: true
 
 issues:
   exclude:
@@ -85,6 +74,11 @@ issues:
     - "importShadow: shadow of imported package 'url'"
     - "commentedOutCode: may want to remove commented-out code"
     - "grpc.Dial is deprecated: use NewClient instead"
+  exclude-files:
+    - middleware/delegator.go
+    - utils/cobrautil/templates
+    - utils/cobrautil/term
+    - sizesuffix
   exclude-rules:
     - path: _test\.go
       linters:
