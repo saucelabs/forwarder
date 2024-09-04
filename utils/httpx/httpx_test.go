@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"testing"
+	"time"
 )
 
 func TestServeUnixSocket(t *testing.T) {
@@ -64,6 +65,7 @@ func TestServeUnixSocket(t *testing.T) {
 	// Wait for the server to stop.
 
 	for {
+		time.Sleep(500 * time.Millisecond)
 		if _, err := os.Stat(socketPath.Name()); os.IsNotExist(err) {
 			break
 		}
