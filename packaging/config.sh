@@ -2,4 +2,4 @@
 
 set -e
 
-go run ./cmd/forwarder run config-file > "forwarder.yaml"
+go run -ldflags "-checklinkname=0" ./cmd/forwarder run config-file > "forwarder.yaml"
