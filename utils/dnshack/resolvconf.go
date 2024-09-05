@@ -2,7 +2,9 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found at https://github.com/golang/go/blob/-/LICENSE.
 
-package osdns
+//go:build dnshack
+
+package dnshack
 
 import (
 	_ "net" // for go:linkname

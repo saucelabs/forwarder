@@ -20,7 +20,6 @@ import (
 	"github.com/saucelabs/forwarder/httplog"
 	"github.com/saucelabs/forwarder/log"
 	"github.com/saucelabs/forwarder/ruleset"
-	"github.com/saucelabs/forwarder/utils/osdns"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"golang.org/x/exp/slices"
@@ -35,7 +34,7 @@ func ConfigFile(fs *pflag.FlagSet, configFile *string) {
 			"The following precedence order of configuration sources is used: command flags, environment variables, config file, default values. ")
 }
 
-func DNSConfig(fs *pflag.FlagSet, cfg *osdns.Config) {
+func DNSConfig(fs *pflag.FlagSet, cfg *forwarder.DNSConfig) {
 	fs.VarP(anyflag.NewSliceValue[netip.AddrPort](nil, &cfg.Servers, forwarder.ParseDNSAddress),
 		"dns-server", "n", "<ip>[:<port>]"+
 			"DNS server(s) to use instead of system default. "+

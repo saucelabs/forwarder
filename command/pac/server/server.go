@@ -20,13 +20,12 @@ import (
 	"github.com/saucelabs/forwarder/pac"
 	"github.com/saucelabs/forwarder/runctx"
 	"github.com/saucelabs/forwarder/utils/cobrautil"
-	"github.com/saucelabs/forwarder/utils/osdns"
 	"github.com/spf13/cobra"
 )
 
 type command struct {
 	pac                 *url.URL
-	dnsConfig           *osdns.Config
+	dnsConfig           *forwarder.DNSConfig
 	httpTransportConfig *forwarder.HTTPTransportConfig
 	httpServerConfig    *forwarder.HTTPServerConfig
 	logConfig           *log.Config
@@ -81,7 +80,7 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 	if len(c.dnsConfig.Servers) > 0 {
 		s := strings.ReplaceAll(fmt.Sprintf("%s", c.dnsConfig.Servers), " ", ", ")
 		logger.Named("dns").Infof("using DNS servers %v", s)
-		if err := osdns.Configure(c.dnsConfig); err != nil {
+		if err := c.dnsConfig.Apply(); err != nil {
 			return fmt.Errorf("configure DNS: %w", err)
 		}
 	}
@@ -127,7 +126,7 @@ func servePAC(script string) http.Handler {
 func Command() *cobra.Command {
 	c := command{
 		pac:                 &url.URL{Scheme: "file", Path: "pac.js"},
-		dnsConfig:           osdns.DefaultConfig(),
+		dnsConfig:           forwarder.DefaultDNSConfig(),
 		httpTransportConfig: forwarder.DefaultHTTPTransportConfig(),
 		httpServerConfig:    forwarder.DefaultHTTPServerConfig(),
 		logConfig:           log.DefaultConfig(),

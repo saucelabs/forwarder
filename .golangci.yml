@@ -151,6 +151,6 @@ issues:
         - nosnakecase
       source: "func Example"
 
-    - path: utils/osdns/
+    - path: utils/dnshack/
       linters:
         - goheader
