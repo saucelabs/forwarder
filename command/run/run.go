@@ -32,7 +32,6 @@ import (
 	"github.com/saucelabs/forwarder/utils/cobrautil"
 	"github.com/saucelabs/forwarder/utils/httphandler"
 	"github.com/saucelabs/forwarder/utils/httpx"
-	"github.com/saucelabs/forwarder/utils/osdns"
 	"github.com/spf13/cobra"
 	"go.uber.org/goleak"
 	"go.uber.org/multierr"
@@ -40,7 +39,7 @@ import (
 
 type command struct {
 	promReg             *prometheus.Registry
-	dnsConfig           *osdns.Config
+	dnsConfig           *forwarder.DNSConfig
 	httpTransportConfig *forwarder.HTTPTransportConfig
 	pac                 *url.URL
 	credentials         []*forwarder.HostPortUser
@@ -129,7 +128,7 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 	if len(c.dnsConfig.Servers) > 0 {
 		s := strings.ReplaceAll(fmt.Sprintf("%s", c.dnsConfig.Servers), " ", ", ")
 		logger.Named("dns").Infof("using DNS servers %v", s)
-		if err := osdns.Configure(c.dnsConfig); err != nil {
+		if err := c.dnsConfig.Apply(); err != nil {
 			return fmt.Errorf("configure dns: %w", err)
 		}
 	}
@@ -467,7 +466,7 @@ func Metrics() (*prometheus.Registry, error) {
 func makeCommand() command {
 	c := command{
 		promReg:             prometheus.NewRegistry(),
-		dnsConfig:           osdns.DefaultConfig(),
+		dnsConfig:           forwarder.DefaultDNSConfig(),
 		httpTransportConfig: forwarder.DefaultHTTPTransportConfig(),
 		httpProxyConfig:     forwarder.DefaultHTTPProxyConfig(),
 		mitmConfig:          forwarder.DefaultMITMConfig(),

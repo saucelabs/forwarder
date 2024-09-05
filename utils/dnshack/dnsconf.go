@@ -2,11 +2,12 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found at https://github.com/golang/go/blob/-/LICENSE.
 
-package osdns
+//go:build dnshack
+
+package dnshack
 
 import (
 	_ "net" // for go:linkname
-	"net/netip"
 	"time"
 	_ "unsafe" // for go:linkname
 )
@@ -32,16 +33,4 @@ type dnsConfig struct {
 	useTCP        bool          // force usage of TCP for DNS resolutions
 	trustAD       bool          // add AD flag to queries
 	noReload      bool          // do not check for config file updates
-}
-
-type Config struct {
-	Servers    []netip.AddrPort
-	Timeout    time.Duration
-	RoundRobin bool
-}
-
-func DefaultConfig() *Config {
-	return &Config{
-		Timeout: 5 * time.Second,
-	}
 }
