@@ -109,3 +109,37 @@ func TestNopDialer(t *testing.T) {
 		t.Fatalf("expected %v, got %v", nopDialerErr, err)
 	}
 }
+
+func TestIsLocalhost(t *testing.T) {
+	cfg := DefaultHTTPProxyConfig()
+	p, err := NewHTTPProxy(cfg, nil, nil, nil, stdlog.Default())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tests := []struct {
+		host      string
+		localhost bool
+	}{
+		{"127.0.0.1", true},
+		{"127.10.20.30", true},
+		{"localhost", true},
+		{"0.0.0.0", true},
+
+		{"notlocalhost", false},
+		{"broadcasthost", false},
+
+		{"::1", true},
+		{"::", true},
+
+		{"::10", false},
+		{"2001:0db8:85a3:0000:0000:8a2e:0370:7334", false},
+	}
+
+	for i := range tests {
+		tc := tests[i]
+		if lh := p.isLocalhost(tc.host); lh != tc.localhost {
+			t.Errorf("isLocalhost(%q) = %v; want %v", tc.host, lh, tc.localhost)
+		}
+	}
+}
