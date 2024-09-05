@@ -63,7 +63,7 @@ func addr2Host(addr string) string {
 		return "unknown"
 	}
 
-	if isLocalhost(host) {
+	if ip := net.ParseIP(host); ip != nil && ip.IsLoopback() {
 		return "localhost"
 	}
 
