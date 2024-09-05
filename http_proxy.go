@@ -16,9 +16,11 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"slices"
 	"sync"
 	"time"
 
+	"github.com/saucelabs/forwarder/hostsfile"
 	"github.com/saucelabs/forwarder/httplog"
 	"github.com/saucelabs/forwarder/internal/martian"
 	"github.com/saucelabs/forwarder/internal/martian/fifo"
@@ -145,6 +147,7 @@ type HTTPProxy struct {
 	proxy      *martian.Proxy
 	mitmCACert *x509.Certificate
 	proxyFunc  ProxyFunc
+	localhost  []string
 
 	tlsConfig *tls.Config
 	listener  net.Listener
@@ -163,6 +166,12 @@ func NewHTTPProxy(cfg *HTTPProxyConfig, pr PACResolver, cm *CredentialsMatcher, 
 			return nil, err
 		}
 	}
+
+	lh, err := hostsfile.LocalhostAliases()
+	if err != nil {
+		return nil, fmt.Errorf("read localhost aliases: %w", err)
+	}
+	hp.localhost = append(hp.localhost, lh...)
 
 	l, err := hp.listen()
 	if err != nil {
@@ -209,6 +218,7 @@ func newHTTPProxy(cfg *HTTPProxyConfig, pr PACResolver, cm *CredentialsMatcher, 
 		transport: rt,
 		log:       log,
 		metrics:   newHTTPProxyMetrics(cfg.PromRegistry, cfg.PromNamespace),
+		localhost: []string{"localhost", "0.0.0.0", "::"},
 	}
 
 	if err := hp.configureProxy(); err != nil {
@@ -405,7 +415,7 @@ func (hp *HTTPProxy) basicAuth(u *url.Userinfo) martian.RequestModifier {
 
 func (hp *HTTPProxy) denyLocalhost() martian.RequestModifier {
 	return martian.RequestModifierFunc(func(req *http.Request) error {
-		if hp.isLocalhost(req) {
+		if hp.isLocalhost(req.URL.Hostname()) {
 			return ErrProxyLocalhost
 		}
 		return nil
@@ -440,15 +450,22 @@ func (hp *HTTPProxy) directLocalhost(fn ProxyFunc) ProxyFunc {
 	}
 
 	return func(req *http.Request) (*url.URL, error) {
-		if hp.isLocalhost(req) {
+		if hp.isLocalhost(req.URL.Hostname()) {
 			return nil, nil
 		}
 		return fn(req)
 	}
 }
 
-func (hp *HTTPProxy) isLocalhost(req *http.Request) bool {
-	return isLocalhost(req.URL.Hostname())
+func (hp *HTTPProxy) isLocalhost(host string) bool {
+	if slices.Contains(hp.localhost, host) {
+		return true
+	}
+	if ip := net.ParseIP(host); ip != nil && ip.IsLoopback() {
+		return true
+	}
+
+	return false
 }
 
 func (hp *HTTPProxy) setBasicAuth(req *http.Request) error {
