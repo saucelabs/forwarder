@@ -66,6 +66,8 @@ coverage:
 
 export BUILDAH_FORMAT=docker
 
+GOBUILD = go build -tags dnshack -ldflags "-checklinkname=0"
+
 .PHONY: update-devel-image
 update-devel-image: CONTAINER_RUNTIME ?= docker
 update-devel-image: TAG=devel
@@ -73,10 +75,10 @@ update-devel-image: TMPDIR:=$(shell mktemp -d)
 update-devel-image:
 	@ln Containerfile LICENSE LICENSE.3RD_PARTY $(TMPDIR)
 ifeq ($(shell uname),Linux)
-	@CGO_ENABLED=1 GOOS=linux go build -race -o $(TMPDIR)/forwarder ./cmd/forwarder
+	@CGO_ENABLED=1 GOOS=linux $(GOBUILD) -race -o $(TMPDIR)/forwarder ./cmd/forwarder
 	@$(CONTAINER_RUNTIME) buildx build --network host -f Containerfile --build-arg BASE_IMAGE=ubuntu:latest -t saucelabs/forwarder:$(TAG) $(TMPDIR)
 else
-	@CGO_ENABLED=0 GOOS=linux go build -o $(TMPDIR)/forwarder ./cmd/forwarder
+	@CGO_ENABLED=0 GOOS=linux $(GOBUILD) -o $(TMPDIR)/forwarder ./cmd/forwarder
 	@$(CONTAINER_RUNTIME) buildx build --network host -f Containerfile -t saucelabs/forwarder:$(TAG) $(TMPDIR)
 endif
 	@rm -rf $(TMPDIR)
