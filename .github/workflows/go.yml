@@ -41,6 +41,9 @@ jobs:
       - name: Run martian unit test
         run: make -C internal/martian test
 
+      - name: Run dnshack test
+        run: make -C utils/dnshack test
+
       - name: Run unit test
         run: make test coverage
 
