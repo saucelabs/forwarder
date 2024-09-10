@@ -22,6 +22,71 @@ import (
 	"github.com/saucelabs/forwarder/utils/golden"
 )
 
+func TestDialRedirectFromHostPortPairs(t *testing.T) {
+	tests := []struct {
+		name  string
+		hp    HostPortPair
+		input string
+		want  string
+	}{
+		{
+			name: "basic",
+			hp: HostPortPair{
+				Src: HostPort{"a", "80"},
+				Dst: HostPort{"b", "443"},
+			},
+			input: "a:80",
+			want:  "b:443",
+		},
+		{
+			name: "blank src host",
+			hp: HostPortPair{
+				Src: HostPort{"", "80"},
+				Dst: HostPort{"b", "443"},
+			},
+			input: "a:80",
+			want:  "b:443",
+		},
+		{
+			name: "blank src port",
+			hp: HostPortPair{
+				Src: HostPort{"a", ""},
+				Dst: HostPort{"b", "443"},
+			},
+			input: "a:80",
+			want:  "b:443",
+		},
+		{
+			name: "blank dst host",
+			hp: HostPortPair{
+				Src: HostPort{"a", "80"},
+				Dst: HostPort{"", "443"},
+			},
+			input: "a:80",
+			want:  "a:443",
+		},
+		{
+			name: "blank dst port",
+			hp: HostPortPair{
+				Src: HostPort{"a", "80"},
+				Dst: HostPort{"b", ""},
+			},
+			input: "a:80",
+			want:  "b:80",
+		},
+	}
+
+	for i := range tests {
+		tc := tests[i]
+		t.Run(tc.name, func(t *testing.T) {
+			_, got := DialRedirectFromHostPortPairs([]HostPortPair{tc.hp})("tcp", tc.input)
+			if got != tc.want {
+				t.Fatalf("DialRedirectFromHostPortPairs(): got %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
 func TestDialerRedirect(t *testing.T) {
 	l := Listener{
 		Address: "localhost:0",
