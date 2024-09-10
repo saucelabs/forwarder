@@ -22,6 +22,20 @@ import (
 
 type DialRedirectFunc func(network, address string) (targetNetwork, targetAddress string)
 
+func DialRedirectFromHostPortPairs(subs []HostPortPair) DialRedirectFunc {
+	m := make(map[string]string, len(subs))
+	for _, h := range subs {
+		m[net.JoinHostPort(h.Src.Host, h.Src.Port)] = net.JoinHostPort(h.Dst.Host, h.Dst.Port)
+	}
+
+	return func(network, address string) (string, string) {
+		if target, ok := m[address]; ok {
+			return network, target
+		}
+		return network, address
+	}
+}
+
 type DialConfig struct {
 	// DialTimeout is the maximum amount of time a dial will wait for
 	// connect to complete.
