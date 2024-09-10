@@ -13,9 +13,13 @@ import (
 	"strings"
 )
 
-type HostPortUser struct {
+type HostPort struct {
 	Host string
 	Port string
+}
+
+type HostPortUser struct {
+	HostPort
 	*url.Userinfo
 }
 
@@ -41,8 +45,10 @@ func ParseHostPortUser(val string) (*HostPortUser, error) {
 	}
 
 	hpi := &HostPortUser{
-		Host:     u.Hostname(),
-		Port:     u.Port(),
+		HostPort: HostPort{
+			Host: u.Hostname(),
+			Port: u.Port(),
+		},
 		Userinfo: ui,
 	}
 	if err := hpi.Validate(); err != nil {
