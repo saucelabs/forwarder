@@ -22,21 +22,18 @@ type HostPort struct {
 }
 
 func (hp HostPort) Validate() error {
-	if hp.Host == "" {
-		return errors.New("missing host")
-	}
-	if hp.Port == "" {
-		return errors.New("missing port")
-	}
-
-	if !isDomainName(hp.Host) {
-		if ip := net.ParseIP(hp.Host); ip == nil {
-			return fmt.Errorf("invalid host %q", hp.Host)
+	if hp.Host != "" {
+		if !isDomainName(hp.Host) {
+			if ip := net.ParseIP(hp.Host); ip == nil {
+				return fmt.Errorf("invalid host %q", hp.Host)
+			}
 		}
 	}
 
-	if _, err := strconv.ParseUint(hp.Port, 10, 16); err != nil {
-		return fmt.Errorf("invalid port %q", hp.Port)
+	if hp.Port != "" {
+		if _, err := strconv.ParseUint(hp.Port, 10, 16); err != nil {
+			return fmt.Errorf("invalid port %q", hp.Port)
+		}
 	}
 
 	return nil
@@ -157,7 +154,7 @@ func ParseHostPortPair(val string) (HostPortPair, error) {
 		ip4 = `[.0-9]+`
 		ip6 = `\[?[:0-9a-fA-F]+\]?`
 	)
-	hostPortPairRe := regexp.MustCompile(`^(` + dns + `|` + ip4 + `|` + ip6 + `):(\d+):(` + dns + `|` + ip4 + `|` + ip6 + `):(\d+)$`)
+	hostPortPairRe := regexp.MustCompile(`^(` + dns + `|` + ip4 + `|` + ip6 + `)?:(\d+)?:(` + dns + `|` + ip4 + `|` + ip6 + `)?:(\d+)?$`)
 
 	m := hostPortPairRe.FindStringSubmatch(val)
 	if m == nil {
