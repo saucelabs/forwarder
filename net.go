@@ -20,6 +20,8 @@ import (
 	"github.com/saucelabs/forwarder/ratelimit"
 )
 
+type DialRedirectFunc func(network, address string) (targetNetwork, targetAddress string)
+
 type DialConfig struct {
 	// DialTimeout is the maximum amount of time a dial will wait for
 	// connect to complete.
@@ -33,6 +35,9 @@ type DialConfig struct {
 	// The keep-alive probes are sent with OS specific intervals.
 	KeepAlive bool
 
+	// RedirectFunc can be optionally set to redirect the connection to a different address.
+	RedirectFunc DialRedirectFunc
+
 	PromConfig
 }
 
@@ -45,6 +50,7 @@ func DefaultDialConfig() *DialConfig {
 
 type Dialer struct {
 	nd      net.Dialer
+	rd      DialRedirectFunc
 	metrics *dialerMetrics
 }
 
@@ -65,11 +71,15 @@ func NewDialer(cfg *DialConfig) *Dialer {
 
 	return &Dialer{
 		nd:      nd,
+		rd:      cfg.RedirectFunc,
 		metrics: newDialerMetrics(cfg.PromRegistry, cfg.PromNamespace),
 	}
 }
 
 func (d *Dialer) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
+	if d.rd != nil {
+		network, address = d.rd(network, address)
+	}
 	conn, err := d.nd.DialContext(ctx, network, address)
 	if err != nil {
 		d.metrics.error(address)

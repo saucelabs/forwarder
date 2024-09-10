@@ -22,6 +22,42 @@ import (
 	"github.com/saucelabs/forwarder/utils/golden"
 )
 
+func TestDialerRedirect(t *testing.T) {
+	l := Listener{
+		Address: "localhost:0",
+		Log:     log.NopLogger,
+	}
+	defer l.Close()
+
+	l.listenAndWait(t)
+	go l.acceptAndCopy()
+
+	d := NewDialer(&DialConfig{
+		DialTimeout: 10 * time.Millisecond,
+		RedirectFunc: func(network, address string) (string, string) {
+			return "tcp", l.Addr().String()
+		},
+	})
+
+	ctx := context.Background()
+	conn, err := d.DialContext(ctx, "tcp", "foo")
+	if err != nil {
+		t.Fatalf("d.DialContext(): got %v, want no error", err)
+	}
+	defer conn.Close()
+
+	fmt.Fprintf(conn, "Hello, World!\n")
+	buf := make([]byte, 20)
+	if n, err := conn.Read(buf); err != nil {
+		t.Fatal(err)
+	} else {
+		buf = buf[:n]
+	}
+	if got, want := string(buf), "Hello, World!\n"; got != want {
+		t.Fatalf("conn.Read(): got %q, want %q", got, want)
+	}
+}
+
 func TestDialerMetrics(t *testing.T) {
 	l := Listener{
 		Address: "localhost:0",
