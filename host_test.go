@@ -38,20 +38,6 @@ func TestHostPortValidate(t *testing.T) {
 		},
 		{
 			hp: HostPort{
-				Host: "",
-				Port: "80",
-			},
-			err: "missing host",
-		},
-		{
-			hp: HostPort{
-				Host: "foo",
-				Port: "",
-			},
-			err: "missing port",
-		},
-		{
-			hp: HostPort{
 				Host: "*",
 				Port: "80",
 			},
@@ -198,6 +184,58 @@ func TestParseHostPortPair(t *testing.T) {
 				Dst: HostPort{
 					Host: "localhost",
 					Port: "443",
+				},
+			},
+		},
+		{
+			input: ":80:[2001:0db8:0000:0000:0000:ff00:0042:8329]:443",
+			hpp: HostPortPair{
+				Src: HostPort{
+					Host: "",
+					Port: "80",
+				},
+				Dst: HostPort{
+					Host: "2001:0db8:0000:0000:0000:ff00:0042:8329",
+					Port: "443",
+				},
+			},
+		},
+		{
+			input: "localhost:80::443",
+			hpp: HostPortPair{
+				Src: HostPort{
+					Host: "localhost",
+					Port: "80",
+				},
+				Dst: HostPort{
+					Host: "",
+					Port: "443",
+				},
+			},
+		},
+		{
+			input: "localhost::2001:0db8:0000:0000:0000:ff00:0042:8329:443",
+			hpp: HostPortPair{
+				Src: HostPort{
+					Host: "localhost",
+					Port: "",
+				},
+				Dst: HostPort{
+					Host: "2001:0db8:0000:0000:0000:ff00:0042:8329",
+					Port: "443",
+				},
+			},
+		},
+		{
+			input: "localhost:80:2001:0db8:0000:0000:0000:ff00:0042:8329:",
+			hpp: HostPortPair{
+				Src: HostPort{
+					Host: "localhost",
+					Port: "80",
+				},
+				Dst: HostPort{
+					Host: "2001:0db8:0000:0000:0000:ff00:0042:8329",
+					Port: "",
 				},
 			},
 		},
