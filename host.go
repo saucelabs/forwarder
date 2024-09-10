@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"net"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -127,4 +128,48 @@ func RedactHostPortUser(hpu *HostPortUser) string {
 	}
 
 	return fmt.Sprintf("%s:xxxxx@%s:%s", hpu.Username(), hpu.Host, port)
+}
+
+type HostPortPair struct {
+	Src, Dst HostPort
+}
+
+func (p HostPortPair) String() string {
+	return fmt.Sprintf("%s:%s:%s:%s", p.Src.Host, p.Src.Port, p.Dst.Host, p.Dst.Port)
+}
+
+func (p HostPortPair) Validate() error {
+	if err := p.Src.Validate(); err != nil {
+		return fmt.Errorf("src: %w", err)
+	}
+	if err := p.Dst.Validate(); err != nil {
+		return fmt.Errorf("dst: %w", err)
+	}
+
+	return nil
+}
+
+// ParseHostPortPair parses HOST1:PORT1:HOST2:PORT2 string into HostPortPair.
+// HOST1:PORT1 is the source, HOST2:PORT2 is the destination.
+func ParseHostPortPair(val string) (HostPortPair, error) {
+	const (
+		dns = `[.\w\-]+`
+		ip4 = `[.0-9]+`
+		ip6 = `\[?[:0-9a-fA-F]+\]?`
+	)
+	hostPortPairRe := regexp.MustCompile(`^(` + dns + `|` + ip4 + `|` + ip6 + `):(\d+):(` + dns + `|` + ip4 + `|` + ip6 + `):(\d+)$`)
+
+	m := hostPortPairRe.FindStringSubmatch(val)
+	if m == nil {
+		return HostPortPair{}, errors.New("expected src_host:src_port:dst_host:dst_port")
+	}
+
+	r := strings.NewReplacer("[", "", "]", "")
+
+	hpp := HostPortPair{
+		Src: HostPort{Host: r.Replace(m[1]), Port: m[2]},
+		Dst: HostPort{Host: r.Replace(m[3]), Port: m[4]},
+	}
+
+	return hpp, hpp.Validate()
 }
