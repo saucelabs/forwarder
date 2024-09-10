@@ -11,6 +11,81 @@ import (
 	"testing"
 )
 
+func TestHostPortValidate(t *testing.T) {
+	tests := []struct {
+		hp  HostPort
+		err string
+	}{
+		{
+			hp: HostPort{
+				Host: "foo",
+				Port: "80",
+			},
+		},
+		{
+			hp: HostPort{
+				Host: "127.0.0.1",
+				Port: "80",
+			},
+		},
+		{
+			hp: HostPort{
+				Host: "::1",
+				Port: "80",
+			},
+		},
+		{
+			hp: HostPort{
+				Host: "",
+				Port: "80",
+			},
+			err: "missing host",
+		},
+		{
+			hp: HostPort{
+				Host: "foo",
+				Port: "",
+			},
+			err: "missing port",
+		},
+		{
+			hp: HostPort{
+				Host: "*",
+				Port: "80",
+			},
+			err: "invalid host",
+		},
+		{
+			hp: HostPort{
+				Host: "foo",
+				Port: "-1",
+			},
+			err: "invalid port",
+		},
+		{
+			hp: HostPort{
+				Host: "foo",
+				Port: "1000000",
+			},
+			err: "invalid port",
+		},
+	}
+
+	for i := range tests {
+		tc := tests[i]
+		t.Run(tc.hp.Host+":"+tc.hp.Port, func(t *testing.T) {
+			err := tc.hp.Validate()
+			if tc.err == "" {
+				if err != nil {
+					t.Fatalf("expected success, got %q", err)
+				}
+			} else if !strings.Contains(err.Error(), tc.err) {
+				t.Fatalf("expected error to contain %q, got %q", tc.err, err)
+			}
+		})
+	}
+}
+
 func TestParseHostPortUser(t *testing.T) {
 	tests := []struct {
 		name  string
