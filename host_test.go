@@ -9,6 +9,8 @@ package forwarder
 import (
 	"strings"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestHostPortValidate(t *testing.T) {
@@ -137,6 +139,79 @@ func TestParseHostPortUser(t *testing.T) {
 				}
 			} else if !strings.Contains(err.Error(), tc.err) {
 				t.Fatalf("expected error to contain %q, got %q", tc.err, err)
+			}
+		})
+	}
+}
+
+func TestParseHostPortPair(t *testing.T) {
+	tests := []struct {
+		input string
+		hpp   HostPortPair
+	}{
+		{
+			input: "localhost:80:2001:0db8:0000:0000:0000:ff00:0042:8329:443",
+			hpp: HostPortPair{
+				Src: HostPort{
+					Host: "localhost",
+					Port: "80",
+				},
+				Dst: HostPort{
+					Host: "2001:0db8:0000:0000:0000:ff00:0042:8329",
+					Port: "443",
+				},
+			},
+		},
+		{
+			input: "2001:0db8:0000:0000:0000:ff00:0042:8329:443:localhost:80",
+			hpp: HostPortPair{
+				Src: HostPort{
+					Host: "2001:0db8:0000:0000:0000:ff00:0042:8329",
+					Port: "443",
+				},
+				Dst: HostPort{
+					Host: "localhost",
+					Port: "80",
+				},
+			},
+		},
+		{
+			input: "::1:80:localhost:443",
+			hpp: HostPortPair{
+				Src: HostPort{
+					Host: "::1",
+					Port: "80",
+				},
+				Dst: HostPort{
+					Host: "localhost",
+					Port: "443",
+				},
+			},
+		},
+		{
+			input: "[::1]:80:localhost:443",
+			hpp: HostPortPair{
+				Src: HostPort{
+					Host: "::1",
+					Port: "80",
+				},
+				Dst: HostPort{
+					Host: "localhost",
+					Port: "443",
+				},
+			},
+		},
+	}
+
+	for i := range tests {
+		tc := tests[i]
+		t.Run(tc.input, func(t *testing.T) {
+			hpp, err := ParseHostPortPair(tc.input)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(hpp, tc.hpp); diff != "" {
+				t.Fatalf("unexpected result (-want +got):\n%s", diff)
 			}
 		})
 	}
