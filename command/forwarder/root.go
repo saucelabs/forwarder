@@ -71,6 +71,7 @@ func FlagGroups() templates.FlagGroups {
 			Prefix: []string{
 				"http",
 				"cacert-file",
+				"connect-to",
 				"insecure",
 			},
 		},

@@ -41,6 +41,7 @@ type command struct {
 	promReg             *prometheus.Registry
 	dnsConfig           *forwarder.DNSConfig
 	httpTransportConfig *forwarder.HTTPTransportConfig
+	connectTo           []forwarder.HostPortPair
 	pac                 *url.URL
 	credentials         []*forwarder.HostPortUser
 	denyDomains         []ruleset.RegexpListItem
@@ -135,6 +136,10 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 
 	if c.httpTransportConfig.TLSClientConfig.KeyLogFile != "" {
 		logger.Infof("using TLS key logging, writing to %s", c.httpTransportConfig.TLSClientConfig.KeyLogFile)
+	}
+
+	if len(c.connectTo) > 0 {
+		c.httpTransportConfig.RedirectFunc = forwarder.DialRedirectFromHostPortPairs(c.connectTo)
 	}
 
 	var pr forwarder.PACResolver
@@ -408,6 +413,7 @@ func Command() *cobra.Command {
 	fs := cmd.Flags()
 	bind.DNSConfig(fs, c.dnsConfig)
 	bind.HTTPTransportConfig(fs, c.httpTransportConfig)
+	bind.ConnectTo(fs, &c.connectTo)
 	bind.PAC(fs, &c.pac)
 	bind.Credentials(fs, &c.credentials)
 	bind.DenyDomains(fs, &c.denyDomains)
