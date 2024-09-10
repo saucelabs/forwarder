@@ -8,6 +8,7 @@ require (
 	github.com/google/go-cmp v0.6.0
 	github.com/google/go-github/v56 v56.0.0
 	github.com/gorilla/websocket v1.5.3
+	github.com/kevinburke/hostsfile v0.0.0-20220522040509-e5e984885321
 	github.com/mitchellh/go-wordwrap v1.0.1
 	github.com/mmatczuk/anyflag v0.0.0-20240709090339-eb9e24cd1b44
 	github.com/prometheus/client_golang v1.20.3
@@ -27,7 +28,7 @@ require (
 	golang.org/x/sys v0.25.0
 	golang.org/x/text v0.18.0
 	golang.org/x/time v0.6.0
-	google.golang.org/grpc v1.66.0
+	google.golang.org/grpc v1.66.1
 	google.golang.org/protobuf v1.34.2
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -43,7 +44,6 @@ require (
 	github.com/google/pprof v0.0.0-20230926050212-f7f687d19a98 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
-	github.com/kevinburke/hostsfile v0.0.0-20220522040509-e5e984885321 // indirect
 	github.com/klauspost/compress v1.17.9 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
