@@ -61,39 +61,6 @@ func wildcardPortTo0(val string) string {
 	return strings.Join(s, ":")
 }
 
-// ParseHostPortUser parses a user:password@host:port string into HostUser.
-func ParseHostPortUser(val string) (*HostPortUser, error) {
-	if val == "" || !strings.Contains(val, "@") {
-		return nil, errors.New("expected user[:password]@host:port")
-	}
-
-	idx := strings.LastIndex(val, "@")
-
-	up := val[:idx]
-	hp := val[idx:]
-
-	ui, err := ParseUserinfo(up)
-	if err != nil {
-		return nil, err
-	}
-
-	u, err := url.Parse("http://" + wildcardPortTo0(hp))
-	if err != nil {
-		return nil, err
-	}
-
-	hpi := &HostPortUser{
-		Host:     u.Hostname(),
-		Port:     u.Port(),
-		Userinfo: ui,
-	}
-	if err := hpi.Validate(); err != nil {
-		return nil, err
-	}
-
-	return hpi, nil
-}
-
 func ParseProxyURL(val string) (*url.URL, error) {
 	scheme, hpu, ok := strings.Cut(val, "://")
 	if !ok {

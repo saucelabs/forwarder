@@ -15,60 +15,6 @@ import (
 	"github.com/saucelabs/forwarder/log"
 )
 
-type HostPortUser struct {
-	Host string
-	Port string
-	*url.Userinfo
-}
-
-func (hpu *HostPortUser) Validate() error {
-	if hpu.Host == "" {
-		return errors.New("missing host")
-	}
-	if hpu.Port == "" {
-		return errors.New("missing port")
-	}
-	if hpu.Userinfo == nil {
-		return errors.New("missing user")
-	}
-	return validatedUserInfo(hpu.Userinfo)
-}
-
-func (hpu *HostPortUser) String() string {
-	if hpu == nil {
-		return ""
-	}
-
-	port := hpu.Port
-	if port == "0" {
-		port = "*"
-	}
-
-	p, ok := hpu.Password()
-	if !ok {
-		return fmt.Sprintf("%s@%s:%s", hpu.Username(), hpu.Host, port)
-	}
-
-	return fmt.Sprintf("%s:%s@%s:%s", hpu.Username(), p, hpu.Host, port)
-}
-
-func RedactHostPortUser(hpu *HostPortUser) string {
-	if hpu == nil {
-		return ""
-	}
-
-	port := hpu.Port
-	if port == "0" {
-		port = "*"
-	}
-
-	if _, ok := hpu.Password(); !ok {
-		return fmt.Sprintf("%s@%s:%s", hpu.Username(), hpu.Host, port)
-	}
-
-	return fmt.Sprintf("%s:xxxxx@%s:%s", hpu.Username(), hpu.Host, port)
-}
-
 type CredentialsMatcher struct {
 	hostport map[string]*url.Userinfo
 	host     map[string]*url.Userinfo
