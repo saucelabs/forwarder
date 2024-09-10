@@ -238,6 +238,17 @@ func DialConfig(fs *pflag.FlagSet, cfg *forwarder.DialConfig, prefix string) {
 			"With or without a timeout, the operating system may impose its own earlier timeout. For instance, TCP timeouts are often around 3 minutes. ")
 }
 
+func ConnectTo(fs *pflag.FlagSet, cfg *[]forwarder.HostPortPair) {
+	fs.Var(anyflag.NewSliceValue[forwarder.HostPortPair](*cfg, cfg, forwarder.ParseHostPortPair),
+		"connect-to", "<HOST1:PORT1:HOST2:PORT2>,..."+
+			"For a request to the given HOST1:PORT1 pair, connect to HOST2:PORT2 instead. "+
+			"This option is suitable to direct requests at a specific server, e.g. at a specific cluster node in a cluster of servers. "+
+			"This option is only used to establish the network connection and does not work when request is routed using an upstream proxy. "+
+			"It does NOT affect the hostname/port that is used for TLS/SSL (e.g. SNI, certificate verification) or for the application protocols. "+
+			"HOST1 and PORT1 may be the empty string, meaning any host/port. "+
+			"HOST2 and PORT2 may also be the empty string, meaning use the request's original host/port. ")
+}
+
 func TLSClientConfig(fs *pflag.FlagSet, cfg *forwarder.TLSClientConfig) {
 	fs.DurationVar(&cfg.HandshakeTimeout,
 		"http-tls-handshake-timeout", cfg.HandshakeTimeout,
