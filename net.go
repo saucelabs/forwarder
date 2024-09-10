@@ -11,6 +11,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net"
+	"slices"
 	"sync"
 	"sync/atomic"
 	"syscall"
@@ -23,15 +24,27 @@ import (
 type DialRedirectFunc func(network, address string) (targetNetwork, targetAddress string)
 
 func DialRedirectFromHostPortPairs(subs []HostPortPair) DialRedirectFunc {
-	m := make(map[string]string, len(subs))
-	for _, h := range subs {
-		m[net.JoinHostPort(h.Src.Host, h.Src.Port)] = net.JoinHostPort(h.Dst.Host, h.Dst.Port)
-	}
-
+	subs = slices.Clone(subs)
 	return func(network, address string) (string, string) {
-		if target, ok := m[address]; ok {
-			return network, target
+		host, port, err := net.SplitHostPort(address)
+		if err != nil {
+			return network, address
 		}
+
+		for _, s := range subs {
+			if (s.Src.Host == "" || s.Src.Host == host) && (s.Src.Port == "" || s.Src.Port == port) { //nolint:gocritic // nestingReduce: invert if cond, replace body with `continue`, move old body after the statement
+				h := s.Dst.Host
+				if h == "" {
+					h = host
+				}
+				p := s.Dst.Port
+				if p == "" {
+					p = port
+				}
+				return network, net.JoinHostPort(h, p)
+			}
+		}
+
 		return network, address
 	}
 }
