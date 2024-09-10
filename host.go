@@ -9,13 +9,36 @@ package forwarder
 import (
 	"errors"
 	"fmt"
+	"net"
 	"net/url"
+	"strconv"
 	"strings"
 )
 
 type HostPort struct {
 	Host string
 	Port string
+}
+
+func (hp HostPort) Validate() error {
+	if hp.Host == "" {
+		return errors.New("missing host")
+	}
+	if hp.Port == "" {
+		return errors.New("missing port")
+	}
+
+	if !isDomainName(hp.Host) {
+		if ip := net.ParseIP(hp.Host); ip == nil {
+			return fmt.Errorf("invalid host %q", hp.Host)
+		}
+	}
+
+	if _, err := strconv.ParseUint(hp.Port, 10, 16); err != nil {
+		return fmt.Errorf("invalid port %q", hp.Port)
+	}
+
+	return nil
 }
 
 type HostPortUser struct {
