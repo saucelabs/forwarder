@@ -70,13 +70,16 @@ func main() {
 				if *args.debug {
 					if strings.HasPrefix(srv.Image, "saucelabs/forwarder") {
 						srv.Environment["FORWARDER_LOG_LEVEL"] = "debug"
-						srv.Environment["FORWARDER_LOG_HTTP"] = "headers,api:errors"
 					}
-					if srv.Name == forwarder.ProxyServiceName {
+					switch srv.Name {
+					case forwarder.ProxyServiceName:
+						srv.Environment["FORWARDER_LOG_HTTP"] = "headers,api:errors"
 						srv.Ports = append(srv.Ports,
 							"3128:3128",
 							"10000:10000",
 						)
+					case forwarder.HttpbinServiceName:
+						srv.Environment["FORWARDER_LOG_HTTP"] = "headers"
 					}
 				}
 			}
