@@ -136,6 +136,10 @@ func TestFlagDNSServer(t *testing.T) {
 	})
 }
 
+func TestFlagConnectTo(t *testing.T) {
+	newClient(t, serviceScheme("HTTPBIN_PROTOCOL")+"://foo:123").GET("/status/200").ExpectStatus(http.StatusOK)
+}
+
 func TestFlagInsecure(t *testing.T) {
 	t.Run("true", func(t *testing.T) {
 		newClient(t, httpbin).GET("/status/200").ExpectStatus(http.StatusOK)

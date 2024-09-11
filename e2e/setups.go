@@ -40,6 +40,7 @@ func AllSetups() []setup.Setup {
 	SetupFlagResponseHeader(l)
 	SetupFlagConnectHeader(l)
 	SetupFlagDNSServer(l)
+	SetupFlagConnectTo(l)
 	SetupFlagInsecure(l)
 	SetupFlagMITMCACert(l)
 	SetupFlagMITMGenCA(l)
@@ -292,6 +293,22 @@ func SetupFlagDNSServer(l *setupList) {
 			Run: "^TestFlagDNSServer$",
 		})
 	}
+}
+
+func SetupFlagConnectTo(l *setupList) {
+	l.Add(
+		setup.Setup{
+			Name: "flag-connect-to",
+			Compose: compose.NewBuilder().
+				AddService(
+					forwarder.HttpbinService()).
+				AddService(
+					forwarder.ProxyService().
+						WithConnectTo("foo::httpbin:8080")).
+				MustBuild(),
+			Run: "^TestFlagConnectTo$",
+		},
+	)
 }
 
 func SetupFlagInsecure(l *setupList) {
