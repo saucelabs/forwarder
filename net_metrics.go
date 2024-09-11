@@ -8,6 +8,7 @@ package forwarder
 
 import (
 	"net"
+	"slices"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -63,7 +64,17 @@ func addr2Host(addr string) string {
 		return "unknown"
 	}
 
-	if ip := net.ParseIP(host); ip != nil && ip.IsLoopback() {
+	commonLocalhostNames := []string{
+		"localhost",
+		"127.0.0.1",
+		"::1",
+		"::",
+	}
+	if slices.Contains(commonLocalhostNames, host) {
+		return "localhost"
+	}
+
+	if ip := net.ParseIP(host); ip != nil && (ip.IsLoopback() || ip.IsUnspecified()) {
 		return "localhost"
 	}
 
