@@ -177,6 +177,11 @@ func (s *Service) WithDNSTimeout(timeout time.Duration) *Service {
 	return s
 }
 
+func (s *Service) WithConnectTo(v string) compose.ServiceBuilder {
+	s.Environment["FORWARDER_CONNECT_TO"] = v
+	return s
+}
+
 func (s *Service) WithHTTPDialTimeout(timeout time.Duration) *Service {
 	s.Environment["FORWARDER_HTTP_DIAL_TIMEOUT"] = timeout.String()
 	return s
