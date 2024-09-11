@@ -22,7 +22,7 @@ type HostPort struct {
 }
 
 func (hp HostPort) Validate() error {
-	if hp.Host != "" {
+	if hp.Host != "" && hp.Host != "*" {
 		if !isDomainName(hp.Host) {
 			if ip := net.ParseIP(hp.Host); ip == nil {
 				return fmt.Errorf("invalid host %q", hp.Host)
@@ -86,10 +86,18 @@ func (hpu *HostPortUser) Validate() error {
 	if hpu.Port == "" {
 		return errors.New("missing port")
 	}
+	if err := hpu.HostPort.Validate(); err != nil {
+		return err
+	}
+
 	if hpu.Userinfo == nil {
 		return errors.New("missing user")
 	}
-	return validatedUserInfo(hpu.Userinfo)
+	if err := validatedUserInfo(hpu.Userinfo); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (hpu *HostPortUser) String() string {

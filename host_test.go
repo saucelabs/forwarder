@@ -38,7 +38,7 @@ func TestHostPortValidate(t *testing.T) {
 		},
 		{
 			hp: HostPort{
-				Host: "*",
+				Host: "#",
 				Port: "80",
 			},
 			err: "invalid host",
@@ -67,8 +67,13 @@ func TestHostPortValidate(t *testing.T) {
 				if err != nil {
 					t.Fatalf("expected success, got %q", err)
 				}
-			} else if !strings.Contains(err.Error(), tc.err) {
-				t.Fatalf("expected error to contain %q, got %q", tc.err, err)
+			} else {
+				if err == nil {
+					t.Fatalf("expected error, got nil")
+				}
+				if !strings.Contains(err.Error(), tc.err) {
+					t.Fatalf("expected error to contain %q, got %q", tc.err, err)
+				}
 			}
 		})
 	}
