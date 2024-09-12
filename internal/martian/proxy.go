@@ -21,7 +21,6 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"strconv"
 	"sync"
 	"time"
 
@@ -317,17 +316,6 @@ func (p *Proxy) shouldMITM(req *http.Request) bool {
 	}
 
 	return true
-}
-
-const terminateTLSHeader = "X-Martian-Terminate-Tls"
-
-func shouldTerminateTLS(req *http.Request) bool {
-	h := req.Header.Get(terminateTLSHeader)
-	if h == "" {
-		return false
-	}
-	b, _ := strconv.ParseBool(h)
-	return b
 }
 
 func (p *Proxy) fixRequestScheme(req *http.Request) {

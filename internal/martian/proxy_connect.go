@@ -25,6 +25,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"strconv"
 
 	"github.com/saucelabs/forwarder/dialvia"
 	"github.com/saucelabs/forwarder/internal/martian/log"
@@ -181,4 +182,15 @@ func newConnectResponse(req *http.Request) *http.Response {
 
 		Request: req,
 	}
+}
+
+const terminateTLSHeader = "X-Martian-Terminate-Tls"
+
+func shouldTerminateTLS(req *http.Request) bool {
+	h := req.Header.Get(terminateTLSHeader)
+	if h == "" {
+		return false
+	}
+	b, _ := strconv.ParseBool(h)
+	return b
 }
