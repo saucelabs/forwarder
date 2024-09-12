@@ -17,6 +17,7 @@
 package martian
 
 import (
+	"context"
 	"crypto/tls"
 	"errors"
 	"fmt"
@@ -49,6 +50,34 @@ var ErrConnectFallback = errors.New("martian: connect fallback")
 // ConnectFunc dials a network connection for a CONNECT request.
 // If the returned net.Conn is not nil, the response must be not nil.
 type ConnectFunc func(req *http.Request) (*http.Response, io.ReadWriteCloser, error)
+
+func (p *Proxy) Connect(ctx context.Context, req *http.Request, terminateTLS bool) (res *http.Response, crw io.ReadWriteCloser, cerr error) {
+	if p.ConnectFunc != nil {
+		res, crw, cerr = p.ConnectFunc(req)
+	}
+	if p.ConnectFunc == nil || errors.Is(cerr, ErrConnectFallback) {
+		var cconn net.Conn
+		res, cconn, cerr = p.connect(req)
+
+		if cconn != nil {
+			defer cconn.Close()
+			crw = cconn
+
+			if terminateTLS {
+				log.Debugf(ctx, "attempting to terminate TLS on CONNECT tunnel: %s", req.URL.Host)
+				tconn := tls.Client(cconn, p.clientTLSConfig())
+				if err := tconn.Handshake(); err == nil {
+					crw = tconn
+				} else {
+					log.Errorf(ctx, "failed to terminate TLS on CONNECT tunnel: %v", err)
+					cerr = err
+				}
+			}
+		}
+	}
+
+	return
+}
 
 func (p *Proxy) connect(req *http.Request) (*http.Response, net.Conn, error) {
 	ctx := req.Context()
