@@ -114,6 +114,9 @@ func (p proxyHandler) handleConnectRequest(rw http.ResponseWriter, req *http.Req
 	if res != nil {
 		defer res.Body.Close()
 	}
+	if crw != nil {
+		defer crw.Close()
+	}
 	if cerr != nil {
 		log.Errorf(ctx, "failed to CONNECT: %v", cerr)
 		p.writeErrorResponse(rw, req, cerr)
