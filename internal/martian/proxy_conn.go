@@ -208,6 +208,9 @@ func (p *proxyConn) handleConnectRequest(req *http.Request) error {
 	if res != nil {
 		defer res.Body.Close()
 	}
+	if crw != nil {
+		defer crw.Close()
+	}
 	if cerr != nil {
 		log.Errorf(ctx, "failed to CONNECT: %v", cerr)
 		return p.writeErrorResponse(req, cerr)

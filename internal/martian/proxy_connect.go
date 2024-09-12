@@ -60,7 +60,6 @@ func (p *Proxy) Connect(ctx context.Context, req *http.Request, terminateTLS boo
 		res, cconn, cerr = p.connect(req)
 
 		if cconn != nil {
-			defer cconn.Close()
 			crw = cconn
 
 			if terminateTLS {
