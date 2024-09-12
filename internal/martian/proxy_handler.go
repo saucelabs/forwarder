@@ -18,11 +18,8 @@ package martian
 
 import (
 	"context"
-	"crypto/tls"
-	"errors"
 	"fmt"
 	"io"
-	"net"
 	"net/http"
 	"strings"
 
@@ -113,35 +110,7 @@ func (p proxyHandler) handleConnectRequest(rw http.ResponseWriter, req *http.Req
 	}
 
 	log.Debugf(ctx, "attempting to establish CONNECT tunnel: %s", req.URL.Host)
-	var (
-		res  *http.Response
-		crw  io.ReadWriteCloser
-		cerr error
-	)
-	if p.ConnectFunc != nil {
-		res, crw, cerr = p.ConnectFunc(req)
-	}
-	if p.ConnectFunc == nil || errors.Is(cerr, ErrConnectFallback) {
-		var cconn net.Conn
-		res, cconn, cerr = p.connect(req)
-
-		if cconn != nil {
-			defer cconn.Close()
-			crw = cconn
-
-			if terminateTLS {
-				log.Debugf(ctx, "attempting to terminate TLS on CONNECT tunnel: %s", req.URL.Host)
-				tconn := tls.Client(cconn, p.clientTLSConfig())
-				if err := tconn.Handshake(); err == nil {
-					crw = tconn
-				} else {
-					log.Errorf(ctx, "failed to terminate TLS on CONNECT tunnel: %v", err)
-					cerr = err
-				}
-			}
-		}
-	}
-
+	res, crw, cerr := p.Connect(ctx, req, terminateTLS)
 	if res != nil {
 		defer res.Body.Close()
 	}
