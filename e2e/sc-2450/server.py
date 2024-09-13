@@ -2,6 +2,8 @@
 
 import os
 import time
+import signal
+import sys
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 # Headers taken from `failed.pcapng`
@@ -108,9 +110,21 @@ class RequestHandler(BaseHTTPRequestHandler):
         self.wfile.write(self.data[15:])
         print("Done")
 
+def signal_handler(signum, frame):
+    print("Received signal to terminate. Exiting gracefully...")
+    sys.exit(0)
 
 if __name__ == "__main__":
     port = 8307
     print("Listening on 0.0.0.0:%s" % port)
     server = HTTPServer(("", port), RequestHandler)
-    server.serve_forever()
+
+    signal.signal(signal.SIGTERM, signal_handler)
+
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        print("Shutting down server.")
+        server.server_close()
