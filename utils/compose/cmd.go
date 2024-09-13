@@ -14,6 +14,7 @@ import (
 	"os/exec"
 	"path"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -104,6 +105,35 @@ func (c *Command) Up(args ...string) error {
 
 func (c *Command) Stop(args ...string) error {
 	return c.quietRun(c.cmd("stop", args))
+}
+
+func (c *Command) ServiceExitCode(service string) (int, error) {
+	args := []string{
+		"inspect",
+		"--format",
+		"{{.State.Status}},{{.State.ExitCode}}",
+		c.serviceContainerName(service),
+	}
+
+	cmd := exec.Command(c.rt, args...) //nolint:gosec // this is a command runner
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	if err := cmd.Run(); err != nil {
+		stdout.WriteTo(c.stdout)
+		stderr.WriteTo(c.stderr)
+		return 0, err
+	}
+
+	state, code, ok := strings.Cut(strings.TrimSpace(stdout.String()), ",")
+	if !ok {
+		return 0, fmt.Errorf("unexpected output: %s", stdout.String())
+	}
+	if state != "exited" {
+		return 0, fmt.Errorf("unexpected state: %s", state)
+	}
+	return strconv.Atoi(code)
 }
 
 func (c *Command) Down(args ...string) error {
