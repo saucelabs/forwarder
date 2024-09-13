@@ -282,6 +282,7 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 		defer func() {
 			if err := goleak.Find(); err != nil {
 				fmt.Fprintf(cmd.ErrOrStderr(), "goleak: %s", err)
+				os.Exit(1)
 			}
 		}()
 	}
