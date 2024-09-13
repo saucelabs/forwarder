@@ -102,6 +102,10 @@ func (c *Command) Up(args ...string) error {
 	return c.run(c.cmd("up", args))
 }
 
+func (c *Command) Stop(args ...string) error {
+	return c.quietRun(c.cmd("stop", args))
+}
+
 func (c *Command) Down(args ...string) error {
 	return c.quietRun(c.cmd("down", args))
 }
