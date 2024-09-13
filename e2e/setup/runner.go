@@ -189,7 +189,20 @@ func (r *Runner) runSetup(s *Setup) (runErr error) {
 	}
 
 	// Run the test service.
-	return cmd.Up("--force-recreate", "--exit-code-from", TestServiceName, TestServiceName)
+	if err := cmd.Up("--force-recreate", "--exit-code-from", TestServiceName, TestServiceName); err != nil {
+		return err
+	}
+
+	if !r.Debug {
+		if err := cmd.Stop(); err != nil {
+			return fmt.Errorf("compose stop: %w", err)
+		}
+		if err := cmd.ExitedSuccessfully(r.services(s)); err != nil {
+			return fmt.Errorf("services failed to exit: %w", err)
+		}
+	}
+
+	return nil
 }
 
 func (r *Runner) services(s *Setup) []string {
