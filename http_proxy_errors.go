@@ -41,6 +41,8 @@ func (hp *HTTPProxy) errorResponse(req *http.Request, err error) *http.Response 
 		handleNetError,
 		handleTLSRecordHeader,
 		handleTLSCertificateError,
+		handleTLSECHRejectionError,
+		handleTLSAlertError,
 		handleMartianErrorStatus,
 		handleAuthenticationError,
 		handleDenyError,
@@ -153,6 +155,28 @@ func handleTLSCertificateError(req *http.Request, err error) (code int, msg, lab
 		code = http.StatusBadGateway
 		msg = fmt.Sprintf("tls handshake failed for host %q", req.Host)
 		label = "tls_certificate"
+	}
+
+	return
+}
+
+func handleTLSECHRejectionError(req *http.Request, err error) (code int, msg, label string) {
+	var echErr *tls.ECHRejectionError
+	if errors.As(err, &echErr) {
+		code = http.StatusBadGateway
+		msg = fmt.Sprintf("tls handshake failed for host %q", req.Host)
+		label = "tls_ech_rejection"
+	}
+
+	return
+}
+
+func handleTLSAlertError(req *http.Request, err error) (code int, msg, label string) {
+	var alertErr tls.AlertError
+	if errors.As(err, &alertErr) {
+		code = http.StatusBadGateway
+		msg = fmt.Sprintf("tls alert for host %q", req.Host)
+		label = "tls_alert"
 	}
 
 	return
