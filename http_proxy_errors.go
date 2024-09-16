@@ -147,7 +147,12 @@ func handleTLSRecordHeader(req *http.Request, err error) (code int, msg, label s
 	var headerErr tls.RecordHeaderError
 	if errors.As(err, &headerErr) {
 		code = http.StatusBadGateway
-		msg = fmt.Sprintf("tls handshake failed for host %q", req.Host)
+		msg = fmt.Sprintf("tls handshake failed for host %q: ", req.Host)
+		if tlsRecordHeaderLooksLikeHTTP(headerErr.RecordHeader) {
+			msg += "scheme mismatch (looks like an HTTP request)"
+		} else {
+			msg += fmt.Sprintf("record header: %x", headerErr.RecordHeader)
+		}
 		label = "tls_record_header"
 	}
 
@@ -233,6 +238,15 @@ func handleStatusText(req *http.Request, err error) (code int, msg, label string
 	}
 
 	return
+}
+
+func tlsRecordHeaderLooksLikeHTTP(hdr [5]byte) bool {
+	return bytes.HasPrefix(hdr[:], []byte("HTTP")) ||
+		bytes.HasPrefix(hdr[:], []byte("GET")) ||
+		bytes.HasPrefix(hdr[:], []byte("HEAD")) ||
+		bytes.HasPrefix(hdr[:], []byte("POST")) ||
+		bytes.HasPrefix(hdr[:], []byte("PUT")) ||
+		bytes.HasPrefix(hdr[:], []byte("OPTIO"))
 }
 
 func describeCertificates(chain []*x509.Certificate) string {
