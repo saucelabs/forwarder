@@ -37,6 +37,8 @@ var (
 	ErrProxyDenied    = denyError{errors.New("proxying denied")}
 )
 
+const skipMetricsLabel = "-"
+
 func (hp *HTTPProxy) errorResponse(req *http.Request, err error) *http.Response {
 	handlers := []errorHandler{
 		handleWindowsNetError,
@@ -67,7 +69,7 @@ func (hp *HTTPProxy) errorResponse(req *http.Request, err error) *http.Response 
 		label = "unexpected_error"
 	}
 
-	if label != "-" {
+	if label != skipMetricsLabel {
 		hp.metrics.error(label)
 	}
 
@@ -211,7 +213,7 @@ func handleDenyError(req *http.Request, err error) (code int, msg, label string)
 	if errors.As(err, &denyErr) {
 		code = http.StatusForbidden
 		msg = fmt.Sprintf("proxying is denied to host %q", req.Host)
-		label = "-"
+		label = skipMetricsLabel
 	}
 
 	return
