@@ -144,7 +144,7 @@ func handleNetError(req *http.Request, err error) (code int, msg, label string) 
 }
 
 func handleTLSRecordHeader(req *http.Request, err error) (code int, msg, label string) {
-	var headerErr *tls.RecordHeaderError
+	var headerErr tls.RecordHeaderError
 	if errors.As(err, &headerErr) {
 		code = http.StatusBadGateway
 		msg = fmt.Sprintf("tls handshake failed for host %q", req.Host)
