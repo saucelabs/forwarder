@@ -64,6 +64,7 @@ func (hp *HTTPProxy) errorResponse(req *http.Request, err error) *http.Response 
 		}
 	}
 	if code == 0 {
+		hp.log.Debugf("error response: unexpected error type: %T", err)
 		code = http.StatusInternalServerError
 		msg = "encountered an unexpected error"
 		label = "unexpected_error"
