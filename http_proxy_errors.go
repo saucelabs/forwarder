@@ -9,6 +9,7 @@ package forwarder
 import (
 	"bytes"
 	"crypto/tls"
+	"crypto/x509"
 	"errors"
 	"fmt"
 	"net"
@@ -16,6 +17,7 @@ import (
 	"os"
 	"reflect"
 	"runtime"
+	"strings"
 
 	"github.com/saucelabs/forwarder/internal/martian"
 	"github.com/saucelabs/forwarder/internal/martian/proxyutil"
@@ -153,7 +155,8 @@ func handleTLSCertificateError(req *http.Request, err error) (code int, msg, lab
 	var certErr *tls.CertificateVerificationError
 	if errors.As(err, &certErr) {
 		code = http.StatusBadGateway
-		msg = fmt.Sprintf("tls handshake failed for host %q", req.Host)
+		msg = fmt.Sprintf("tls handshake failed for host %q\n", req.Host)
+		msg += fmt.Sprintf("unverified certificates:%s\n", describeCertificates(certErr.UnverifiedCertificates))
 		label = "tls_certificate"
 	}
 
@@ -227,4 +230,17 @@ func handleStatusText(req *http.Request, err error) (code int, msg, label string
 	}
 
 	return
+}
+
+func describeCertificates(chain []*x509.Certificate) string {
+	var sb strings.Builder
+	for _, cert := range chain {
+		sb.WriteString("\n- ")
+		sb.WriteString(cert.Subject.String())
+		sb.WriteString(" (issued by ")
+		sb.WriteString(cert.Issuer.String())
+		sb.WriteString(")")
+	}
+
+	return sb.String()
 }
