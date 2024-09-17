@@ -107,6 +107,11 @@ func (s *Service) WithMITMDomains(domains ...string) *Service {
 	return s
 }
 
+func (s *Service) WithPROXYProtocol() *Service {
+	s.Environment["FORWARDER_PROXY_PROTOCOL_ENABLED"] = "true"
+	return s
+}
+
 func (s *Service) WithUpstream(name, protocol string) *Service {
 	s.Environment["FORWARDER_PROXY"] = protocol + "://" + name + ":3128"
 	if protocol == "https" {
