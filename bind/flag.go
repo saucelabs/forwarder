@@ -201,6 +201,17 @@ func MITMDomains(fs *pflag.FlagSet, cfg *[]ruleset.RegexpListItem) {
 			"Prefix domains with '-' to exclude requests to certain domains from being MITMed.")
 }
 
+func ProxyProtocol(fs *pflag.FlagSet, enabled *bool, cfg *forwarder.ProxyProtocolConfig) {
+	fs.BoolVar(enabled, "proxy-protocol", *enabled,
+		"The PROXY protocol is used to correctly pass the client's IP address to the server. "+
+			"When enabled the proxy will expect the client to send the PROXY protocol header before the actual request. "+
+			"It is still possible to connect to the proxy without the PROXY protocol header when this flag is enabled. ")
+
+	fs.DurationVar(&cfg.ReadHeaderTimeout, "proxy-protocol-read-header-timeout", cfg.ReadHeaderTimeout,
+		"The amount of time to wait for PROXY protocol header. "+
+			"Zero means no limit. ")
+}
+
 func Credentials(fs *pflag.FlagSet, credentials *[]*forwarder.HostPortUser) {
 	fs.VarP(anyflag.NewSliceValueWithRedact[*forwarder.HostPortUser](*credentials, credentials, forwarder.ParseHostPortUser, forwarder.RedactHostPortUser),
 		"credentials", "s", "<username[:password]@host:port,...>"+

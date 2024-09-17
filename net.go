@@ -17,6 +17,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/pires/go-proxyproto"
 	"github.com/saucelabs/forwarder/log"
 	"github.com/saucelabs/forwarder/ratelimit"
 )
@@ -140,11 +141,22 @@ func Listen(network, address string) (net.Listener, error) {
 	return defaultListenConfig().Listen(context.Background(), network, address)
 }
 
+type ProxyProtocolConfig struct {
+	ReadHeaderTimeout time.Duration
+}
+
+func DefaultProxyProtocolConfig() *ProxyProtocolConfig {
+	return &ProxyProtocolConfig{
+		ReadHeaderTimeout: 10 * time.Second,
+	}
+}
+
 type Listener struct {
 	Address             string
 	Log                 log.Logger
 	TLSConfig           *tls.Config
 	TLSHandshakeTimeout time.Duration
+	ProxyProtocolConfig *ProxyProtocolConfig
 	ReadLimit           int64
 	WriteLimit          int64
 	PromConfig
@@ -161,6 +173,13 @@ func (l *Listener) Listen() error {
 	ll, err := Listen("tcp", l.Address)
 	if err != nil {
 		return err
+	}
+
+	if l.ProxyProtocolConfig != nil {
+		ll = &proxyproto.Listener{
+			Listener:          ll,
+			ReadHeaderTimeout: l.ProxyProtocolConfig.ReadHeaderTimeout,
+		}
 	}
 
 	if rl, wl := l.ReadLimit, l.WriteLimit; rl > 0 || wl > 0 {

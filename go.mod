@@ -11,6 +11,7 @@ require (
 	github.com/kevinburke/hostsfile v0.0.0-20220522040509-e5e984885321
 	github.com/mitchellh/go-wordwrap v1.0.1
 	github.com/mmatczuk/anyflag v0.0.0-20240709090339-eb9e24cd1b44
+	github.com/pires/go-proxyproto v0.7.0
 	github.com/prometheus/client_golang v1.20.3
 	github.com/prometheus/client_model v0.6.1
 	github.com/prometheus/common v0.59.1
@@ -59,3 +60,5 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240604185151-ef581f913117 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 )
+
+replace github.com/pires/go-proxyproto => github.com/mmatczuk/go-proxyproto v0.0.0-20240917110340-b4098fdcd2fa

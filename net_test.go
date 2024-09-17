@@ -16,6 +16,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/pires/go-proxyproto"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/saucelabs/forwarder/log"
 	"github.com/saucelabs/forwarder/utils/certutil"
@@ -214,6 +215,56 @@ func TestListenerListenOnce(t *testing.T) {
 
 	if err := l.Listen(); err == nil {
 		t.Fatal("l.Listen(): got no error, want error")
+	}
+}
+
+func TestListenerProxyProtocol(t *testing.T) {
+	l := Listener{
+		Address:             "localhost:0",
+		ProxyProtocolConfig: &ProxyProtocolConfig{},
+		Log:                 log.NopLogger,
+	}
+	defer l.Close()
+
+	l.listenAndWait(t)
+
+	connCh := make(chan net.Conn)
+	go func() {
+		conn, err := l.Accept()
+		if err != nil {
+			t.Error(err)
+		}
+		connCh <- conn
+	}()
+
+	conn, err := net.Dial("tcp", l.Addr().String())
+	if err != nil {
+		t.Fatalf("net.Dial(): got %v, want no error", err)
+	}
+	defer conn.Close()
+
+	h := proxyproto.Header{
+		Version:           1,
+		Command:           proxyproto.PROXY,
+		TransportProtocol: proxyproto.TCPv4,
+		SourceAddr: &net.TCPAddr{
+			IP:   net.ParseIP("1.1.1.1"),
+			Port: 1000,
+		},
+		DestinationAddr: &net.TCPAddr{
+			IP:   net.ParseIP("2.2.2.2"),
+			Port: 2000,
+		},
+	}
+	if _, err := h.WriteTo(conn); err != nil {
+		t.Fatal(err)
+	}
+
+	conn = <-connCh
+	defer conn.Close()
+
+	if conn.RemoteAddr().String() != h.SourceAddr.String() {
+		t.Fatalf("conn.RemoteAddr(): got %s, want %s", conn.RemoteAddr(), h.SourceAddr)
 	}
 }
 
