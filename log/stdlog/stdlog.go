@@ -68,12 +68,16 @@ type Logger struct {
 	onError  func(name string)
 }
 
-func (sl Logger) Named(name string) *Logger { //nolint:gocritic // we pass by value to get a copy
+func (sl Logger) Named(name string, opts ...Option) *Logger { //nolint:gocritic // we pass by value to get a copy
 	sl.name = name
 
 	sl.errorPfx = logLinePrefix(sl.labels, name, "ERROR")
 	sl.infoPfx = logLinePrefix(sl.labels, name, "INFO")
 	sl.debugPfx = logLinePrefix(sl.labels, name, "DEBUG")
+
+	for _, opt := range opts {
+		opt(&sl)
+	}
 
 	return &sl
 }

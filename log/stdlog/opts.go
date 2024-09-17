@@ -6,10 +6,19 @@
 
 package stdlog
 
+import flog "github.com/saucelabs/forwarder/log"
+
 // WithLabels allows to set labels that are added to each log message.
 func WithLabels(labels ...string) Option {
 	return func(l *Logger) {
 		l.labels = labels
+	}
+}
+
+// WithLevel allows to set the logging level.
+func WithLevel(level flog.Level) Option {
+	return func(l *Logger) {
+		l.level = level
 	}
 }
 
