@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/pires/go-proxyproto"
 	"github.com/saucelabs/forwarder/e2e/forwarder"
 	"github.com/saucelabs/forwarder/utils/httpexpect"
 )
@@ -333,5 +334,47 @@ func TestProxyReuseConnection(t *testing.T) {
 		case <-time.After(10 * time.Second):
 			t.Fatal("timed-out waiting for body read")
 		}
+	}
+}
+
+func TestProxyProxyProtocol(t *testing.T) {
+	if os.Getenv("HTTPBIN_PROTOCOL") != "http" {
+		t.Skip("HTTPBIN_PROTOCOL not set to http")
+	}
+
+	h := proxyproto.Header{
+		Version:           1,
+		Command:           proxyproto.PROXY,
+		TransportProtocol: proxyproto.TCPv4,
+		SourceAddr: &net.TCPAddr{
+			IP:   net.ParseIP("1.1.1.1"),
+			Port: 1000,
+		},
+		DestinationAddr: &net.TCPAddr{
+			IP:   net.ParseIP("2.2.2.2"),
+			Port: 2000,
+		},
+	}
+
+	xff := newClient(t, httpbin, func(tr *http.Transport) {
+		tr.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
+			conn, err := net.Dial(network, addr)
+			if err != nil {
+				return nil, err
+			}
+			if _, err := h.WriteTo(conn); err != nil {
+				return nil, err
+			}
+			return conn, nil
+		}
+	}).GET("/headers/").Header["X-Forwarded-For"]
+
+	if len(xff) == 0 {
+		t.Fatal("Expected X-Forwarded-For header, got none")
+	}
+
+	xff0, _, _ := strings.Cut(xff[0], ",")
+	if xff0 != h.SourceAddr.(*net.TCPAddr).IP.String() {
+		t.Fatalf("Expected %s, got %s", h.SourceAddr.(*net.TCPAddr).IP, xff[0])
 	}
 }

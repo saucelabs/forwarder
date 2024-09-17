@@ -34,6 +34,7 @@ func ProxyService() *Service {
 		Image: Image,
 		Environment: map[string]string{
 			"FORWARDER_API_ADDRESS": ":10000",
+			"FORWARDER_PROXY_PROTOCOL_ENABLED": "true",
 		},
 	}
 }
