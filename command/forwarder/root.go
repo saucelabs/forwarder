@@ -40,8 +40,11 @@ func CommandGroups() templates.CommandGroups {
 func FlagGroups() templates.FlagGroups {
 	return templates.FlagGroups{
 		{
-			Name:   "Server options",
-			Prefix: []string{""},
+			Name: "Server options",
+			Prefix: []string{
+				"proxy-protocol",
+				"",
+			},
 		},
 		{
 			Name: "Proxy options",

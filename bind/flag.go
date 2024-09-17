@@ -202,8 +202,8 @@ func MITMDomains(fs *pflag.FlagSet, cfg *[]ruleset.RegexpListItem) {
 }
 
 func ProxyProtocol(fs *pflag.FlagSet, enabled *bool, cfg *forwarder.ProxyProtocolConfig) {
-	fs.BoolVar(enabled, "proxy-protocol", *enabled,
-		"The PROXY protocol is used to correctly pass the client's IP address to the server. "+
+	fs.BoolVar(enabled, "proxy-protocol-enabled", *enabled,
+		"The PROXY protocol is used to correctly read the client's IP address. "+
 			"When enabled the proxy will expect the client to send the PROXY protocol header before the actual request. "+
 			"It is still possible to connect to the proxy without the PROXY protocol header when this flag is enabled. ")
 
