@@ -196,6 +196,34 @@ func TestFlagMITMDomains(t *testing.T) {
 	})
 }
 
+func TestFlagProxyProtocol(t *testing.T) {
+	const header = "PROXY TCP4 1.1.1.1 2.2.2.2 1000 2000\r\n"
+
+	xff := newClient(t, httpbin, func(tr *http.Transport) {
+		tr.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
+			conn, err := net.Dial(network, addr)
+			if err != nil {
+				return nil, err
+			}
+			if _, err := conn.Write([]byte(header)); err != nil {
+				return nil, err
+			}
+			return conn, nil
+		}
+	}).GET("/headers/").Header["X-Forwarded-For"]
+
+	if len(xff) == 0 {
+		t.Fatal("Expected X-Forwarded-For header, got none")
+	}
+
+	want := "1.1.1.1"
+
+	xff0, _, _ := strings.Cut(xff[0], ",")
+	if xff0 != want {
+		t.Fatalf("Expected %s, got %s", want, xff[0])
+	}
+}
+
 func TestFlagDenyDomains(t *testing.T) {
 	t.Run("include(google)", func(t *testing.T) {
 		newClient(t, "https://www.google.com").GET("/").

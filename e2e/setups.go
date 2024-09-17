@@ -45,6 +45,7 @@ func AllSetups() []setup.Setup {
 	SetupFlagMITMCACert(l)
 	SetupFlagMITMGenCA(l)
 	SetupFlagMITMDomains(l)
+	SetupFlagProxyProtocol(l)
 	SetupFlagDenyDomains(l)
 	SetupFlagDirectDomains(l)
 	SetupFlagRateLimit(l)
@@ -415,6 +416,22 @@ func SetupFlagMITMDomains(l *setupList) {
 					WithMITMCACert().
 					WithMITMDomains("google", "httpbin", "-httpbin").
 					Insecure()).
+			MustBuild(),
+		Run: run,
+	})
+}
+
+func SetupFlagProxyProtocol(l *setupList) {
+	const run = "^TestFlagProxyProtocol$"
+
+	l.Add(setup.Setup{
+		Name: "flag-proxy-protocol",
+		Compose: compose.NewBuilder().
+			AddService(
+				forwarder.HttpbinService()).
+			AddService(
+				forwarder.ProxyService().
+					WithPROXYProtocol()).
 			MustBuild(),
 		Run: run,
 	})
