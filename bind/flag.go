@@ -132,6 +132,9 @@ func HTTPProxyConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPProxyConfig, lcfg *lo
 		"Name of this proxy instance. This value is used in the Via header in requests. "+
 		"The name value in Via header is extended with a random string to avoid collisions when several proxies are chained. ")
 
+	fs.DurationVar(&cfg.ProxyProtocolReadHeaderTimeout, "proxy-protocol-read-header-timeout", cfg.ProxyProtocolReadHeaderTimeout,
+		"The amount of time to wait for PROXY protocol header if present. ")
+
 	fs.StringVar(&cfg.RequestIDHeader, "log-http-request-id-header", cfg.RequestIDHeader,
 		"<name>"+
 			"If the header is present in the request, "+
