@@ -263,6 +263,13 @@ func (p *Proxy) handleLoop(conn net.Conn) {
 
 	pc := newProxyConn(p, conn)
 
+	if err := pc.tryReadProxyHeader(); err != nil {
+		if errors.Is(err, errClose) || isCloseable(err) {
+			log.Debugf(context.TODO(), "closing connection from %s duration=%s", conn.RemoteAddr(), time.Since(start))
+			return
+		}
+	}
+
 	const maxConsecutiveErrors = 5
 	errorsN := 0
 	for {

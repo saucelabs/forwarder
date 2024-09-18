@@ -28,6 +28,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/pires/go-proxyproto"
 	"github.com/saucelabs/forwarder/internal/martian/log"
 	"github.com/saucelabs/forwarder/internal/martian/proxyutil"
 )
@@ -38,6 +39,7 @@ type proxyConn struct {
 	conn   net.Conn
 	secure bool
 	cs     tls.ConnectionState
+	ph     *proxyproto.Header
 }
 
 func newProxyConn(p *Proxy, conn net.Conn) *proxyConn {
@@ -53,6 +55,40 @@ func newProxyConn(p *Proxy, conn net.Conn) *proxyConn {
 	}
 
 	return v
+}
+
+func (p *proxyConn) tryReadProxyHeader() error {
+	t0 := time.Now()
+	if d := p.readProxyProtocolHeaderTimeout(); d > 0 {
+		hdrDeadline := t0.Add(d)
+
+		if deadlineErr := p.conn.SetReadDeadline(hdrDeadline); deadlineErr != nil {
+			log.Errorf(context.TODO(), "can't set read proxy protocol header deadline: %v", deadlineErr)
+		}
+		defer p.conn.SetReadDeadline(time.Time{})
+	}
+
+	h, err := proxyproto.Read(p.brw.Reader)
+	if err != nil {
+		if errors.Is(err, proxyproto.ErrNoProxyProtocol) {
+			return nil
+		}
+
+		if isClosedConnError(err) {
+			log.Debugf(context.TODO(), "connection closed prematurely while reading proxy protocol header: %v", err)
+		} else {
+			log.Errorf(context.TODO(), "got error while reading proxy protocol header: %v", err)
+		}
+		return errClose
+	}
+
+	log.Debugf(context.TODO(), "read proxy protocol header: %+v", h)
+
+	if h.Command == proxyproto.PROXY {
+		p.ph = h
+	}
+
+	return nil
 }
 
 func (p *proxyConn) readRequest() (*http.Request, error) {
