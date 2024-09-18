@@ -80,22 +80,23 @@ var ErrConnectFallback = martian.ErrConnectFallback
 
 type HTTPProxyConfig struct {
 	HTTPServerConfig
-	Name              string
-	MITM              *MITMConfig
-	MITMDomains       Matcher
-	ProxyLocalhost    ProxyLocalhostMode
-	UpstreamProxy     *url.URL
-	UpstreamProxyFunc ProxyFunc
-	DenyDomains       Matcher
-	DirectDomains     Matcher
-	RequestIDHeader   string
-	RequestModifiers  []RequestModifier
-	ResponseModifiers []ResponseModifier
-	ConnectFunc       ConnectFunc
-	ConnectTimeout    time.Duration
-	ReadLimit         SizeSuffix
-	WriteLimit        SizeSuffix
-	PromHTTPOpts      []middleware.PrometheusOpt
+	Name                           string
+	MITM                           *MITMConfig
+	MITMDomains                    Matcher
+	ProxyProtocolReadHeaderTimeout time.Duration
+	ProxyLocalhost                 ProxyLocalhostMode
+	UpstreamProxy                  *url.URL
+	UpstreamProxyFunc              ProxyFunc
+	DenyDomains                    Matcher
+	DirectDomains                  Matcher
+	RequestIDHeader                string
+	RequestModifiers               []RequestModifier
+	ResponseModifiers              []ResponseModifier
+	ConnectFunc                    ConnectFunc
+	ConnectTimeout                 time.Duration
+	ReadLimit                      SizeSuffix
+	WriteLimit                     SizeSuffix
+	PromHTTPOpts                   []middleware.PrometheusOpt
 
 	// TestingHTTPHandler uses Martian's [http.Handler] implementation
 	// over [http.Server] instead of the default TCP server.
@@ -113,10 +114,11 @@ func DefaultHTTPProxyConfig() *HTTPProxyConfig {
 				HandshakeTimeout: 10 * time.Second,
 			},
 		},
-		Name:            "forwarder",
-		ProxyLocalhost:  DenyProxyLocalhost,
-		RequestIDHeader: "X-Request-Id",
-		ConnectTimeout:  60 * time.Second, // http.Transport sets a constant 1m timeout for CONNECT requests.
+		Name:                           "forwarder",
+		ProxyProtocolReadHeaderTimeout: 5 * time.Second,
+		ProxyLocalhost:                 DenyProxyLocalhost,
+		RequestIDHeader:                "X-Request-Id",
+		ConnectTimeout:                 60 * time.Second, // http.Transport sets a constant 1m timeout for CONNECT requests.
 	}
 }
 
@@ -249,6 +251,7 @@ func (hp *HTTPProxy) configureProxy() error {
 	hp.proxy.WithoutWarning = true
 	hp.proxy.ErrorResponse = hp.errorResponse
 	hp.proxy.IdleTimeout = hp.config.IdleTimeout
+	hp.proxy.ReadProxyProtocolHeaderTimeout = hp.config.ProxyProtocolReadHeaderTimeout
 	hp.proxy.ReadTimeout = hp.config.ReadTimeout
 	hp.proxy.ReadHeaderTimeout = hp.config.ReadHeaderTimeout
 	hp.proxy.WriteTimeout = hp.config.WriteTimeout
