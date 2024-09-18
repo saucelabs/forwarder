@@ -82,7 +82,7 @@ func (p *proxyConn) tryReadProxyHeader() error {
 		return errClose
 	}
 
-	log.Debugf(context.TODO(), "read proxy protocol header: %+v", h)
+	log.Debugf(context.TODO(), "read proxy protocol header: %+v", *h)
 
 	if h.Command == proxyproto.PROXY {
 		p.ph = h
@@ -131,6 +131,11 @@ func (p *proxyConn) readRequest() (*http.Request, error) {
 	fixConnectReqContentLength(req)
 	if p.secure {
 		req.TLS = &p.cs
+	}
+	if p.ph != nil {
+		req.RemoteAddr = p.ph.SourceAddr.String()
+	} else {
+		req.RemoteAddr = p.conn.RemoteAddr().String()
 	}
 	req = req.WithContext(withTraceID(p.BaseContex, newTraceID(req.Header.Get(p.RequestIDHeader))))
 
@@ -343,7 +348,6 @@ func (p *proxyConn) handle() error {
 		return errClose
 	}
 
-	req.RemoteAddr = p.conn.RemoteAddr().String()
 	if req.URL.Host == "" {
 		req.URL.Host = req.Host
 	}
