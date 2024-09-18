@@ -9,10 +9,12 @@ package forwarder
 import (
 	"context"
 	"errors"
+	"io"
 	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 
 	"github.com/saucelabs/forwarder/log/stdlog"
@@ -142,4 +144,57 @@ func TestIsLocalhost(t *testing.T) {
 			t.Errorf("isLocalhost(%q) = %v; want %v", tc.host, lh, tc.localhost)
 		}
 	}
+}
+
+func TestErrorResponse(t *testing.T) {
+	cfg := DefaultHTTPProxyConfig()
+	cfg.ProxyLocalhost = AllowProxyLocalhost
+
+	h, err := NewHTTPProxyHandler(cfg, nil, nil, nil, stdlog.Default())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Run("handleTLSRecordHeader", func(t *testing.T) {
+		s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		}))
+		defer s.Close()
+
+		// Send HTTPS request to an HTTP server.
+		req, err := http.NewRequest(http.MethodGet, "https://"+s.Listener.Addr().String(), http.NoBody)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		rw := httptest.NewRecorder()
+		h.ServeHTTP(rw, req)
+
+		res := rw.Result()
+		b, _ := io.ReadAll(res.Body)
+		if !strings.Contains(string(b), "scheme mismatch (looks like an HTTP request)") {
+			t.Fatalf("expected TLS record header error, body=%q", b)
+		}
+	})
+
+	t.Run("handleTLSCertificateError", func(t *testing.T) {
+		s := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		}))
+		defer s.Close()
+
+		req, err := http.NewRequest(http.MethodGet, s.URL, http.NoBody)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		rw := httptest.NewRecorder()
+		h.ServeHTTP(rw, req)
+
+		res := rw.Result()
+		b, _ := io.ReadAll(res.Body)
+		if !strings.Contains(string(b), "unverified certificates:") {
+			t.Fatalf("expected unverified certificates chain, body=%q", b)
+		}
+	})
 }
