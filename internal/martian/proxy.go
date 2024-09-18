@@ -93,6 +93,12 @@ type Proxy struct {
 	// ReadHeaderTimeout. It is valid to use them both.
 	ReadTimeout time.Duration
 
+	// ReadProxyProtocolHeaderTimeout is the maximum duration for
+	// reading the proxy protocol header on a connection. If zero,
+	// the value of ReadTimeout is used. If both are zero,
+	// there is no timeout.
+	ReadProxyProtocolHeaderTimeout time.Duration
+
 	// ReadHeaderTimeout is the amount of time allowed to read
 	// request headers. The connection's read deadline is reset
 	// after reading the headers and the Handler can decide what
@@ -281,6 +287,13 @@ func (p *Proxy) handleLoop(conn net.Conn) {
 func (p *Proxy) idleTimeout() time.Duration {
 	if p.IdleTimeout > 0 {
 		return p.IdleTimeout
+	}
+	return p.ReadTimeout
+}
+
+func (p *Proxy) readProxyProtocolHeaderTimeout() time.Duration {
+	if p.ReadProxyProtocolHeaderTimeout > 0 {
+		return p.ReadProxyProtocolHeaderTimeout
 	}
 	return p.ReadTimeout
 }
