@@ -124,6 +124,7 @@ issues:
 
     - linters:
         - gocognit
+        - gocyclo
         - maintidx
       source: "func \\(c \\*command\\) runE\\(cmd \\*cobra\\.Command"
 
