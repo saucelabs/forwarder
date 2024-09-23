@@ -98,7 +98,7 @@ func readUntilCRLF(buf []byte, r io.Reader, idx int) ([]byte, error) {
 }
 
 // parseV1Header parses the provided v1 proxy protocol header in the form
-// "PROXY TCP4 1.1.1.1 1.1.1.1 2 3" into it's individual parts
+// "PROXY TCP4 1.1.1.1 1.1.1.1 2 3" into it's individual parts.
 func parseV1Header(buf []byte) (*Header, error) {
 	var src, dest net.TCPAddr
 	var done bool

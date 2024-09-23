@@ -47,8 +47,8 @@ const (
 	tlvHeaderLen   = 3
 )
 
-// ParseTLVs parses the Header.RawTLVS byte string into a TLV map
-func (h Header) ParseTLVs() (map[byte][]byte, error) {
+// ParseTLVs parses the Header.RawTLVS byte string into a TLV map.
+func (h *Header) ParseTLVs() (map[byte][]byte, error) {
 	tlv := make(map[byte][]byte)
 
 	var offset int
@@ -64,7 +64,7 @@ func (h Header) ParseTLVs() (map[byte][]byte, error) {
 		}
 
 		tlv[h.RawTLVs[offset]] = h.RawTLVs[begin:end]
-		offset = offset + end
+		offset += end
 	}
 	return tlv, nil
 }
