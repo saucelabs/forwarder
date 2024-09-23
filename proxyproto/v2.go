@@ -122,9 +122,9 @@ func readV2Header(buf []byte, r io.Reader) (*Header, error) {
 			}
 			offset = ipv6AddressLen
 
-		case 0x31, 0x32: // UNIX (STREAM/DGRAM)
+		case 0x31, 0x32: // Unix socket (TCP/UDP)
 			// Not implemented by haproxy and I see no need to implement it here, patches welcome!
-			return &h, errors.New("Received UNIX socket proxy command, Currently not supported")
+			return &h, errors.New("received UNIX socket proxy command, Currently not supported")
 		}
 	}
 

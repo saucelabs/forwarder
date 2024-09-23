@@ -158,7 +158,7 @@ func TestParseV2Header(t *testing.T) {
 		{
 			name:   "Unix Socket Not Implemented",
 			header: []byte{0x0D, 0x0A, 0x0D, 0x0A, 0x00, 0x0D, 0x0A, 0x51, 0x55, 0x49, 0x54, 0x0A, 0x21, 0x31, 0x00, 0x01, 0xFF},
-			err:    "while parsing proxy proto v2 header: Received UNIX socket proxy command, Currently not supported",
+			err:    "while parsing proxy proto v2 header: received UNIX socket proxy command, Currently not supported",
 		},
 	}
 
@@ -195,7 +195,7 @@ func TestReadV2Header(t *testing.T) {
 	assert.Equal(t, &net.TCPAddr{IP: net.ParseIP("127.0.0.1"), Port: 1025}, h.Destination)
 	assert.Equal(t, &net.TCPAddr{IP: net.ParseIP("127.0.0.1"), Port: 51755}, h.Source)
 	assert.Equal(t, 2, h.Version)
-	assert.Equal(t, false, h.IsLocal)
+	assert.False(t, h.IsLocal)
 }
 
 func TestHeader_ParseTLVs(t *testing.T) {
