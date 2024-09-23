@@ -53,6 +53,8 @@ type command struct {
 	mitm                bool
 	mitmConfig          *forwarder.MITMConfig
 	mitmDomains         []ruleset.RegexpListItem
+	proxyProtocol       bool
+	proxyProtocolConfig *forwarder.ProxyProtocolConfig
 	apiServerConfig     *forwarder.HTTPServerConfig
 	logConfig           *log.Config
 
@@ -207,6 +209,10 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 			}
 			c.httpProxyConfig.MITMDomains = dd
 		}
+	}
+
+	if c.proxyProtocol {
+		c.httpProxyConfig.ProxyProtocolConfig = c.proxyProtocolConfig
 	}
 
 	g := runctx.NewGroup()
@@ -424,6 +430,7 @@ func Command() *cobra.Command {
 	bind.HTTPProxyConfig(fs, c.httpProxyConfig, c.logConfig)
 	bind.MITMConfig(fs, &c.mitm, c.mitmConfig)
 	bind.MITMDomains(fs, &c.mitmDomains)
+	bind.ProxyProtocol(fs, &c.proxyProtocol, c.proxyProtocolConfig)
 	bind.HTTPServerConfig(fs, c.apiServerConfig, "api", forwarder.HTTPScheme)
 	bind.HTTPLogConfig(fs, []bind.NamedParam[httplog.Mode]{
 		{Name: "api", Param: &c.apiServerConfig.LogHTTPMode},
@@ -476,6 +483,7 @@ func makeCommand() command {
 		httpTransportConfig: forwarder.DefaultHTTPTransportConfig(),
 		httpProxyConfig:     forwarder.DefaultHTTPProxyConfig(),
 		mitmConfig:          forwarder.DefaultMITMConfig(),
+		proxyProtocolConfig: forwarder.DefaultProxyProtocolConfig(),
 		apiServerConfig:     forwarder.DefaultHTTPServerConfig(),
 		logConfig:           log.DefaultConfig(),
 	}
