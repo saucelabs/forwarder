@@ -2,12 +2,11 @@ package proxyproto
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"net"
 	"strconv"
-
-	"github.com/pkg/errors"
 )
 
 // readV1Header assumes the passed buf contains the first 13 bytes which should look like one of
@@ -22,7 +21,7 @@ func readV1Header(buf []byte, r io.Reader) (*Header, error) {
 	if bytes.Equal(buf[6:13], []byte(v1UnKnownProto)) {
 		b, err := readUntilCRLF(buf, r, 13)
 		if err != nil {
-			return nil, errors.Wrap(err, "while looking for cRLF after UNKNOWN proto")
+			return nil, fmt.Errorf("while looking for cRLF after UNKNOWN proto: %w", err)
 		}
 		return &Header{IsLocal: true, Version: 1, Unknown: b}, nil
 	}
@@ -32,7 +31,7 @@ func readV1Header(buf []byte, r io.Reader) (*Header, error) {
 		// Minimum TCP4 line is `PROXY TCP4 1.1.1.1 1.1.1.1 2 3\r\n` which is 32 bytes, minus the 13 we have
 		// already read which leaves 18, so we optimistically read them now.
 		if _, err := io.ReadFull(r, buf[13:32]); err != nil {
-			return nil, errors.Wrap(err, "while reading tcp4 addresses")
+			return nil, fmt.Errorf("while reading tcp4 addresses: %w", err)
 		}
 
 		// If the optimistic read ended in cRLF then no more bytes to read
@@ -46,7 +45,7 @@ func readV1Header(buf []byte, r io.Reader) (*Header, error) {
 		// Minimum TCP6 line is `PROXY TCP6 ::1 ::1 2 3\r\n` which is 24 bytes, minus the 13 we have
 		// already read which leaves 11, so we optimistically read them now.
 		if _, err := io.ReadFull(r, buf[13:24]); err != nil {
-			return nil, errors.Wrap(err, "while reading tcp6 addresses")
+			return nil, fmt.Errorf("while reading tcp6 addresses: %w", err)
 		}
 
 		// fmt.Printf("cRLF: %X\n", buf[22:24])
@@ -58,13 +57,13 @@ func readV1Header(buf []byte, r io.Reader) (*Header, error) {
 	}
 
 	if idx == 0 {
-		return nil, errors.Errorf("unrecognized protocol '%s'", buf[6:10])
+		return nil, fmt.Errorf("unrecognized protocol '%s'", buf[6:10])
 	}
 
 	// else we have more bytes to read until we find the cRLF
 	b, err := readUntilCRLF(buf, r, idx)
 	if err != nil {
-		return nil, errors.Wrap(err, "while looking for cRLF after proto")
+		return nil, fmt.Errorf("while looking for cRLF after proto: %w", err)
 	}
 	return parseV1Header(b)
 }
@@ -101,25 +100,25 @@ func parseV1Header(buf []byte) (*Header, error) {
 		case 0:
 			ip := net.ParseIP(string(buf))
 			if ip == nil {
-				return errors.Errorf("invalid ip '%s' at pos '%d'", buf, pos)
+				return fmt.Errorf("invalid ip '%s' at pos '%d'", buf, pos)
 			}
 			src.IP = ip
 		case 1:
 			ip := net.ParseIP(string(buf))
 			if ip == nil {
-				return errors.Errorf("invalid ip '%s' at pos '%d'", buf, pos)
+				return fmt.Errorf("invalid ip '%s' at pos '%d'", buf, pos)
 			}
 			dest.IP = ip
 		case 2:
 			port, err := strconv.Atoi(string(buf))
 			if err != nil {
-				return errors.Errorf("invalid port '%s' at pos '%d'", buf, pos)
+				return fmt.Errorf("invalid port '%s' at pos '%d'", buf, pos)
 			}
 			src.Port = port
 		case 3:
 			port, err := strconv.Atoi(string(buf))
 			if err != nil {
-				return errors.Errorf("invalid port '%s' at pos '%d'", buf, pos)
+				return fmt.Errorf("invalid port '%s' at pos '%d'", buf, pos)
 			}
 			dest.Port = port
 			done = true

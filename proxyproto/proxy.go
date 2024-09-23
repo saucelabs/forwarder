@@ -7,8 +7,6 @@ import (
 	"fmt"
 	"io"
 	"net"
-
-	"github.com/pkg/errors"
 )
 
 type Header struct {
@@ -68,14 +66,14 @@ func ReadHeader(r io.Reader) (*Header, error) {
 
 	// Read the first 13 bytes which should contain the identifier
 	if _, err := io.ReadFull(r, buf[0:13]); err != nil {
-		return nil, errors.Wrap(err, "while reading proxy proto identifier")
+		return nil, fmt.Errorf("while reading proxy proto identifier: %w", err)
 	}
 
 	// Look for V1 or V2 identifiers
 	if bytes.HasPrefix(buf[0:13], V2Identifier) {
 		h, err := readV2Header(buf[0:], r)
 		if err != nil {
-			return nil, errors.Wrap(err, "while parsing proxy proto v2 header")
+			return nil, fmt.Errorf("while parsing proxy proto v2 header: %w", err)
 		}
 		return h, nil
 	}
@@ -83,7 +81,7 @@ func ReadHeader(r io.Reader) (*Header, error) {
 	if bytes.HasPrefix(buf[0:13], V1Identifier) {
 		h, err := readV1Header(buf[0:], r)
 		if err != nil {
-			return nil, errors.Wrap(err, "while parsing proxy proto v1 header")
+			return nil, fmt.Errorf("while parsing proxy proto v1 header: %w", err)
 		}
 		return h, nil
 	}
