@@ -12,9 +12,10 @@ import (
 
 // readV1Header assumes the passed buf contains the first 13 bytes which should look like one of
 // the following. (Where XX is the start of the tcp address)
-// 		"PROXY TCP4 XX"
-// 		"PROXY TCP6 XX"
-// 		"PROXY UNKNOWN"
+//
+//	"PROXY TCP4 XX"
+//	"PROXY TCP6 XX"
+//	"PROXY UNKNOWN"
 func readV1Header(buf []byte, r io.Reader) (*Header, error) {
 	// For "UNKNOWN", the rest of the line before the cRLF may be omitted by the
 	// sender, and the receiver must ignore anything presented before the cRLF is found.
@@ -48,7 +49,7 @@ func readV1Header(buf []byte, r io.Reader) (*Header, error) {
 			return nil, errors.Wrap(err, "while reading tcp6 addresses")
 		}
 
-		//fmt.Printf("cRLF: %X\n", buf[22:24])
+		// fmt.Printf("cRLF: %X\n", buf[22:24])
 		// If the optimistic read ended in cRLF then no more bytes to read
 		if bytes.Equal(buf[22:24], []byte(cRLF)) {
 			return parseV1Header(buf[0:22])
