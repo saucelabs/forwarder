@@ -149,7 +149,6 @@ func TestParseV1Header(t *testing.T) {
 }
 
 func BenchmarkReadHeaderV1(b *testing.B) {
-
 	tests := []struct {
 		name   string
 		header string
