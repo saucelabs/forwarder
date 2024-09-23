@@ -1,11 +1,10 @@
-package proxyproto_test
+package proxyproto
 
 import (
 	"bytes"
 	"net"
 	"testing"
 
-	"github.com/mailgun/influx/proxyproto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -144,7 +143,7 @@ func TestParseV2Header(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			r := bytes.NewReader(tt.header)
-			h, err := proxyproto.ReadHeader(r)
+			h, err := ReadHeader(r)
 			if err != nil {
 				require.Equal(t, err.Error(), tt.err)
 				return
@@ -166,7 +165,7 @@ func TestReadV2Header(t *testing.T) {
 		0x7F, 0x00, 0x00, 0x01, 0x7F, 0x00, 0x00, 0x01, 0xCA, 0x2B, 0x04, 0x01}
 
 	r := bytes.NewReader(header)
-	h, err := proxyproto.ReadV2Header(r)
+	h, err := ReadV2Header(r)
 	require.NoError(t, err)
 	require.NotNil(t, h)
 	assert.Equal(t, &net.TCPAddr{IP: net.ParseIP("127.0.0.1"), Port: 1025}, h.Destination)
@@ -178,21 +177,21 @@ func TestReadV2Header(t *testing.T) {
 
 func TestHeader_ParseTLVs(t *testing.T) {
 	tests := []struct {
-		header proxyproto.Header
+		header Header
 		m      map[byte][]byte
 		name   string
 		err    string
 	}{
 		{
 			name:   "CRC",
-			header: proxyproto.Header{RawTLVs: []byte{0x03, 0x00, 0x04, 0xFD, 0x16, 0xEE, 0x60}},
+			header: Header{RawTLVs: []byte{0x03, 0x00, 0x04, 0xFD, 0x16, 0xEE, 0x60}},
 			m: map[byte][]byte{
 				0x03: {0xFD, 0x16, 0xEE, 0x60},
 			},
 		},
 		{
 			name: "CRC and NoOp",
-			header: proxyproto.Header{RawTLVs: []byte{
+			header: Header{RawTLVs: []byte{
 				0x03, 0x00, 0x04, 0xFD, 0x16, 0xEE, 0x60,
 				0x04, 0x00, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
 			}},
@@ -203,14 +202,14 @@ func TestHeader_ParseTLVs(t *testing.T) {
 		},
 		{
 			name: "Length to long",
-			header: proxyproto.Header{RawTLVs: []byte{
+			header: Header{RawTLVs: []byte{
 				0x04, 0x00, 0x06, 0x00, 0x00, 0x00, 0x00,
 			}},
 			err: "TLV '0x4' length '6' is larger than trailing header",
 		},
 		{
 			name: "Zero Length",
-			header: proxyproto.Header{RawTLVs: []byte{
+			header: Header{RawTLVs: []byte{
 				0x04, 0x00, 0x00,
 				0x03, 0x00, 0x04, 0xFD, 0x16, 0xEE, 0x60,
 			}},
@@ -270,7 +269,7 @@ func BenchmarkReadHeaderV2(b *testing.B) {
 		b.Run(tt.name, func(b *testing.B) {
 			for n := 0; n < b.N; n++ {
 				r := bytes.NewReader(tt.header)
-				_, err := proxyproto.ReadHeader(r)
+				_, err := ReadHeader(r)
 				if err != nil {
 					b.Errorf("ReadHeader err: %s", err)
 				}

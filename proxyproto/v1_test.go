@@ -1,11 +1,10 @@
-package proxyproto_test
+package proxyproto
 
 import (
 	"net"
 	"strings"
 	"testing"
 
-	"github.com/mailgun/influx/proxyproto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -135,7 +134,7 @@ func TestParseV1Header(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			r := strings.NewReader(tt.header)
-			h, err := proxyproto.ReadHeader(r)
+			h, err := ReadHeader(r)
 			if err != nil {
 				require.Equal(t, err.Error(), tt.err)
 				return
@@ -181,7 +180,7 @@ func BenchmarkReadHeaderV1(b *testing.B) {
 		b.Run(tt.name, func(b *testing.B) {
 			for n := 0; n < b.N; n++ {
 				r := strings.NewReader(tt.header)
-				_, err := proxyproto.ReadHeader(r)
+				_, err := ReadHeader(r)
 				if err != nil {
 					b.Errorf("ReadHeader err: %s", err)
 				}
