@@ -2,11 +2,10 @@ package proxyproto
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
 	"net"
-
-	"github.com/pkg/errors"
 )
 
 const (
@@ -21,7 +20,7 @@ const (
 func ReadV2Header(r io.Reader) (*Header, error) {
 	var buf [232]byte
 	if _, err := io.ReadFull(r, buf[0:13]); err != nil {
-		return nil, errors.Wrap(err, "while reading proxy proto identifier")
+		return nil, fmt.Errorf("while reading proxy proto identifier: %w", err)
 	}
 	return readV2Header(buf[0:], r)
 }
@@ -33,7 +32,7 @@ func ReadV2Header(r io.Reader) (*Header, error) {
 func readV2Header(buf []byte, r io.Reader) (*Header, error) {
 	// Read the next 3 bytes which contain the proto, family and the length of the trailing header
 	if _, err := io.ReadFull(r, buf[13:16]); err != nil {
-		return nil, errors.Wrap(err, "while reading proto, family and length bytes")
+		return nil, fmt.Errorf("while reading proto, family and length bytes: %w", err)
 	}
 
 	// Ensure the version is 2
@@ -56,7 +55,7 @@ func readV2Header(buf []byte, r io.Reader) (*Header, error) {
 		// Read the remainder of the header
 		tr = make([]byte, length)
 		if _, err := io.ReadFull(r, tr); err != nil {
-			return nil, errors.Wrap(err, "while reading proto and length bytes")
+			return nil, fmt.Errorf("while reading proto and length bytes: %w", err)
 		}
 	}
 
