@@ -8,7 +8,9 @@ package proxyproto
 
 import (
 	"context"
+	_ "embed"
 	"errors"
+	"fmt"
 	"io"
 	"net"
 	"strings"
@@ -19,8 +21,15 @@ import (
 	"golang.org/x/net/nettest"
 )
 
+//go:embed testdata/v2.bin
+var v2Header []byte
+
 func makePipeV1() (c1, c2 net.Conn, stop func(), err error) {
 	return makePipe([]byte("PROXY TCP4 1.1.1.1 2.2.2.2 1000 2000\r\n"))
+}
+
+func makePipeV2() (c1, c2 net.Conn, stop func(), err error) {
+	return makePipe(v2Header)
 }
 
 func makePipe(header []byte) (c1, c2 net.Conn, stop func(), err error) {
@@ -70,32 +79,55 @@ func makePipe(header []byte) (c1, c2 net.Conn, stop func(), err error) {
 func TestTestConn(t *testing.T) {
 	t.Parallel()
 
-	nettest.TestConn(t, makePipeV1)
+	t.Run("v1", func(t *testing.T) {
+		t.Parallel()
+		nettest.TestConn(t, makePipeV1)
+	})
+
+	t.Run("v2", func(t *testing.T) {
+		t.Parallel()
+		nettest.TestConn(t, makePipeV2)
+	})
 }
 
 func TestConnHeader(t *testing.T) {
 	t.Parallel()
 
-	_, c2, stop, err := makePipeV1()
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer stop()
-
-	e := Header{
-		Source:      &net.TCPAddr{IP: net.ParseIP("1.1.1.1"), Port: 1000},
-		Destination: &net.TCPAddr{IP: net.ParseIP("2.2.2.2"), Port: 2000},
-		IsLocal:     false,
-		Version:     1,
+	tests := []struct {
+		version  int
+		makePipe func() (net.Conn, net.Conn, func(), error)
+	}{
+		{1, makePipeV1},
+		{2, makePipeV2},
 	}
 
-	h, err := c2.(*Conn).Header()
-	if err != nil {
-		t.Fatal(err)
-	}
+	for i := range tests {
+		tc := tests[i]
+		t.Run(fmt.Sprintf("v%d", tc.version), func(t *testing.T) {
+			t.Parallel()
 
-	if diff := cmp.Diff(e, h); diff != "" {
-		t.Errorf("unexpected header (-want +got):\n%s", diff)
+			_, c2, stop, err := tc.makePipe()
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer stop()
+
+			e := Header{
+				Source:      &net.TCPAddr{IP: net.ParseIP("1.1.1.1"), Port: 1000},
+				Destination: &net.TCPAddr{IP: net.ParseIP("2.2.2.2"), Port: 2000},
+				IsLocal:     false,
+				Version:     tc.version,
+			}
+
+			h, err := c2.(*Conn).Header()
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if diff := cmp.Diff(e, h); diff != "" {
+				t.Errorf("unexpected header (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
 
