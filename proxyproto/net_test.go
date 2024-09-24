@@ -9,7 +9,6 @@ package proxyproto
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"net"
 	"strings"
@@ -20,7 +19,11 @@ import (
 	"golang.org/x/net/nettest"
 )
 
-func makePipe() (c1, c2 net.Conn, stop func(), err error) {
+func makePipeV1() (c1, c2 net.Conn, stop func(), err error) {
+	return makePipe([]byte("PROXY TCP4 1.1.1.1 2.2.2.2 1000 2000\r\n"))
+}
+
+func makePipe(header []byte) (c1, c2 net.Conn, stop func(), err error) {
 	l, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
 		return nil, nil, nil, err
@@ -38,7 +41,7 @@ func makePipe() (c1, c2 net.Conn, stop func(), err error) {
 	}()
 	c1, err1 = net.Dial(l.Addr().Network(), l.Addr().String())
 	if err1 == nil {
-		_, err1 = fmt.Fprintf(c1, "PROXY TCP4 1.1.1.1 2.2.2.2 1000 2000\r\n")
+		_, err1 = c1.Write(header)
 	}
 	<-done
 
@@ -67,13 +70,13 @@ func makePipe() (c1, c2 net.Conn, stop func(), err error) {
 func TestTestConn(t *testing.T) {
 	t.Parallel()
 
-	nettest.TestConn(t, makePipe)
+	nettest.TestConn(t, makePipeV1)
 }
 
 func TestConnHeader(t *testing.T) {
 	t.Parallel()
 
-	_, c2, stop, err := makePipe()
+	_, c2, stop, err := makePipeV1()
 	if err != nil {
 		t.Fatal(err)
 	}
