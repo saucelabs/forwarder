@@ -66,7 +66,8 @@ func SetupDefaults(l *setupList) {
 							WithProtocol(httpbinScheme)).
 					AddService(
 						forwarder.ProxyService().
-							WithProtocol(proxyScheme)).
+							WithProtocol(proxyScheme).
+							WithGoleak()).
 					MustBuild(),
 				Run: run,
 			})
@@ -80,10 +81,12 @@ func SetupDefaults(l *setupList) {
 						AddService(
 							forwarder.ProxyService().
 								WithProtocol(proxyScheme).
-								WithUpstream(forwarder.UpstreamProxyServiceName, upstreamProxyScheme)).
+								WithUpstream(forwarder.UpstreamProxyServiceName, upstreamProxyScheme).
+								WithGoleak()).
 						AddService(
 							forwarder.UpstreamProxyService().
-								WithProtocol(upstreamProxyScheme)).
+								WithProtocol(upstreamProxyScheme).
+								WithGoleak()).
 						MustBuild(),
 					Run: run,
 				})
@@ -358,7 +361,8 @@ func SetupFlagMITMCACert(l *setupList) {
 				forwarder.ProxyService().
 					WithResponseHeader("test-resp-add:test-resp-value").
 					WithMITMCACert().
-					Insecure()).
+					Insecure().
+					WithGoleak()).
 			MustBuild(),
 		Run: run,
 	})
@@ -374,10 +378,12 @@ func SetupFlagMITMCACert(l *setupList) {
 						WithResponseHeader("test-resp-add:test-resp-value").
 						WithMITMCACert().
 						Insecure().
-						WithUpstream(forwarder.UpstreamProxyServiceName, upstreamProxyScheme)).
+						WithUpstream(forwarder.UpstreamProxyServiceName, upstreamProxyScheme).
+						WithGoleak()).
 				AddService(
 					forwarder.UpstreamProxyService().
-						WithProtocol(upstreamProxyScheme)).
+						WithProtocol(upstreamProxyScheme).
+						WithGoleak()).
 				MustBuild(),
 			Run: run,
 		})
