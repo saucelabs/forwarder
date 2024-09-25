@@ -5,7 +5,7 @@ import (
 	"net"
 	"os"
 
-	"github.com/saucelabs/forwarder/proxyproto"
+	"github.com/pires/go-proxyproto"
 )
 
 func main() {
