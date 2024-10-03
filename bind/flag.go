@@ -35,7 +35,7 @@ func ConfigFile(fs *pflag.FlagSet, configFile *string) {
 }
 
 func DNSConfig(fs *pflag.FlagSet, cfg *forwarder.DNSConfig) {
-	fs.VarP(anyflag.NewSliceValue[netip.AddrPort](nil, &cfg.Servers, forwarder.ParseDNSAddress),
+	fs.VarP(anyflag.NewSliceValue[netip.AddrPort](cfg.Servers, &cfg.Servers, forwarder.ParseDNSAddress),
 		"dns-server", "n", "<ip>[:<port>]"+
 			"DNS server(s) to use instead of system default. "+
 			"There are two execution policies, when more then one server is specified. "+
