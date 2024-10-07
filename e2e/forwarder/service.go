@@ -108,7 +108,7 @@ func (s *Service) WithMITMDomains(domains ...string) *Service {
 }
 
 func (s *Service) WithPROXYProtocol() *Service {
-	s.Environment["FORWARDER_PROXY_PROTOCOL_ENABLED"] = "true"
+	s.Environment["FORWARDER_PROXY_PROTOCOL_LISTENER"] = "true"
 	return s
 }
 

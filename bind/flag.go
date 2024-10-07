@@ -202,7 +202,7 @@ func MITMDomains(fs *pflag.FlagSet, cfg *[]ruleset.RegexpListItem) {
 }
 
 func ProxyProtocol(fs *pflag.FlagSet, enabled *bool, cfg *forwarder.ProxyProtocolConfig) {
-	fs.BoolVar(enabled, "proxy-protocol-enabled", *enabled,
+	fs.BoolVar(enabled, "proxy-protocol-listener", *enabled,
 		"The PROXY protocol is used to correctly read the client's IP address. "+
 			"When enabled the proxy will expect the client to send the PROXY protocol header before the actual request. "+
 			"PROXY protocol version 1 and 2 are supported. ")
