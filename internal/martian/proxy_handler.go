@@ -17,7 +17,6 @@
 package martian
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -310,6 +309,7 @@ func (p proxyHandler) handleRequest(rw http.ResponseWriter, req *http.Request) {
 }
 
 type h2Writer struct {
+	req   *http.Request
 	w     io.Writer
 	flush func() error
 	close func() error
@@ -317,6 +317,7 @@ type h2Writer struct {
 
 func makeH2Writer(rw http.ResponseWriter, rc *http.ResponseController, req *http.Request) h2Writer {
 	return h2Writer{
+		req:   req,
 		w:     rw,
 		flush: rc.Flush,
 		close: req.Body.Close,
@@ -328,7 +329,7 @@ func (w h2Writer) Write(p []byte) (n int, err error) {
 
 	if n > 0 {
 		if err := w.flush(); err != nil {
-			log.Errorf(context.TODO(), "got error while flushing response back to client: %v", err)
+			log.Errorf(w.req.Context(), "got error while flushing response back to client: %v", err)
 		}
 	}
 
@@ -338,7 +339,7 @@ func (w h2Writer) Write(p []byte) (n int, err error) {
 func (w h2Writer) CloseWrite() error {
 	// Send any DATA frames buffered in the transport.
 	if err := w.flush(); err != nil {
-		log.Errorf(context.TODO(), "got error while flushing response back to client: %v", err)
+		log.Errorf(w.req.Context(), "got error while flushing response back to client: %v", err)
 	}
 	// Close request body to signal the end of the request.
 	// This results RST_STREAM frame with error code NO_ERROR to be sent to the other side.
