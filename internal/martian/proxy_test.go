@@ -39,6 +39,113 @@ import (
 	"go.uber.org/multierr"
 )
 
+var (
+	withTLS     = flag.Bool("tls", false, "run proxy using TLS listener")
+	withHandler = flag.Bool("handler", false, "run proxy using http.Handler")
+)
+
+type testHelper struct {
+	Listener net.Listener
+	Proxy    func(*Proxy)
+}
+
+func (h *testHelper) proxyConn(t *testing.T) (conn net.Conn, cancel func()) {
+	t.Helper()
+	c, cancel := h.proxyClient(t)
+	return c.dial(t), cancel
+}
+
+func (h *testHelper) proxyClient(t *testing.T) (client client, cancel func()) {
+	t.Helper()
+
+	l, c := h.listenerAndClient(t)
+	p := h.proxy(t)
+	go h.serve(p, l)
+
+	return c, func() { l.Close(); p.Close() }
+}
+
+func (h *testHelper) listenerAndClient(t *testing.T) (net.Listener, client) {
+	t.Helper()
+
+	if h.Listener != nil {
+		return h.Listener, client{Addr: h.Listener.Addr().String()}
+	}
+
+	l, err := net.Listen("tcp", "localhost:0")
+	if err != nil {
+		t.Fatalf("net.Listen(): got %v, want no error", err)
+	}
+
+	if !*withTLS {
+		return l, client{Addr: l.Addr().String()}
+	}
+
+	s, c := h.certs(t)
+	l = tls.NewListener(l, s)
+	return l, client{Addr: l.Addr().String(), TLS: c}
+}
+
+func (h *testHelper) certs(t *testing.T) (server, client *tls.Config) {
+	t.Helper()
+
+	ca, priv, err := mitm.NewAuthority("martian.proxy", "Martian Authority", 2*time.Hour)
+	if err != nil {
+		t.Fatalf("mitm.NewAuthority(): got %v, want no error", err)
+	}
+
+	mc, err := mitm.NewConfig(ca, priv)
+	if err != nil {
+		t.Fatalf("mitm.NewConfig(): got %v, want no error", err)
+	}
+
+	roots := x509.NewCertPool()
+	roots.AddCert(ca)
+
+	return mc.TLS(context.Background()), &tls.Config{ServerName: "example.com", RootCAs: roots}
+}
+
+func (h *testHelper) proxy(t *testing.T) *Proxy {
+	t.Helper()
+
+	p := new(Proxy)
+	if h.Proxy != nil {
+		h.Proxy(p)
+	}
+	return p
+}
+
+func (h *testHelper) serve(p *Proxy, l net.Listener) {
+	if *withHandler {
+		s := http.Server{
+			Handler:           p.Handler(),
+			ReadTimeout:       p.ReadTimeout,
+			ReadHeaderTimeout: p.ReadHeaderTimeout,
+			WriteTimeout:      p.WriteTimeout,
+		}
+		s.Serve(l)
+	}
+
+	p.Serve(l)
+}
+
+type client struct {
+	Addr string
+	TLS  *tls.Config
+}
+
+func (c *client) dial(t *testing.T) net.Conn {
+	t.Helper()
+	conn, err := net.Dial("tcp", c.Addr)
+	if err != nil {
+		t.Fatalf("net.Dial(): got %v, want no error", err)
+	}
+	if c.TLS != nil {
+		conn = tls.Client(conn, c.TLS)
+	}
+	return conn
+}
+
 type tempError struct{}
 
 func (e *tempError) Error() string   { return "temporary" }
@@ -68,98 +175,26 @@ func (l *timeoutListener) Accept() (net.Conn, error) {
 	return l.Listener.Accept()
 }
 
-var withTLS = flag.Bool("tls", false, "run proxy using TLS listener")
-
-type listener struct {
-	net.Listener
-	clientConfig *tls.Config
-}
-
-func (l listener) dial() (net.Conn, error) {
-	conn, err := net.Dial("tcp", l.Addr().String())
-	if err != nil {
-		return nil, err
-	}
-	if l.clientConfig != nil {
-		conn = tls.Client(conn, l.clientConfig)
-	}
-	return conn, nil
-}
-
-func newListener(t *testing.T) listener {
-	t.Helper()
+func TestIntegrationTemporaryTimeout(t *testing.T) {
+	t.Parallel()
 
 	l, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
 		t.Fatalf("net.Listen(): got %v, want no error", err)
 	}
 
-	if !*withTLS {
-		return listener{l, nil}
+	h := testHelper{
+		// A listener that will return a temporary error on Accept() three times.
+		Listener: newTimeoutListener(l, 3),
+		Proxy: func(p *Proxy) {
+			p.RoundTripper = martiantest.NewTransport()
+			p.ReadTimeout = 200 * time.Millisecond
+			p.WriteTimeout = 200 * time.Millisecond
+		},
 	}
 
-	t.Log("using TLS listener")
-
-	ca, priv, err := mitm.NewAuthority("martian.proxy", "Martian Authority", 2*time.Hour)
-	if err != nil {
-		t.Fatalf("mitm.NewAuthority(): got %v, want no error", err)
-	}
-
-	mc, err := mitm.NewConfig(ca, priv)
-	if err != nil {
-		t.Fatalf("mitm.NewConfig(): got %v, want no error", err)
-	}
-	l = tls.NewListener(l, mc.TLS(context.Background()))
-
-	roots := x509.NewCertPool()
-	roots.AddCert(ca)
-
-	return listener{l, &tls.Config{
-		ServerName: "example.com",
-		RootCAs:    roots,
-	}}
-}
-
-var withHandler = flag.Bool("handler", false, "run proxy using http.Handler")
-
-func serve(p *Proxy, l net.Listener) {
-	if *withHandler {
-		s := http.Server{
-			Handler:           p.Handler(),
-			ReadTimeout:       p.ReadTimeout,
-			ReadHeaderTimeout: p.ReadHeaderTimeout,
-			WriteTimeout:      p.WriteTimeout,
-		}
-		s.Serve(l)
-	}
-
-	p.Serve(l)
-}
-
-func setTimeout(p *Proxy, timeout time.Duration) {
-	p.ReadTimeout = timeout
-	p.WriteTimeout = timeout
-}
-
-func TestIntegrationTemporaryTimeout(t *testing.T) {
-	t.Parallel()
-
-	l := newListener(t)
-	p := new(Proxy)
-	defer p.Close()
-
-	tr := martiantest.NewTransport()
-	p.RoundTripper = tr
-	setTimeout(p, 200*time.Millisecond)
-
-	// Start the proxy with a listener that will return a temporary error on
-	// Accept() three times.
-	go p.Serve(newTimeoutListener(l, 3))
-
-	conn, err := l.dial()
-	if err != nil {
-		t.Fatalf("net.Dial(): got %v, want no error", err)
-	}
+	conn, cancel := h.proxyConn(t)
+	defer cancel()
 	defer conn.Close()
 
 	req, err := http.NewRequest(http.MethodGet, "http://example.com", http.NoBody)
@@ -188,28 +223,22 @@ func TestIntegrationTemporaryTimeout(t *testing.T) {
 func TestIntegrationHTTP(t *testing.T) {
 	t.Parallel()
 
-	l := newListener(t)
-	p := new(Proxy)
-	defer p.Close()
-
-	tr := martiantest.NewTransport()
-	p.RoundTripper = tr
-	setTimeout(p, 200*time.Millisecond)
-
-	tm := martiantest.NewModifier()
-	tm.ResponseFunc(func(res *http.Response) {
-		res.Header.Set("Martian-Test", "true")
-	})
-
-	p.RequestModifier = tm
-	p.ResponseModifier = tm
-
-	go serve(p, l)
-
-	conn, err := l.dial()
-	if err != nil {
-		t.Fatalf("net.Dial(): got %v, want no error", err)
+	h := testHelper{
+		Proxy: func(p *Proxy) {
+			p.RoundTripper = martiantest.NewTransport()
+			p.ReadTimeout = 200 * time.Millisecond
+			p.WriteTimeout = 200 * time.Millisecond
+			tm := martiantest.NewModifier()
+			tm.ResponseFunc(func(res *http.Response) {
+				res.Header.Set("Martian-Test", "true")
+			})
+			p.RequestModifier = tm
+			p.ResponseModifier = tm
+		},
 	}
+
+	conn, cancel := h.proxyConn(t)
+	defer cancel()
 	defer conn.Close()
 
 	req, err := http.NewRequest(http.MethodGet, "http://example.com", http.NoBody)
@@ -244,14 +273,16 @@ func TestIntegrationHTTP100Continue(t *testing.T) {
 		t.Skip("skipping in handler mode")
 	}
 
-	l := newListener(t)
-	p := new(Proxy)
-	if *withTLS {
-		p.AllowHTTP = true
+	tm := martiantest.NewModifier()
+	h := testHelper{
+		Proxy: func(p *Proxy) {
+			p.ReadTimeout = 2 * time.Second
+			p.WriteTimeout = 2 * time.Second
+			p.AllowHTTP = true
+			p.RequestModifier = tm
+			p.ResponseModifier = tm
+		},
 	}
-	defer p.Close()
-
-	setTimeout(p, 2*time.Second)
 
 	sl, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
@@ -296,16 +327,8 @@ func TestIntegrationHTTP100Continue(t *testing.T) {
 		log.Infof(context.TODO(), "proxy_test: sent 200 response")
 	}()
 
-	tm := martiantest.NewModifier()
-	p.RequestModifier = tm
-	p.ResponseModifier = tm
-
-	go serve(p, l)
-
-	conn, err := l.dial()
-	if err != nil {
-		t.Fatalf("net.Dial(): got %v, want no error", err)
-	}
+	conn, cancel := h.proxyConn(t)
+	defer cancel()
 	defer conn.Close()
 
 	host := sl.Addr().String()
@@ -353,14 +376,16 @@ func TestIntegrationHTTP100Continue(t *testing.T) {
 func TestIntegrationHTTP101SwitchingProtocols(t *testing.T) {
 	t.Parallel()
 
-	l := newListener(t)
-	p := new(Proxy)
-	if *withTLS {
-		p.AllowHTTP = true
+	tm := martiantest.NewModifier()
+	h := testHelper{
+		Proxy: func(p *Proxy) {
+			p.ReadTimeout = 200 * time.Millisecond
+			p.WriteTimeout = 200 * time.Millisecond
+			p.RequestModifier = tm
+			p.ResponseModifier = tm
+			p.AllowHTTP = true
+		},
 	}
-	defer p.Close()
-
-	setTimeout(p, 200*time.Millisecond)
 
 	sl, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
@@ -408,16 +433,8 @@ func TestIntegrationHTTP101SwitchingProtocols(t *testing.T) {
 		log.Infof(context.TODO(), "proxy_test: closed connection")
 	}()
 
-	tm := martiantest.NewModifier()
-	p.RequestModifier = tm
-	p.ResponseModifier = tm
-
-	go serve(p, l)
-
-	conn, err := l.dial()
-	if err != nil {
-		t.Fatalf("net.Dial(): got %v, want no error", err)
-	}
+	conn, cancel := h.proxyConn(t)
+	defer cancel()
 	defer conn.Close()
 
 	host := sl.Addr().String()
@@ -466,15 +483,16 @@ func TestIntegrationHTTP101SwitchingProtocols(t *testing.T) {
 func TestIntegrationUnexpectedUpstreamFailure(t *testing.T) {
 	t.Parallel()
 
-	l := newListener(t)
-	p := new(Proxy)
-	if *withTLS {
-		p.AllowHTTP = true
+	tm := martiantest.NewModifier()
+	h := testHelper{
+		Proxy: func(p *Proxy) {
+			p.ReadTimeout = 1000 * time.Second
+			p.WriteTimeout = 1000 * time.Second
+			p.AllowHTTP = true
+			p.RequestModifier = tm
+			p.ResponseModifier = tm
+		},
 	}
-	defer p.Close()
-
-	// setting a large proxy timeout
-	setTimeout(p, 1000*time.Second)
 
 	sl, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
@@ -517,16 +535,8 @@ func TestIntegrationUnexpectedUpstreamFailure(t *testing.T) {
 		log.Infof(context.TODO(), "proxy_test: sent 200 response\n")
 	}()
 
-	tm := martiantest.NewModifier()
-	p.RequestModifier = tm
-	p.ResponseModifier = tm
-
-	go serve(p, l)
-
-	conn, err := l.dial()
-	if err != nil {
-		t.Fatalf("net.Dial(): got %v, want no error", err)
-	}
+	conn, cancel := h.proxyConn(t)
+	defer cancel()
 	defer conn.Close()
 
 	host := sl.Addr().String()
@@ -568,44 +578,36 @@ func TestIntegrationUnexpectedUpstreamFailure(t *testing.T) {
 func TestIntegrationHTTPUpstreamProxy(t *testing.T) {
 	t.Parallel()
 
-	// Start first proxy to use as upstream.
 	ul, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
 		t.Fatalf("net.Listen(): got %v, want no error", err)
 	}
 
-	upstream := new(Proxy)
-	defer upstream.Close()
-
-	utr := martiantest.NewTransport()
-	utr.Respond(299)
-	upstream.RoundTripper = utr
-	setTimeout(upstream, 600*time.Millisecond)
-
-	go upstream.Serve(ul)
-
-	// Start second proxy, will write to upstream proxy.
-	pl := newListener(t)
-
-	proxy := new(Proxy)
-	if *withTLS {
-		proxy.AllowHTTP = true
+	upstream := testHelper{
+		Listener: ul,
+		Proxy: func(p *Proxy) {
+			utr := martiantest.NewTransport()
+			utr.Respond(299)
+			p.RoundTripper = utr
+			p.ReadTimeout = 600 * time.Millisecond
+			p.WriteTimeout = 600 * time.Millisecond
+		},
 	}
-	defer proxy.Close()
 
-	// Set proxy's upstream proxy to the host:port of the first proxy.
-	proxy.ProxyURL = http.ProxyURL(&url.URL{
-		Host: ul.Addr().String(),
-	})
-	setTimeout(proxy, 600*time.Millisecond)
+	uc, ucancel := upstream.proxyClient(t)
+	defer ucancel()
 
-	go proxy.Serve(pl)
-
-	// Open connection to proxy.
-	conn, err := pl.dial()
-	if err != nil {
-		t.Fatalf("net.Dial(): got %v, want no error", err)
+	proxy := testHelper{
+		Proxy: func(p *Proxy) {
+			p.AllowHTTP = true
+			p.ProxyURL = http.ProxyURL(&url.URL{Host: uc.Addr})
+			p.ReadTimeout = 600 * time.Millisecond
+			p.WriteTimeout = 600 * time.Millisecond
+		},
 	}
+
+	conn, cancel := proxy.proxyConn(t)
+	defer cancel()
 	defer conn.Close()
 
 	req, err := http.NewRequest(http.MethodGet, "http://example.com", http.NoBody)
@@ -633,29 +635,20 @@ func TestIntegrationHTTPUpstreamProxy(t *testing.T) {
 func TestIntegrationHTTPUpstreamProxyError(t *testing.T) {
 	t.Parallel()
 
-	l := newListener(t)
-	p := new(Proxy)
-	defer p.Close()
-
-	// Set proxy's upstream proxy to invalid host:port to force failure.
-	p.ProxyURL = http.ProxyURL(&url.URL{
-		Host: "localhost:0",
-	})
-	setTimeout(p, 600*time.Millisecond)
-
-	tm := martiantest.NewModifier()
 	reserr := errors.New("response error")
-	tm.ResponseError(reserr)
-
-	p.ResponseModifier = tm
-
-	go serve(p, l)
-
-	// Open connection to upstream proxy.
-	conn, err := l.dial()
-	if err != nil {
-		t.Fatalf("net.Dial(): got %v, want no error", err)
+	h := testHelper{
+		Proxy: func(p *Proxy) {
+			p.ProxyURL = http.ProxyURL(&url.URL{Host: "localhost:0"})
+			p.ReadTimeout = 600 * time.Millisecond
+			p.WriteTimeout = 600 * time.Millisecond
+			tm := martiantest.NewModifier()
+			tm.ResponseError(reserr)
+			p.ResponseModifier = tm
+		},
 	}
+
+	conn, cancel := h.proxyConn(t)
+	defer cancel()
 	defer conn.Close()
 
 	req, err := http.NewRequest(http.MethodConnect, "//example.com:443", http.NoBody)
@@ -686,10 +679,6 @@ func TestIntegrationHTTPUpstreamProxyError(t *testing.T) {
 func TestIntegrationTLSHandshakeErrorCallback(t *testing.T) {
 	t.Parallel()
 
-	l := newListener(t)
-	p := new(Proxy)
-	defer p.Close()
-
 	// Test TLS server.
 	ca, priv, err := mitm.NewAuthority("martian.proxy", "Martian Authority", time.Hour)
 	if err != nil {
@@ -702,7 +691,6 @@ func TestIntegrationTLSHandshakeErrorCallback(t *testing.T) {
 
 	var herr error
 	mc.SetHandshakeErrorCallback(func(_ *http.Request, err error) { herr = errors.New("handshake error") })
-	p.MITMConfig = mc
 
 	tl, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
@@ -722,12 +710,14 @@ func TestIntegrationTLSHandshakeErrorCallback(t *testing.T) {
 		req.URL.Host = tl.Addr().String()
 	})
 
-	go serve(p, l)
-
-	conn, err := l.dial()
-	if err != nil {
-		t.Fatalf("net.Dial(): got %v, want no error", err)
+	h := testHelper{
+		Proxy: func(p *Proxy) {
+			p.MITMConfig = mc
+		},
 	}
+
+	conn, cancel := h.proxyConn(t)
+	defer cancel()
 	defer conn.Close()
 
 	req, err := http.NewRequest(http.MethodConnect, "//example.com:443", http.NoBody)
@@ -778,10 +768,6 @@ func TestIntegrationTLSHandshakeErrorCallback(t *testing.T) {
 func TestIntegrationConnect(t *testing.T) { //nolint:tparallel // Subtests share tm.
 	t.Parallel()
 
-	l := newListener(t)
-	p := new(Proxy)
-	defer p.Close()
-
 	// Test TLS server.
 	ca, priv, err := mitm.NewAuthority("martian.proxy", "Martian Authority", time.Hour)
 	if err != nil {
@@ -810,14 +796,20 @@ func TestIntegrationConnect(t *testing.T) { //nolint:tparallel // Subtests share
 		req.URL.Host = tl.Addr().String()
 	})
 
-	p.RequestModifier = tm
-	p.ResponseModifier = tm
+	h := testHelper{
+		Proxy: func(p *Proxy) {
+			p.RequestModifier = tm
+			p.ResponseModifier = tm
+		},
+	}
 
-	go serve(p, l)
+	c, cancel := h.proxyClient(t)
+	defer cancel()
 
 	t.Run("ok", func(t *testing.T) {
-		conn, res := connect(t, l)
+		conn := c.dial(t)
 		defer conn.Close()
+		res := connect(t, conn)
 
 		if got, want := res.StatusCode, 200; got != want {
 			t.Fatalf("res.StatusCode: got %d, want %d", got, want)
@@ -872,8 +864,9 @@ func TestIntegrationConnect(t *testing.T) { //nolint:tparallel // Subtests share
 		reqerr := errors.New("request error")
 		tm.RequestError(reqerr)
 
-		conn, res := connect(t, l)
+		conn := c.dial(t)
 		defer conn.Close()
+		res := connect(t, conn)
 
 		if got, want := res.StatusCode, 502; got != want {
 			t.Fatalf("res.StatusCode: got %d, want %d", got, want)
@@ -897,8 +890,9 @@ func TestIntegrationConnect(t *testing.T) { //nolint:tparallel // Subtests share
 		reserr := errors.New("response error")
 		tm.ResponseError(reserr)
 
-		conn, res := connect(t, l)
+		conn := c.dial(t)
 		defer conn.Close()
+		res := connect(t, conn)
 
 		if got, want := res.StatusCode, 502; got != want {
 			t.Fatalf("res.StatusCode: got %d, want %d", got, want)
@@ -917,13 +911,8 @@ func TestIntegrationConnect(t *testing.T) { //nolint:tparallel // Subtests share
 	})
 }
 
-func connect(t *testing.T, l listener) (net.Conn, *http.Response) {
+func connect(t *testing.T, conn net.Conn) *http.Response {
 	t.Helper()
-
-	conn, err := l.dial()
-	if err != nil {
-		t.Fatalf("net.Dial(): got %v, want no error", err)
-	}
 
 	req, err := http.NewRequest(http.MethodConnect, "//example.com:443", http.NoBody)
 	if err != nil {
@@ -944,34 +933,20 @@ func connect(t *testing.T, l listener) (net.Conn, *http.Response) {
 		t.Fatalf("http.ReadResponse(): got %v, want no error", err)
 	}
 
-	return conn, res
+	return res
 }
 
 func TestIntegrationConnectUpstreamProxy(t *testing.T) {
 	t.Parallel()
 
-	// Start first proxy to use as upstream.
+	if *withHandler {
+		t.Skip("skipping in handler mode")
+	}
+
 	ul, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
 		t.Fatalf("net.Listen(): got %v, want no error", err)
 	}
-
-	upstream := new(Proxy)
-	defer upstream.Close()
-
-	utr := martiantest.NewTransport()
-	utr.Respond(299)
-	upstream.RoundTripper = utr
-
-	utm := martiantest.NewModifier()
-
-	// Force the CONNECT request to dial the local TLS server.
-	utm.RequestFunc(func(req *http.Request) {
-		if req.Method == http.MethodConnect && req.ContentLength != -1 {
-			t.Errorf("req.ContentLength: got %d, want -1", req.ContentLength)
-		}
-	})
-	upstream.RequestModifier = utm
 
 	ca, priv, err := mitm.NewAuthority("martian.proxy", "Martian Authority", 2*time.Hour)
 	if err != nil {
@@ -982,29 +957,35 @@ func TestIntegrationConnectUpstreamProxy(t *testing.T) {
 	if err != nil {
 		t.Fatalf("mitm.NewConfig(): got %v, want no error", err)
 	}
-	upstream.MITMConfig = mc
 
-	go upstream.Serve(ul)
+	upstream := testHelper{
+		Listener: ul,
+		Proxy: func(p *Proxy) {
+			utr := martiantest.NewTransport()
+			utr.Respond(299)
+			p.RoundTripper = utr
 
-	// Start second proxy, will CONNECT to upstream proxy.
-	pl := newListener(t)
+			utm := martiantest.NewModifier()
+			utm.RequestFunc(func(req *http.Request) {
+				if req.Method == http.MethodConnect && req.ContentLength != -1 {
+					t.Errorf("req.ContentLength: got %d, want -1", req.ContentLength)
+				}
+			})
+			p.RequestModifier = utm
 
-	proxy := new(Proxy)
-	defer proxy.Close()
-
-	// Set proxy's upstream proxy to the host:port of the first proxy.
-	proxy.ProxyURL = http.ProxyURL(&url.URL{
-		Scheme: "http",
-		Host:   ul.Addr().String(),
-	})
-
-	go proxy.Serve(pl)
-
-	// Open connection to upstream proxy.
-	conn, err := pl.dial()
-	if err != nil {
-		t.Fatalf("net.Dial(): got %v, want no error", err)
+			p.MITMConfig = mc
+		},
 	}
+	uc, ucancel := upstream.proxyClient(t)
+	defer ucancel()
+
+	h := testHelper{
+		Proxy: func(p *Proxy) {
+			p.ProxyURL = http.ProxyURL(&url.URL{Scheme: "http", Host: uc.Addr})
+		},
+	}
+	conn, cancel := h.proxyConn(t)
+	defer cancel()
 	defer conn.Close()
 
 	req, err := http.NewRequest(http.MethodConnect, "//example.com:443", http.NoBody)
@@ -1086,25 +1067,23 @@ func (conn pipeConn) Close() error {
 func TestIntegrationConnectFunc(t *testing.T) {
 	t.Parallel()
 
-	l := newListener(t)
-	p := new(Proxy)
-	p.ConnectFunc = func(req *http.Request) (*http.Response, io.ReadWriteCloser, error) {
-		if req.ContentLength != -1 {
-			t.Errorf("req.ContentLength: got %d, want -1", req.ContentLength)
-		}
+	h := testHelper{
+		Proxy: func(p *Proxy) {
+			p.ConnectFunc = func(req *http.Request) (*http.Response, io.ReadWriteCloser, error) {
+				if req.ContentLength != -1 {
+					t.Errorf("req.ContentLength: got %d, want -1", req.ContentLength)
+				}
 
-		pr, pw := io.Pipe()
-		return newConnectResponse(req), pipeConn{pr, pw}, nil
+				pr, pw := io.Pipe()
+				return newConnectResponse(req), pipeConn{pr, pw}, nil
+			}
+			p.ReadTimeout = 200 * time.Millisecond
+			p.WriteTimeout = 200 * time.Millisecond
+		},
 	}
-	setTimeout(p, 200*time.Millisecond)
-	defer p.Close()
 
-	go serve(p, l)
-
-	conn, err := l.dial()
-	if err != nil {
-		t.Fatalf("net.Dial(): got %v, want no error", err)
-	}
+	conn, cancel := h.proxyConn(t)
+	defer cancel()
 	defer conn.Close()
 
 	req, err := http.NewRequest(http.MethodConnect, "//example.com:80", http.NoBody)
@@ -1150,10 +1129,6 @@ func TestIntegrationConnectFunc(t *testing.T) {
 func TestIntegrationConnectTerminateTLS(t *testing.T) {
 	t.Parallel()
 
-	l := newListener(t)
-	p := new(Proxy)
-	defer p.Close()
-
 	// Test TLS server.
 	ca, priv, err := mitm.NewAuthority("martian.proxy", "Martian Authority", time.Hour)
 	if err != nil {
@@ -1173,7 +1148,6 @@ func TestIntegrationConnectTerminateTLS(t *testing.T) {
 		ServerName: "example.com",
 		RootCAs:    roots,
 	}
-	p.RoundTripper = rt
 
 	tl, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
@@ -1193,15 +1167,16 @@ func TestIntegrationConnectTerminateTLS(t *testing.T) {
 		req.URL.Host = tl.Addr().String()
 	})
 
-	p.RequestModifier = tm
-	p.ResponseModifier = tm
-
-	go serve(p, l)
-
-	conn, err := l.dial()
-	if err != nil {
-		t.Fatalf("net.Dial(): got %v, want no error", err)
+	h := testHelper{
+		Proxy: func(p *Proxy) {
+			p.RoundTripper = rt
+			p.RequestModifier = tm
+			p.ResponseModifier = tm
+		},
 	}
+
+	conn, cancel := h.proxyConn(t)
+	defer cancel()
 	defer conn.Close()
 
 	req, err := http.NewRequest(http.MethodConnect, "//example.com:443", http.NoBody)
@@ -1267,10 +1242,6 @@ func TestIntegrationMITM(t *testing.T) {
 		t.Skip("skipping in handler mode")
 	}
 
-	l := newListener(t)
-	p := new(Proxy)
-	t.Cleanup(p.Close)
-
 	tr := martiantest.NewTransport()
 	tr.Func(func(req *http.Request) (*http.Response, error) {
 		res := proxyutil.NewResponse(200, nil, req)
@@ -1278,9 +1249,6 @@ func TestIntegrationMITM(t *testing.T) {
 
 		return res, nil
 	})
-
-	p.RoundTripper = tr
-	setTimeout(p, 600*time.Millisecond)
 
 	ca, priv, err := mitm.NewAuthority("martian.proxy", "Martian Authority", 2*time.Hour)
 	if err != nil {
@@ -1291,13 +1259,22 @@ func TestIntegrationMITM(t *testing.T) {
 	if err != nil {
 		t.Fatalf("mitm.NewConfig(): got %v, want no error", err)
 	}
-	p.MITMConfig = mc
 
 	tm := martiantest.NewModifier()
-	p.RequestModifier = tm
-	p.ResponseModifier = tm
 
-	go serve(p, l)
+	h := testHelper{
+		Proxy: func(p *Proxy) {
+			p.RoundTripper = tr
+			p.ReadTimeout = 600 * time.Millisecond
+			p.WriteTimeout = 600 * time.Millisecond
+			p.MITMConfig = mc
+			p.RequestModifier = tm
+			p.ResponseModifier = tm
+		},
+	}
+
+	c, cancel := h.proxyClient(t)
+	t.Cleanup(cancel)
 
 	testRoundTrip := func(t *testing.T, conn net.Conn) {
 		t.Helper()
@@ -1340,10 +1317,7 @@ func TestIntegrationMITM(t *testing.T) {
 	t.Run("http11", func(t *testing.T) {
 		t.Parallel()
 
-		conn, err := l.dial()
-		if err != nil {
-			t.Fatalf("net.Dial(): got %v, want no error", err)
-		}
+		conn := c.dial(t)
 		defer conn.Close()
 
 		req, err := http.NewRequest(http.MethodConnect, "//example.com:443", http.NoBody)
@@ -1375,10 +1349,7 @@ func TestIntegrationMITM(t *testing.T) {
 	t.Run("http10", func(t *testing.T) {
 		t.Parallel()
 
-		conn, err := l.dial()
-		if err != nil {
-			t.Fatalf("net.Dial(): got %v, want no error", err)
-		}
+		conn := c.dial(t)
 		defer conn.Close()
 
 		// CONNECT example.com:443 HTTP/1.0
@@ -1402,25 +1373,19 @@ func TestIntegrationMITM(t *testing.T) {
 func TestIntegrationTransparentHTTP(t *testing.T) {
 	t.Parallel()
 
-	l := newListener(t)
-	p := new(Proxy)
-	defer p.Close()
-
-	tr := martiantest.NewTransport()
-	p.RoundTripper = tr
-
-	setTimeout(p, 200*time.Millisecond)
-
 	tm := martiantest.NewModifier()
-	p.RequestModifier = tm
-	p.ResponseModifier = tm
-
-	go serve(p, l)
-
-	conn, err := l.dial()
-	if err != nil {
-		t.Fatalf("net.Dial(): got %v, want no error", err)
+	h := testHelper{
+		Proxy: func(p *Proxy) {
+			p.RoundTripper = martiantest.NewTransport()
+			p.RequestModifier = tm
+			p.ResponseModifier = tm
+			p.ReadTimeout = 200 * time.Millisecond
+			p.WriteTimeout = 200 * time.Millisecond
+		},
 	}
+
+	conn, cancel := h.proxyConn(t)
+	defer cancel()
 	defer conn.Close()
 
 	req, err := http.NewRequest(http.MethodGet, "http://example.com", http.NoBody)
@@ -1479,9 +1444,6 @@ func TestIntegrationTransparentMITM(t *testing.T) {
 	}
 	l = tls.NewListener(l, mc.TLS(context.Background()))
 
-	p := new(Proxy)
-	defer p.Close()
-
 	tr := martiantest.NewTransport()
 	tr.Func(func(req *http.Request) (*http.Response, error) {
 		res := proxyutil.NewResponse(200, nil, req)
@@ -1490,13 +1452,18 @@ func TestIntegrationTransparentMITM(t *testing.T) {
 		return res, nil
 	})
 
-	p.RoundTripper = tr
-
 	tm := martiantest.NewModifier()
-	p.RequestModifier = tm
-	p.ResponseModifier = tm
+	h := testHelper{
+		Listener: l,
+		Proxy: func(p *Proxy) {
+			p.RequestModifier = tm
+			p.ResponseModifier = tm
+			p.RoundTripper = tr
+		},
+	}
 
-	go serve(p, l)
+	_, cancel := h.proxyClient(t)
+	defer cancel()
 
 	roots := x509.NewCertPool()
 	roots.AddCert(ca)
@@ -1549,22 +1516,20 @@ func TestIntegrationTransparentMITM(t *testing.T) {
 func TestIntegrationFailedRoundTrip(t *testing.T) {
 	t.Parallel()
 
-	l := newListener(t)
-	p := new(Proxy)
-	defer p.Close()
-
 	tr := martiantest.NewTransport()
 	trerr := errors.New("round trip error")
 	tr.RespondError(trerr)
-	p.RoundTripper = tr
-	setTimeout(p, 200*time.Millisecond)
 
-	go serve(p, l)
-
-	conn, err := l.dial()
-	if err != nil {
-		t.Fatalf("net.Dial(): got %v, want no error", err)
+	h := testHelper{
+		Proxy: func(p *Proxy) {
+			p.RoundTripper = tr
+			p.ReadTimeout = 200 * time.Millisecond
+			p.WriteTimeout = 200 * time.Millisecond
+		},
 	}
+
+	conn, cancel := h.proxyConn(t)
+	defer cancel()
 	defer conn.Close()
 
 	req, err := http.NewRequest(http.MethodGet, "http://example.com", http.NoBody)
@@ -1597,26 +1562,23 @@ func TestIntegrationFailedRoundTrip(t *testing.T) {
 func TestIntegrationSkipRoundTrip(t *testing.T) {
 	t.Parallel()
 
-	l := newListener(t)
-	p := new(Proxy)
-	p.TestingSkipRoundTrip = true
-	defer p.Close()
-
 	// Transport will be skipped, no 500.
 	tr := martiantest.NewTransport()
 	tr.Respond(500)
-	p.RoundTripper = tr
-	setTimeout(p, 200*time.Millisecond)
-
 	tm := martiantest.NewModifier()
-	p.RequestModifier = tm
-
-	go serve(p, l)
-
-	conn, err := l.dial()
-	if err != nil {
-		t.Fatalf("net.Dial(): got %v, want no error", err)
+	h := testHelper{
+		Proxy: func(p *Proxy) {
+			p.TestingSkipRoundTrip = true
+			p.RoundTripper = tr
+			p.RequestModifier = tm
+			p.ResponseModifier = tm
+			p.ReadTimeout = 200 * time.Millisecond
+			p.WriteTimeout = 200 * time.Millisecond
+		},
 	}
+
+	conn, cancel := h.proxyConn(t)
+	defer cancel()
 	defer conn.Close()
 
 	req, err := http.NewRequest(http.MethodGet, "http://example.com", http.NoBody)
@@ -1645,18 +1607,12 @@ func TestIntegrationSkipRoundTrip(t *testing.T) {
 func TestHTTPThroughConnectWithMITM(t *testing.T) {
 	t.Parallel()
 
-	l := newListener(t)
-	p := new(Proxy)
-	p.TestingSkipRoundTrip = true
-	defer p.Close()
-
 	tm := martiantest.NewModifier()
 	tm.RequestFunc(func(req *http.Request) {
 		if req.Method != http.MethodGet && req.Method != http.MethodConnect {
 			t.Errorf("unexpected method on request handler: %v", req.Method)
 		}
 	})
-	p.RequestModifier = tm
 
 	ca, priv, err := mitm.NewAuthority("martian.proxy", "Martian Authority", 2*time.Hour)
 	if err != nil {
@@ -1667,14 +1623,17 @@ func TestHTTPThroughConnectWithMITM(t *testing.T) {
 	if err != nil {
 		t.Fatalf("mitm.NewConfig(): got %v, want no error", err)
 	}
-	p.MITMConfig = mc
 
-	go serve(p, l)
-
-	conn, err := l.dial()
-	if err != nil {
-		t.Fatalf("net.Dial(): got %v, want no error", err)
+	h := testHelper{
+		Proxy: func(p *Proxy) {
+			p.TestingSkipRoundTrip = true
+			p.RequestModifier = tm
+			p.MITMConfig = mc
+		},
 	}
+
+	conn, cancel := h.proxyConn(t)
+	defer cancel()
 	defer conn.Close()
 
 	req, err := http.NewRequest(http.MethodConnect, "//example.com:80", http.NoBody)
@@ -1747,19 +1706,12 @@ func TestHTTPThroughConnectWithMITM(t *testing.T) {
 func TestTLSHandshakeTimeoutWithMITM(t *testing.T) {
 	t.Parallel()
 
-	l := newListener(t)
-	p := new(Proxy)
-	p.MITMTLSHandshakeTimeout = 200 * time.Millisecond
-	p.TestingSkipRoundTrip = true
-	defer p.Close()
-
 	tm := martiantest.NewModifier()
 	tm.RequestFunc(func(req *http.Request) {
 		if req.Method != http.MethodGet && req.Method != http.MethodConnect {
 			t.Errorf("unexpected method on request handler: %v", req.Method)
 		}
 	})
-	p.RequestModifier = tm
 
 	ca, priv, err := mitm.NewAuthority("martian.proxy", "Martian Authority", 2*time.Hour)
 	if err != nil {
@@ -1770,14 +1722,18 @@ func TestTLSHandshakeTimeoutWithMITM(t *testing.T) {
 	if err != nil {
 		t.Fatalf("mitm.NewConfig(): got %v, want no error", err)
 	}
-	p.MITMConfig = mc
 
-	go serve(p, l)
-
-	conn, err := l.dial()
-	if err != nil {
-		t.Fatalf("net.Dial(): got %v, want no error", err)
+	h := testHelper{
+		Proxy: func(p *Proxy) {
+			p.MITMTLSHandshakeTimeout = 200 * time.Millisecond
+			p.TestingSkipRoundTrip = true
+			p.RequestModifier = tm
+			p.MITMConfig = mc
+		},
 	}
+
+	conn, cancel := h.proxyConn(t)
+	defer cancel()
 	defer conn.Close()
 
 	req, err := http.NewRequest(http.MethodConnect, "//example.com:80", http.NoBody)
@@ -1864,18 +1820,16 @@ func TestServerClosesConnection(t *testing.T) {
 	if err != nil {
 		t.Fatalf("mitm.NewConfig(): got %v, want no error", err)
 	}
-	p := new(Proxy)
-	p.MITMConfig = mc
-	defer p.Close()
 
-	// Start the proxy with a listener that will return a temporary error on
-	// Accept() three times.
-	go p.Serve(newTimeoutListener(l, 3))
-
-	conn, err := net.Dial("tcp", l.Addr().String())
-	if err != nil {
-		t.Fatalf("net.Dial(): got %v, want no error", err)
+	h := testHelper{
+		Listener: newTimeoutListener(l, 3),
+		Proxy: func(p *Proxy) {
+			p.MITMConfig = mc
+		},
 	}
+
+	conn, cancel := h.proxyConn(t)
+	defer cancel()
 	defer conn.Close()
 
 	req, err := http.NewRequest(http.MethodConnect, "//"+dstl.Addr().String(), http.NoBody)
@@ -1920,21 +1874,10 @@ func TestRacyClose(t *testing.T) {
 	t.Parallel()
 
 	openAndConnect := func() {
-		l, err := net.Listen("tcp", "localhost:0")
-		if err != nil {
-			t.Fatalf("net.Listen(): got %v, want no error", err)
-		}
-		defer l.Close() // to make p.Serve exit
-
-		p := new(Proxy)
-		go serve(p, l)
-		defer p.Close()
-
-		conn, err := net.Dial("tcp", l.Addr().String())
-		if err != nil {
-			t.Fatalf("net.Dial(): got %v, want no error", err)
-		}
-		defer conn.Close()
+		h := testHelper{}
+		conn, cancel := h.proxyConn(t)
+		conn.Close()
+		cancel()
 	}
 
 	// Repeat a bunch of times to make failures more repeatable.
@@ -1946,27 +1889,18 @@ func TestRacyClose(t *testing.T) {
 func TestIdleTimeout(t *testing.T) {
 	t.Parallel()
 
-	l := newListener(t)
-	p := new(Proxy)
-	defer p.Close()
-
-	tr := martiantest.NewTransport()
-	p.RoundTripper = tr
-
-	// Reset read and write timeouts.
-	setTimeout(p, 0)
-	p.IdleTimeout = 100 * time.Millisecond
-
-	go p.Serve(newTimeoutListener(l, 0))
-
-	conn, err := l.dial()
-	if err != nil {
-		t.Fatalf("net.Dial(): got %v, want no error", err)
+	h := testHelper{
+		Proxy: func(p *Proxy) {
+			p.IdleTimeout = 100 * time.Millisecond
+		},
 	}
+
+	conn, cancel := h.proxyConn(t)
 	defer conn.Close()
+	defer cancel()
 
 	time.Sleep(200 * time.Millisecond)
-	if _, err = conn.Read(make([]byte, 1)); !isClosedConnError(err) {
+	if _, err := conn.Read(make([]byte, 1)); !isClosedConnError(err) {
 		t.Fatalf("conn.Read(): got %v, want io.EOF", err)
 	}
 }
@@ -1974,33 +1908,24 @@ func TestIdleTimeout(t *testing.T) {
 func TestReadHeaderTimeout(t *testing.T) {
 	t.Parallel()
 
-	l := newListener(t)
-	p := new(Proxy)
-	defer p.Close()
-
-	tr := martiantest.NewTransport()
-	p.RoundTripper = tr
-
-	// Reset read and write timeouts.
-	setTimeout(p, 0)
-	p.ReadHeaderTimeout = 100 * time.Millisecond
-
-	go p.Serve(newTimeoutListener(l, 0))
-
-	conn, err := l.dial()
-	if err != nil {
-		t.Fatalf("net.Dial(): got %v, want no error", err)
+	h := testHelper{
+		Proxy: func(p *Proxy) {
+			p.ReadHeaderTimeout = 100 * time.Millisecond
+		},
 	}
+
+	conn, cancel := h.proxyConn(t)
+	defer cancel()
 	defer conn.Close()
 
 	if _, err := conn.Write([]byte("GET / HTTP/1.1\r\n")); err != nil {
 		t.Fatalf("conn.Write(): got %v, want no error", err)
 	}
 	time.Sleep(200 * time.Millisecond)
-	if _, err = conn.Write([]byte("Host: example.com\r\n\r\n")); err != nil {
+	if _, err := conn.Write([]byte("Host: example.com\r\n\r\n")); err != nil {
 		t.Fatalf("conn.Write(): got %v, want no error", err)
 	}
-	if _, err = conn.Read(make([]byte, 1)); !isClosedConnError(err) {
+	if _, err := conn.Read(make([]byte, 1)); !isClosedConnError(err) {
 		t.Fatalf("conn.Read(): got %v, want io.EOF", err)
 	}
 }
@@ -2008,22 +1933,9 @@ func TestReadHeaderTimeout(t *testing.T) {
 func TestReadHeaderConnectionReset(t *testing.T) {
 	t.Parallel()
 
-	l := newListener(t)
-	p := new(Proxy)
-	defer p.Close()
-
-	tr := martiantest.NewTransport()
-	p.RoundTripper = tr
-
-	// Reset read and write timeouts.
-	setTimeout(p, 0)
-
-	go p.Serve(newTimeoutListener(l, 0))
-
-	conn, err := l.dial()
-	if err != nil {
-		t.Fatalf("net.Dial(): got %v, want no error", err)
-	}
+	h := testHelper{}
+	conn, cancel := h.proxyConn(t)
+	defer cancel()
 	defer conn.Close()
 
 	if _, err := conn.Write([]byte("GET / HTTP/1.1\r\n")); err != nil {
@@ -2031,7 +1943,7 @@ func TestReadHeaderConnectionReset(t *testing.T) {
 	}
 	cw, _ := asCloseWriter(conn)
 	cw.CloseWrite()
-	if _, err = conn.Read(make([]byte, 1)); !isClosedConnError(err) {
+	if _, err := conn.Read(make([]byte, 1)); !isClosedConnError(err) {
 		t.Fatalf("conn.Read(): got %v, want io.EOF", err)
 	}
 }
