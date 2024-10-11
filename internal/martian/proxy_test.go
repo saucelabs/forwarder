@@ -89,16 +89,7 @@ func (h *testHelper) listenerAndClient(t *testing.T) (net.Listener, client) {
 func (h *testHelper) certs(t *testing.T) (server, client *tls.Config) {
 	t.Helper()
 
-	ca, priv, err := mitm.NewAuthority("martian.proxy", "Martian Authority", 2*time.Hour)
-	if err != nil {
-		t.Fatalf("mitm.NewAuthority(): got %v, want no error", err)
-	}
-
-	mc, err := mitm.NewConfig(ca, priv)
-	if err != nil {
-		t.Fatalf("mitm.NewConfig(): got %v, want no error", err)
-	}
-
+	ca, mc := certs(t)
 	roots := x509.NewCertPool()
 	roots.AddCert(ca)
 
@@ -127,6 +118,20 @@ func (h *testHelper) serve(p *Proxy, l net.Listener) {
 	}
 
 	p.Serve(l)
+}
+
+func certs(t *testing.T) (*x509.Certificate, *mitm.Config) {
+	t.Helper()
+
+	ca, priv, err := mitm.NewAuthority("martian.proxy", "Martian Authority", 2*time.Hour)
+	if err != nil {
+		t.Fatalf("mitm.NewAuthority(): got %v, want no error", err)
+	}
+	mc, err := mitm.NewConfig(ca, priv)
+	if err != nil {
+		t.Fatalf("mitm.NewConfig(): got %v, want no error", err)
+	}
+	return ca, mc
 }
 
 type client struct {
@@ -680,15 +685,7 @@ func TestIntegrationTLSHandshakeErrorCallback(t *testing.T) {
 	t.Parallel()
 
 	// Test TLS server.
-	ca, priv, err := mitm.NewAuthority("martian.proxy", "Martian Authority", time.Hour)
-	if err != nil {
-		t.Fatalf("mitm.NewAuthority(): got %v, want no error", err)
-	}
-	mc, err := mitm.NewConfig(ca, priv)
-	if err != nil {
-		t.Fatalf("mitm.NewConfig(): got %v, want no error", err)
-	}
-
+	_, mc := certs(t)
 	var herr error
 	mc.SetHandshakeErrorCallback(func(_ *http.Request, err error) { herr = errors.New("handshake error") })
 
@@ -769,14 +766,7 @@ func TestIntegrationConnect(t *testing.T) { //nolint:tparallel // Subtests share
 	t.Parallel()
 
 	// Test TLS server.
-	ca, priv, err := mitm.NewAuthority("martian.proxy", "Martian Authority", time.Hour)
-	if err != nil {
-		t.Fatalf("mitm.NewAuthority(): got %v, want no error", err)
-	}
-	mc, err := mitm.NewConfig(ca, priv)
-	if err != nil {
-		t.Fatalf("mitm.NewConfig(): got %v, want no error", err)
-	}
+	ca, mc := certs(t)
 
 	tl, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
@@ -948,15 +938,7 @@ func TestIntegrationConnectUpstreamProxy(t *testing.T) {
 		t.Fatalf("net.Listen(): got %v, want no error", err)
 	}
 
-	ca, priv, err := mitm.NewAuthority("martian.proxy", "Martian Authority", 2*time.Hour)
-	if err != nil {
-		t.Fatalf("mitm.NewAuthority(): got %v, want no error", err)
-	}
-
-	mc, err := mitm.NewConfig(ca, priv)
-	if err != nil {
-		t.Fatalf("mitm.NewConfig(): got %v, want no error", err)
-	}
+	ca, mc := certs(t)
 
 	upstream := testHelper{
 		Listener: ul,
@@ -1130,14 +1112,7 @@ func TestIntegrationConnectTerminateTLS(t *testing.T) {
 	t.Parallel()
 
 	// Test TLS server.
-	ca, priv, err := mitm.NewAuthority("martian.proxy", "Martian Authority", time.Hour)
-	if err != nil {
-		t.Fatalf("mitm.NewAuthority(): got %v, want no error", err)
-	}
-	mc, err := mitm.NewConfig(ca, priv)
-	if err != nil {
-		t.Fatalf("mitm.NewConfig(): got %v, want no error", err)
-	}
+	ca, mc := certs(t)
 
 	// Set the TLS config to terminate TLS.
 	roots := x509.NewCertPool()
@@ -1250,15 +1225,7 @@ func TestIntegrationMITM(t *testing.T) {
 		return res, nil
 	})
 
-	ca, priv, err := mitm.NewAuthority("martian.proxy", "Martian Authority", 2*time.Hour)
-	if err != nil {
-		t.Fatalf("mitm.NewAuthority(): got %v, want no error", err)
-	}
-
-	mc, err := mitm.NewConfig(ca, priv)
-	if err != nil {
-		t.Fatalf("mitm.NewConfig(): got %v, want no error", err)
-	}
+	ca, mc := certs(t)
 
 	tm := martiantest.NewModifier()
 
@@ -1423,15 +1390,7 @@ func TestIntegrationTransparentMITM(t *testing.T) {
 		t.Skip("skipping in handler mode")
 	}
 
-	ca, priv, err := mitm.NewAuthority("martian.proxy", "Martian Authority", 2*time.Hour)
-	if err != nil {
-		t.Fatalf("mitm.NewAuthority(): got %v, want no error", err)
-	}
-
-	mc, err := mitm.NewConfig(ca, priv)
-	if err != nil {
-		t.Fatalf("mitm.NewConfig(): got %v, want no error", err)
-	}
+	ca, mc := certs(t)
 
 	// Start TLS listener with config that will generate certificates based on
 	// SNI from connection.
@@ -1614,16 +1573,7 @@ func TestHTTPThroughConnectWithMITM(t *testing.T) {
 		}
 	})
 
-	ca, priv, err := mitm.NewAuthority("martian.proxy", "Martian Authority", 2*time.Hour)
-	if err != nil {
-		t.Fatalf("mitm.NewAuthority(): got %v, want no error", err)
-	}
-
-	mc, err := mitm.NewConfig(ca, priv)
-	if err != nil {
-		t.Fatalf("mitm.NewConfig(): got %v, want no error", err)
-	}
-
+	_, mc := certs(t)
 	h := testHelper{
 		Proxy: func(p *Proxy) {
 			p.TestingSkipRoundTrip = true
@@ -1713,15 +1663,7 @@ func TestTLSHandshakeTimeoutWithMITM(t *testing.T) {
 		}
 	})
 
-	ca, priv, err := mitm.NewAuthority("martian.proxy", "Martian Authority", 2*time.Hour)
-	if err != nil {
-		t.Fatalf("mitm.NewAuthority(): got %v, want no error", err)
-	}
-
-	mc, err := mitm.NewConfig(ca, priv)
-	if err != nil {
-		t.Fatalf("mitm.NewConfig(): got %v, want no error", err)
-	}
+	_, mc := certs(t)
 
 	h := testHelper{
 		Proxy: func(p *Proxy) {
@@ -1811,16 +1753,7 @@ func TestServerClosesConnection(t *testing.T) {
 		t.Fatalf("net.Listen(): got %v, want no error", err)
 	}
 
-	ca, priv, err := mitm.NewAuthority("martian.proxy", "Martian Authority", 2*time.Hour)
-	if err != nil {
-		t.Fatalf("mitm.NewAuthority(): got %v, want no error", err)
-	}
-
-	mc, err := mitm.NewConfig(ca, priv)
-	if err != nil {
-		t.Fatalf("mitm.NewConfig(): got %v, want no error", err)
-	}
-
+	_, mc := certs(t)
 	h := testHelper{
 		Listener: newTimeoutListener(l, 3),
 		Proxy: func(p *Proxy) {
