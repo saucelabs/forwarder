@@ -11,14 +11,16 @@ linters:
     - contextcheck
     - cyclop
     - depguard
+    - execinquery
     - exhaustive
     - exhaustruct
+    - exportloopref
     - funlen
     - gochecknoglobals
     - gochecknoinits
     - goconst
     - godox
-    - goerr113
+    - err113
     - gomnd
     - gomoddirectives
     - inamedparam
