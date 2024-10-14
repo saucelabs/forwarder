@@ -83,6 +83,11 @@ type Proxy struct {
 	// If both are zero, there is no timeout.
 	IdleTimeout time.Duration
 
+	// TLSHandshakeTimeout is the maximum amount of time to wait for a TLS handshake.
+	// The proxy will try to cast accepted connections to tls.Conn and perform a handshake.
+	// If TLSHandshakeTimeout is zero, no timeout is set.
+	TLSHandshakeTimeout time.Duration
+
 	// ReadTimeout is the maximum duration for reading the entire
 	// request, including the body. A zero or negative value means
 	// there will be no timeout.
@@ -256,6 +261,11 @@ func (p *Proxy) handleLoop(conn net.Conn) {
 	}
 
 	pc := newProxyConn(p, conn)
+
+	if err := pc.maybeHandshakeTLS(); err != nil {
+		log.Errorf(context.TODO(), "failed to do TLS handshake: %v", err)
+		return
+	}
 
 	const maxConsecutiveErrors = 5
 	errorsN := 0

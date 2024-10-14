@@ -250,6 +250,7 @@ func (hp *HTTPProxy) configureProxy() error {
 	hp.proxy.WithoutWarning = true
 	hp.proxy.ErrorResponse = hp.errorResponse
 	hp.proxy.IdleTimeout = hp.config.IdleTimeout
+	hp.proxy.TLSHandshakeTimeout = hp.config.TLSServerConfig.HandshakeTimeout
 	hp.proxy.ReadTimeout = hp.config.ReadTimeout
 	hp.proxy.ReadHeaderTimeout = hp.config.ReadHeaderTimeout
 	hp.proxy.WriteTimeout = hp.config.WriteTimeout
