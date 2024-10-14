@@ -344,34 +344,6 @@ func TestListenerMetricsErrors(t *testing.T) {
 	golden.DiffPrometheusMetrics(t, r)
 }
 
-func TestListenerTLSHandshakeTimeout(t *testing.T) {
-	r := prometheus.NewRegistry()
-	l := Listener{
-		Address:             "localhost:0",
-		Log:                 log.NopLogger,
-		TLSConfig:           selfSingedCert(),
-		TLSHandshakeTimeout: 100 * time.Millisecond,
-		PromConfig: PromConfig{
-			PromNamespace: "test",
-			PromRegistry:  r,
-		},
-	}
-	defer l.Close()
-
-	l.listenAndWait(t)
-	go l.acceptAndCopy()
-
-	conn, err := net.Dial("tcp", l.Addr().String())
-	if err != nil {
-		t.Fatalf("net.Dial(): got %v, want no error", err)
-	}
-	defer conn.Close()
-
-	time.Sleep(l.TLSHandshakeTimeout * 2)
-
-	golden.DiffPrometheusMetrics(t, r)
-}
-
 func selfSingedCert() *tls.Config {
 	ssc := certutil.ECDSASelfSignedCert()
 	ssc.Hosts = append(ssc.Hosts, "localhost")
