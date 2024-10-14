@@ -1838,6 +1838,37 @@ func TestIdleTimeout(t *testing.T) {
 	}
 }
 
+func TestTLSHandshakeTimeout(t *testing.T) {
+	t.Parallel()
+
+	l, err := net.Listen("tcp", "localhost:0")
+	if err != nil {
+		t.Fatalf("net.Listen(): got %v, want no error", err)
+	}
+	_, mc := certs(t)
+	l = tls.NewListener(l, mc.TLS(context.Background()))
+
+	h := testHelper{
+		Listener: l,
+		Proxy: func(p *Proxy) {
+			p.TLSHandshakeTimeout = 100 * time.Millisecond
+		},
+	}
+
+	c, cancel := h.proxyClient(t)
+	defer cancel()
+
+	conn, err := net.Dial("tcp", c.Addr)
+	if err != nil {
+		t.Fatalf("net.Dial(): got %v, want no error", err)
+	}
+
+	time.Sleep(200 * time.Millisecond)
+	if _, err := conn.Read(make([]byte, 1)); !errors.Is(err, io.EOF) {
+		t.Fatalf("conn.Read(): got %v, want io.EOF", err)
+	}
+}
+
 func TestReadHeaderTimeout(t *testing.T) {
 	t.Parallel()
 

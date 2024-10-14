@@ -41,18 +41,33 @@ type proxyConn struct {
 }
 
 func newProxyConn(p *Proxy, conn net.Conn) *proxyConn {
-	v := &proxyConn{
+	return &proxyConn{
 		Proxy: p,
 		brw:   bufio.NewReadWriter(bufio.NewReader(conn), bufio.NewWriter(conn)),
 		conn:  conn,
 	}
+}
 
-	if tconn, ok := conn.(*tls.Conn); ok {
-		v.secure = true
-		v.cs = tconn.ConnectionState()
+func (p *proxyConn) maybeHandshakeTLS() error {
+	tconn, ok := p.conn.(*tls.Conn)
+	if !ok {
+		return nil
 	}
 
-	return v
+	ctx := context.Background()
+	if p.TLSHandshakeTimeout > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(context.Background(), p.TLSHandshakeTimeout)
+		defer cancel()
+	}
+	if err := tconn.HandshakeContext(ctx); err != nil {
+		return err
+	}
+
+	p.secure = true
+	p.cs = tconn.ConnectionState()
+
+	return nil
 }
 
 func (p *proxyConn) readRequest() (*http.Request, error) {
