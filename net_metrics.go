@@ -82,10 +82,9 @@ func addr2Host(addr string) string {
 }
 
 type listenerMetrics struct {
-	accepted  prometheus.Counter
-	errors    prometheus.Counter
-	tlsErrors prometheus.Counter
-	closed    prometheus.Counter
+	accepted prometheus.Counter
+	errors   prometheus.Counter
+	closed   prometheus.Counter
 }
 
 func newListenerMetrics(r prometheus.Registerer, namespace string) *listenerMetrics {
@@ -105,11 +104,6 @@ func newListenerMetrics(r prometheus.Registerer, namespace string) *listenerMetr
 			Namespace: namespace,
 			Help:      "Number of listener errors when accepting connections",
 		}),
-		tlsErrors: f.NewCounter(prometheus.CounterOpts{
-			Name:      "listener_tls_errors_total",
-			Namespace: namespace,
-			Help:      "Number of TLS handshake errors",
-		}),
 		closed: f.NewCounter(prometheus.CounterOpts{
 			Name:      "listener_closed_total",
 			Namespace: namespace,
@@ -124,10 +118,6 @@ func (m *listenerMetrics) accept() {
 
 func (m *listenerMetrics) error() {
 	m.errors.Inc()
-}
-
-func (m *listenerMetrics) tlsError() {
-	m.tlsErrors.Inc()
 }
 
 func (m *listenerMetrics) close() {

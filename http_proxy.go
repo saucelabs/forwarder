@@ -557,7 +557,6 @@ func (hp *HTTPProxy) listen() (net.Listener, error) {
 		Log:                 hp.log,
 		ProxyProtocolConfig: hp.config.ProxyProtocolConfig,
 		TLSConfig:           hp.tlsConfig,
-		TLSHandshakeTimeout: hp.config.TLSServerConfig.HandshakeTimeout,
 		ReadLimit:           int64(hp.config.ReadLimit),
 		WriteLimit:          int64(hp.config.WriteLimit),
 		PromConfig: PromConfig{

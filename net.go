@@ -155,7 +155,6 @@ type Listener struct {
 	Address             string
 	Log                 log.Logger
 	TLSConfig           *tls.Config
-	TLSHandshakeTimeout time.Duration
 	ProxyProtocolConfig *ProxyProtocolConfig
 	ReadLimit           int64
 	WriteLimit          int64
@@ -192,55 +191,26 @@ func (l *Listener) Listen() error {
 	return nil
 }
 
+// Accept returns tls.Conn if TLSConfig is set, as martian expects it to be on top.
+// Otherwise, it returns forwarder.TrackedConn.
 func (l *Listener) Accept() (net.Conn, error) {
-	for {
-		conn, err := l.listener.Accept()
-		if err != nil {
-			l.metrics.error()
-			return nil, err
-		}
-
-		if l.TLSConfig == nil {
-			l.metrics.accept()
-			return &TrackedConn{
-				Conn:    conn,
-				OnClose: l.metrics.close,
-			}, nil
-		}
-
-		tr := &TrackedConn{
-			Conn: conn,
-		}
-		tconn, err := l.withTLS(tr)
-		if err != nil {
-			l.Log.Errorf("TLS handshake failed: %v", err)
-			if cerr := tconn.Close(); cerr != nil {
-				l.Log.Errorf("error while closing TLS connection after failed handshake: %v", cerr)
-			}
-			l.metrics.tlsError()
-
-			continue
-		}
-
-		l.metrics.accept()
-		tr.OnClose = l.metrics.close
-		return tconn, nil
-	}
-}
-
-func (l *Listener) withTLS(conn net.Conn) (*tls.Conn, error) {
-	tconn := tls.Server(conn, l.TLSConfig)
-
-	var err error
-	if l.TLSHandshakeTimeout <= 0 {
-		err = tconn.Handshake()
-	} else {
-		ctx, cancel := context.WithTimeout(context.Background(), l.TLSHandshakeTimeout)
-		err = tconn.HandshakeContext(ctx)
-		cancel()
+	conn, err := l.listener.Accept()
+	if err != nil {
+		l.metrics.error()
+		return nil, err
 	}
 
-	return tconn, err
+	l.metrics.accept()
+	conn = &TrackedConn{
+		Conn:    conn,
+		OnClose: l.metrics.close,
+	}
+
+	if l.TLSConfig != nil {
+		conn = tls.Server(conn, l.TLSConfig)
+	}
+
+	return conn, nil
 }
 
 func (l *Listener) Addr() net.Addr {
