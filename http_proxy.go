@@ -581,5 +581,10 @@ func (hp *HTTPProxy) Addr() string {
 func (hp *HTTPProxy) Close() error {
 	err := hp.listener.Close()
 	hp.proxy.Close()
+
+	if tr, ok := hp.transport.(*http.Transport); ok {
+		tr.CloseIdleConnections()
+	}
+
 	return err
 }
