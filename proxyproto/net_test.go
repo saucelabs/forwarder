@@ -38,7 +38,8 @@ func makePipe(header []byte) (c1, c2 net.Conn, stop func(), err error) {
 		return nil, nil, nil, err
 	}
 	l = &Listener{
-		Listener: l,
+		Listener:          l,
+		TestingSkipConnfu: true,
 	}
 
 	// Start a connection between two endpoints.
