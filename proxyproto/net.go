@@ -9,10 +9,13 @@ package proxyproto
 import (
 	"context"
 	"fmt"
+	"io"
 	"net"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/mmatczuk/connfu"
 )
 
 // Conn wraps a net.Conn and provides access to the proxy protocol header.
@@ -63,11 +66,25 @@ func (c *Conn) Read(b []byte) (n int, err error) {
 	return c.Conn.Read(b)
 }
 
+func (c *Conn) ReadFrom(r io.Reader) (n int64, err error) {
+	if err := c.readHeader(); err != nil {
+		return 0, err
+	}
+	return c.Conn.(io.ReaderFrom).ReadFrom(r) //nolint:forcetypeassert // handled by connfu.Combine
+}
+
 func (c *Conn) Write(b []byte) (n int, err error) {
 	if err := c.readHeader(); err != nil {
 		return 0, err
 	}
 	return c.Conn.Write(b)
+}
+
+func (c *Conn) WriteTo(w io.Writer) (n int64, err error) {
+	if err := c.readHeader(); err != nil {
+		return 0, err
+	}
+	return c.Conn.(io.WriterTo).WriteTo(w) //nolint:forcetypeassert // handled by connfu.Combine
 }
 
 func (c *Conn) Header() (Header, error) {
@@ -137,6 +154,7 @@ func (c *Conn) readHeaderContext(ctx context.Context) error {
 type Listener struct {
 	net.Listener
 	ReadHeaderTimeout time.Duration
+	TestingSkipConnfu bool
 }
 
 func (l *Listener) Accept() (net.Conn, error) {
@@ -145,8 +163,16 @@ func (l *Listener) Accept() (net.Conn, error) {
 		return nil, err
 	}
 
-	return &Conn{
+	pc := &Conn{
 		Conn:              c,
 		readHeaderTimeout: l.ReadHeaderTimeout,
-	}, nil
+	}
+
+	if l.TestingSkipConnfu {
+		c = pc
+	} else {
+		c = connfu.Combine(pc, c)
+	}
+
+	return c, nil
 }
