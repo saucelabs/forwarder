@@ -87,6 +87,10 @@ func (c *conn) ReadFrom(r io.Reader) (n int64, err error) {
 	return
 }
 
+func (c *conn) Observer() *Observer {
+	return &c.o
+}
+
 type Builder struct {
 	// TrackTraffic enables counting of bytes read and written by the connection.
 	// Use Rx and Tx to get the number of bytes read and written.
