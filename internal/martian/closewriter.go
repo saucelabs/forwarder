@@ -35,6 +35,10 @@ var (
 // asCloseWriter returns a closeWriter for w if it implements closeWriter.
 // If w is a pointer to a struct, it checks if any of the fields implement closeWriter.
 func asCloseWriter(w io.Writer) (closeWriter, bool) {
+	if cw, ok := w.(closeWriter); ok {
+		return cw, ok
+	}
+
 	return valueAsCloseWriter(reflect.ValueOf(w))
 }
 
