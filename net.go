@@ -12,11 +12,10 @@ import (
 	"fmt"
 	"net"
 	"slices"
-	"sync"
-	"sync/atomic"
 	"syscall"
 	"time"
 
+	"github.com/saucelabs/forwarder/conntrack"
 	"github.com/saucelabs/forwarder/log"
 	"github.com/saucelabs/forwarder/proxyproto"
 	"github.com/saucelabs/forwarder/ratelimit"
@@ -116,12 +115,11 @@ func (d *Dialer) DialContext(ctx context.Context, network, address string) (net.
 
 	d.metrics.dial(address)
 
-	return &TrackedConn{
-		Conn: conn,
+	return conntrack.Builder{
 		OnClose: func() {
 			d.metrics.close(address)
 		},
-	}, nil
+	}.Build(conn), nil
 }
 
 func defaultListenConfig() *net.ListenConfig {
@@ -201,10 +199,9 @@ func (l *Listener) Accept() (net.Conn, error) {
 	}
 
 	l.metrics.accept()
-	conn = &TrackedConn{
-		Conn:    conn,
+	conn = conntrack.Builder{
 		OnClose: l.metrics.close,
-	}
+	}.Build(conn)
 
 	if l.TLSConfig != nil {
 		conn = tls.Server(conn, l.TLSConfig)
@@ -225,58 +222,4 @@ func (l *Listener) Close() error {
 		return nil
 	}
 	return l.listener.Close()
-}
-
-// TrackedConn is a net.Conn that tracks the number of bytes read and written.
-// It needs to be configured before first use by setting TrackTraffic and OnClose if needed.
-type TrackedConn struct {
-	net.Conn
-
-	// TrackTraffic enables counting of bytes read and written by the connection.
-	// Use Rx and Tx to get the number of bytes read and written.
-	TrackTraffic bool
-
-	// OnClose is called after the underlying connection is closed and before the Close method returns.
-	// OnClose is called at most once.
-	OnClose func()
-
-	rx   atomic.Uint64
-	tx   atomic.Uint64
-	once sync.Once
-}
-
-func (c *TrackedConn) Read(p []byte) (int, error) {
-	n, err := c.Conn.Read(p)
-	if c.TrackTraffic {
-		c.rx.Add(uint64(n))
-	}
-	return n, err
-}
-
-func (c *TrackedConn) Write(p []byte) (int, error) {
-	n, err := c.Conn.Write(p)
-	if c.TrackTraffic {
-		c.tx.Add(uint64(n))
-	}
-	return n, err
-}
-
-// Rx returns the number of bytes read from the connection.
-// It requires TrackTraffic to be set to true, otherwise it returns 0.
-func (c *TrackedConn) Rx() uint64 {
-	return c.rx.Load()
-}
-
-// Tx returns the number of bytes written to the connection.
-// It requires TrackTraffic to be set to true, otherwise it returns 0.
-func (c *TrackedConn) Tx() uint64 {
-	return c.tx.Load()
-}
-
-func (c *TrackedConn) Close() error {
-	err := c.Conn.Close()
-	if c.OnClose != nil {
-		c.once.Do(c.OnClose)
-	}
-	return err
 }
