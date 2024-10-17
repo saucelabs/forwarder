@@ -9,6 +9,7 @@ package ratelimit
 import (
 	"net"
 
+	"github.com/mmatczuk/connfu"
 	"golang.org/x/time/rate"
 )
 
@@ -48,9 +49,11 @@ func (l *Listener) Accept() (net.Conn, error) {
 		return nil, err
 	}
 
-	return &Conn{
+	c = connfu.CombineWithConfig(&Conn{
 		Conn:      c,
 		rxLimiter: l.rxLimiter,
 		txLimiter: l.txLimiter,
-	}, nil
+	}, c, connfu.Config{}) // hide ReadFrom and WriteTo methods
+
+	return c, nil
 }

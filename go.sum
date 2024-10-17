@@ -67,6 +67,8 @@ github.com/mitchellh/mapstructure v1.5.0 h1:jeMsZIYE/09sWLaz43PL7Gy6RuMjD2eJVyua
 github.com/mitchellh/mapstructure v1.5.0/go.mod h1:bFUtVrKA4DC2yAKiSyO/QUcy7e+RRV2QTWOzhPopBRo=
 github.com/mmatczuk/anyflag v0.0.0-20240709090339-eb9e24cd1b44 h1:Ds9W8Yj5ti4kQXITpCozfNNibS1fUA8+aK2T5th0vXE=
 github.com/mmatczuk/anyflag v0.0.0-20240709090339-eb9e24cd1b44/go.mod h1:PT22bA6vWBzPL8tAeK2XCMvWOQ4e19yY3MJIgnTZRaE=
+github.com/mmatczuk/connfu v0.0.0-20241015064402-db8989f89d8c h1:1CC7JKZjrhe2AQh2T0Tay4j9Pp7HQl3WYpQvZr/ceA0=
+github.com/mmatczuk/connfu v0.0.0-20241015064402-db8989f89d8c/go.mod h1:atoMPmvjynZBBUEoYWCM/ZnXAzZ9RoAnihm7YKXK/nY=
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 h1:C3w9PqII01/Oq1c1nUAm88MOHcQC9l5mIlSMApZMrHA=
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822/go.mod h1:+n7T8mK8HuQTcFwEeznm/DIxMOiR9yIdICNftLE1DvQ=
 github.com/pelletier/go-toml/v2 v2.2.2 h1:aYUidT7k73Pcl9nb2gScu7NSrKCSHIDE89b3+6Wq+LM=

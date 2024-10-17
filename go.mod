@@ -1,6 +1,6 @@
 module github.com/saucelabs/forwarder
 
-go 1.23
+go 1.23.1
 
 require (
 	github.com/dop251/goja v0.0.0-20231027120936-b396bb4c349d
@@ -11,6 +11,7 @@ require (
 	github.com/kevinburke/hostsfile v0.0.0-20220522040509-e5e984885321
 	github.com/mitchellh/go-wordwrap v1.0.1
 	github.com/mmatczuk/anyflag v0.0.0-20240709090339-eb9e24cd1b44
+	github.com/mmatczuk/connfu v0.0.0-20241015064402-db8989f89d8c
 	github.com/prometheus/client_golang v1.20.5
 	github.com/prometheus/client_model v0.6.1
 	github.com/prometheus/common v0.60.0
