@@ -21,6 +21,8 @@ import (
 	"io"
 	"net"
 	"reflect"
+
+	"github.com/saucelabs/forwarder/utils/reflectx"
 )
 
 type closeWriter interface {
@@ -39,40 +41,5 @@ func asCloseWriter(w io.Writer) (closeWriter, bool) {
 		return cw, ok
 	}
 
-	return valueAsCloseWriter(reflect.ValueOf(w))
-}
-
-// valueAsCloseWriter does BFS on v to find a first closeWriter in v or its fields.
-func valueAsCloseWriter(v reflect.Value) (closeWriter, bool) {
-	if v.CanInterface() {
-		if cw, ok := v.Interface().(closeWriter); ok {
-			return cw, true
-		}
-
-		// This works around issues with embedded interfaces.
-		v = reflect.ValueOf(v.Interface())
-	}
-
-	v = reflect.Indirect(v)
-	if v.Kind() != reflect.Struct {
-		return nil, false
-	}
-
-	for i := range v.NumField() {
-		f := v.Field(i)
-
-		if f.CanInterface() {
-			if cw, ok := f.Interface().(closeWriter); ok {
-				return cw, true
-			}
-		}
-	}
-
-	for i := range v.NumField() {
-		if cw, ok := valueAsCloseWriter(v.Field(i)); ok {
-			return cw, true
-		}
-	}
-
-	return nil, false
+	return reflectx.LookupImpl[closeWriter](reflect.ValueOf(w))
 }

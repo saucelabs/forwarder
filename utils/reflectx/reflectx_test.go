@@ -1,25 +1,20 @@
 // Copyright 2022-2024 Sauce Labs Inc., all rights reserved.
 //
-// Copyright 2015 Google Inc. All rights reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-package martian
+package reflectx
 
 import (
 	"io"
+	"reflect"
 	"testing"
 )
+
+type closeWriter interface {
+	CloseWrite() error
+}
 
 type nopCloseWriterImpl struct{}
 
@@ -76,7 +71,7 @@ func (b *rwcBody) Write(p []byte) (int, error) {
 	return b.ReadCloser.(io.ReadWriteCloser).Write(p) //nolint:forcetypeassert // We know it's a ReadWriteCloser.
 }
 
-func TestAsCloseWriter(t *testing.T) {
+func TestLookupImplCloseWriter(t *testing.T) {
 	tests := []struct {
 		name string
 		w    io.Writer
@@ -177,7 +172,7 @@ func TestAsCloseWriter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, ok := asCloseWriter(tt.w)
+			got, ok := LookupImpl[closeWriter](reflect.ValueOf(tt.w))
 			if !ok {
 				t.Errorf("asCloseWriter(%#v) = _, false; want true", tt.w)
 			}
