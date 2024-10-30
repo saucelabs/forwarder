@@ -32,6 +32,10 @@ func TestBuildTCP(t *testing.T) {
 	if _, ok := wc.(closeWriter); !ok {
 		t.Error("Missing CloseWrite")
 	}
+
+	if ObserverFromConn(wc) != co {
+		t.Error("ObserverFromConn mismatch")
+	}
 }
 
 func TestBuildTLS(t *testing.T) {
@@ -47,6 +51,10 @@ func TestBuildTLS(t *testing.T) {
 	}
 	if _, ok := wc.(closeWriter); !ok {
 		t.Error("Missing CloseWrite")
+	}
+
+	if ObserverFromConn(wc) != co {
+		t.Error("ObserverFromConn mismatch")
 	}
 }
 
@@ -68,5 +76,9 @@ func TestBuildOnClose(t *testing.T) {
 	wc.Close()
 	if !closed {
 		t.Error("OnClose not called")
+	}
+
+	if ObserverFromConn(wc) != co {
+		t.Error("ObserverFromConn mismatch")
 	}
 }
