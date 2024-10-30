@@ -103,11 +103,39 @@ func NewDialer(cfg *DialConfig) *Dialer {
 	}
 }
 
+// DialConnTrack specifies the connection tracking mode for connections dialed by Dialer.
+type DialConnTrack uint8
+
+const (
+	DialConnTrackDefault DialConnTrack = iota
+	DialConnTrackDisabled
+	DialConnTrackTraffic
+)
+
+type dialConnTrackKey struct{}
+
+// WithDialConnTrack sets the connection tracking mode for connections dialed by Dialer.
+func WithDialConnTrack(ctx context.Context, track DialConnTrack) context.Context {
+	return context.WithValue(ctx, dialConnTrackKey{}, track)
+}
+
+// DialContext dials the provided network and address and configures OS-specific keep-alive parameters.
+// It tracks dialed and closed connections by default, the behavior can be changed with WithDialConnTrack.
 func (d *Dialer) DialContext(ctx context.Context, network, address string) (net.Conn, error) {
+	var dct DialConnTrack
+	if v, ok := ctx.Value(dialConnTrackKey{}).(DialConnTrack); ok {
+		dct = v
+	}
+
 	if d.rd != nil {
 		network, address = d.rd(network, address)
 	}
 	conn, err := d.nd.DialContext(ctx, network, address)
+
+	if dct == DialConnTrackDisabled {
+		return conn, err
+	}
+
 	if err != nil {
 		d.metrics.error(address)
 		return nil, err
@@ -116,6 +144,7 @@ func (d *Dialer) DialContext(ctx context.Context, network, address string) (net.
 	d.metrics.dial(address)
 
 	return conntrack.Builder{
+		TrackTraffic: dct == DialConnTrackTraffic,
 		OnClose: func() {
 			d.metrics.close(address)
 		},
