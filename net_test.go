@@ -124,6 +124,24 @@ func TestDialerRedirect(t *testing.T) {
 }
 
 func TestDialerMetrics(t *testing.T) {
+	tests := []struct {
+		name  string
+		track DialConnTrack
+	}{
+		{
+			name:  "default",
+			track: DialConnTrackDefault,
+		},
+		{
+			name:  "disabled",
+			track: DialConnTrackDisabled,
+		},
+		{
+			name:  "traffic",
+			track: DialConnTrackTraffic,
+		},
+	}
+
 	l := Listener{
 		Address: "localhost:0",
 		Log:     log.NopLogger,
@@ -133,29 +151,35 @@ func TestDialerMetrics(t *testing.T) {
 	l.listenAndWait(t)
 	go l.acceptAndCopy()
 
-	r := prometheus.NewRegistry()
-	d := NewDialer(&DialConfig{
-		DialTimeout: 10 * time.Millisecond,
-		PromConfig: PromConfig{
-			PromNamespace: "test",
-			PromRegistry:  r,
-		},
-	})
+	for i := range tests {
+		tc := tests[i]
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := WithDialConnTrack(context.Background(), tc.track)
 
-	ctx := context.Background()
-	for range 10 {
-		conn, err := d.DialContext(ctx, "tcp", l.Addr().String())
-		if err != nil {
-			t.Fatalf("d.DialContext(): got %v, want no error", err)
-		}
-		fmt.Fprintf(conn, "Hello, World!\n")
-		if _, err := conn.Read(make([]byte, 1)); err != nil {
-			t.Fatal(err)
-		}
-		conn.Close()
+			r := prometheus.NewRegistry()
+			d := NewDialer(&DialConfig{
+				DialTimeout: 10 * time.Millisecond,
+				PromConfig: PromConfig{
+					PromNamespace: "test",
+					PromRegistry:  r,
+				},
+			})
+
+			for range 10 {
+				conn, err := d.DialContext(ctx, "tcp", l.Addr().String())
+				if err != nil {
+					t.Fatalf("d.DialContext(): got %v, want no error", err)
+				}
+				fmt.Fprintf(conn, "Hello, World!\n")
+				if _, err := conn.Read(make([]byte, 1)); err != nil {
+					t.Fatal(err)
+				}
+				conn.Close()
+			}
+
+			golden.DiffPrometheusMetrics(t, r)
+		})
 	}
-
-	golden.DiffPrometheusMetrics(t, r)
 }
 
 func TestDialerMetricsErrors(t *testing.T) {
