@@ -9,10 +9,12 @@ package conntrack
 import (
 	"io"
 	"net"
+	"reflect"
 	"sync"
 	"sync/atomic"
 
 	"github.com/mmatczuk/connfu"
+	"github.com/saucelabs/forwarder/utils/reflectx"
 )
 
 // Observer allows to observe the number of bytes read and written from a connection.
@@ -148,4 +150,21 @@ func (b Builder) BuildWithObserver(c net.Conn) (net.Conn, *Observer) {
 	}
 
 	return connfu.Combine(wc, c), co
+}
+
+func ObserverFromConn(conn net.Conn) *Observer {
+	type ifce interface {
+		Observer() *Observer
+	}
+
+	if o, ok := conn.(ifce); ok {
+		return o.Observer()
+	}
+
+	v, ok := reflectx.LookupImpl[ifce](reflect.ValueOf(conn))
+	if !ok {
+		return nil
+	}
+
+	return v.Observer()
 }
