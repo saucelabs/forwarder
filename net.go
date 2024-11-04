@@ -185,6 +185,7 @@ type Listener struct {
 	ProxyProtocolConfig *ProxyProtocolConfig
 	ReadLimit           int64
 	WriteLimit          int64
+	TrackTraffic        bool
 	PromConfig
 
 	listener net.Listener
@@ -229,7 +230,8 @@ func (l *Listener) Accept() (net.Conn, error) {
 
 	l.metrics.accept()
 	conn = conntrack.Builder{
-		OnClose: l.metrics.close,
+		TrackTraffic: l.TrackTraffic,
+		OnClose:      l.metrics.close,
 	}.Build(conn)
 
 	if l.TLSConfig != nil {
