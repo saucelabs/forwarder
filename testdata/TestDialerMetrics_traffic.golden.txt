@@ -4,3 +4,27 @@ test_dialer_closed_total{host="localhost"} 10
 # HELP test_dialer_dialed_total Number of dialed connections
 # TYPE test_dialer_dialed_total counter
 test_dialer_dialed_total{host="localhost"} 10
+# HELP test_dialer_rx_bytes_total Total number of bytes read by the dialer.
+# TYPE test_dialer_rx_bytes_total counter
+test_dialer_rx_bytes_total{conn_id="0"} 1
+test_dialer_rx_bytes_total{conn_id="1"} 1
+test_dialer_rx_bytes_total{conn_id="2"} 1
+test_dialer_rx_bytes_total{conn_id="3"} 1
+test_dialer_rx_bytes_total{conn_id="4"} 1
+test_dialer_rx_bytes_total{conn_id="5"} 1
+test_dialer_rx_bytes_total{conn_id="6"} 1
+test_dialer_rx_bytes_total{conn_id="7"} 1
+test_dialer_rx_bytes_total{conn_id="8"} 1
+test_dialer_rx_bytes_total{conn_id="9"} 1
+# HELP test_dialer_tx_bytes_total Total number of bytes written by the dialer.
+# TYPE test_dialer_tx_bytes_total counter
+test_dialer_tx_bytes_total{conn_id="0"} 14
+test_dialer_tx_bytes_total{conn_id="1"} 14
+test_dialer_tx_bytes_total{conn_id="2"} 14
+test_dialer_tx_bytes_total{conn_id="3"} 14
+test_dialer_tx_bytes_total{conn_id="4"} 14
+test_dialer_tx_bytes_total{conn_id="5"} 14
+test_dialer_tx_bytes_total{conn_id="6"} 14
+test_dialer_tx_bytes_total{conn_id="7"} 14
+test_dialer_tx_bytes_total{conn_id="8"} 14
+test_dialer_tx_bytes_total{conn_id="9"} 14
