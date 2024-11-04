@@ -13,10 +13,12 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"strconv"
 	"testing"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/saucelabs/forwarder/conntrack"
 	"github.com/saucelabs/forwarder/log"
 	"github.com/saucelabs/forwarder/utils/certutil"
 	"github.com/saucelabs/forwarder/utils/golden"
@@ -165,7 +167,19 @@ func TestDialerMetrics(t *testing.T) {
 				},
 			})
 
-			for range 10 {
+			rx := prometheus.NewCounterVec(prometheus.CounterOpts{
+				Namespace: "test",
+				Name:      "dialer_rx_bytes_total",
+				Help:      "Total number of bytes read by the dialer.",
+			}, []string{"conn_id"})
+			tx := prometheus.NewCounterVec(prometheus.CounterOpts{
+				Namespace: "test",
+				Name:      "dialer_tx_bytes_total",
+				Help:      "Total number of bytes written by the dialer.",
+			}, []string{"conn_id"})
+			r.MustRegister(rx, tx)
+
+			for i := range 10 {
 				conn, err := d.DialContext(ctx, "tcp", l.Addr().String())
 				if err != nil {
 					t.Fatalf("d.DialContext(): got %v, want no error", err)
@@ -175,6 +189,11 @@ func TestDialerMetrics(t *testing.T) {
 					t.Fatal(err)
 				}
 				conn.Close()
+
+				if obs := conntrack.ObserverFromConn(conn); obs != nil {
+					rx.With(prometheus.Labels{"conn_id": strconv.Itoa(i)}).Add(float64(obs.Rx()))
+					tx.With(prometheus.Labels{"conn_id": strconv.Itoa(i)}).Add(float64(obs.Tx()))
+				}
 			}
 
 			golden.DiffPrometheusMetrics(t, r)
