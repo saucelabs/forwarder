@@ -80,23 +80,20 @@ var ErrConnectFallback = martian.ErrConnectFallback
 
 type HTTPProxyConfig struct {
 	HTTPServerConfig
-	Name                string
-	MITM                *MITMConfig
-	MITMDomains         Matcher
-	ProxyLocalhost      ProxyLocalhostMode
-	UpstreamProxy       *url.URL
-	UpstreamProxyFunc   ProxyFunc
-	DenyDomains         Matcher
-	DirectDomains       Matcher
-	RequestIDHeader     string
-	RequestModifiers    []RequestModifier
-	ResponseModifiers   []ResponseModifier
-	ConnectFunc         ConnectFunc
-	ConnectTimeout      time.Duration
-	ProxyProtocolConfig *ProxyProtocolConfig
-	ReadLimit           SizeSuffix
-	WriteLimit          SizeSuffix
-	PromHTTPOpts        []middleware.PrometheusOpt
+	Name              string
+	MITM              *MITMConfig
+	MITMDomains       Matcher
+	ProxyLocalhost    ProxyLocalhostMode
+	UpstreamProxy     *url.URL
+	UpstreamProxyFunc ProxyFunc
+	DenyDomains       Matcher
+	DirectDomains     Matcher
+	RequestIDHeader   string
+	RequestModifiers  []RequestModifier
+	ResponseModifiers []ResponseModifier
+	ConnectFunc       ConnectFunc
+	ConnectTimeout    time.Duration
+	PromHTTPOpts      []middleware.PrometheusOpt
 
 	// TestingHTTPHandler uses Martian's [http.Handler] implementation
 	// over [http.Server] instead of the default TCP server.
@@ -106,8 +103,8 @@ type HTTPProxyConfig struct {
 func DefaultHTTPProxyConfig() *HTTPProxyConfig {
 	return &HTTPProxyConfig{
 		HTTPServerConfig: HTTPServerConfig{
+			ListenerConfig:    *DefaultListenerConfig(":3128"),
 			Protocol:          HTTPScheme,
-			Addr:              ":3128",
 			IdleTimeout:       1 * time.Hour,
 			ReadHeaderTimeout: 1 * time.Minute,
 			TLSServerConfig: TLSServerConfig{
@@ -554,12 +551,8 @@ func (hp *HTTPProxy) listen() (net.Listener, error) {
 	}
 
 	l := Listener{
-		Address:             hp.config.Addr,
-		Log:                 hp.log,
-		ProxyProtocolConfig: hp.config.ProxyProtocolConfig,
-		TLSConfig:           hp.tlsConfig,
-		ReadLimit:           int64(hp.config.ReadLimit),
-		WriteLimit:          int64(hp.config.WriteLimit),
+		ListenerConfig: hp.config.ListenerConfig,
+		TLSConfig:      hp.tlsConfig,
 		PromConfig: PromConfig{
 			PromNamespace: hp.config.PromNamespace,
 			PromRegistry:  hp.config.PromRegistry,

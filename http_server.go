@@ -73,8 +73,8 @@ func h2TLSConfigTemplate() *tls.Config {
 }
 
 type HTTPServerConfig struct {
+	ListenerConfig
 	Protocol Scheme
-	Addr     string
 	TLSServerConfig
 	IdleTimeout       time.Duration
 	ReadTimeout       time.Duration
@@ -87,8 +87,8 @@ type HTTPServerConfig struct {
 
 func DefaultHTTPServerConfig() *HTTPServerConfig {
 	return &HTTPServerConfig{
+		ListenerConfig:    *DefaultListenerConfig(":8080"),
 		Protocol:          HTTPScheme,
-		Addr:              ":8080",
 		IdleTimeout:       1 * time.Hour,
 		ReadHeaderTimeout: 1 * time.Minute,
 	}
@@ -119,7 +119,6 @@ func NewHTTPServer(cfg *HTTPServerConfig, h http.Handler, log log.Logger) (*HTTP
 		config: *cfg,
 		log:    log,
 		srv: &http.Server{
-			Addr:              cfg.Addr,
 			Handler:           withMiddleware(cfg, log, h),
 			IdleTimeout:       cfg.IdleTimeout,
 			ReadTimeout:       cfg.ReadTimeout,
@@ -232,11 +231,14 @@ func (hs *HTTPServer) Run(ctx context.Context) error {
 func (hs *HTTPServer) listen() (net.Listener, error) {
 	switch hs.config.Protocol {
 	case HTTPScheme, HTTPSScheme, HTTP2Scheme:
-		listener, err := Listen("tcp", hs.srv.Addr)
-		if err != nil {
+		l := Listener{
+			ListenerConfig: hs.config.ListenerConfig,
+			PromConfig:     hs.config.PromConfig,
+		}
+		if err := l.Listen(); err != nil {
 			return nil, fmt.Errorf("failed to open listener on address %s: %w", hs.srv.Addr, err)
 		}
-		return listener, nil
+		return &l, nil
 	default:
 		return nil, fmt.Errorf("invalid protocol %q", hs.config.Protocol)
 	}

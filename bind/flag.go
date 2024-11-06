@@ -136,14 +136,6 @@ func HTTPProxyConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPProxyConfig, lcfg *lo
 		"<name>"+
 			"If the header is present in the request, "+
 			"the proxy will associate the value with the request in the logs. ")
-
-	fs.Var(&cfg.ReadLimit, "read-limit", "<bandwidth>"+
-		"Global read rate limit in bytes per second i.e. how many bytes per second you can receive from a proxy. "+
-		"Accepts binary format (e.g. 1.5Ki, 1Mi, 3.6Gi). ")
-
-	fs.Var(&cfg.WriteLimit, "write-limit", "<bandwidth>"+
-		"Global write rate limit in bytes per second i.e. how many bytes per second you can send to proxy. "+
-		"Accepts binary format (e.g. 1.5Ki, 1Mi, 3.6Gi). ")
 }
 
 func DenyDomains(fs *pflag.FlagSet, cfg *[]ruleset.RegexpListItem) {
@@ -283,15 +275,12 @@ func TLSClientConfig(fs *pflag.FlagSet, cfg *forwarder.TLSClientConfig) {
 }
 
 func HTTPServerConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPServerConfig, prefix string, schemes ...forwarder.Scheme) {
+	ListenerConfig(fs, &cfg.ListenerConfig, prefix)
+
 	namePrefix := prefix
 	if namePrefix != "" {
 		namePrefix += "-"
 	}
-
-	fs.StringVarP(&cfg.Addr,
-		namePrefix+"address", "", cfg.Addr, "<host:port>"+
-			"The server address to listen on. "+
-			"If the host is empty, the server will listen on all available interfaces. ")
 
 	if schemes == nil {
 		schemes = []forwarder.Scheme{
@@ -333,6 +322,26 @@ func HTTPServerConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPServerConfig, prefix
 	fs.VarP(anyflag.NewValueWithRedact[*url.Userinfo](cfg.BasicAuth, &cfg.BasicAuth, forwarder.ParseUserinfo, RedactUserinfo),
 		namePrefix+"basic-auth", "", "<username[:password]>"+
 			"Basic authentication credentials to protect the server. ")
+}
+
+func ListenerConfig(fs *pflag.FlagSet, cfg *forwarder.ListenerConfig, prefix string) {
+	namePrefix := prefix
+	if namePrefix != "" {
+		namePrefix += "-"
+	}
+
+	fs.StringVarP(&cfg.Address,
+		namePrefix+"address", "", cfg.Address, "<host:port>"+
+			"The server address to listen on. "+
+			"If the host is empty, the server will listen on all available interfaces. ")
+
+	fs.Var(&cfg.ReadLimit, namePrefix+"read-limit", "<bandwidth>"+
+		"Global read rate limit in bytes per second i.e. how many bytes per second you can receive from a proxy. "+
+		"Accepts binary format (e.g. 1.5Ki, 1Mi, 3.6Gi). ")
+
+	fs.Var(&cfg.WriteLimit, namePrefix+"write-limit", "<bandwidth>"+
+		"Global write rate limit in bytes per second i.e. how many bytes per second you can send to proxy. "+
+		"Accepts binary format (e.g. 1.5Ki, 1Mi, 3.6Gi). ")
 }
 
 func HTTPLogConfig(fs *pflag.FlagSet, cfg []NamedParam[httplog.Mode]) {

@@ -16,7 +16,6 @@ import (
 	"time"
 
 	"github.com/saucelabs/forwarder/conntrack"
-	"github.com/saucelabs/forwarder/log"
 	"github.com/saucelabs/forwarder/proxyproto"
 	"github.com/saucelabs/forwarder/ratelimit"
 )
@@ -178,14 +177,23 @@ func DefaultProxyProtocolConfig() *ProxyProtocolConfig {
 	}
 }
 
-type Listener struct {
+type ListenerConfig struct {
 	Address             string
-	Log                 log.Logger
-	TLSConfig           *tls.Config
 	ProxyProtocolConfig *ProxyProtocolConfig
-	ReadLimit           int64
-	WriteLimit          int64
+	ReadLimit           SizeSuffix
+	WriteLimit          SizeSuffix
 	TrackTraffic        bool
+}
+
+func DefaultListenerConfig(addr string) *ListenerConfig {
+	return &ListenerConfig{
+		Address: addr,
+	}
+}
+
+type Listener struct {
+	ListenerConfig
+	TLSConfig *tls.Config
 	PromConfig
 
 	listener net.Listener
@@ -210,7 +218,7 @@ func (l *Listener) Listen() error {
 	}
 
 	if rl, wl := l.ReadLimit, l.WriteLimit; rl > 0 || wl > 0 {
-		ll = ratelimit.NewListener(ll, rl, wl)
+		ll = ratelimit.NewListener(ll, int64(rl), int64(wl))
 	}
 
 	l.listener = ll

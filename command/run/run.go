@@ -268,7 +268,7 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 			})
 		}
 
-		if c.apiServerConfig.Addr != "" {
+		if c.apiServerConfig.Address != "" {
 			a, err := forwarder.NewHTTPServer(c.apiServerConfig, h, logger.Named("api"))
 			if err != nil {
 				return err
@@ -492,7 +492,7 @@ func makeCommand() command {
 	c.httpTransportConfig.PromNamespace = promNs
 	c.httpProxyConfig.PromRegistry = c.promReg
 	c.httpProxyConfig.PromNamespace = promNs
-	c.apiServerConfig.Addr = "localhost:10000"
+	c.apiServerConfig.Address = "localhost:10000"
 
 	return c
 }
