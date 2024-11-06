@@ -31,10 +31,6 @@ type Conn struct {
 	headerErr         error
 }
 
-func (c *Conn) NetConn() net.Conn {
-	return c.Conn
-}
-
 func (c *Conn) LocalAddr() net.Addr {
 	if err := c.readHeader(); err != nil {
 		return c.Conn.LocalAddr()
