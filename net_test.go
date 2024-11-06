@@ -19,10 +19,13 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/saucelabs/forwarder/conntrack"
-	"github.com/saucelabs/forwarder/log"
 	"github.com/saucelabs/forwarder/utils/certutil"
 	"github.com/saucelabs/forwarder/utils/golden"
 )
+
+var testListenerConfig = ListenerConfig{
+	Address: "localhost:0",
+}
 
 func TestDialRedirectFromHostPortPairs(t *testing.T) {
 	tests := []struct {
@@ -91,8 +94,7 @@ func TestDialRedirectFromHostPortPairs(t *testing.T) {
 
 func TestDialerRedirect(t *testing.T) {
 	l := Listener{
-		Address: "localhost:0",
-		Log:     log.NopLogger,
+		ListenerConfig: testListenerConfig,
 	}
 	defer l.Close()
 
@@ -145,8 +147,7 @@ func TestDialerMetrics(t *testing.T) {
 	}
 
 	l := Listener{
-		Address: "localhost:0",
-		Log:     log.NopLogger,
+		ListenerConfig: testListenerConfig,
 	}
 	defer l.Close()
 
@@ -248,8 +249,7 @@ func (l *Listener) acceptAndCopy() {
 
 func TestListenerListenOnce(t *testing.T) {
 	l := Listener{
-		Address: "localhost:0",
-		Log:     log.NopLogger,
+		ListenerConfig: testListenerConfig,
 	}
 	defer l.Close()
 
@@ -263,8 +263,7 @@ func TestListenerListenOnce(t *testing.T) {
 func TestListenerMetricsAccepted(t *testing.T) {
 	r := prometheus.NewRegistry()
 	l := Listener{
-		Address: "localhost:0",
-		Log:     log.NopLogger,
+		ListenerConfig: testListenerConfig,
 		PromConfig: PromConfig{
 			PromNamespace: "test",
 			PromRegistry:  r,
@@ -293,9 +292,8 @@ func TestListenerMetricsAccepted(t *testing.T) {
 func TestListenerMetricsAcceptedWithTLS(t *testing.T) {
 	r := prometheus.NewRegistry()
 	l := Listener{
-		Address:   "localhost:0",
-		Log:       log.NopLogger,
-		TLSConfig: selfSingedCert(),
+		ListenerConfig: testListenerConfig,
+		TLSConfig:      selfSingedCert(),
 		PromConfig: PromConfig{
 			PromNamespace: "test",
 			PromRegistry:  r,
@@ -325,8 +323,7 @@ func TestListenerMetricsAcceptedWithTLS(t *testing.T) {
 func TestListenerMetricsClosed(t *testing.T) {
 	r := prometheus.NewRegistry()
 	l := Listener{
-		Address: "localhost:0",
-		Log:     log.NopLogger,
+		ListenerConfig: testListenerConfig,
 		PromConfig: PromConfig{
 			PromNamespace: "test",
 			PromRegistry:  r,
@@ -364,8 +361,7 @@ func (l errListener) Accept() (net.Conn, error) {
 func TestListenerMetricsErrors(t *testing.T) {
 	r := prometheus.NewRegistry()
 	l := Listener{
-		Address: "localhost:0",
-		Log:     log.NopLogger,
+		ListenerConfig: testListenerConfig,
 		PromConfig: PromConfig{
 			PromNamespace: "test",
 			PromRegistry:  r,
