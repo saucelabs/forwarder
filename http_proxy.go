@@ -17,7 +17,6 @@ import (
 	"net/http"
 	"net/url"
 	"slices"
-	"sync"
 	"time"
 
 	"github.com/saucelabs/forwarder/hostsfile"
@@ -28,6 +27,8 @@ import (
 	"github.com/saucelabs/forwarder/log"
 	"github.com/saucelabs/forwarder/middleware"
 	"github.com/saucelabs/forwarder/pac"
+	"go.uber.org/multierr"
+	"golang.org/x/sync/errgroup"
 )
 
 type ProxyLocalhostMode string
@@ -80,6 +81,7 @@ var ErrConnectFallback = martian.ErrConnectFallback
 
 type HTTPProxyConfig struct {
 	HTTPServerConfig
+	ExtraListeners    []NamedListenerConfig
 	Name              string
 	MITM              *MITMConfig
 	MITMDomains       Matcher
@@ -122,6 +124,11 @@ func (c *HTTPProxyConfig) Validate() error {
 	if err := c.HTTPServerConfig.Validate(); err != nil {
 		return err
 	}
+	for _, lc := range c.ExtraListeners {
+		if lc.Name == "" {
+			return errors.New("extra listener name is required")
+		}
+	}
 	if c.Protocol != HTTPScheme && c.Protocol != HTTPSScheme {
 		return fmt.Errorf("unsupported protocol: %s", c.Protocol)
 	}
@@ -148,7 +155,7 @@ type HTTPProxy struct {
 	localhost  []string
 
 	tlsConfig *tls.Config
-	listener  net.Listener
+	listeners []net.Listener
 }
 
 // NewHTTPProxy creates a new HTTP proxy.
@@ -171,13 +178,15 @@ func NewHTTPProxy(cfg *HTTPProxyConfig, pr PACResolver, cm *CredentialsMatcher, 
 	}
 	hp.localhost = append(hp.localhost, lh...)
 
-	l, err := hp.listen()
+	ll, err := hp.listen()
 	if err != nil {
 		return nil, err
 	}
-	hp.listener = l
+	hp.listeners = ll
 
-	hp.log.Infof("PROXY server listen address=%s protocol=%s", l.Addr(), hp.config.Protocol)
+	for _, l := range hp.listeners {
+		hp.log.Infof("PROXY server listen address=%s protocol=%s", l.Addr(), hp.config.Protocol)
+	}
 
 	return hp, nil
 }
@@ -500,79 +509,117 @@ func (hp *HTTPProxy) handler() http.Handler {
 }
 
 func (hp *HTTPProxy) Run(ctx context.Context) error {
-	var srv *http.Server
-
-	var wg sync.WaitGroup
-	wg.Add(1)
-
-	go func() {
-		defer wg.Done()
-
-		<-ctx.Done()
-		if srv != nil {
-			if err := srv.Shutdown(context.Background()); err != nil {
-				hp.log.Errorf("failed to shutdown server error=%s", err)
-			}
-		} else {
-			hp.Close()
-		}
-	}()
-
-	var srvErr error
 	if hp.config.TestingHTTPHandler {
 		hp.log.Infof("using http handler")
-		srv = &http.Server{
-			Handler:           hp.handler(),
-			IdleTimeout:       hp.config.IdleTimeout,
-			ReadTimeout:       hp.config.ReadTimeout,
-			ReadHeaderTimeout: hp.config.ReadHeaderTimeout,
-			WriteTimeout:      hp.config.WriteTimeout,
-		}
-		srvErr = srv.Serve(hp.listener)
-	} else {
-		srvErr = hp.proxy.Serve(hp.listener)
+		return hp.runHTTPHandler(ctx)
 	}
-	if srvErr != nil {
-		if errors.Is(srvErr, net.ErrClosed) {
-			srvErr = nil
-		}
-		return srvErr
-	}
-
-	wg.Wait()
-	return nil
+	return hp.run(ctx)
 }
 
-func (hp *HTTPProxy) listen() (net.Listener, error) {
+func (hp *HTTPProxy) runHTTPHandler(ctx context.Context) error {
+	srv := http.Server{
+		Handler:           hp.handler(),
+		IdleTimeout:       hp.config.IdleTimeout,
+		ReadTimeout:       hp.config.ReadTimeout,
+		ReadHeaderTimeout: hp.config.ReadHeaderTimeout,
+		WriteTimeout:      hp.config.WriteTimeout,
+	}
+
+	var g errgroup.Group
+	g.Go(func() error {
+		<-ctx.Done()
+		if err := srv.Shutdown(context.Background()); err != nil {
+			hp.log.Errorf("failed to shutdown server error=%s", err)
+		}
+		return ctx.Err()
+	})
+	for i := range hp.listeners {
+		l := hp.listeners[i]
+		g.Go(func() error {
+			err := srv.Serve(l)
+			if errors.Is(err, http.ErrServerClosed) {
+				err = nil
+			}
+			return err
+		})
+	}
+	return g.Wait()
+}
+
+func (hp *HTTPProxy) run(ctx context.Context) error {
+	var g errgroup.Group
+	g.Go(func() error {
+		<-ctx.Done()
+		hp.Close()
+		return ctx.Err()
+	})
+	for i := range hp.listeners {
+		l := hp.listeners[i]
+		g.Go(func() error {
+			err := hp.proxy.Serve(l)
+			if errors.Is(err, net.ErrClosed) {
+				err = nil
+			}
+			return err
+		})
+	}
+	return g.Wait()
+}
+
+func (hp *HTTPProxy) listen() ([]net.Listener, error) {
 	switch hp.config.Protocol {
 	case HTTPScheme, HTTPSScheme, HTTP2Scheme:
 	default:
 		return nil, fmt.Errorf("invalid protocol %q", hp.config.Protocol)
 	}
 
-	l := Listener{
-		ListenerConfig: hp.config.ListenerConfig,
-		TLSConfig:      hp.tlsConfig,
-		PromConfig: PromConfig{
-			PromNamespace: hp.config.PromNamespace,
-			PromRegistry:  hp.config.PromRegistry,
+	if len(hp.config.ExtraListeners) == 0 {
+		l := &Listener{
+			ListenerConfig: hp.config.ListenerConfig,
+			TLSConfig:      hp.tlsConfig,
+			PromConfig: PromConfig{
+				PromNamespace: hp.config.PromNamespace,
+				PromRegistry:  hp.config.PromRegistry,
+			},
+		}
+		if err := l.Listen(); err != nil {
+			return nil, err
+		}
+		return []net.Listener{l}, nil
+	}
+
+	return MultiListener{
+		ListenerConfigs: append([]NamedListenerConfig{{ListenerConfig: hp.config.ListenerConfig}}, hp.config.ExtraListeners...),
+		TLSConfig: func(lc NamedListenerConfig) *tls.Config {
+			return hp.tlsConfig
 		},
-	}
-
-	if err := l.Listen(); err != nil {
-		return nil, err
-	}
-
-	return &l, nil
+		PromConfig: hp.config.PromConfig,
+	}.Listen()
 }
 
 // Addr returns the address the server is listening on.
-func (hp *HTTPProxy) Addr() string {
-	return hp.listener.Addr().String()
+func (hp *HTTPProxy) Addr() (addrs []string, ok bool) {
+	addrs = make([]string, len(hp.listeners))
+	ok = true
+	for i, l := range hp.listeners {
+		addrs[i] = l.Addr().String()
+		if addrs[i] == "" {
+			ok = false
+		}
+	}
+	return
 }
 
 func (hp *HTTPProxy) Close() error {
-	err := hp.listener.Close()
+	// Close listeners first to prevent new connections.
+	var err error
+	for _, l := range hp.listeners {
+		if e := l.Close(); e != nil {
+			err = multierr.Append(err, e)
+		}
+	}
+
+	// Close the proxy to stop serving requests.
 	hp.proxy.Close()
 
 	if tr, ok := hp.transport.(*http.Transport); ok {

@@ -191,6 +191,48 @@ func DefaultListenerConfig(addr string) *ListenerConfig {
 	}
 }
 
+type NamedListenerConfig struct {
+	Name string
+	ListenerConfig
+}
+
+// MultiListener is a builder for multiple listeners sharing the same prometheus configuration.
+type MultiListener struct {
+	ListenerConfigs []NamedListenerConfig
+	TLSConfig       func(NamedListenerConfig) *tls.Config
+	PromConfig
+}
+
+func (ml MultiListener) Listen() (_ []net.Listener, ferr error) {
+	prototype := Listener{
+		metrics: newListenerMetrics(ml.PromRegistry, ml.PromNamespace),
+	}
+
+	listeners := make([]net.Listener, 0, len(ml.ListenerConfigs))
+	defer func() {
+		if ferr != nil {
+			for _, l := range listeners {
+				l.Close()
+			}
+		}
+	}()
+
+	for _, lc := range ml.ListenerConfigs {
+		l := new(Listener)
+		*l = prototype
+		l.ListenerConfig = lc.ListenerConfig
+		if ml.TLSConfig != nil {
+			l.TLSConfig = ml.TLSConfig(lc)
+		}
+		if err := l.Listen(); err != nil {
+			return nil, err
+		}
+		listeners = append(listeners, l)
+	}
+
+	return listeners, nil
+}
+
 type Listener struct {
 	ListenerConfig
 	TLSConfig *tls.Config
@@ -222,7 +264,10 @@ func (l *Listener) Listen() error {
 	}
 
 	l.listener = ll
-	l.metrics = newListenerMetrics(l.PromRegistry, l.PromNamespace)
+
+	if l.metrics == nil {
+		l.metrics = newListenerMetrics(l.PromRegistry, l.PromNamespace)
+	}
 
 	return nil
 }
