@@ -123,3 +123,34 @@ func (m *listenerMetrics) error() {
 func (m *listenerMetrics) close() {
 	m.closed.Inc()
 }
+
+func newListenerMetricsWithNameFunc(r prometheus.Registerer, namespace string) func(name string) *listenerMetrics {
+	if r == nil {
+		r = prometheus.NewRegistry() // This registry will be discarded.
+	}
+	f := promauto.With(r)
+
+	accepted := f.NewCounterVec(prometheus.CounterOpts{
+		Name:      "listener_accepted_total",
+		Namespace: namespace,
+		Help:      "Number of accepted connections",
+	}, []string{"name"})
+	errors := f.NewCounterVec(prometheus.CounterOpts{
+		Name:      "listener_errors_total",
+		Namespace: namespace,
+		Help:      "Number of listener errors when accepting connections",
+	}, []string{"name"})
+	closed := f.NewCounterVec(prometheus.CounterOpts{
+		Name:      "listener_closed_total",
+		Namespace: namespace,
+		Help:      "Number of closed connections",
+	}, []string{"name"})
+
+	return func(name string) *listenerMetrics {
+		return &listenerMetrics{
+			accepted: accepted.WithLabelValues(name),
+			errors:   errors.WithLabelValues(name),
+			closed:   closed.WithLabelValues(name),
+		}
+	}
+}

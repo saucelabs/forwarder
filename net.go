@@ -197,6 +197,7 @@ type NamedListenerConfig struct {
 }
 
 // MultiListener is a builder for multiple listeners sharing the same prometheus configuration.
+// The listener name is added as a label to the metrics.
 type MultiListener struct {
 	ListenerConfigs []NamedListenerConfig
 	TLSConfig       func(NamedListenerConfig) *tls.Config
@@ -204,10 +205,6 @@ type MultiListener struct {
 }
 
 func (ml MultiListener) Listen() (_ []net.Listener, ferr error) {
-	prototype := Listener{
-		metrics: newListenerMetrics(ml.PromRegistry, ml.PromNamespace),
-	}
-
 	listeners := make([]net.Listener, 0, len(ml.ListenerConfigs))
 	defer func() {
 		if ferr != nil {
@@ -217,13 +214,15 @@ func (ml MultiListener) Listen() (_ []net.Listener, ferr error) {
 		}
 	}()
 
+	mf := newListenerMetricsWithNameFunc(ml.PromRegistry, ml.PromNamespace)
+
 	for _, lc := range ml.ListenerConfigs {
 		l := new(Listener)
-		*l = prototype
 		l.ListenerConfig = lc.ListenerConfig
 		if ml.TLSConfig != nil {
 			l.TLSConfig = ml.TLSConfig(lc)
 		}
+		l.metrics = mf(lc.Name)
 		if err := l.Listen(); err != nil {
 			return nil, err
 		}

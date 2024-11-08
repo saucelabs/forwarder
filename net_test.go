@@ -394,3 +394,70 @@ func selfSingedCert() *tls.Config {
 		Certificates: []tls.Certificate{cert},
 	}
 }
+
+func (ml *MultiListener) listenAndWait(t *testing.T) []net.Listener {
+	t.Helper()
+
+	listeners, err := ml.Listen()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, l := range listeners {
+		for {
+			if l.Addr() != nil {
+				break
+			}
+		}
+	}
+	return listeners
+}
+
+func TestMultiListenerMetrics(t *testing.T) {
+	r := prometheus.NewRegistry()
+	ml := MultiListener{
+		ListenerConfigs: []NamedListenerConfig{
+			{
+				Name: "a",
+				ListenerConfig: ListenerConfig{
+					Address: "localhost:0",
+				},
+			},
+			{
+				Name: "b",
+				ListenerConfig: ListenerConfig{
+					Address: "localhost:0",
+				},
+			},
+		},
+		PromConfig: PromConfig{
+			PromNamespace: "test",
+			PromRegistry:  r,
+		},
+	}
+	listeners := ml.listenAndWait(t)
+	defer func() {
+		for _, l := range listeners {
+			l.Close()
+		}
+	}()
+
+	for _, l := range listeners {
+		go l.(*Listener).acceptAndCopy() //nolint:forcetypeassert // trust the test
+	}
+
+	for _, l := range listeners {
+		for range 10 {
+			conn, err := net.Dial("tcp", l.Addr().String())
+			if err != nil {
+				t.Fatalf("net.Dial(): got %v, want no error", err)
+			}
+			fmt.Fprintf(conn, "Hello, World!\n")
+			if _, err := conn.Read(make([]byte, 1)); err != nil {
+				t.Fatal(err)
+			}
+			conn.Close()
+		}
+	}
+
+	golden.DiffPrometheusMetrics(t, r)
+}
