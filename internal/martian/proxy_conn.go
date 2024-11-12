@@ -241,10 +241,6 @@ func (p *proxyConn) handleConnectRequest(req *http.Request) error {
 		return p.writeResponse(res)
 	}
 
-	if res.ContentLength != -1 {
-		log.Errorf(ctx, "CONNECT response with Content-Length: %d, ignoring content length", res.ContentLength)
-		res.ContentLength = -1
-	}
 	if err := p.tunnel("CONNECT", res, crw); err != nil {
 		log.Errorf(ctx, "CONNECT tunnel: %v", err)
 	}
