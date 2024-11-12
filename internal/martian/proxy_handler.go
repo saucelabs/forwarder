@@ -171,16 +171,13 @@ func (p proxyHandler) tunnel(name string, rw http.ResponseWriter, req *http.Requ
 		}
 		defer conn.Close()
 
-		if _, err := brw.WriteString(connectResponse); err != nil {
-			err := fmt.Errorf("got error while writing response back to client: %w", err)
-			p.traceWroteResponse(res, err)
-			return err
+		pc := proxyConn{
+			Proxy: p.Proxy,
+			brw:   brw,
+			conn:  conn,
 		}
-		if err := brw.Flush(); err != nil {
-			err := fmt.Errorf("got error while flushing response back to client: %w", err)
-			p.traceWroteResponse(res, err)
-			return err
-		}
+		pc.writeResponse(res)
+
 		if err := drainBuffer(crw, brw.Reader); err != nil {
 			err := fmt.Errorf("got error while draining buffer: %w", err)
 			p.traceWroteResponse(res, err)

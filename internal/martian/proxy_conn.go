@@ -267,14 +267,7 @@ func (p *proxyConn) handleUpgradeResponse(res *http.Response) error {
 }
 
 func (p *proxyConn) tunnel(name string, res *http.Response, crw io.ReadWriteCloser) error {
-	if _, err := p.brw.WriteString(connectResponse); err != nil {
-		err := fmt.Errorf("got error while writing response back to client: %w", err)
-		p.traceWroteResponse(res, err)
-		return err
-	}
-	if err := p.brw.Flush(); err != nil {
-		err := fmt.Errorf("got error while flushing response back to client: %w", err)
-		p.traceWroteResponse(res, err)
+	if err := p.writeResponse(res); err != nil {
 		return err
 	}
 	if err := drainBuffer(crw, p.brw.Reader); err != nil {
@@ -431,12 +424,15 @@ func (p *proxyConn) writeResponse(res *http.Response) error {
 	}
 
 	var err error
-	if req.Method == http.MethodHead && res.Body == http.NoBody {
+	switch {
+	case req.Method == http.MethodConnect && res.StatusCode/100 == 2:
+		err = writeConnectOKResponse(p.brw.Writer)
+	case req.Method == http.MethodHead && res.Body == http.NoBody:
 		// The http package is misbehaving when writing a HEAD response.
 		// See https://github.com/golang/go/issues/62015 for details.
 		// This works around the issue by writing the response manually.
 		err = writeHeadResponse(p.brw.Writer, res)
-	} else {
+	default:
 		// Add support for Server Sent Events - relay HTTP chunks and flush after each chunk.
 		// This is safe for events that are smaller than the buffer io.Copy uses (32KB).
 		// If the event is larger than the buffer, the event will be split into multiple chunks.

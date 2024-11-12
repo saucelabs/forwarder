@@ -184,7 +184,12 @@ func newConnectResponse(req *http.Request) *http.Response {
 	}
 }
 
-const connectResponse = "HTTP/1.1 200 OK\r\n\r\n"
+var connectOKResponse = []byte("HTTP/1.1 200 OK\r\n\r\n")
+
+func writeConnectOKResponse(w io.Writer) error {
+	_, err := w.Write(connectOKResponse)
+	return err
+}
 
 const terminateTLSHeader = "X-Martian-Terminate-Tls"
 
