@@ -175,7 +175,7 @@ func (p proxyHandler) tunnel(name string, rw http.ResponseWriter, req *http.Requ
 		}
 		defer conn.Close()
 
-		if err := res.Write(brw); err != nil {
+		if _, err := brw.WriteString(connectResponse); err != nil {
 			err := fmt.Errorf("got error while writing response back to client: %w", err)
 			p.traceWroteResponse(res, err)
 			return err
