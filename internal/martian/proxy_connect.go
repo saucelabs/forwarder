@@ -184,6 +184,8 @@ func newConnectResponse(req *http.Request) *http.Response {
 	}
 }
 
+const connectResponse = "HTTP/1.1 200 OK\r\n\r\n"
+
 const terminateTLSHeader = "X-Martian-Terminate-Tls"
 
 func shouldTerminateTLS(req *http.Request) bool {

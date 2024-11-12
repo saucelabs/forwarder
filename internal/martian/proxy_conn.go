@@ -271,7 +271,7 @@ func (p *proxyConn) handleUpgradeResponse(res *http.Response) error {
 }
 
 func (p *proxyConn) tunnel(name string, res *http.Response, crw io.ReadWriteCloser) error {
-	if err := res.Write(p.brw); err != nil {
+	if _, err := p.brw.WriteString(connectResponse); err != nil {
 		err := fmt.Errorf("got error while writing response back to client: %w", err)
 		p.traceWroteResponse(res, err)
 		return err
