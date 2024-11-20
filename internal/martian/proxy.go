@@ -353,7 +353,18 @@ func (p *Proxy) roundTrip(req *http.Request) (*http.Response, error) {
 		return proxyutil.NewResponse(200, http.NoBody, req), nil
 	}
 
-	return p.rt.RoundTrip(req)
+	res, err := p.rt.RoundTrip(req)
+	if err != nil {
+		return nil, err
+	}
+
+	if isHeaderOnlySpec(res) && res.StatusCode != http.StatusSwitchingProtocols && res.Body != http.NoBody {
+		log.Infof(req.Context(), "unexpected body in header-only response: %d, closing body", res.StatusCode)
+		res.Body.Close()
+		res.Body = http.NoBody
+	}
+
+	return res, err
 }
 
 func (p *Proxy) errorResponse(req *http.Request, err error) *http.Response {
