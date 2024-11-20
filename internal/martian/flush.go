@@ -36,21 +36,23 @@ func shouldChunk(res *http.Response) bool {
 		return false
 	}
 
-	// Please read 3.3.2 and 3.3.3 of RFC 7230 for more details https://datatracker.ietf.org/doc/html/rfc7230#section-3.3.2.
-	if res.Request.Method == http.MethodHead {
-		return false
-	}
-	// The 204/304 response MUST NOT contain a
-	// message-body, and thus is always terminated by the first empty line
-	// after the header fields.
-	if res.StatusCode == http.StatusNoContent || res.StatusCode == http.StatusNotModified {
-		return false
-	}
-	if res.StatusCode < 200 {
-		return false
-	}
+	return !isHeaderOnlySpec(res)
+}
 
-	return true
+// isHeaderOnlySpec returns true iff the response should have only headers according to the HTTP spec (RFC 7230).
+//
+// Any response to a HEAD request and any response with a 1xx
+// (Informational), 204 (No Content), or 304 (Not Modified) status
+// code is always terminated by the first empty line after the
+// header fields, regardless of the header fields present in the
+// message, and thus cannot contain a message body.
+//
+// https://datatracker.ietf.org/doc/html/rfc7230#section-3.3.3
+func isHeaderOnlySpec(res *http.Response) bool {
+	return res.Request.Method == http.MethodHead ||
+		res.StatusCode/100 == 1 ||
+		res.StatusCode == http.StatusNoContent ||
+		res.StatusCode == http.StatusNotModified
 }
 
 func isTextEventStream(res *http.Response) bool {
