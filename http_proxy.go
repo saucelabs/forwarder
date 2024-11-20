@@ -17,6 +17,7 @@ import (
 	"net/http"
 	"net/url"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/saucelabs/forwarder/hostsfile"
@@ -175,6 +176,9 @@ func NewHTTPProxy(cfg *HTTPProxyConfig, pr PACResolver, cm *CredentialsMatcher, 
 	lh, err := hostsfile.LocalhostAliases()
 	if err != nil {
 		return nil, fmt.Errorf("read localhost aliases: %w", err)
+	}
+	for i := range lh {
+		lh[i] = strings.ToLower(lh[i])
 	}
 	hp.localhost = append(hp.localhost, lh...)
 
@@ -466,6 +470,8 @@ func (hp *HTTPProxy) directLocalhost(fn ProxyFunc) ProxyFunc {
 }
 
 func (hp *HTTPProxy) isLocalhost(host string) bool {
+	host = strings.ToLower(host)
+
 	if slices.Contains(hp.localhost, host) {
 		return true
 	}

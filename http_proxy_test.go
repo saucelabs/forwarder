@@ -126,6 +126,7 @@ func TestIsLocalhost(t *testing.T) {
 		{"127.0.0.1", true},
 		{"127.10.20.30", true},
 		{"localhost", true},
+		{"LOCALHOST", true},
 		{"0.0.0.0", true},
 
 		{"notlocalhost", false},
