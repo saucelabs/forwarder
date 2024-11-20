@@ -427,7 +427,7 @@ func (p *proxyConn) writeResponse(res *http.Response) error {
 	switch {
 	case req.Method == http.MethodConnect && res.StatusCode/100 == 2:
 		err = writeConnectOKResponse(p.brw.Writer)
-	case req.Method == http.MethodHead && res.Body == http.NoBody:
+	case isHeaderOnlySpec(res):
 		// The http package is misbehaving when writing a HEAD response.
 		// See https://github.com/golang/go/issues/62015 for details.
 		// This works around the issue by writing the response manually.
