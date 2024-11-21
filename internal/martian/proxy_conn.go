@@ -26,10 +26,13 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/saucelabs/forwarder/internal/martian/log"
 	"github.com/saucelabs/forwarder/internal/martian/proxyutil"
+	"golang.org/x/exp/maps"
 )
 
 type proxyConn struct {
@@ -467,6 +470,56 @@ func (p *proxyConn) writeResponse(res *http.Response) error {
 	if res.Close {
 		log.Debugf(ctx, "closing connection")
 		return errClose
+	}
+
+	return nil
+}
+
+// writeHeaderOnlyResponse writes the status line and header of r to w.
+func writeHeaderOnlyResponse(w io.Writer, res *http.Response) error {
+	// Status line
+	text := res.Status
+	if text == "" {
+		text = http.StatusText(res.StatusCode)
+		if text == "" {
+			text = "status code " + strconv.Itoa(res.StatusCode)
+		}
+	} else {
+		// Just to reduce stutter, if user set res.Status to "200 OK" and StatusCode to 200.
+		// Not important.
+		text = strings.TrimPrefix(text, strconv.Itoa(res.StatusCode)+" ")
+	}
+
+	if _, err := fmt.Fprintf(w, "HTTP/%d.%d %03d %s\r\n", res.ProtoMajor, res.ProtoMinor, res.StatusCode, text); err != nil {
+		return err
+	}
+
+	// Header
+	if err := res.Header.Write(w); err != nil {
+		return err
+	}
+
+	// Add Trailer header if needed
+	if len(res.Trailer) > 0 {
+		if _, err := io.WriteString(w, "Trailer: "); err != nil {
+			return err
+		}
+
+		for i, k := range maps.Keys(res.Trailer) {
+			if i > 0 {
+				if _, err := io.WriteString(w, ", "); err != nil {
+					return err
+				}
+			}
+			if _, err := io.WriteString(w, k); err != nil {
+				return err
+			}
+		}
+	}
+
+	// End-of-header
+	if _, err := io.WriteString(w, "\r\n"); err != nil {
+		return err
 	}
 
 	return nil
