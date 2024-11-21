@@ -18,6 +18,7 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
+	"io"
 	"net"
 	"net/http"
 	"net/url"
@@ -388,3 +389,11 @@ func upgradeType(h http.Header) string {
 	}
 	return h.Get("Upgrade")
 }
+
+type panicReader struct{}
+
+func (panicReader) Read(p []byte) (int, error) {
+	panic("unexpected read")
+}
+
+var panicBody = io.NopCloser(panicReader{})

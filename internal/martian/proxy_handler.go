@@ -149,8 +149,7 @@ func (p proxyHandler) handleUpgradeResponse(rw http.ResponseWriter, req *http.Re
 		log.Errorf(ctx, "%s tunnel: internal error: switching protocols response with non-ReadWriteCloser body", resUpType)
 		panic(http.ErrAbortHandler)
 	}
-
-	res.Body = nil
+	res.Body = panicBody
 
 	if err := p.tunnel(resUpType, rw, req, res, uconn); err != nil {
 		log.Errorf(ctx, "%s tunnel: %v", resUpType, err)
