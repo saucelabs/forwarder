@@ -26,8 +26,8 @@ import (
 	"golang.org/x/exp/maps"
 )
 
-// writeHeadResponse writes the status line and header of r to w.
-func writeHeadResponse(w io.Writer, res *http.Response) error {
+// writeHeaderOnlyResponse writes the status line and header of r to w.
+func writeHeaderOnlyResponse(w io.Writer, res *http.Response) error {
 	// Status line
 	text := res.Status
 	if text == "" {

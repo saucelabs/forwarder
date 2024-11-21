@@ -431,7 +431,7 @@ func (p *proxyConn) writeResponse(res *http.Response) error {
 		// The http package is misbehaving when writing a HEAD response.
 		// See https://github.com/golang/go/issues/62015 for details.
 		// This works around the issue by writing the response manually.
-		err = writeHeadResponse(p.brw.Writer, res)
+		err = writeHeaderOnlyResponse(p.brw.Writer, res)
 	default:
 		// Add support for Server Sent Events - relay HTTP chunks and flush after each chunk.
 		// This is safe for events that are smaller than the buffer io.Copy uses (32KB).
