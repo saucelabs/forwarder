@@ -259,8 +259,7 @@ func (p *proxyConn) handleUpgradeResponse(res *http.Response) error {
 		log.Errorf(res.Request.Context(), "internal error: switching protocols response with non-writable body")
 		return errClose
 	}
-
-	res.Body = nil
+	res.Body = panicBody
 
 	if err := p.tunnel(resUpType, res, uconn); err != nil {
 		log.Errorf(res.Request.Context(), "%s tunnel: %v", resUpType, err)
