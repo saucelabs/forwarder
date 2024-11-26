@@ -239,28 +239,46 @@ func TestProxyBadGateway(t *testing.T) {
 		"httpbin:1",
 	}
 
-	var expectedErrorMessage string
-	switch {
-	case os.Getenv("FORWARDER_PROXY") != "":
-		expectedErrorMessage = forwarder.UpstreamProxyServiceName + " failed to connect to remote host"
-	case os.Getenv("FORWARDER_PAC") != "":
-		// Proxy name depends on the PAC file. Skip it for now.
-		expectedErrorMessage = "failed to connect to remote host"
-	default:
-		expectedErrorMessage = "forwarder failed to connect to remote host"
+	expectedErrorMessage := "forwarder dial tcp"
+	if os.Getenv("FORWARDER_PROXY") != "" {
+		// Make sure the error originates from the upstream proxy.
+		expectedErrorMessage = forwarder.UpstreamProxyServiceName + " dial tcp"
+	} else if os.Getenv("FORWARDER_PAC") != "" {
+		// In case of PAC, we can never now the exact proxy that has been used.
+		expectedErrorMessage = "dial tcp"
+	}
+
+	enableInsecureSkipVerifyIfCAIsGenerated := func(tr *http.Transport) {
+		if os.Getenv("SETUP") == "flag-mitm-genca" {
+			tr.TLSClientConfig.InsecureSkipVerify = true
+		}
+	}
+
+	var cres *http.Response
+	saveProxyConnectResponse := func(tr *http.Transport) {
+		tr.OnProxyConnectResponse = func(ctx context.Context, proxyURL *url.URL, connectReq *http.Request, connectRes *http.Response) error {
+			cres = connectRes
+			return nil
+		}
 	}
 
 	for _, scheme := range []string{"http", "https"} {
 		for _, h := range hosts {
 			t.Run(scheme+"_"+h, func(t *testing.T) {
-				res := newClient(t, scheme+"://"+h).GET("/status/200")
+				c := newClient(t, scheme+"://"+h,
+					enableInsecureSkipVerifyIfCAIsGenerated,
+					saveProxyConnectResponse)
+
+				res := c.GET("/status/200")
 				res.ExpectStatus(http.StatusBadGateway)
 
-				// Check if the error message is correctly propagated to the client.
-				// Especially when several proxies are chained.
-				// FIXME(hg): When HTTPS CONNECT request fails it does not propagate error message - HTTP client does not return it.
-				if scheme == "http" && !strings.Contains(string(res.Body), expectedErrorMessage) {
-					t.Fatalf("Expected valid error message, got %s", res.Body)
+				// Fallback to cres if no response was received - this is to work around Go behavior.
+				if len(res.Header) == 0 {
+					res = c.MakeResponse(cres)
+				}
+
+				if msg := res.Header.Get("X-Forwarder-Error"); !strings.Contains(msg, expectedErrorMessage) {
+					t.Fatalf("Expected error message to contain %q, got %q", expectedErrorMessage, msg)
 				}
 			})
 		}
