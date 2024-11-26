@@ -29,6 +29,7 @@ import (
 
 	"github.com/saucelabs/forwarder/dialvia"
 	"github.com/saucelabs/forwarder/internal/martian/log"
+	"github.com/saucelabs/forwarder/internal/martian/proxyutil"
 )
 
 func fixConnectReqContentLength(req *http.Request) {
@@ -200,4 +201,35 @@ func shouldTerminateTLS(req *http.Request) bool {
 	}
 	b, _ := strconv.ParseBool(h)
 	return b
+}
+
+type connectError struct {
+	res *http.Response
+}
+
+func (e *connectError) Error() string {
+	return "proxy connect error: " + e.res.Status
+}
+
+func (e *connectError) ConnectResponse() *http.Response {
+	return e.res
+}
+
+func OnProxyConnectResponse(_ context.Context, _ *url.URL, req *http.Request, connectRes *http.Response) error {
+	if connectRes.StatusCode/100 == 2 {
+		return nil
+	}
+
+	// Body cannot be read from the CONNECT response due to use of closed network connection.
+	res := proxyutil.NewResponse(connectRes.StatusCode, http.NoBody, req)
+	res.Header = connectRes.Header.Clone()
+	return &connectError{res}
+}
+
+func maybeConnectErrorResponse(err error) *http.Response {
+	var martianErr *connectError
+	if errors.As(err, &martianErr) {
+		return martianErr.ConnectResponse()
+	}
+	return nil
 }

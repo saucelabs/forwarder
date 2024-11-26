@@ -339,7 +339,10 @@ func (w h2Writer) CloseWrite() error {
 }
 
 func (p proxyHandler) writeErrorResponse(rw http.ResponseWriter, req *http.Request, err error) {
-	res := p.errorResponse(req, err)
+	res := maybeConnectErrorResponse(err)
+	if res == nil {
+		res = p.errorResponse(req, err)
+	}
 	if err := p.modifyResponse(res); err != nil {
 		log.Errorf(req.Context(), "error modifying error response: %v", err)
 		if !p.WithoutWarning {
