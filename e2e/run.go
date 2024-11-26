@@ -145,6 +145,7 @@ func testService(s *setup.Setup) *compose.Service {
 		Command: cmd,
 		Environment: map[string]string{
 			"GOMAXPROCS": "1",
+			"SETUP":      s.Name,
 		},
 		CPUSet: "0",
 	}
