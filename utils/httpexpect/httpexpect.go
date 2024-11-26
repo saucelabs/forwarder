@@ -120,10 +120,16 @@ func (c *Client) Request(method, path string, opts ...func(*http.Request)) *Resp
 
 		c.t.Fatalf("Failed to execute request %s, %s: %v", method, req.URL, err)
 	}
+
 	defer resp.Body.Close()
+	return c.MakeResponse(resp)
+}
+
+func (c *Client) MakeResponse(resp *http.Response) *Response {
+	req := resp.Request
 	b, err := io.ReadAll(resp.Body)
 	if err != nil {
-		c.t.Fatalf("Failed to read body from %s, %s: %v", method, req.URL, err)
+		c.t.Fatalf("Failed to read body from %s, %s: %v", req.Method, req.URL, err)
 	}
 	return &Response{Response: resp, Body: b, t: c.t}
 }
