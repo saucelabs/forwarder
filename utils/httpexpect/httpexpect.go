@@ -94,14 +94,18 @@ func (c *Client) do(req *http.Request) (*http.Response, error) {
 }
 
 func (c *Client) GET(path string, opts ...func(*http.Request)) *Response {
+	c.t.Helper()
 	return c.Request("GET", path, opts...)
 }
 
 func (c *Client) HEAD(path string, opts ...func(*http.Request)) *Response {
+	c.t.Helper()
 	return c.Request("HEAD", path, opts...)
 }
 
 func (c *Client) Request(method, path string, opts ...func(*http.Request)) *Response {
+	c.t.Helper()
+
 	req, err := http.NewRequestWithContext(context.Background(), method, fmt.Sprintf("%s%s", c.baseURL, path), http.NoBody)
 	if err != nil {
 		c.t.Fatalf("Failed to create request %s, %s: %v", method, req.URL, err)
@@ -121,11 +125,13 @@ func (c *Client) Request(method, path string, opts ...func(*http.Request)) *Resp
 		c.t.Fatalf("Failed to execute request %s, %s: %v", method, req.URL, err)
 	}
 
-	defer resp.Body.Close()
-	return c.MakeResponse(resp)
+	rr := c.MakeResponse(resp)
+	resp.Body.Close()
+	return rr
 }
 
 func (c *Client) MakeResponse(resp *http.Response) *Response {
+	c.t.Helper()
 	req := resp.Request
 	b, err := io.ReadAll(resp.Body)
 	if err != nil {
