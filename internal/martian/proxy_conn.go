@@ -387,7 +387,10 @@ func (p *proxyConn) handle() error {
 }
 
 func (p *proxyConn) writeErrorResponse(req *http.Request, err error) error {
-	res := p.errorResponse(req, err)
+	res := maybeConnectErrorResponse(err)
+	if res == nil {
+		res = p.errorResponse(req, err)
+	}
 	if err := p.modifyResponse(res); err != nil {
 		log.Errorf(req.Context(), "error modifying error response: %v", err)
 		if !p.WithoutWarning {

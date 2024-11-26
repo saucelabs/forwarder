@@ -156,6 +156,7 @@ func (p *Proxy) init() {
 			} else {
 				t.Proxy = p.ProxyURL
 			}
+			t.OnProxyConnectResponse = OnProxyConnectResponse
 
 			p.rt = t
 		}
