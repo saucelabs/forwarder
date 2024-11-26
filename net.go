@@ -12,7 +12,6 @@ import (
 	"fmt"
 	"net"
 	"slices"
-	"syscall"
 	"time"
 
 	"github.com/saucelabs/forwarder/conntrack"
@@ -48,6 +47,16 @@ func DialRedirectFromHostPortPairs(subs []HostPortPair) DialRedirectFunc {
 	}
 }
 
+// defaultKeepAliveConfig returns configuration that enables keep-alive pings with OS-specific parameters.
+func defaultKeepAliveConfig() net.KeepAliveConfig {
+	return net.KeepAliveConfig{
+		Enable:   true,
+		Idle:     -1,
+		Interval: -1,
+		Count:    -1,
+	}
+}
+
 type DialConfig struct {
 	// DialTimeout is the maximum amount of time a dial will wait for
 	// connect to complete.
@@ -57,9 +66,8 @@ type DialConfig struct {
 	// often around 3 minutes.
 	DialTimeout time.Duration
 
-	// KeepAlive enables TCP keep-alive probes for an active network connection.
-	// The keep-alive probes are sent with OS specific intervals.
-	KeepAlive bool
+	// KeepAliveConfig contains TCP keep-alive options.
+	KeepAliveConfig net.KeepAliveConfig
 
 	// RedirectFunc can be optionally set to redirect the connection to a different address.
 	RedirectFunc DialRedirectFunc
@@ -69,8 +77,8 @@ type DialConfig struct {
 
 func DefaultDialConfig() *DialConfig {
 	return &DialConfig{
-		DialTimeout: 25 * time.Second,
-		KeepAlive:   true,
+		DialTimeout:     25 * time.Second,
+		KeepAliveConfig: defaultKeepAliveConfig(),
 	}
 }
 
@@ -82,17 +90,12 @@ type Dialer struct {
 
 func NewDialer(cfg *DialConfig) *Dialer {
 	nd := net.Dialer{
-		Timeout:   cfg.DialTimeout,
-		KeepAlive: -1,
+		Timeout:         cfg.DialTimeout,
+		KeepAlive:       -1,
+		KeepAliveConfig: cfg.KeepAliveConfig,
 		Resolver: &net.Resolver{
 			PreferGo: true,
 		},
-	}
-
-	if cfg.KeepAlive {
-		nd.Control = func(network, address string, c syscall.RawConn) error {
-			return c.Control(enableTCPKeepAlive)
-		}
 	}
 
 	return &Dialer{
@@ -150,23 +153,6 @@ func (d *Dialer) DialContext(ctx context.Context, network, address string) (net.
 	}.Build(conn), nil
 }
 
-func defaultListenConfig() *net.ListenConfig {
-	return &net.ListenConfig{
-		KeepAlive: -1,
-		Control: func(network, address string, c syscall.RawConn) error {
-			return c.Control(enableTCPKeepAlive)
-		},
-	}
-}
-
-// Listen creates a listener for the provided network and address and configures OS-specific keep-alive parameters.
-// See net.Listen for more information.
-func Listen(network, address string) (net.Listener, error) {
-	// The context cancellation does not close the listener.
-	// I asked about it here: https://groups.google.com/g/golang-nuts/c/Q1I7Viz9AJc
-	return defaultListenConfig().Listen(context.Background(), network, address)
-}
-
 type ProxyProtocolConfig struct {
 	ReadHeaderTimeout time.Duration
 }
@@ -179,6 +165,7 @@ func DefaultProxyProtocolConfig() *ProxyProtocolConfig {
 
 type ListenerConfig struct {
 	Address             string
+	KeepAliveConfig     net.KeepAliveConfig
 	ProxyProtocolConfig *ProxyProtocolConfig
 	ReadLimit           SizeSuffix
 	WriteLimit          SizeSuffix
@@ -187,7 +174,8 @@ type ListenerConfig struct {
 
 func DefaultListenerConfig(addr string) *ListenerConfig {
 	return &ListenerConfig{
-		Address: addr,
+		Address:         addr,
+		KeepAliveConfig: defaultKeepAliveConfig(),
 	}
 }
 
@@ -246,7 +234,7 @@ func (l *Listener) Listen() error {
 		return fmt.Errorf("already listening on %s", l.Address)
 	}
 
-	ll, err := Listen("tcp", l.Address)
+	ll, err := l.listen()
 	if err != nil {
 		return err
 	}
@@ -269,6 +257,16 @@ func (l *Listener) Listen() error {
 	}
 
 	return nil
+}
+
+func (l *Listener) listen() (net.Listener, error) {
+	lc := &net.ListenConfig{
+		KeepAlive:       -1,
+		KeepAliveConfig: l.ListenerConfig.KeepAliveConfig,
+	}
+	// The context cancellation does not close the listener.
+	// I asked about it here: https://groups.google.com/g/golang-nuts/c/Q1I7Viz9AJc
+	return lc.Listen(context.Background(), "tcp", l.Address)
 }
 
 // Accept returns tls.Conn if TLSConfig is set, as martian expects it to be on top.
