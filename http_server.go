@@ -80,8 +80,9 @@ type HTTPServerConfig struct {
 	ReadTimeout       time.Duration
 	ReadHeaderTimeout time.Duration
 	WriteTimeout      time.Duration
-	LogHTTPMode       httplog.Mode
-	BasicAuth         *url.Userinfo
+	shutdownConfig
+	LogHTTPMode httplog.Mode
+	BasicAuth   *url.Userinfo
 	PromConfig
 }
 
@@ -91,6 +92,7 @@ func DefaultHTTPServerConfig() *HTTPServerConfig {
 		Protocol:          HTTPScheme,
 		IdleTimeout:       1 * time.Hour,
 		ReadHeaderTimeout: 1 * time.Minute,
+		shutdownConfig:    defaultShutdownConfig(),
 	}
 }
 
@@ -202,8 +204,16 @@ func (hs *HTTPServer) Run(ctx context.Context) error {
 		defer wg.Done()
 
 		<-ctx.Done()
-		if err := hs.srv.Shutdown(context.Background()); err != nil {
-			hs.log.Errorf("failed to shutdown server error=%s", err)
+
+		var cancel context.CancelFunc
+		ctx, cancel = shutdownContext(hs.config.shutdownConfig)
+		defer cancel()
+
+		if err := hs.srv.Shutdown(ctx); err != nil {
+			hs.log.Debugf("failed to gracefully shutdown server error=%s", err)
+			if err := hs.srv.Close(); err != nil {
+				hs.log.Debugf("failed to close server error=%s", err)
+			}
 		}
 	}()
 

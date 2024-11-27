@@ -319,6 +319,11 @@ func HTTPServerConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPServerConfig, prefix
 		namePrefix+"read-header-timeout", cfg.ReadHeaderTimeout,
 		"The amount of time allowed to read request headers.")
 
+	fs.DurationVar(&cfg.ShutdownTimeout,
+		namePrefix+"shutdown-timeout", cfg.ShutdownTimeout,
+		"The maximum amount of time to wait for the server to drain connections before closing. "+
+			"Zero means no limit. ")
+
 	fs.VarP(anyflag.NewValueWithRedact[*url.Userinfo](cfg.BasicAuth, &cfg.BasicAuth, forwarder.ParseUserinfo, RedactUserinfo),
 		namePrefix+"basic-auth", "", "<username[:password]>"+
 			"Basic authentication credentials to protect the server. ")
