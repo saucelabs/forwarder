@@ -1,10 +1,10 @@
-import threading
 import random
+import threading
 import time
 
 from playwright.sync_api import sync_playwright, TimeoutError
 
-headless = False
+headless = True
 concurrent = 3
 load_timeout = 7000
 monkey_testing_timeout = 3000
@@ -31,24 +31,13 @@ talkative = set([
 ])
 talkative_wait = 5
 
-firefox_user_prefs = {
-    "network.proxy.backup.ssl": "localhost",
-    "network.proxy.backup.ssl_port": 3128,
-    "network.proxy.http": "localhost",
-    "network.proxy.http_port": 3128,
-    "network.proxy.share_proxy_settings": True,
-    "network.proxy.ssl": "localhost",
-    "network.proxy.ssl_port": 3128,
-    "network.proxy.type": 1,
-
-    "security.OCSP.enabled": 0,
-}
-
 
 def open_page():
     with sync_playwright() as p:
-        browser = p.firefox.launch(headless=headless, firefox_user_prefs=firefox_user_prefs)
-        context = browser.new_context()
+        context = p.chromium.launch_persistent_context(
+            './profile', headless=headless,
+            proxy=dict(server='http://localhost:3128'),
+            ignore_https_errors=True)
 
         perm = list(range(len(urls)))
         random.shuffle(perm)
@@ -73,9 +62,9 @@ def open_page():
                 print(f'{threading.current_thread().name} timed out waiting for {url}')
 
             # Monkey testing
-            page.add_script_tag(url="https://cdnjs.cloudflare.com/ajax/libs/gremlins.js/0.1.0/gremlins.min.js")
+            page.add_script_tag(url="https://unpkg.com/gremlins.js")
             page.add_script_tag(content="""gremlins.createHorde().unleash();""")
-            time.sleep(monkey_testing_timeout/1000)
+            time.sleep(monkey_testing_timeout / 1000)
 
             page.close()
 
@@ -85,7 +74,7 @@ def open_page():
 def main():
     threads = []
     for i in range(concurrent):
-        t = threading.Thread(target=open_page, name=f'Thread-{i+1}')
+        t = threading.Thread(target=open_page, name=f'Thread-{i + 1}')
         t.start()
         threads.append(t)
     for thread in threads:
