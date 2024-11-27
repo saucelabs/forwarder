@@ -567,8 +567,29 @@ func (hp *HTTPProxy) run(ctx context.Context) error {
 	var g errgroup.Group
 	g.Go(func() error {
 		<-ctx.Done()
-		hp.Close()
-		return ctx.Err()
+		ctxErr := ctx.Err()
+
+		// Close listeners first to prevent new connections.
+		if err := hp.Close(); err != nil {
+			hp.log.Debugf("failed to close listeners error=%s", err)
+		}
+
+		var cancel context.CancelFunc
+		ctx, cancel = shutdownContext(hp.config.shutdownConfig)
+		defer cancel()
+
+		if err := hp.proxy.Shutdown(ctx); err != nil {
+			hp.log.Debugf("failed to gracefully shutdown server error=%s", err)
+			if err := hp.proxy.Close(); err != nil {
+				hp.log.Debugf("failed to close server error=%s", err)
+			}
+		}
+
+		if tr, ok := hp.transport.(*http.Transport); ok {
+			tr.CloseIdleConnections()
+		}
+
+		return ctxErr
 	})
 	for i := range hp.listeners {
 		l := hp.listeners[i]
@@ -628,22 +649,11 @@ func (hp *HTTPProxy) Addr() (addrs []string, ok bool) {
 }
 
 func (hp *HTTPProxy) Close() error {
-	// Close listeners first to prevent new connections.
 	var err error
 	for _, l := range hp.listeners {
 		if e := l.Close(); e != nil {
 			err = multierr.Append(err, e)
 		}
 	}
-
-	// Shutdown the proxy to stop serving requests.
-	if e := hp.proxy.Shutdown(context.Background()); e != nil {
-		err = multierr.Append(err, e)
-	}
-
-	if tr, ok := hp.transport.(*http.Transport); ok {
-		tr.CloseIdleConnections()
-	}
-
 	return err
 }
