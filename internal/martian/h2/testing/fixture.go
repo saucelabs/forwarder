@@ -16,6 +16,7 @@
 package testing
 
 import (
+	"context"
 	"crypto/tls"
 	"fmt"
 	"io"
@@ -137,7 +138,7 @@ func New(spf []h2.StreamProcessorFactory) (*Fixture, error) {
 func (f *Fixture) Close() error {
 	f.conn.Close()
 	f.server.Stop()
-	f.proxy.Shutdown()
+	f.proxy.Shutdown(context.Background())
 	f.wg.Wait()
 
 	if err := f.proxyListener.Close(); err != nil {

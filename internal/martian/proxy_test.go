@@ -62,7 +62,7 @@ func (h *testHelper) proxyClient(t *testing.T) (client client, cancel func()) {
 	p := h.proxy(t)
 	go h.serve(p, l)
 
-	return c, func() { l.Close(); p.Shutdown() }
+	return c, func() { l.Close(); p.Shutdown(context.Background()) }
 }
 
 func (h *testHelper) listenerAndClient(t *testing.T) (net.Listener, client) {
@@ -1631,6 +1631,69 @@ func TestIntegrationSkipRoundTrip(t *testing.T) {
 
 	if got, want := res.StatusCode, 200; got != want {
 		t.Errorf("res.StatusCode: got %d, want %d", got, want)
+	}
+}
+
+func TestIntegrationShutdown(t *testing.T) {
+	t.Parallel()
+
+	if *withHandler {
+		t.Skip("skipping in handler mode")
+	}
+
+	tr := martiantest.NewTransport()
+	tr.Respond(200)
+
+	h := testHelper{
+		Proxy: func(p *Proxy) {
+			p.RoundTripper = tr
+		},
+	}
+	l, c := h.listenerAndClient(t)
+	p := h.proxy(t)
+	go h.serve(p, l)
+
+	conn := c.dial(t)
+	defer conn.Close()
+
+	req, err := http.NewRequest(http.MethodGet, "http://example.com", http.NoBody)
+	if err != nil {
+		t.Fatalf("http.NewRequest(): got %v, want no error", err)
+	}
+
+	// GET http://example.com/ HTTP/1.1
+	// Host: example.com
+	if err := req.WriteProxy(conn); err != nil {
+		t.Fatalf("req.WriteProxy(): got %v, want no error", err)
+	}
+
+	// Wait for response...
+	if _, err := conn.Read(make([]byte, 1)); err != nil {
+		t.Fatalf("conn.Read(): got %v, want no error", err)
+	}
+
+	// Shutdown the proxy with timeout.
+	{
+		ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+		defer cancel()
+		done := make(chan struct{})
+		go func() {
+			if err := p.Shutdown(ctx); !errors.Is(err, context.DeadlineExceeded) {
+				t.Errorf("p.Shutdown(): got %v, want %v", err, context.DeadlineExceeded)
+			}
+			close(done)
+		}()
+		<-done
+	}
+
+	// Close the connection, and shutdown the proxy again.
+	conn.Close()
+	{
+		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+		defer cancel()
+		if p.Shutdown(ctx) != nil {
+			t.Error("p.Shutdown(): got error, want no error")
+		}
 	}
 }
 
