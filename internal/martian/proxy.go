@@ -19,10 +19,12 @@ import (
 	"crypto/tls"
 	"errors"
 	"io"
+	"math/rand"
 	"net"
 	"net/http"
 	"net/url"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/saucelabs/forwarder/internal/martian/log"
@@ -123,7 +125,7 @@ type Proxy struct {
 	initOnce sync.Once
 
 	rt        http.RoundTripper
-	conns     sync.WaitGroup
+	conns     atomic.Int32
 	connsMu   sync.Mutex // protects conns.Add/Wait from concurrent access
 	closeCh   chan bool
 	closeOnce sync.Once
@@ -172,6 +174,7 @@ func (p *Proxy) init() {
 			p.BaseContext = context.Background()
 		}
 
+		p.conns.Store(0)
 		p.closeCh = make(chan bool)
 	})
 }
@@ -179,20 +182,46 @@ func (p *Proxy) init() {
 // Shutdown sets the proxy to the closing state so it stops receiving new connections,
 // finishes processing any inflight requests, and closes existing connections without
 // reading anymore requests from them.
-func (p *Proxy) Shutdown() {
+func (p *Proxy) Shutdown(ctx context.Context) error {
 	p.init()
 
+	log.Infof(context.TODO(), "shutting down proxy, draining connections")
+
+	p.connsMu.Lock()
+	defer p.connsMu.Unlock()
+
 	p.closeOnce.Do(func() {
-		log.Infof(context.TODO(), "shutting down proxy")
-
 		close(p.closeCh)
-
-		log.Infof(context.TODO(), "draining connections")
-		p.connsMu.Lock()
-		p.conns.Wait()
-		p.connsMu.Unlock()
-		log.Infof(context.TODO(), "all connections closed")
 	})
+
+	const shutdownPollIntervalMax = 500 * time.Millisecond
+
+	pollIntervalBase := time.Millisecond
+	nextPollInterval := func() time.Duration {
+		// Add 10% jitter.
+		interval := pollIntervalBase + time.Duration(rand.Intn(int(pollIntervalBase/10)))
+		// Double and clamp for next time.
+		pollIntervalBase *= 2
+		if pollIntervalBase > shutdownPollIntervalMax {
+			pollIntervalBase = shutdownPollIntervalMax
+		}
+		return interval
+	}
+
+	timer := time.NewTimer(nextPollInterval())
+	defer timer.Stop()
+	for {
+		if n := p.conns.Load(); n == 0 {
+			log.Infof(context.TODO(), "all connections closed")
+			return nil
+		}
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-timer.C:
+			timer.Reset(nextPollInterval())
+		}
+	}
 }
 
 // closing returns whether the proxy is in the closing state.
@@ -256,7 +285,7 @@ func (p *Proxy) handleLoop(conn net.Conn) {
 	p.connsMu.Lock()
 	p.conns.Add(1)
 	p.connsMu.Unlock()
-	defer p.conns.Done()
+	defer p.conns.Add(-1)
 	defer conn.Close()
 	if p.closing() {
 		return
