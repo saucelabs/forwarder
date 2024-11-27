@@ -2,8 +2,7 @@ import threading
 import random
 import time
 
-from playwright.sync_api import sync_playwright
-from playwright._impl._api_types import TimeoutError
+from playwright.sync_api import sync_playwright, TimeoutError
 
 headless = False
 concurrent = 3
