@@ -636,8 +636,8 @@ func (hp *HTTPProxy) Close() error {
 		}
 	}
 
-	// Close the proxy to stop serving requests.
-	hp.proxy.Close()
+	// Shutdown the proxy to stop serving requests.
+	hp.proxy.Shutdown()
 
 	if tr, ok := hp.transport.(*http.Transport); ok {
 		tr.CloseIdleConnections()

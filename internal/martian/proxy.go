@@ -176,18 +176,18 @@ func (p *Proxy) init() {
 	})
 }
 
-// Close sets the proxy to the closing state so it stops receiving new connections,
+// Shutdown sets the proxy to the closing state so it stops receiving new connections,
 // finishes processing any inflight requests, and closes existing connections without
 // reading anymore requests from them.
-func (p *Proxy) Close() {
+func (p *Proxy) Shutdown() {
 	p.init()
 
 	p.closeOnce.Do(func() {
-		log.Infof(context.TODO(), "closing down proxy")
+		log.Infof(context.TODO(), "shutting down proxy")
 
 		close(p.closeCh)
 
-		log.Infof(context.TODO(), "waiting for connections to close")
+		log.Infof(context.TODO(), "draining connections")
 		p.connsMu.Lock()
 		p.conns.Wait()
 		p.connsMu.Unlock()
