@@ -114,8 +114,8 @@ type Proxy struct {
 	// A zero or negative value means there will be no timeout.
 	WriteTimeout time.Duration
 
-	// BaseContex is the base context for all requests.
-	BaseContex context.Context //nolint:containedctx // It's intended to be used as a base context.
+	// BaseContext is the base context for all requests.
+	BaseContext context.Context //nolint:containedctx // It's intended to be used as a base context.
 
 	// TestingSkipRoundTrip skips the round trip for requests and returns a 200 OK response.
 	TestingSkipRoundTrip bool
@@ -168,8 +168,8 @@ func (p *Proxy) init() {
 			}).DialContext
 		}
 
-		if p.BaseContex == nil {
-			p.BaseContex = context.Background()
+		if p.BaseContext == nil {
+			p.BaseContext = context.Background()
 		}
 
 		p.closeCh = make(chan bool)
