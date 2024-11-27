@@ -20,7 +20,6 @@ import (
 	"github.com/saucelabs/forwarder/httplog"
 	"github.com/saucelabs/forwarder/log"
 	"github.com/saucelabs/forwarder/middleware"
-	"go.uber.org/multierr"
 )
 
 type Scheme string
@@ -260,5 +259,5 @@ func (hs *HTTPServer) Addr() string {
 }
 
 func (hs *HTTPServer) Close() error {
-	return multierr.Combine(hs.listener.Close(), hs.srv.Close())
+	return hs.listener.Close()
 }
