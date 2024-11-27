@@ -30,6 +30,7 @@ import (
 	"github.com/saucelabs/forwarder/internal/martian/log"
 	"github.com/saucelabs/forwarder/internal/martian/mitm"
 	"github.com/saucelabs/forwarder/internal/martian/proxyutil"
+	"go.uber.org/multierr"
 	"golang.org/x/net/http/httpguts"
 )
 
@@ -124,9 +125,10 @@ type Proxy struct {
 
 	initOnce sync.Once
 
-	rt      http.RoundTripper
-	connsWg atomic.Int32
-	connsMu sync.Mutex // protects connsWg.Add/Wait from concurrent access
+	rt        http.RoundTripper
+	conns     map[net.Conn]struct{}
+	connsWg   atomic.Int32
+	connsMu   sync.Mutex // protects connsWg.Add/Wait and conns from concurrent access
 	closeCh   chan bool
 	closeOnce sync.Once
 }
@@ -174,6 +176,7 @@ func (p *Proxy) init() {
 			p.BaseContext = context.Background()
 		}
 
+		p.conns = make(map[net.Conn]struct{})
 		p.connsWg.Store(0)
 		p.closeCh = make(chan bool)
 	})
@@ -222,6 +225,27 @@ func (p *Proxy) Shutdown(ctx context.Context) error {
 			timer.Reset(nextPollInterval())
 		}
 	}
+}
+
+// Close closes the proxy and all connections it has accepted.
+func (p *Proxy) Close() error {
+	p.init()
+
+	p.connsMu.Lock()
+	defer p.connsMu.Unlock()
+
+	p.closeOnce.Do(func() {
+		close(p.closeCh)
+	})
+
+	var err error
+	for conn := range p.conns {
+		if e := conn.Close(); e != nil {
+			err = multierr.Append(err, e)
+		}
+	}
+
+	return err
 }
 
 // closing returns whether the proxy is in the closing state.
@@ -283,8 +307,15 @@ func (p *Proxy) handleLoop(conn net.Conn) {
 	start := time.Now()
 
 	p.connsMu.Lock()
+	p.conns[conn] = struct{}{}
 	p.connsWg.Add(1)
 	p.connsMu.Unlock()
+
+	defer func() {
+		p.connsMu.Lock()
+		delete(p.conns, conn)
+		p.connsMu.Unlock()
+	}()
 	defer p.connsWg.Add(-1)
 	defer conn.Close()
 	if p.closing() {
