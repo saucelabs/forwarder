@@ -124,9 +124,9 @@ type Proxy struct {
 
 	initOnce sync.Once
 
-	rt        http.RoundTripper
-	conns     atomic.Int32
-	connsMu   sync.Mutex // protects conns.Add/Wait from concurrent access
+	rt      http.RoundTripper
+	connsWg atomic.Int32
+	connsMu sync.Mutex // protects connsWg.Add/Wait from concurrent access
 	closeCh   chan bool
 	closeOnce sync.Once
 }
@@ -174,7 +174,7 @@ func (p *Proxy) init() {
 			p.BaseContext = context.Background()
 		}
 
-		p.conns.Store(0)
+		p.connsWg.Store(0)
 		p.closeCh = make(chan bool)
 	})
 }
@@ -211,7 +211,7 @@ func (p *Proxy) Shutdown(ctx context.Context) error {
 	timer := time.NewTimer(nextPollInterval())
 	defer timer.Stop()
 	for {
-		if n := p.conns.Load(); n == 0 {
+		if n := p.connsWg.Load(); n == 0 {
 			log.Infof(context.TODO(), "all connections closed")
 			return nil
 		}
@@ -283,9 +283,9 @@ func (p *Proxy) handleLoop(conn net.Conn) {
 	start := time.Now()
 
 	p.connsMu.Lock()
-	p.conns.Add(1)
+	p.connsWg.Add(1)
 	p.connsMu.Unlock()
-	defer p.conns.Add(-1)
+	defer p.connsWg.Add(-1)
 	defer conn.Close()
 	if p.closing() {
 		return
