@@ -110,6 +110,7 @@ func DefaultHTTPProxyConfig() *HTTPProxyConfig {
 			Protocol:          HTTPScheme,
 			IdleTimeout:       1 * time.Hour,
 			ReadHeaderTimeout: 1 * time.Minute,
+			shutdownConfig:    defaultShutdownConfig(),
 			TLSServerConfig: TLSServerConfig{
 				HandshakeTimeout: 10 * time.Second,
 			},
@@ -534,10 +535,20 @@ func (hp *HTTPProxy) runHTTPHandler(ctx context.Context) error {
 	var g errgroup.Group
 	g.Go(func() error {
 		<-ctx.Done()
-		if err := srv.Shutdown(context.Background()); err != nil {
-			hp.log.Errorf("failed to shutdown server error=%s", err)
+		ctxErr := ctx.Err()
+
+		var cancel context.CancelFunc
+		ctx, cancel = shutdownContext(hp.config.shutdownConfig)
+		defer cancel()
+
+		if err := srv.Shutdown(ctx); err != nil {
+			hp.log.Debugf("failed to gracefully shutdown server error=%s", err)
+			if err := srv.Close(); err != nil {
+				hp.log.Debugf("failed to close server error=%s", err)
+			}
 		}
-		return ctx.Err()
+
+		return ctxErr
 	})
 	for i := range hp.listeners {
 		l := hp.listeners[i]
