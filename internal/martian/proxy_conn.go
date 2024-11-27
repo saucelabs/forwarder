@@ -114,7 +114,7 @@ func (p *proxyConn) readRequest() (*http.Request, error) {
 	if p.secure {
 		req.TLS = &p.cs
 	}
-	req = req.WithContext(withTraceID(p.BaseContex, newTraceID(req.Header.Get(p.RequestIDHeader))))
+	req = req.WithContext(withTraceID(p.BaseContext, newTraceID(req.Header.Get(p.RequestIDHeader))))
 
 	// Adjust the read deadline if necessary.
 	if !hdrDeadline.Equal(wholeReqDeadline) {
