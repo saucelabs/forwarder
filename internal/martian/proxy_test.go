@@ -62,7 +62,7 @@ func (h *testHelper) proxyClient(t *testing.T) (client client, cancel func()) {
 	p := h.proxy(t)
 	go h.serve(p, l)
 
-	return c, func() { l.Close(); p.Close() }
+	return c, func() { l.Close(); p.Shutdown() }
 }
 
 func (h *testHelper) listenerAndClient(t *testing.T) (net.Listener, client) {

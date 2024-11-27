@@ -137,7 +137,7 @@ func New(spf []h2.StreamProcessorFactory) (*Fixture, error) {
 func (f *Fixture) Close() error {
 	f.conn.Close()
 	f.server.Stop()
-	f.proxy.Close()
+	f.proxy.Shutdown()
 	f.wg.Wait()
 
 	if err := f.proxyListener.Close(); err != nil {
