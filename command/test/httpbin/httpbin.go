@@ -81,7 +81,6 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 	if err != nil {
 		return err
 	}
-	defer s.Close()
 	g.Add(s.Run)
 
 	g.Add(func(ctx context.Context) error {
