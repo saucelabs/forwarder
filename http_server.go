@@ -14,7 +14,6 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"runtime"
 	"sync"
 	"time"
 
@@ -147,7 +146,6 @@ func NewHTTPServer(cfg *HTTPServerConfig, h http.Handler, log log.Logger) (*HTTP
 		return nil, err
 	}
 	hs.listener = l
-	runtime.SetFinalizer(hs, (*HTTPServer).closeListener)
 
 	hs.log.Infof("HTTP server listen address=%s protocol=%s", l.Addr(), hs.config.Protocol)
 
@@ -260,6 +258,6 @@ func (hs *HTTPServer) Addr() string {
 	return hs.listener.Addr().String()
 }
 
-func (hs *HTTPServer) closeListener() error {
+func (hs *HTTPServer) Close() error {
 	return hs.listener.Close()
 }

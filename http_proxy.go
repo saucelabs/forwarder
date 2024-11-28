@@ -16,7 +16,6 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"runtime"
 	"slices"
 	"strings"
 	"time"
@@ -189,7 +188,6 @@ func NewHTTPProxy(cfg *HTTPProxyConfig, pr PACResolver, cm *CredentialsMatcher, 
 		return nil, err
 	}
 	hp.listeners = ll
-	runtime.SetFinalizer(hp, (*HTTPProxy).closeListeners)
 
 	for _, l := range hp.listeners {
 		hp.log.Infof("PROXY server listen address=%s protocol=%s", l.Addr(), hp.config.Protocol)
@@ -572,7 +570,7 @@ func (hp *HTTPProxy) run(ctx context.Context) error {
 		ctxErr := ctx.Err()
 
 		// Close listeners first to prevent new connections.
-		if err := hp.closeListeners(); err != nil {
+		if err := hp.Close(); err != nil {
 			hp.log.Debugf("failed to close listeners error=%s", err)
 		}
 
@@ -650,7 +648,7 @@ func (hp *HTTPProxy) Addr() (addrs []string, ok bool) {
 	return
 }
 
-func (hp *HTTPProxy) closeListeners() error {
+func (hp *HTTPProxy) Close() error {
 	var err error
 	for _, l := range hp.listeners {
 		if e := l.Close(); e != nil {
