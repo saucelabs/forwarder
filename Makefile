@@ -98,3 +98,15 @@ run:
 run-race: .forwarder.yaml
 run-race:
 	@go run --race ./cmd/forwarder run --config-file .forwarder.yaml
+
+.PHONY: cpu.prof
+cpu.prof:
+	@curl -s http://localhost:10000/debug/pprof/profile?seconds=30 > cpu.prof
+
+.PHONY: mem.prof
+mem.prof:
+	@curl -s http://localhost:10000/debug/pprof/heap > mem.prof
+
+.PHONY: mutex.prof
+mutex.prof:
+	@curl -s http://localhost:10000/debug/pprof/mutex > mutex.prof

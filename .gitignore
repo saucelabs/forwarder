@@ -17,6 +17,9 @@
 *.out
 coverage.*
 
+# Output of the go profiling tool
+*.prof
+
 # Generated bin
 bin/
 completions/
