@@ -314,3 +314,8 @@ func (c *Config) cert(ctx context.Context, hostname string) (*tls.Certificate, e
 
 	return tlsc, nil
 }
+
+// CacheMetrics return the metrics for the certificate cache.
+func (c *Config) CacheMetrics() CacheMetrics {
+	return CacheMetrics(c.certs.Metrics())
+}
