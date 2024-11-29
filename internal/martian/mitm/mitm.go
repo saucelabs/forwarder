@@ -30,7 +30,6 @@ import (
 	"math/big"
 	"net"
 	"net/http"
-	"sync"
 	"time"
 
 	"github.com/saucelabs/forwarder/internal/martian/h2"
@@ -52,12 +51,10 @@ type Config struct {
 	validity               time.Duration
 	org                    string
 	h2Config               *h2.Config
+	certs                  Cache
 	roots                  *x509.CertPool
 	skipVerify             bool
 	handshakeErrorCallback func(*http.Request, error)
-
-	certmu sync.RWMutex
-	certs  map[string]*tls.Certificate
 }
 
 // NewAuthority creates a new CA certificate and associated
@@ -119,6 +116,14 @@ func NewAuthority(name, organization string, validity time.Duration) (*x509.Cert
 // NewConfig creates a MITM config using the CA certificate and
 // private key to generate on-the-fly certificates.
 func NewConfig(ca *x509.Certificate, privateKey any) (*Config, error) {
+	certs, err := NewCache(DefaultCacheConfig())
+	if err != nil {
+		return nil, err
+	}
+	return NewConfigWithCache(ca, privateKey, certs)
+}
+
+func NewConfigWithCache(ca *x509.Certificate, privateKey any, certs Cache) (*Config, error) {
 	roots := x509.NewCertPool()
 	roots.AddCert(ca)
 
@@ -145,7 +150,7 @@ func NewConfig(ca *x509.Certificate, privateKey any) (*Config, error) {
 		keyID:    keyID,
 		validity: time.Hour,
 		org:      "Martian Proxy",
-		certs:    make(map[string]*tls.Certificate),
+		certs:    certs,
 		roots:    roots,
 	}, nil
 }
@@ -245,10 +250,7 @@ func (c *Config) cert(ctx context.Context, hostname string) (*tls.Certificate, e
 		hostname = host
 	}
 
-	c.certmu.RLock()
-	tlsc, ok := c.certs[hostname]
-	c.certmu.RUnlock()
-
+	tlsc, ok := c.certs.Get(hostname)
 	if ok {
 		log.Debugf(ctx, "mitm: cache hit for %s", hostname)
 
@@ -308,9 +310,7 @@ func (c *Config) cert(ctx context.Context, hostname string) (*tls.Certificate, e
 		Leaf:        x509c,
 	}
 
-	c.certmu.Lock()
-	c.certs[hostname] = tlsc
-	c.certmu.Unlock()
+	c.certs.Add(hostname, tlsc)
 
 	return tlsc, nil
 }
