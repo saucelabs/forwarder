@@ -53,3 +53,5 @@ func NewCache(cfg CacheConfig) (Cache, error) {
 	certs.SetLifetime(cfg.TTL)
 	return Cache{certs}, nil
 }
+
+type CacheMetrics freelru.Metrics
