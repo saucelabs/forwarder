@@ -68,7 +68,7 @@ brews:
       email: "scdev@saucelabs.com"
     directory: Formula
     goarm: "7"
-    homepage: https://forwarder-proxy.io
+    homepage: https://opensource.saucelabs.com/forwarder/
     description: Forward MITM proxy with PAC support
     license: MPL-2.0
     test: |
@@ -94,7 +94,7 @@ winget:
     publisher: SauceLabs
     publisher_url: https://saucelabs.com
     short_description: Forward MITM proxy with PAC support
-    homepage: https://forwarder-proxy.io
+    homepage: https://opensource.saucelabs.com/forwarder/
     license: MPL-2.0
 
 nfpms:

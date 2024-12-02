@@ -13,7 +13,7 @@ It can proxy:
 
 ## Documentation
 
-The documentation is available at [forwarder-proxy.io](https://forwarder-proxy.io).
+The documentation is available at [opensource.saucelabs.com/forwarder/](https://opensource.saucelabs.com/forwarder/).
 
 ## Development
 
