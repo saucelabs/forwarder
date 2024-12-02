@@ -184,6 +184,13 @@ func MITMConfig(fs *pflag.FlagSet, mitm *bool, cfg *forwarder.MITMConfig) {
 
 	fs.DurationVar(&cfg.Validity, "mitm-validity", cfg.Validity, ""+
 		"Validity period of the generated MITM certificates. ")
+
+	fs.Uint32Var(&cfg.CacheSize, "mitm-cache-size", cfg.CacheSize, "<size>"+
+		"Maximum number of certificates to cache. "+
+		"If the cache is full, the least recently used certificate is removed. ")
+
+	fs.DurationVar(&cfg.CacheTTL, "mitm-cache-ttl", cfg.CacheTTL, "<duration>"+
+		"Expiration time of the cached certificates. ")
 }
 
 func MITMDomains(fs *pflag.FlagSet, cfg *[]ruleset.RegexpListItem) {
