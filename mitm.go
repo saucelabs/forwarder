@@ -17,17 +17,22 @@ import (
 )
 
 type MITMConfig struct {
-	CACertFile string
-	CAKeyFile  string
-
+	CACertFile   string
+	CAKeyFile    string
 	Organization string
 	Validity     time.Duration
+	CacheSize    uint32
+	CacheTTL     time.Duration
 }
 
 func DefaultMITMConfig() *MITMConfig {
+	cc := mitm.DefaultCacheConfig()
+
 	return &MITMConfig{
 		Organization: "Forwarder Proxy MITM",
 		Validity:     24 * time.Hour, //nolint:gomnd // 24 hours is a reasonable default
+		CacheSize:    cc.Capacity,
+		CacheTTL:     cc.TTL,
 	}
 }
 
@@ -57,7 +62,14 @@ func newMartianMITMConfig(c *MITMConfig) (*mitm.Config, error) {
 		return nil, errors.New("certificate is not a CA")
 	}
 
-	cfg, err := mitm.NewConfig(ca, cert.PrivateKey)
+	cache, err := mitm.NewCache(mitm.CacheConfig{
+		Capacity: c.CacheSize,
+		TTL:      c.CacheTTL,
+	})
+	if err != nil {
+		return nil, err
+	}
+	cfg, err := mitm.NewConfigWithCache(ca, cert.PrivateKey, cache)
 	if err != nil {
 		return nil, err
 	}

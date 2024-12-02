@@ -9,6 +9,7 @@ package forwarder
 import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/saucelabs/forwarder/internal/martian/mitm/mitmprom"
 )
 
 type httpProxyMetrics struct {
@@ -32,4 +33,11 @@ func newHTTPProxyMetrics(r prometheus.Registerer, namespace string) *httpProxyMe
 
 func (m *httpProxyMetrics) error(reason string) {
 	m.errors.WithLabelValues(reason).Inc()
+}
+
+func registerMITMCacheMetrics(r prometheus.Registerer, namespace string, cm mitmprom.CacheMetricsFunc) {
+	if r == nil {
+		r = prometheus.NewRegistry() // This registry will be discarded.
+	}
+	r.MustRegister(mitmprom.NewCacheMetricsCollector(namespace, cm))
 }
