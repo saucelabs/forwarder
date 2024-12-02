@@ -39,5 +39,3 @@ Now if you run some traffic through the Forwarder, you should see decrypted traf
 ```bash
 curl -k -x localhost:3128 https://example.com
 ```  
-
-![Wireshark HTTP](/img/wireshark-1.png)
