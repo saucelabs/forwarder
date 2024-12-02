@@ -276,6 +276,7 @@ func (hp *HTTPProxy) configureProxy() error {
 		} else {
 			hp.log.Infof("using MITM")
 		}
+		registerMITMCacheMetrics(hp.config.PromRegistry, hp.config.PromNamespace+"_mitm_", mc.CacheMetrics)
 		hp.mitmCACert = mc.CACert()
 
 		hp.proxy.MITMConfig = mc
