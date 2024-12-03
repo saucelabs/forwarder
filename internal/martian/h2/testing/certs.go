@@ -22,12 +22,12 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	_ "embed"
 	"fmt"
 	"log"
 	"os"
 	"time"
 
-	"github.com/saucelabs/forwarder/internal/martian/cybervillains"
 	"github.com/saucelabs/forwarder/internal/martian/mitm"
 	"google.golang.org/grpc/credentials"
 )
@@ -65,8 +65,14 @@ func init() {
 	}
 }
 
+//go:embed cybervillains.crt
+var cybervillainsCert []byte
+
+//go:embed cybervillains.key
+var cybervillainsKey []byte
+
 func initCA() (*x509.Certificate, crypto.PrivateKey, error) {
-	chain, err := tls.X509KeyPair([]byte(cybervillains.Cert), []byte(cybervillains.Key))
+	chain, err := tls.X509KeyPair(cybervillainsCert, cybervillainsKey)
 	if err != nil {
 		return nil, nil, fmt.Errorf("creating Cybervillains root: %w", err)
 	}
