@@ -148,7 +148,9 @@ func (p *Proxy) clientTLSConfig() *tls.Config {
 		return tr.TLSClientConfig.Clone()
 	}
 
-	return &tls.Config{}
+	return &tls.Config{
+		MinVersion: tls.VersionTLS12,
+	}
 }
 
 func (p *Proxy) connectSOCKS5(req *http.Request, proxyURL *url.URL) (*http.Response, net.Conn, error) {

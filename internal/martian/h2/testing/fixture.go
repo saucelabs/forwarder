@@ -165,6 +165,7 @@ func newProxy(spf []h2.StreamProcessorFactory) (*martian.Proxy, error) {
 
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{
+			MinVersion: tls.VersionTLS12,
 			RootCAs: RootCAs,
 		},
 	}

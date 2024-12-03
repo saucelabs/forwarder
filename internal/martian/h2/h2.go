@@ -58,6 +58,7 @@ func (c *Config) Proxy(closing chan bool, cc io.ReadWriter, url *url.URL) error 
 		log.Infof(context.TODO(), "\u001b[1;35mProxying %v with HTTP/2\u001b[0m", url)
 	}
 	sc, err := tls.Dial("tcp", url.Host, &tls.Config{
+		MinVersion: tls.VersionTLS12,
 		RootCAs:    c.RootCAs,
 		NextProtos: []string{"h2"},
 	})
