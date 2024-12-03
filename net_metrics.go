@@ -86,7 +86,7 @@ func addr2Host(addr string) string {
 type listenerMetrics struct {
 	errors   prometheus.Counter
 	accepted prometheus.Counter
-	closed   prometheus.Counter
+	active   prometheus.Gauge
 }
 
 func newListenerMetrics(r prometheus.Registerer, namespace string) *listenerMetrics {
@@ -102,14 +102,14 @@ func newListenerMetrics(r prometheus.Registerer, namespace string) *listenerMetr
 			Help:      "Number of listener errors when accepting connections",
 		}),
 		accepted: f.NewCounter(prometheus.CounterOpts{
-			Name:      "listener_accepted_total",
+			Name:      "listener_cx_total",
 			Namespace: namespace,
 			Help:      "Number of accepted connections",
 		}),
-		closed: f.NewCounter(prometheus.CounterOpts{
-			Name:      "listener_closed_total",
+		active: f.NewGauge(prometheus.GaugeOpts{
+			Name:      "listener_cx_active",
 			Namespace: namespace,
-			Help:      "Number of closed connections",
+			Help:      "Number of active connections",
 		}),
 	}
 }
@@ -120,10 +120,11 @@ func (m *listenerMetrics) error() {
 
 func (m *listenerMetrics) accept() {
 	m.accepted.Inc()
+	m.active.Inc()
 }
 
 func (m *listenerMetrics) close() {
-	m.closed.Inc()
+	m.active.Dec()
 }
 
 func newListenerMetricsWithNameFunc(r prometheus.Registerer, namespace string) func(name string) *listenerMetrics {
@@ -138,21 +139,21 @@ func newListenerMetricsWithNameFunc(r prometheus.Registerer, namespace string) f
 		Help:      "Number of listener errors when accepting connections",
 	}, []string{"name"})
 	accepted := f.NewCounterVec(prometheus.CounterOpts{
-		Name:      "listener_accepted_total",
+		Name:      "listener_cx_total",
 		Namespace: namespace,
 		Help:      "Number of accepted connections",
 	}, []string{"name"})
-	closed := f.NewCounterVec(prometheus.CounterOpts{
-		Name:      "listener_closed_total",
+	active := f.NewGaugeVec(prometheus.GaugeOpts{
+		Name:      "listener_cx_active",
 		Namespace: namespace,
-		Help:      "Number of closed connections",
+		Help:      "Number of active connections",
 	}, []string{"name"})
 
 	return func(name string) *listenerMetrics {
 		return &listenerMetrics{
 			errors:   errors.WithLabelValues(name),
 			accepted: accepted.WithLabelValues(name),
-			closed:   closed.WithLabelValues(name),
+			active:   active.WithLabelValues(name),
 		}
 	}
 }
