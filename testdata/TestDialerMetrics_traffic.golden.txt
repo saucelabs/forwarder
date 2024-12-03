@@ -1,9 +1,9 @@
-# HELP test_dialer_closed_total Number of closed connections
-# TYPE test_dialer_closed_total counter
-test_dialer_closed_total{host="localhost"} 10
-# HELP test_dialer_dialed_total Number of dialed connections
-# TYPE test_dialer_dialed_total counter
-test_dialer_dialed_total{host="localhost"} 10
+# HELP test_dialer_cx_active Number of active connections
+# TYPE test_dialer_cx_active gauge
+test_dialer_cx_active{host="localhost"} 0
+# HELP test_dialer_cx_total Number of dialed connections
+# TYPE test_dialer_cx_total counter
+test_dialer_cx_total{host="localhost"} 10
 # HELP test_dialer_rx_bytes_total Total number of bytes read by the dialer.
 # TYPE test_dialer_rx_bytes_total counter
 test_dialer_rx_bytes_total{conn_id="0"} 1

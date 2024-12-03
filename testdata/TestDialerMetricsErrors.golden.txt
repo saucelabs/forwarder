@@ -1,3 +1,3 @@
-# HELP test_dialer_errors_total Number of dialer errors
+# HELP test_dialer_errors_total Number of errors dialing connections
 # TYPE test_dialer_errors_total counter
 test_dialer_errors_total{host="localhost"} 1
