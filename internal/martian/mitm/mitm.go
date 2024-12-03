@@ -22,7 +22,7 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/rsa"
-	"crypto/sha1"
+	"crypto/sha256"
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
@@ -72,7 +72,7 @@ func NewAuthority(name, organization string, validity time.Duration) (*x509.Cert
 	if err != nil {
 		return nil, nil, err
 	}
-	h := sha1.New()
+	h := sha256.New()
 	h.Write(pkixpub)
 	keyID := h.Sum(nil)
 
@@ -139,7 +139,7 @@ func NewConfigWithCache(ca *x509.Certificate, privateKey any, certs Cache) (*Con
 	if err != nil {
 		return nil, err
 	}
-	h := sha1.New()
+	h := sha256.New()
 	h.Write(pkixpub)
 	keyID := h.Sum(nil)
 
