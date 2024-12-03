@@ -109,7 +109,11 @@ issues:
       linters:
         - goheader
         - errcheck
+
+    - path: internal/martian
+      linters:
         - gosec
+      source: "uint32\\(len\\(|\\.Len\\(\\)"
 
     - path: internal/martian/context.go
       linters:
