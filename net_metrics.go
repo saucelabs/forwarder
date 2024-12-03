@@ -15,8 +15,8 @@ import (
 )
 
 type dialerMetrics struct {
-	dialed *prometheus.CounterVec
 	errors *prometheus.CounterVec
+	dialed *prometheus.CounterVec
 	closed *prometheus.CounterVec
 }
 
@@ -28,15 +28,15 @@ func newDialerMetrics(r prometheus.Registerer, namespace string) *dialerMetrics 
 	l := []string{"host"}
 
 	return &dialerMetrics{
-		dialed: f.NewCounterVec(prometheus.CounterOpts{
-			Name:      "dialer_dialed_total",
-			Namespace: namespace,
-			Help:      "Number of dialed connections",
-		}, l),
 		errors: f.NewCounterVec(prometheus.CounterOpts{
 			Name:      "dialer_errors_total",
 			Namespace: namespace,
 			Help:      "Number of dialer errors",
+		}, l),
+		dialed: f.NewCounterVec(prometheus.CounterOpts{
+			Name:      "dialer_dialed_total",
+			Namespace: namespace,
+			Help:      "Number of dialed connections",
 		}, l),
 		closed: f.NewCounterVec(prometheus.CounterOpts{
 			Name:      "dialer_closed_total",
@@ -46,12 +46,12 @@ func newDialerMetrics(r prometheus.Registerer, namespace string) *dialerMetrics 
 	}
 }
 
-func (m *dialerMetrics) dial(addr string) {
-	m.dialed.WithLabelValues(addr2Host(addr)).Inc()
-}
-
 func (m *dialerMetrics) error(addr string) {
 	m.errors.WithLabelValues(addr2Host(addr)).Inc()
+}
+
+func (m *dialerMetrics) dial(addr string) {
+	m.dialed.WithLabelValues(addr2Host(addr)).Inc()
 }
 
 func (m *dialerMetrics) close(addr string) {
