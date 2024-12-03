@@ -1,11 +1,11 @@
-# HELP test_listener_accepted_total Number of accepted connections
-# TYPE test_listener_accepted_total counter
-test_listener_accepted_total{name="a"} 10
-test_listener_accepted_total{name="b"} 10
-# HELP test_listener_closed_total Number of closed connections
-# TYPE test_listener_closed_total counter
-test_listener_closed_total{name="a"} 10
-test_listener_closed_total{name="b"} 10
+# HELP test_listener_cx_active Number of active connections
+# TYPE test_listener_cx_active gauge
+test_listener_cx_active{name="a"} 0
+test_listener_cx_active{name="b"} 0
+# HELP test_listener_cx_total Number of accepted connections
+# TYPE test_listener_cx_total counter
+test_listener_cx_total{name="a"} 10
+test_listener_cx_total{name="b"} 10
 # HELP test_listener_errors_total Number of listener errors when accepting connections
 # TYPE test_listener_errors_total counter
 test_listener_errors_total{name="a"} 0
