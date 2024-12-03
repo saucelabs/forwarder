@@ -53,7 +53,6 @@ type Config struct {
 	h2Config               *h2.Config
 	certs                  Cache
 	roots                  *x509.CertPool
-	skipVerify             bool
 	handshakeErrorCallback func(*http.Request, error)
 }
 
@@ -161,11 +160,6 @@ func (c *Config) SetValidity(validity time.Duration) {
 	c.validity = validity
 }
 
-// SkipTLSVerify skips the TLS certification verification check.
-func (c *Config) SkipTLSVerify(skip bool) {
-	c.skipVerify = skip
-}
-
 // SetOrganization sets the organization of the certificate.
 func (c *Config) SetOrganization(org string) {
 	c.org = org
@@ -205,7 +199,6 @@ func (c *Config) CACert() *x509.Certificate {
 func (c *Config) TLS(ctx context.Context) *tls.Config {
 	return &tls.Config{
 		MinVersion: tls.VersionTLS12,
-		InsecureSkipVerify: c.skipVerify,
 		GetCertificate: func(clientHello *tls.ClientHelloInfo) (*tls.Certificate, error) {
 			if clientHello.ServerName == "" {
 				return nil, errors.New("mitm: SNI not provided, failed to build certificate")
@@ -226,7 +219,6 @@ func (c *Config) TLSForHost(ctx context.Context, hostname string) *tls.Config {
 	}
 	return &tls.Config{
 		MinVersion: tls.VersionTLS12,
-		InsecureSkipVerify: c.skipVerify,
 		GetCertificate: func(clientHello *tls.ClientHelloInfo) (*tls.Certificate, error) {
 			host := clientHello.ServerName
 			if host == "" {

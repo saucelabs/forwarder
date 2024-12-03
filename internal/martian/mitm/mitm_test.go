@@ -74,14 +74,9 @@ func TestMITM(t *testing.T) {
 		t.Errorf("x509c.Subject.CommonName: got %q, want %q", got, want)
 	}
 
-	c.SkipTLSVerify(true)
-
 	conf = c.TLSForHost(ctx, exampleHostname)
 	if got := conf.NextProtos; !reflect.DeepEqual(got, protos) {
 		t.Errorf("conf.NextProtos: got %v, want %v", got, protos)
-	}
-	if !conf.InsecureSkipVerify {
-		t.Error("conf.InsecureSkipVerify: got false, want true")
 	}
 
 	// Set SNI, takes precedence over host.
