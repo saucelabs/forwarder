@@ -204,6 +204,7 @@ func (c *Config) CACert() *x509.Certificate {
 // the SNI extension in the TLS ClientHello.
 func (c *Config) TLS(ctx context.Context) *tls.Config {
 	return &tls.Config{
+		MinVersion: tls.VersionTLS12,
 		InsecureSkipVerify: c.skipVerify,
 		GetCertificate: func(clientHello *tls.ClientHelloInfo) (*tls.Certificate, error) {
 			if clientHello.ServerName == "" {
@@ -224,6 +225,7 @@ func (c *Config) TLSForHost(ctx context.Context, hostname string) *tls.Config {
 		nextProtos = []string{"h2", "http/1.1"}
 	}
 	return &tls.Config{
+		MinVersion: tls.VersionTLS12,
 		InsecureSkipVerify: c.skipVerify,
 		GetCertificate: func(clientHello *tls.ClientHelloInfo) (*tls.Certificate, error) {
 			host := clientHello.ServerName
