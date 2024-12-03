@@ -84,8 +84,8 @@ func addr2Host(addr string) string {
 }
 
 type listenerMetrics struct {
-	accepted prometheus.Counter
 	errors   prometheus.Counter
+	accepted prometheus.Counter
 	closed   prometheus.Counter
 }
 
@@ -96,15 +96,15 @@ func newListenerMetrics(r prometheus.Registerer, namespace string) *listenerMetr
 	f := promauto.With(r)
 
 	return &listenerMetrics{
-		accepted: f.NewCounter(prometheus.CounterOpts{
-			Name:      "listener_accepted_total",
-			Namespace: namespace,
-			Help:      "Number of accepted connections",
-		}),
 		errors: f.NewCounter(prometheus.CounterOpts{
 			Name:      "listener_errors_total",
 			Namespace: namespace,
 			Help:      "Number of listener errors when accepting connections",
+		}),
+		accepted: f.NewCounter(prometheus.CounterOpts{
+			Name:      "listener_accepted_total",
+			Namespace: namespace,
+			Help:      "Number of accepted connections",
 		}),
 		closed: f.NewCounter(prometheus.CounterOpts{
 			Name:      "listener_closed_total",
@@ -114,12 +114,12 @@ func newListenerMetrics(r prometheus.Registerer, namespace string) *listenerMetr
 	}
 }
 
-func (m *listenerMetrics) accept() {
-	m.accepted.Inc()
-}
-
 func (m *listenerMetrics) error() {
 	m.errors.Inc()
+}
+
+func (m *listenerMetrics) accept() {
+	m.accepted.Inc()
 }
 
 func (m *listenerMetrics) close() {
@@ -132,15 +132,15 @@ func newListenerMetricsWithNameFunc(r prometheus.Registerer, namespace string) f
 	}
 	f := promauto.With(r)
 
-	accepted := f.NewCounterVec(prometheus.CounterOpts{
-		Name:      "listener_accepted_total",
-		Namespace: namespace,
-		Help:      "Number of accepted connections",
-	}, []string{"name"})
 	errors := f.NewCounterVec(prometheus.CounterOpts{
 		Name:      "listener_errors_total",
 		Namespace: namespace,
 		Help:      "Number of listener errors when accepting connections",
+	}, []string{"name"})
+	accepted := f.NewCounterVec(prometheus.CounterOpts{
+		Name:      "listener_accepted_total",
+		Namespace: namespace,
+		Help:      "Number of accepted connections",
 	}, []string{"name"})
 	closed := f.NewCounterVec(prometheus.CounterOpts{
 		Name:      "listener_closed_total",
@@ -150,8 +150,8 @@ func newListenerMetricsWithNameFunc(r prometheus.Registerer, namespace string) f
 
 	return func(name string) *listenerMetrics {
 		return &listenerMetrics{
-			accepted: accepted.WithLabelValues(name),
 			errors:   errors.WithLabelValues(name),
+			accepted: accepted.WithLabelValues(name),
 			closed:   closed.WithLabelValues(name),
 		}
 	}
