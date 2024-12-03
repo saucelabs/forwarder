@@ -26,7 +26,7 @@ import (
 
 func xxHashString(k string) uint32 {
 	v := xxhash.Sum64String(k)
-	return uint32(v)
+	return uint32(v) //nolint:gosec // no overflow
 }
 
 type Cache struct {

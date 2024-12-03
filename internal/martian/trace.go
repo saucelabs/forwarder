@@ -24,7 +24,7 @@ func newTraceID(id string) traceID {
 	n := idSeq.Add(1)
 
 	if id == "" {
-		id = fmt.Sprintf("%d-%08x", n, uint32(t.UnixNano()))
+		id = fmt.Sprintf("%d-%08x", n, uint32(t.UnixNano())) //nolint:gosec // no overflow
 	}
 
 	return traceID{
