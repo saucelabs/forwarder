@@ -67,12 +67,16 @@ func (c copier) copy(ctx context.Context, donec chan<- struct{}) {
 	if _, err := io.CopyBuffer(c.dst, c.src, buf); err != nil && !isClosedConnError(err) {
 		log.Errorf(ctx, "failed to copy %s tunnel: %v", c.name, err)
 	}
+	var closeErr error
 	if cw, ok := asCloseWriter(c.dst); ok {
-		cw.CloseWrite()
+		closeErr = cw.CloseWrite()
 	} else if pw, ok := c.dst.(*io.PipeWriter); ok {
-		pw.Close()
+		closeErr = pw.Close()
 	} else {
 		log.Errorf(ctx, "cannot close write side of %s tunnel (%T)", c.name, c.dst)
+	}
+	if closeErr != nil {
+		log.Infof(ctx, "failed to close write side of %s tunnel: %v", c.name, closeErr)
 	}
 
 	log.Debugf(ctx, "%s tunnel finished copying", c.name)
