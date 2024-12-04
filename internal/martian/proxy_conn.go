@@ -152,9 +152,12 @@ func (p *proxyConn) handleMITM(req *http.Request) error {
 		return errClose
 	}
 
-	// Drain all of the rest of the buffered data.
+	// Drain the rest of the buffered data.
 	buf := make([]byte, p.brw.Reader.Buffered())
-	p.brw.Read(buf)
+	if _, err := p.brw.Read(buf); err != nil {
+		log.Errorf(ctx, "mitm: failed to drain buffer: %v", err)
+		return errClose
+	}
 
 	// 22 is the TLS handshake.
 	// https://tools.ietf.org/html/rfc5246#section-6.2.1
