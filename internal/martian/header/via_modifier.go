@@ -20,78 +20,25 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"regexp"
 	"strings"
 
 	"github.com/saucelabs/forwarder/internal/martian"
 )
 
-var whitespace = regexp.MustCompile("[\t ]+")
+const (
+	h20Prefix = "2.0"
+	h11Prefix = "1.1"
+	h10Prefix = "1.0"
+)
 
 // ViaModifier is a header modifier that checks for proxy redirect loops.
 type ViaModifier struct {
-	requestedBy string
-	boundary    string
+	tag string
 }
 
 // NewViaModifier returns a new Via modifier.
 func NewViaModifier(requestedBy string) *ViaModifier {
-	return &ViaModifier{
-		requestedBy: requestedBy,
-		boundary:    randomBoundary(),
-	}
-}
-
-// ModifyRequest sets the Via header and provides loop-detection. If Via is
-// already present, it will be appended to the existing value. If a loop is
-// detected an error is added to the context and the request round trip is
-// skipped.
-//
-// http://tools.ietf.org/html/draft-ietf-httpbis-p1-messaging-14#section-9.9
-func (m *ViaModifier) ModifyRequest(req *http.Request) error {
-	via := fmt.Sprintf("%d.%d %s-%s", req.ProtoMajor, req.ProtoMinor, m.requestedBy, m.boundary)
-
-	if v := req.Header.Get("Via"); v != "" {
-		if m.hasLoop(v) {
-			req.Close = true
-			return martian.ErrorStatus{
-				Err:    fmt.Errorf("via: detected request loop, header contains %s", via),
-				Status: 400,
-			}
-		}
-
-		via = fmt.Sprintf("%s, %s", v, via)
-	}
-
-	req.Header.Set("Via", via)
-
-	return nil
-}
-
-// hasLoop parses via and attempts to match requestedBy against the contained
-// pseudonyms/host:port pairs.
-func (m *ViaModifier) hasLoop(via string) bool {
-	for _, v := range strings.Split(via, ",") {
-		parts := whitespace.Split(strings.TrimSpace(v), 3)
-
-		// No pseudonym or host:port, assume there is no loop.
-		if len(parts) < 2 {
-			continue
-		}
-
-		if fmt.Sprintf("%s-%s", m.requestedBy, m.boundary) == parts[1] {
-			return true
-		}
-	}
-
-	return false
-}
-
-// SetBoundary sets the boundary string (random 10 character by default) used to
-// disabiguate Martians that are chained together with identical requestedBy values.
-// This should only be used for testing.
-func (m *ViaModifier) SetBoundary(boundary string) {
-	m.boundary = boundary
+	return NewViaModifierWithBoundary(requestedBy, randomBoundary())
 }
 
 // randomBoundary generates a 10 character string to ensure that Martians that
@@ -104,4 +51,66 @@ func randomBoundary() string {
 		panic(err)
 	}
 	return hex.EncodeToString(buf[:])
+}
+
+func NewViaModifierWithBoundary(requestedBy, boundary string) *ViaModifier {
+	return &ViaModifier{
+		tag: requestedBy + "-" + boundary,
+	}
+}
+
+// ModifyRequest sets the Via header and provides loop-detection. If Via is
+// already present, it will be appended to the existing value. If a loop is
+// detected an error is added to the context and the request round trip is
+// skipped.
+//
+// http://tools.ietf.org/html/draft-ietf-httpbis-p1-messaging-14#section-9.9
+func (m *ViaModifier) ModifyRequest(req *http.Request) error {
+	via := req.Header.Get("Via")
+
+	var sb strings.Builder
+	sb.Grow(m.nextLen(via))
+
+	if via != "" {
+		if strings.Contains(via, m.tag) {
+			req.Close = true
+			return martian.ErrorStatus{
+				Err:    fmt.Errorf("via: detected request loop, header contains %s", via),
+				Status: 400,
+			}
+		}
+
+		sb.WriteString(via)
+		sb.WriteString(", ")
+	}
+
+	switch req.ProtoMajor*10 + req.ProtoMinor {
+	case 20:
+		sb.WriteString(h20Prefix)
+	case 11:
+		sb.WriteString(h11Prefix)
+	case 10:
+		sb.WriteString(h10Prefix)
+	default:
+		fmt.Fprintf(&sb, "%d.%d", req.ProtoMajor, req.ProtoMinor)
+	}
+
+	sb.WriteByte(' ')
+	sb.WriteString(m.tag)
+
+	req.Header.Set("Via", sb.String())
+
+	return nil
+}
+
+func (m *ViaModifier) nextLen(via string) int {
+	l := 0
+
+	if via != "" {
+		l += len(via) + 2
+	}
+
+	l += len(h11Prefix) + 1 + len(m.tag)
+
+	return l
 }
