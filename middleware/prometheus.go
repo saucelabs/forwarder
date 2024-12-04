@@ -17,23 +17,10 @@ import (
 	"github.com/saucelabs/forwarder/internal/martian"
 )
 
-const (
-	_          = iota // ignore first value by assigning to blank identifier
-	kb float64 = 1 << (10 * iota)
-	mb
-)
-
-var sizeBuckets = []float64{ //nolint:gochecknoglobals // this is a global variable by design
-	1 * kb,
-	2 * kb,
-	5 * kb,
-	10 * kb,
-	100 * kb,
-	500 * kb,
-	1 * mb,
-	2.5 * mb,
-	5 * mb,
-	10 * mb,
+var objectives = map[float64]float64{
+	0.5:  0.01,  // Median (50th percentile) with ±1% error
+	0.9:  0.01,  // 90th percentile with ±1% error
+	0.99: 0.001, // 99th percentile with ±0.1% error
 }
 
 type PrometheusOpt func(*Prometheus)
@@ -53,9 +40,9 @@ func WithCustomLabeler(label string, labeler PrometheusLabeler) PrometheusOpt {
 type Prometheus struct {
 	requestsInFlight *prometheus.GaugeVec
 	requestsTotal    *prometheus.CounterVec
-	requestDuration  *prometheus.HistogramVec
-	requestSize      *prometheus.HistogramVec
-	responseSize     *prometheus.HistogramVec
+	requestDuration  *prometheus.SummaryVec
+	requestSize      *prometheus.SummaryVec
+	responseSize     *prometheus.SummaryVec
 
 	label   string
 	labeler PrometheusLabeler
@@ -90,25 +77,25 @@ func NewPrometheus(r prometheus.Registerer, namespace string, opts ...Prometheus
 		Help:      "Total number of HTTP requests processed.",
 	}, labelsWithStatus)
 
-	p.requestDuration = f.NewHistogramVec(prometheus.HistogramOpts{
-		Namespace: namespace,
-		Name:      "http_request_duration_seconds",
-		Help:      "The HTTP request latencies in seconds.",
-		Buckets:   prometheus.DefBuckets,
+	p.requestDuration = f.NewSummaryVec(prometheus.SummaryOpts{
+		Namespace:  namespace,
+		Name:       "http_request_duration_seconds",
+		Help:       "The HTTP request latencies in seconds.",
+		Objectives: objectives,
 	}, labelsWithStatus)
 
-	p.requestSize = f.NewHistogramVec(prometheus.HistogramOpts{
-		Namespace: namespace,
-		Name:      "http_request_size_bytes",
-		Help:      "The HTTP request sizes in bytes.",
-		Buckets:   sizeBuckets,
+	p.requestSize = f.NewSummaryVec(prometheus.SummaryOpts{
+		Namespace:  namespace,
+		Name:       "http_request_size_bytes",
+		Help:       "The HTTP request sizes in bytes.",
+		Objectives: objectives,
 	}, labelsWithStatus)
 
-	p.responseSize = f.NewHistogramVec(prometheus.HistogramOpts{
-		Namespace: namespace,
-		Name:      "http_response_size_bytes",
-		Help:      "The HTTP response sizes in bytes.",
-		Buckets:   sizeBuckets,
+	p.responseSize = f.NewSummaryVec(prometheus.SummaryOpts{
+		Namespace:  namespace,
+		Name:       "http_response_size_bytes",
+		Help:       "The HTTP response sizes in bytes.",
+		Objectives: objectives,
 	}, labelsWithStatus)
 
 	return p
