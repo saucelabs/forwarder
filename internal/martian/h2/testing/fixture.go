@@ -116,7 +116,9 @@ func New(spf []h2.StreamProcessorFactory) (*Fixture, error) {
 		return nil, fmt.Errorf("creating proxy: %w", err)
 	}
 	go func() {
-		f.proxy.Serve(f.proxyListener)
+		if err := f.proxy.Serve(f.proxyListener); err != nil {
+			fmt.Printf("error on close: %v\n", err)
+		}
 	}()
 
 	port := lis.Addr().(*net.TCPAddr).Port //nolint:forcetypeassert // It's a TCPAddr.
