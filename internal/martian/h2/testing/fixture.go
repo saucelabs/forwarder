@@ -66,7 +66,7 @@ func New(spf []h2.StreamProcessorFactory) (*Fixture, error) {
 	f.server = grpc.NewServer(grpc.Creds(credentials.NewServerTLSFromCert(Localhost)))
 	tspb.RegisterTestServiceServer(f.server, &Server{})
 
-	lis, err := net.Listen("tcp", ":0")
+	lis, err := net.Listen("tcp", ":0") //nolint:gosec // This is a test fixture.
 	if err != nil {
 		return nil, fmt.Errorf("creating listener for gRPC service: %w", err)
 	}
@@ -91,7 +91,7 @@ func New(spf []h2.StreamProcessorFactory) (*Fixture, error) {
 		proxyPort = queryPortServer()
 		if proxyPort == 0 {
 			var err error
-			f.proxyListener, err = net.Listen("tcp", ":0")
+			f.proxyListener, err = net.Listen("tcp", ":0") //nolint:gosec // This is a test fixture.
 			if err != nil {
 				return nil, fmt.Errorf("creating listener for proxy; %w", err)
 			}
@@ -166,7 +166,7 @@ func newProxy(spf []h2.StreamProcessorFactory) (*martian.Proxy, error) {
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{
 			MinVersion: tls.VersionTLS12,
-			RootCAs: RootCAs,
+			RootCAs:    RootCAs,
 		},
 	}
 	p.RoundTripper = tr
