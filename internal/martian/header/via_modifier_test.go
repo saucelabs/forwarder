@@ -42,7 +42,7 @@ func TestViaModifier(t *testing.T) {
 		t.Errorf("req.Header.Get(%q): got %q, want prefixed with %q", "Via", got, want)
 	}
 
-	m.SetBoundary("boundary")
+	m = NewViaModifierWithBoundary("martian", "boundary")
 	req.Header.Set("Via", "1.0\talpha\t(martian), 1.1 martian-boundary, 1.1 beta")
 	if err := m.ModifyRequest(req); err == nil {
 		t.Fatal("ModifyRequest(): got nil, want request loop error")
