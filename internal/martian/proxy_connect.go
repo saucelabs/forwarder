@@ -201,7 +201,10 @@ func shouldTerminateTLS(req *http.Request) bool {
 	if h == "" {
 		return false
 	}
-	b, _ := strconv.ParseBool(h)
+	b, err := strconv.ParseBool(h)
+	if err != nil {
+		log.Errorf(req.Context(), "failed to parse %s header value=%q: %v", terminateTLSHeader, h, err)
+	}
 	return b
 }
 
