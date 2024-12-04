@@ -7,7 +7,6 @@ run:
 linters:
   enable-all: true
   disable:
-    - bodyclose
     - contextcheck
     - cyclop
     - depguard
@@ -113,6 +112,11 @@ issues:
       linters:
         - gosec
       source: "uint32\\(len\\(|\\.Len\\(\\)"
+
+    - path: internal/martian
+      linters:
+        - bodyclose
+      source: "newConnectResponse\\(|[eE]rrorResponse\\(|http\\.NewResponseController|http\\.NoBody"
 
     - path: internal/martian/context.go
       linters:
