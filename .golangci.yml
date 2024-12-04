@@ -108,7 +108,6 @@ issues:
     - path: internal/martian
       linters:
         - goheader
-        - errcheck
 
     - path: internal/martian
       linters:
@@ -119,10 +118,19 @@ issues:
       linters:
         - forcetypeassert
 
+    - path: internal/martian/h2/
+      linters:
+        - errcheck
+      source: "buf"
+
     - path: internal/martian/h2/testing
       linters:
         - forbidigo
       text: use of `fmt.Print
+
+    - path: internal/martian/messageview
+      linters:
+        - errcheck
 
     - linters:
         - thelper
