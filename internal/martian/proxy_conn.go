@@ -411,7 +411,11 @@ func (p *proxyConn) writeResponse(res *http.Response) error {
 		if deadlineErr := p.conn.SetWriteDeadline(time.Now().Add(p.WriteTimeout)); deadlineErr != nil {
 			log.Errorf(ctx, "can't set write deadline: %v", deadlineErr)
 		}
-		defer p.conn.SetWriteDeadline(time.Time{})
+		defer func() {
+			if deadlineErr := p.conn.SetWriteDeadline(time.Time{}); deadlineErr != nil {
+				log.Errorf(ctx, "can't clear write deadline: %v", deadlineErr)
+			}
+		}()
 	}
 
 	if p.closing() {
