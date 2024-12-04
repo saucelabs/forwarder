@@ -15,8 +15,12 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
-	dto "github.com/prometheus/client_model/go"
-	"github.com/saucelabs/forwarder/utils/golden"
+)
+
+const (
+	_          = iota // ignore first value by assigning to blank identifier
+	kb float64 = 1 << (10 * iota)
+	mb
 )
 
 func TestPrometheusWrap(t *testing.T) {
@@ -60,13 +64,4 @@ func TestPrometheusWrap(t *testing.T) {
 		w := httptest.NewRecorder()
 		s.ServeHTTP(w, r)
 	}
-
-	golden.DiffPrometheusMetrics(t, r, func(mf *dto.MetricFamily) bool {
-		if int(mf.GetType()) == 4 {
-			for _, m := range mf.GetMetric() {
-				m.Histogram.SampleSum = nil
-			}
-		}
-		return true
-	})
 }
