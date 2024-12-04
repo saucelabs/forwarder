@@ -58,7 +58,7 @@ func isHeaderOnlySpec(res *http.Response) bool {
 func isTextEventStream(res *http.Response) bool {
 	// The MIME type is defined in https://www.w3.org/TR/eventsource/#text-event-stream
 	resCT := res.Header.Get("Content-Type")
-	baseCT, _, _ := mime.ParseMediaType(resCT)
+	baseCT, _, _ := mime.ParseMediaType(resCT) //nolint:errcheck // We don't care about the error here.
 	return baseCT == "text/event-stream"
 }
 
