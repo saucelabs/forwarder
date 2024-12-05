@@ -7,7 +7,6 @@
 package middleware
 
 import (
-	"io"
 	"net/http"
 	"strconv"
 	"time"
@@ -41,8 +40,9 @@ type Prometheus struct {
 	requestsInFlight *prometheus.GaugeVec
 	requestsTotal    *prometheus.CounterVec
 	requestDuration  *prometheus.SummaryVec
-	requestSize      *prometheus.SummaryVec
-	responseSize     *prometheus.SummaryVec
+	// The following metrics are now removed, revert if needed.
+	// requestSize      *prometheus.SummaryVec
+	// responseSize     *prometheus.SummaryVec
 
 	label   string
 	labeler PrometheusLabeler
@@ -84,20 +84,6 @@ func NewPrometheus(r prometheus.Registerer, namespace string, opts ...Prometheus
 		Objectives: objectives,
 	}, labelsWithStatus)
 
-	p.requestSize = f.NewSummaryVec(prometheus.SummaryOpts{
-		Namespace:  namespace,
-		Name:       "http_request_size_bytes",
-		Help:       "The HTTP request sizes in bytes.",
-		Objectives: objectives,
-	}, labelsWithStatus)
-
-	p.responseSize = f.NewSummaryVec(prometheus.SummaryOpts{
-		Namespace:  namespace,
-		Name:       "http_response_size_bytes",
-		Help:       "The HTTP response sizes in bytes.",
-		Objectives: objectives,
-	}, labelsWithStatus)
-
 	return p
 }
 
@@ -109,8 +95,6 @@ func (p *Prometheus) Wrap(h http.Handler) http.Handler {
 
 		d := newDelegator(w, nil)
 
-		r.Body = bodyCounter(r.Body)
-
 		start := time.Now()
 		h.ServeHTTP(d, r)
 		elapsed := time.Since(start).Seconds()
@@ -121,25 +105,8 @@ func (p *Prometheus) Wrap(h http.Handler) http.Handler {
 		p.requestsTotal.WithLabelValues(labelsWithStatus...).Inc()
 		p.requestDuration.WithLabelValues(labelsWithStatus...).Observe(elapsed)
 
-		reqSize := int64(0)
-		if c, ok := r.Body.(counter); ok {
-			reqSize = c.Count()
-		}
-
 		p.requestsInFlight.WithLabelValues(labels...).Dec()
-		p.requestSize.WithLabelValues(labelsWithStatus...).Observe(float64(reqSize))
-		p.responseSize.WithLabelValues(labelsWithStatus...).Observe(float64(d.Written()))
 	})
-}
-
-func (p *Prometheus) ModifyRequest(req *http.Request) error {
-	req.Body = bodyCounter(req.Body)
-	return nil
-}
-
-func (p *Prometheus) ModifyResponse(res *http.Response) error {
-	res.Body = bodyCounter(res.Body)
-	return nil
 }
 
 func (p *Prometheus) ReadRequest(req *http.Request) {
@@ -158,18 +125,6 @@ func (p *Prometheus) WroteResponse(res *http.Response) {
 	p.requestsInFlight.WithLabelValues(labels...).Dec()
 	p.requestsTotal.WithLabelValues(labelsWithStatus...).Inc()
 	p.requestDuration.WithLabelValues(labelsWithStatus...).Observe(elapsed)
-
-	reqSize := int64(0)
-	if c, ok := req.Body.(counter); ok {
-		reqSize = c.Count()
-	}
-	p.requestSize.WithLabelValues(labelsWithStatus...).Observe(float64(reqSize))
-
-	resSize := int64(0)
-	if c, ok := res.Body.(counter); ok {
-		resSize = c.Count()
-	}
-	p.responseSize.WithLabelValues(labelsWithStatus...).Observe(float64(resSize))
 }
 
 func (p *Prometheus) labels(req *http.Request) []string {
@@ -178,43 +133,4 @@ func (p *Prometheus) labels(req *http.Request) []string {
 		labels = append(labels, p.labeler(req))
 	}
 	return labels
-}
-
-type counter interface {
-	Count() int64
-}
-
-func bodyCounter(b io.ReadCloser) io.ReadCloser {
-	if b == nil || b == http.NoBody {
-		return b
-	}
-
-	if _, ok := b.(io.ReadWriteCloser); ok {
-		return &rwcBody{body{ReadCloser: b}}
-	}
-
-	return &body{ReadCloser: b}
-}
-
-type body struct {
-	io.ReadCloser
-	n int64
-}
-
-func (b *body) Count() int64 {
-	return b.n
-}
-
-func (b *body) Read(p []byte) (n int, err error) {
-	n, err = b.ReadCloser.Read(p)
-	b.n += int64(n)
-	return
-}
-
-type rwcBody struct {
-	body
-}
-
-func (b *rwcBody) Write(p []byte) (int, error) {
-	return b.ReadCloser.(io.ReadWriteCloser).Write(p) //nolint:forcetypeassert // We know it's a ReadWriteCloser.
 }
