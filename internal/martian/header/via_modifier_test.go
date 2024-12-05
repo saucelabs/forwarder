@@ -51,3 +51,22 @@ func TestViaModifier(t *testing.T) {
 		t.Fatalf("req.Close: got %v, want true", req.Close)
 	}
 }
+
+func BenchmarkViaModifier(b *testing.B) {
+	const via = "1.0\talpha\t(martian), 1.1 martian-boundary, 1.1 beta"
+
+	req, err := http.NewRequest(http.MethodGet, "/", http.NoBody)
+	if err != nil {
+		b.Fatalf("http.NewRequest(): got %v, want no error", err)
+	}
+
+	m := NewViaModifier("martian")
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		req.Header.Set("Via", via)
+		if err := m.ModifyRequest(req); err != nil {
+			b.Fatalf("ModifyRequest(): got %v, want no error", err)
+		}
+	}
+}
