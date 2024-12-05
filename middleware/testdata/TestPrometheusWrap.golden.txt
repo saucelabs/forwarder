@@ -1,27 +1,13 @@
 # HELP test_http_request_duration_seconds The HTTP request latencies in seconds.
 # TYPE test_http_request_duration_seconds summary
-test_http_request_duration_seconds{code="200",method="GET",quantile="0.5"} 0.101057833
-test_http_request_duration_seconds{code="200",method="GET",quantile="0.9"} 1.000892875
-test_http_request_duration_seconds{code="200",method="GET",quantile="0.99"} 1.000892875
+test_http_request_duration_seconds{code="200",method="GET",quantile="0.5"} 0.2
+test_http_request_duration_seconds{code="200",method="GET",quantile="0.9"} 1
+test_http_request_duration_seconds{code="200",method="GET",quantile="0.99"} 1
 test_http_request_duration_seconds_sum{code="200",method="GET"} 0
-test_http_request_duration_seconds_count{code="200",method="GET"} 4
-# HELP test_http_request_size_bytes The HTTP request sizes in bytes.
-# TYPE test_http_request_size_bytes summary
-test_http_request_size_bytes{code="200",method="GET",quantile="0.5"} 5171
-test_http_request_size_bytes{code="200",method="GET",quantile="0.9"} 102451
-test_http_request_size_bytes{code="200",method="GET",quantile="0.99"} 102451
-test_http_request_size_bytes_sum{code="200",method="GET"} 0
-test_http_request_size_bytes_count{code="200",method="GET"} 4
+test_http_request_duration_seconds_count{code="200",method="GET"} 0
 # HELP test_http_requests_in_flight Current number of HTTP requests being served.
 # TYPE test_http_requests_in_flight gauge
 test_http_requests_in_flight{method="GET"} 0
 # HELP test_http_requests_total Total number of HTTP requests processed.
 # TYPE test_http_requests_total counter
-test_http_requests_total{code="200",method="GET"} 4
-# HELP test_http_response_size_bytes The HTTP response sizes in bytes.
-# TYPE test_http_response_size_bytes summary
-test_http_response_size_bytes{code="200",method="GET",quantile="0.5"} 5171
-test_http_response_size_bytes{code="200",method="GET",quantile="0.9"} 102451
-test_http_response_size_bytes{code="200",method="GET",quantile="0.99"} 102451
-test_http_response_size_bytes_sum{code="200",method="GET"} 0
-test_http_response_size_bytes_count{code="200",method="GET"} 4
+test_http_requests_total{code="200",method="GET"} 300

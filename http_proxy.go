@@ -392,8 +392,6 @@ func (hp *HTTPProxy) middlewareStack() (martian.RequestResponseModifier, *martia
 
 	if hp.config.PromRegistry != nil {
 		p := middleware.NewPrometheus(hp.config.PromRegistry, hp.config.PromNamespace, hp.config.PromHTTPOpts...)
-		stack.AddRequestModifier(p)
-		stack.AddResponseModifier(p)
 
 		trace = new(martian.ProxyTrace)
 		trace.ReadRequest = func(info martian.ReadRequestInfo) {

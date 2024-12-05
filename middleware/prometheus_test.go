@@ -7,33 +7,26 @@
 package middleware
 
 import (
-	"bytes"
-	"io"
+	"math"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
-)
-
-const (
-	_          = iota // ignore first value by assigning to blank identifier
-	kb float64 = 1 << (10 * iota)
-	mb
+	dto "github.com/prometheus/client_model/go"
+	"github.com/saucelabs/forwarder/utils/golden"
 )
 
 func TestPrometheusWrap(t *testing.T) {
 	pages := []struct {
 		path     string
 		duration time.Duration
-		status   int
-		size     float64
 	}{
-		{"/1", 10 * time.Millisecond, http.StatusOK, 1.05 * kb},
-		{"/2", 100 * time.Millisecond, http.StatusOK, 5.05 * kb},
-		{"/3", 500 * time.Millisecond, http.StatusOK, 10.05 * kb},
-		{"/4", 1000 * time.Millisecond, http.StatusOK, 100.05 * kb},
+		{"/100", 100 * time.Millisecond},
+		{"/200", 200 * time.Millisecond},
+		{"/1000", 1000 * time.Millisecond},
 	}
 
 	h := http.NewServeMux()
@@ -41,27 +34,44 @@ func TestPrometheusWrap(t *testing.T) {
 		p := pages[i]
 		h.HandleFunc(p.path, func(w http.ResponseWriter, r *http.Request) {
 			time.Sleep(p.duration)
-			w.WriteHeader(p.status)
-			n, err := io.Copy(w, r.Body)
-			if err != nil {
-				t.Error(err)
-			}
-			if n != int64(p.size) {
-				t.Errorf("expected %d, got %d", int(p.size), n)
-			}
+			w.WriteHeader(http.StatusOK)
 		})
 	}
 
 	r := prometheus.NewPedanticRegistry()
 	s := NewPrometheus(r, "test").Wrap(h)
 
-	for i := range pages {
-		p := pages[i]
-		b := bytes.NewBuffer(make([]byte, int(p.size)))
-		r := httptest.NewRequest(http.MethodGet, p.path, b)
-		r.RemoteAddr = "localhost:1234"
-		r.URL.Host = "saucelabs.com"
-		w := httptest.NewRecorder()
-		s.ServeHTTP(w, r)
+	var wg sync.WaitGroup
+	for range [100]struct{}{} {
+		for i := range pages {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				p := pages[i]
+				r := httptest.NewRequest(http.MethodGet, p.path, http.NoBody)
+				r.RemoteAddr = "localhost:1234"
+				r.URL.Host = "saucelabs.com"
+				w := httptest.NewRecorder()
+				s.ServeHTTP(w, r)
+			}()
+		}
 	}
+	wg.Wait()
+
+	oneDecimalDigit := func(v *float64) {
+		*v = math.Round(*v*10) / 10
+	}
+
+	golden.DiffPrometheusMetrics(t, r, func(mf *dto.MetricFamily) bool {
+		if int(mf.GetType()) == 2 {
+			for _, m := range mf.GetMetric() {
+				m.Summary.SampleSum = nil
+				m.Summary.SampleCount = nil
+				for _, q := range m.GetSummary().GetQuantile() {
+					oneDecimalDigit(q.Value) //nolint:protogetter // We want to set the value.
+				}
+			}
+		}
+		return true
+	})
 }
