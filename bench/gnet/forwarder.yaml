@@ -1,0 +1,3 @@
+address: :3128
+connect-to: localhost:3128:localhost:8080
+proxy-localhost: allow
