@@ -3,7 +3,9 @@ module github.com/saucelabs/forwarder
 go 1.23.3
 
 require (
+	github.com/cespare/xxhash/v2 v2.3.0
 	github.com/dop251/goja v0.0.0-20231027120936-b396bb4c349d
+	github.com/elastic/go-freelru v0.16.0
 	github.com/golang/snappy v0.0.4
 	github.com/google/go-cmp v0.6.0
 	github.com/google/go-github/v56 v56.0.0
@@ -25,8 +27,7 @@ require (
 	go.uber.org/multierr v1.11.0
 	golang.org/x/exp v0.0.0-20231110203233-9a3e6036ecaa
 	golang.org/x/net v0.30.0
-	golang.org/x/sync v0.9.0
-	golang.org/x/sys v0.27.0
+	golang.org/x/sync v0.10.0
 	golang.org/x/text v0.20.0
 	golang.org/x/time v0.8.0
 	google.golang.org/grpc v1.68.0
@@ -36,10 +37,8 @@ require (
 
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
-	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/dlclark/regexp2 v1.7.0 // indirect
-	github.com/elastic/go-freelru v0.16.0 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/go-sourcemap/sourcemap v2.1.3+incompatible // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
@@ -58,6 +57,7 @@ require (
 	github.com/sourcegraph/conc v0.3.0 // indirect
 	github.com/spf13/afero v1.11.0 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
+	golang.org/x/sys v0.27.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240903143218-8af14fe29dc1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 )
