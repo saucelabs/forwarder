@@ -80,6 +80,26 @@ For https and h2 protocols, if TLS certificate is not specified, the server will
 
 The amount of time allowed to read request headers.
 
+### `--read-limit` {#read-limit}
+
+* Environment variable: `FORWARDER_READ_LIMIT`
+* Value Format: `<bandwidth>`
+* Default value: `0`
+
+Global read rate limit in bytes per second i.e.
+how many bytes per second you can receive from a proxy.
+Accepts binary format (e.g.
+1.5Ki, 1Mi, 3.6Gi).
+
+### `--shutdown-timeout` {#shutdown-timeout}
+
+* Environment variable: `FORWARDER_SHUTDOWN_TIMEOUT`
+* Value Format: `<duration>`
+* Default value: `30s`
+
+The maximum amount of time to wait for the server to drain connections before closing.
+Zero means no limit.
+
 ### `--tls-cert-file` {#tls-cert-file}
 
 * Environment variable: `FORWARDER_TLS_CERT_FILE`
@@ -112,6 +132,17 @@ Syntax:
 
 - File: `/path/to/file.pac`
 - Embed: `data:base64,<base64 encoded data>`
+
+### `--write-limit` {#write-limit}
+
+* Environment variable: `FORWARDER_WRITE_LIMIT`
+* Value Format: `<bandwidth>`
+* Default value: `0`
+
+Global write rate limit in bytes per second i.e.
+how many bytes per second you can send to proxy.
+Accepts binary format (e.g.
+1.5Ki, 1Mi, 3.6Gi).
 
 ## Proxy options
 
@@ -176,11 +207,27 @@ Syntax:
 - File: `/path/to/file.pac`
 - Embed: `data:base64,<base64 encoded data>`
 
+### `--http-dial-attempts` {#http-dial-attempts}
+
+* Environment variable: `FORWARDER_HTTP_DIAL_ATTEMPTS`
+* Value Format: `<int>`
+* Default value: `3`
+
+The number of attempts to dial the network address.
+
+### `--http-dial-backoff` {#http-dial-backoff}
+
+* Environment variable: `FORWARDER_HTTP_DIAL_BACKOFF`
+* Value Format: `<duration>`
+* Default value: `1s`
+
+The amount of time to wait between dial attempts.
+
 ### `--http-dial-timeout` {#http-dial-timeout}
 
 * Environment variable: `FORWARDER_HTTP_DIAL_TIMEOUT`
 * Value Format: `<duration>`
-* Default value: `30s`
+* Default value: `25s`
 
 The maximum amount of time a dial will wait for a connect to complete.
 With or without a timeout, the operating system may impose its own earlier timeout.

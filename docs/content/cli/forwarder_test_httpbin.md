@@ -56,6 +56,26 @@ For https and h2 protocols, if TLS certificate is not specified, the server will
 
 The amount of time allowed to read request headers.
 
+### `--read-limit` {#read-limit}
+
+* Environment variable: `FORWARDER_READ_LIMIT`
+* Value Format: `<bandwidth>`
+* Default value: `0`
+
+Global read rate limit in bytes per second i.e.
+how many bytes per second you can receive from a proxy.
+Accepts binary format (e.g.
+1.5Ki, 1Mi, 3.6Gi).
+
+### `--shutdown-timeout` {#shutdown-timeout}
+
+* Environment variable: `FORWARDER_SHUTDOWN_TIMEOUT`
+* Value Format: `<duration>`
+* Default value: `30s`
+
+The maximum amount of time to wait for the server to drain connections before closing.
+Zero means no limit.
+
 ### `--tls-cert-file` {#tls-cert-file}
 
 * Environment variable: `FORWARDER_TLS_CERT_FILE`
@@ -88,6 +108,17 @@ Syntax:
 
 - File: `/path/to/file.pac`
 - Embed: `data:base64,<base64 encoded data>`
+
+### `--write-limit` {#write-limit}
+
+* Environment variable: `FORWARDER_WRITE_LIMIT`
+* Value Format: `<bandwidth>`
+* Default value: `0`
+
+Global write rate limit in bytes per second i.e.
+how many bytes per second you can send to proxy.
+Accepts binary format (e.g.
+1.5Ki, 1Mi, 3.6Gi).
 
 ## Logging options
 

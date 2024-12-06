@@ -28,6 +28,18 @@
 # The amount of time allowed to read request headers.
 #read-header-timeout: 1m0s
 
+# read-limit <bandwidth>
+#
+# Global read rate limit in bytes per second i.e. how many bytes per second you
+# can receive from a proxy. Accepts binary format (e.g. 1.5Ki, 1Mi, 3.6Gi).
+#read-limit: 0
+
+# shutdown-timeout <duration>
+#
+# The maximum amount of time to wait for the server to drain connections before
+# closing. Zero means no limit.
+#shutdown-timeout: 30s
+
 # tls-cert-file <path or base64>
 #
 # TLS certificate to use if the server protocol is https or h2. 
@@ -51,6 +63,12 @@
 # - File: /path/to/file.pac
 # - Embed: data:base64,<base64 encoded data>
 #tls-key-file: 
+
+# write-limit <bandwidth>
+#
+# Global write rate limit in bytes per second i.e. how many bytes per second you
+# can send to proxy. Accepts binary format (e.g. 1.5Ki, 1Mi, 3.6Gi).
+#write-limit: 0
 
 # --- Proxy options ---
 
@@ -100,12 +118,22 @@
 # - Embed: data:base64,<base64 encoded data>
 #cacert-file: 
 
+# http-dial-attempts <int>
+#
+# The number of attempts to dial the network address.
+#http-dial-attempts: 3
+
+# http-dial-backoff <duration>
+#
+# The amount of time to wait between dial attempts.
+#http-dial-backoff: 1s
+
 # http-dial-timeout <duration>
 #
 # The maximum amount of time a dial will wait for a connect to complete. With or
 # without a timeout, the operating system may impose its own earlier timeout.
 # For instance, TCP timeouts are often around 3 minutes.
-#http-dial-timeout: 30s
+#http-dial-timeout: 25s
 
 # http-idle-conn-timeout <duration>
 #

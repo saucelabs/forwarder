@@ -37,6 +37,18 @@
 # specified, the server will use a self-signed certificate.
 #protocol: http
 
+# proxy-protocol-listener <value>
+#
+# The PROXY protocol is used to correctly read the client's IP address. When
+# enabled the proxy will expect the client to send the PROXY protocol header
+# before the actual request. PROXY protocol version 1 and 2 are supported.
+#proxy-protocol-listener: false
+
+# proxy-protocol-read-header-timeout <duration>
+#
+# The amount of time to wait for PROXY protocol header. Zero means no limit.
+#proxy-protocol-read-header-timeout: 5s
+
 # read-header-timeout <duration>
 #
 # The amount of time allowed to read request headers.
@@ -47,6 +59,12 @@
 # Global read rate limit in bytes per second i.e. how many bytes per second you
 # can receive from a proxy. Accepts binary format (e.g. 1.5Ki, 1Mi, 3.6Gi).
 #read-limit: 0
+
+# shutdown-timeout <duration>
+#
+# The maximum amount of time to wait for the server to drain connections before
+# closing. Zero means no limit.
+#shutdown-timeout: 30s
 
 # tls-cert-file <path or base64>
 #
@@ -181,6 +199,17 @@
 # - Embed: data:base64,<base64 encoded data>
 #mitm-cacert-file: 
 
+# mitm-cache-size <size>
+#
+# Maximum number of certificates to cache. If the cache is full, the least
+# recently used certificate is removed.
+#mitm-cache-size: 1024
+
+# mitm-cache-ttl <duration>
+#
+# Expiration time of the cached certificates.
+#mitm-cache-ttl: 6h0m0s
+
 # mitm-cakey-file <path or base64>
 #
 # CA key file to use for generating MITM certificates.
@@ -237,12 +266,35 @@
 # - Embed: data:base64,<base64 encoded data>
 #cacert-file: 
 
+# connect-to <HOST1:PORT1:HOST2:PORT2>,...
+#
+# For a request to the given HOST1:PORT1 pair, connect to HOST2:PORT2 instead.
+# This option is suitable to direct requests at a specific server, e.g. at a
+# specific cluster node in a cluster of servers. This option is only used to
+# establish the network connection and does not work when request is routed
+# using an upstream proxy. It does NOT affect the hostname/port that is used for
+# TLS/SSL (e.g. SNI, certificate verification) or for the application protocols.
+# HOST1 and PORT1 may be the empty string, meaning any host/port. HOST2 and
+# PORT2 may also be the empty string, meaning use the request's original
+# host/port.
+#connect-to: 
+
+# http-dial-attempts <int>
+#
+# The number of attempts to dial the network address.
+#http-dial-attempts: 3
+
+# http-dial-backoff <duration>
+#
+# The amount of time to wait between dial attempts.
+#http-dial-backoff: 1s
+
 # http-dial-timeout <duration>
 #
 # The maximum amount of time a dial will wait for a connect to complete. With or
 # without a timeout, the operating system may impose its own earlier timeout.
 # For instance, TCP timeouts are often around 3 minutes.
-#http-dial-timeout: 30s
+#http-dial-timeout: 25s
 
 # http-idle-conn-timeout <duration>
 #
@@ -299,6 +351,24 @@
 #
 # The amount of time allowed to read request headers.
 #api-read-header-timeout: 1m0s
+
+# api-read-limit <bandwidth>
+#
+# Global read rate limit in bytes per second i.e. how many bytes per second you
+# can receive from a proxy. Accepts binary format (e.g. 1.5Ki, 1Mi, 3.6Gi).
+#api-read-limit: 0
+
+# api-shutdown-timeout <duration>
+#
+# The maximum amount of time to wait for the server to drain connections before
+# closing. Zero means no limit.
+#api-shutdown-timeout: 30s
+
+# api-write-limit <bandwidth>
+#
+# Global write rate limit in bytes per second i.e. how many bytes per second you
+# can send to proxy. Accepts binary format (e.g. 1.5Ki, 1Mi, 3.6Gi).
+#api-write-limit: 0
 
 # --- Logging options ---
 

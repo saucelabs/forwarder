@@ -86,6 +86,25 @@ The name value in Via header is extended with a random string to avoid collision
 The server protocol.
 For https and h2 protocols, if TLS certificate is not specified, the server will use a self-signed certificate.
 
+### `--proxy-protocol-listener` {#proxy-protocol-listener}
+
+* Environment variable: `FORWARDER_PROXY_PROTOCOL_LISTENER`
+* Value Format: `<value>`
+* Default value: `false`
+
+The PROXY protocol is used to correctly read the client's IP address.
+When enabled the proxy will expect the client to send the PROXY protocol header before the actual request.
+PROXY protocol version 1 and 2 are supported.
+
+### `--proxy-protocol-read-header-timeout` {#proxy-protocol-read-header-timeout}
+
+* Environment variable: `FORWARDER_PROXY_PROTOCOL_READ_HEADER_TIMEOUT`
+* Value Format: `<duration>`
+* Default value: `5s`
+
+The amount of time to wait for PROXY protocol header.
+Zero means no limit.
+
 ### `--read-header-timeout` {#read-header-timeout}
 
 * Environment variable: `FORWARDER_READ_HEADER_TIMEOUT`
@@ -104,6 +123,15 @@ Global read rate limit in bytes per second i.e.
 how many bytes per second you can receive from a proxy.
 Accepts binary format (e.g.
 1.5Ki, 1Mi, 3.6Gi).
+
+### `--shutdown-timeout` {#shutdown-timeout}
+
+* Environment variable: `FORWARDER_SHUTDOWN_TIMEOUT`
+* Value Format: `<duration>`
+* Default value: `30s`
+
+The maximum amount of time to wait for the server to drain connections before closing.
+Zero means no limit.
 
 ### `--tls-cert-file` {#tls-cert-file}
 
@@ -279,6 +307,23 @@ Syntax:
 - File: `/path/to/file.pac`
 - Embed: `data:base64,<base64 encoded data>`
 
+### `--mitm-cache-size` {#mitm-cache-size}
+
+* Environment variable: `FORWARDER_MITM_CACHE_SIZE`
+* Value Format: `<size>`
+* Default value: `1024`
+
+Maximum number of certificates to cache.
+If the cache is full, the least recently used certificate is removed.
+
+### `--mitm-cache-ttl` {#mitm-cache-ttl}
+
+* Environment variable: `FORWARDER_MITM_CACHE_TTL`
+* Value Format: `<duration>`
+* Default value: `6h0m0s`
+
+Expiration time of the cached certificates.
+
 ### `--mitm-cakey-file` {#mitm-cakey-file}
 
 * Environment variable: `FORWARDER_MITM_CAKEY_FILE`
@@ -356,11 +401,41 @@ Syntax:
 - File: `/path/to/file.pac`
 - Embed: `data:base64,<base64 encoded data>`
 
+### `--connect-to` {#connect-to}
+
+* Environment variable: `FORWARDER_CONNECT_TO`
+* Value Format: `<HOST1:PORT1:HOST2:PORT2>,...`
+
+For a request to the given HOST1:PORT1 pair, connect to HOST2:PORT2 instead.
+This option is suitable to direct requests at a specific server, e.g.
+at a specific cluster node in a cluster of servers.
+This option is only used to establish the network connection and does not work when request is routed using an upstream proxy.
+It does NOT affect the hostname/port that is used for TLS/SSL (e.g.
+SNI, certificate verification) or for the application protocols.
+HOST1 and PORT1 may be the empty string, meaning any host/port.
+HOST2 and PORT2 may also be the empty string, meaning use the request's original host/port.
+
+### `--http-dial-attempts` {#http-dial-attempts}
+
+* Environment variable: `FORWARDER_HTTP_DIAL_ATTEMPTS`
+* Value Format: `<int>`
+* Default value: `3`
+
+The number of attempts to dial the network address.
+
+### `--http-dial-backoff` {#http-dial-backoff}
+
+* Environment variable: `FORWARDER_HTTP_DIAL_BACKOFF`
+* Value Format: `<duration>`
+* Default value: `1s`
+
+The amount of time to wait between dial attempts.
+
 ### `--http-dial-timeout` {#http-dial-timeout}
 
 * Environment variable: `FORWARDER_HTTP_DIAL_TIMEOUT`
 * Value Format: `<duration>`
-* Default value: `30s`
+* Default value: `25s`
 
 The maximum amount of time a dial will wait for a connect to complete.
 With or without a timeout, the operating system may impose its own earlier timeout.
@@ -444,6 +519,37 @@ The maximum amount of time to wait for the next request before closing connectio
 * Default value: `1m0s`
 
 The amount of time allowed to read request headers.
+
+### `--api-read-limit` {#api-read-limit}
+
+* Environment variable: `FORWARDER_API_READ_LIMIT`
+* Value Format: `<bandwidth>`
+* Default value: `0`
+
+Global read rate limit in bytes per second i.e.
+how many bytes per second you can receive from a proxy.
+Accepts binary format (e.g.
+1.5Ki, 1Mi, 3.6Gi).
+
+### `--api-shutdown-timeout` {#api-shutdown-timeout}
+
+* Environment variable: `FORWARDER_API_SHUTDOWN_TIMEOUT`
+* Value Format: `<duration>`
+* Default value: `30s`
+
+The maximum amount of time to wait for the server to drain connections before closing.
+Zero means no limit.
+
+### `--api-write-limit` {#api-write-limit}
+
+* Environment variable: `FORWARDER_API_WRITE_LIMIT`
+* Value Format: `<bandwidth>`
+* Default value: `0`
+
+Global write rate limit in bytes per second i.e.
+how many bytes per second you can send to proxy.
+Accepts binary format (e.g.
+1.5Ki, 1Mi, 3.6Gi).
 
 ## Logging options
 

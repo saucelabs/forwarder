@@ -90,11 +90,27 @@ Syntax:
 - File: `/path/to/file.pac`
 - Embed: `data:base64,<base64 encoded data>`
 
+### `--http-dial-attempts` {#http-dial-attempts}
+
+* Environment variable: `FORWARDER_HTTP_DIAL_ATTEMPTS`
+* Value Format: `<int>`
+* Default value: `3`
+
+The number of attempts to dial the network address.
+
+### `--http-dial-backoff` {#http-dial-backoff}
+
+* Environment variable: `FORWARDER_HTTP_DIAL_BACKOFF`
+* Value Format: `<duration>`
+* Default value: `1s`
+
+The amount of time to wait between dial attempts.
+
 ### `--http-dial-timeout` {#http-dial-timeout}
 
 * Environment variable: `FORWARDER_HTTP_DIAL_TIMEOUT`
 * Value Format: `<duration>`
-* Default value: `30s`
+* Default value: `25s`
 
 The maximum amount of time a dial will wait for a connect to complete.
 With or without a timeout, the operating system may impose its own earlier timeout.
