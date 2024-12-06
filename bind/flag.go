@@ -246,6 +246,12 @@ func DialConfig(fs *pflag.FlagSet, cfg *forwarder.DialConfig, prefix string) {
 		namePrefix+"dial-timeout", cfg.DialTimeout,
 		"The maximum amount of time a dial will wait for a connect to complete. "+
 			"With or without a timeout, the operating system may impose its own earlier timeout. For instance, TCP timeouts are often around 3 minutes. ")
+
+	fs.IntVar(&cfg.Retry.Attempts, namePrefix+"dial-attempts", cfg.Retry.Attempts,
+		"The number of attempts to dial the network address. ")
+
+	fs.DurationVar(&cfg.Retry.Backoff, namePrefix+"dial-backoff", cfg.Retry.Backoff,
+		"The amount of time to wait between dial attempts. ")
 }
 
 func ConnectTo(fs *pflag.FlagSet, cfg *[]forwarder.HostPortPair) {
