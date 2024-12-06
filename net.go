@@ -47,16 +47,6 @@ func DialRedirectFromHostPortPairs(subs []HostPortPair) DialRedirectFunc {
 	}
 }
 
-// defaultKeepAliveConfig returns configuration that enables keep-alive pings with OS-specific parameters.
-func defaultKeepAliveConfig() net.KeepAliveConfig {
-	return net.KeepAliveConfig{
-		Enable:   true,
-		Idle:     -1,
-		Interval: -1,
-		Count:    -1,
-	}
-}
-
 type DialRetryConfig struct {
 	Attempts int
 	Backoff  time.Duration
@@ -91,6 +81,16 @@ func DefaultDialConfig() *DialConfig {
 			Attempts: 3,
 			Backoff:  1 * time.Second,
 		},
+	}
+}
+
+// defaultKeepAliveConfig returns configuration that enables keep-alive pings with OS-specific parameters.
+func defaultKeepAliveConfig() net.KeepAliveConfig {
+	return net.KeepAliveConfig{
+		Enable:   true,
+		Idle:     -1,
+		Interval: -1,
+		Count:    -1,
 	}
 }
 
