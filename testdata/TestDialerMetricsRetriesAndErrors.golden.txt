@@ -1,0 +1,13 @@
+# HELP test_dialer_cx_active Number of active connections
+# TYPE test_dialer_cx_active gauge
+test_dialer_cx_active{host="retry"} 1
+# HELP test_dialer_cx_total Number of dialed connections
+# TYPE test_dialer_cx_total counter
+test_dialer_cx_total{host="retry"} 1
+# HELP test_dialer_errors_total Number of errors dialing connections
+# TYPE test_dialer_errors_total counter
+test_dialer_errors_total{host="fail"} 1
+# HELP test_dialer_retries_total Number of dial retries
+# TYPE test_dialer_retries_total counter
+test_dialer_retries_total{host="fail"} 2
+test_dialer_retries_total{host="retry"} 1

@@ -202,20 +202,43 @@ func TestDialerMetrics(t *testing.T) {
 	}
 }
 
-func TestDialerMetricsErrors(t *testing.T) {
+func TestDialerMetricsRetriesAndErrors(t *testing.T) {
 	r := prometheus.NewRegistry()
 	d := NewDialer(&DialConfig{
 		DialTimeout: 10 * time.Millisecond,
+		Retry: DialRetryConfig{
+			Attempts: 3,
+			Backoff:  1 * time.Millisecond,
+		},
 		PromConfig: PromConfig{
 			PromNamespace: "test",
 			PromRegistry:  r,
 		},
 	})
 
+	var dialCount int
+	d.testingDialContext = func(ctx context.Context, network, address string) (net.Conn, error) {
+		switch address {
+		case "fail:80":
+			return nil, errors.New("dial error")
+		case "retry:80":
+			t.Log("dialCount:", dialCount)
+			if dialCount >= 1 {
+				return new(net.TCPConn), nil
+			}
+			dialCount++
+			return nil, errors.New("dial error")
+		default:
+			panic("unreachable")
+		}
+	}
+
 	ctx := context.Background()
-	_, err := d.DialContext(ctx, "tcp", "localhost:0")
-	if err == nil {
+	if _, err := d.DialContext(ctx, "tcp", "fail:80"); err == nil {
 		t.Fatal("d.DialContext(): got no error, want error")
+	}
+	if _, err := d.DialContext(ctx, "tcp", "retry:80"); err != nil {
+		t.Fatal("d.DialContext(): got error, want no error")
 	}
 
 	golden.DiffPrometheusMetrics(t, r)

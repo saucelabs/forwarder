@@ -186,6 +186,7 @@ func (d *Dialer) dialContext(ctx context.Context, network, address string) (net.
 	for i := 0; i < attempts; i++ {
 		if i > 0 {
 			time.Sleep(d.rt.Backoff)
+			d.metrics.retry(address)
 		}
 
 		conn, err := dial(ctx, network, address)
