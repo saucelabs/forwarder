@@ -57,6 +57,11 @@ func defaultKeepAliveConfig() net.KeepAliveConfig {
 	}
 }
 
+type DialRetryConfig struct {
+	Attempts int
+	Backoff  time.Duration
+}
+
 type DialConfig struct {
 	// DialTimeout is the maximum amount of time a dial will wait for
 	// connect to complete.
@@ -72,6 +77,9 @@ type DialConfig struct {
 	// RedirectFunc can be optionally set to redirect the connection to a different address.
 	RedirectFunc DialRedirectFunc
 
+	// Retry specifies the number of attempts and backoff duration between them.
+	Retry DialRetryConfig
+
 	PromConfig
 }
 
@@ -79,13 +87,22 @@ func DefaultDialConfig() *DialConfig {
 	return &DialConfig{
 		DialTimeout:     25 * time.Second,
 		KeepAliveConfig: defaultKeepAliveConfig(),
+		Retry: DialRetryConfig{
+			Attempts: 3,
+			Backoff:  1 * time.Second,
+		},
 	}
 }
+
+type dialContextFunc func(ctx context.Context, network, address string) (net.Conn, error)
 
 type Dialer struct {
 	nd      net.Dialer
 	rd      DialRedirectFunc
+	rt      DialRetryConfig
 	metrics *dialerMetrics
+
+	testingDialContext dialContextFunc
 }
 
 func NewDialer(cfg *DialConfig) *Dialer {
@@ -101,6 +118,7 @@ func NewDialer(cfg *DialConfig) *Dialer {
 	return &Dialer{
 		nd:      nd,
 		rd:      cfg.RedirectFunc,
+		rt:      cfg.Retry,
 		metrics: newDialerMetrics(cfg.PromRegistry, cfg.PromNamespace),
 	}
 }
@@ -132,7 +150,7 @@ func (d *Dialer) DialContext(ctx context.Context, network, address string) (net.
 	if d.rd != nil {
 		network, address = d.rd(network, address)
 	}
-	conn, err := d.nd.DialContext(ctx, network, address)
+	conn, err := d.dialContext(ctx, network, address)
 
 	if dct == DialConnTrackDisabled {
 		return conn, err
@@ -151,6 +169,37 @@ func (d *Dialer) DialContext(ctx context.Context, network, address string) (net.
 			d.metrics.close(address)
 		},
 	}.Build(conn), nil
+}
+
+func (d *Dialer) dialContext(ctx context.Context, network, address string) (net.Conn, error) {
+	var lastErr error
+
+	dial := d.nd.DialContext
+	if d.testingDialContext != nil {
+		dial = d.testingDialContext
+	}
+
+	attempts := d.rt.Attempts
+	if attempts <= 0 {
+		attempts = 1
+	}
+	for i := 0; i < attempts; i++ {
+		if i > 0 {
+			time.Sleep(d.rt.Backoff)
+		}
+
+		conn, err := dial(ctx, network, address)
+		if err == nil {
+			return conn, nil
+		}
+		lastErr = err
+
+		if conn != nil {
+			conn.Close()
+		}
+	}
+
+	return nil, lastErr
 }
 
 type ProxyProtocolConfig struct {
