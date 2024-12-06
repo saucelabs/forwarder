@@ -15,9 +15,10 @@ import (
 )
 
 type dialerMetrics struct {
-	errors *prometheus.CounterVec
-	dialed *prometheus.CounterVec
-	active *prometheus.GaugeVec
+	retries *prometheus.CounterVec
+	errors  *prometheus.CounterVec
+	dialed  *prometheus.CounterVec
+	active  *prometheus.GaugeVec
 }
 
 func newDialerMetrics(r prometheus.Registerer, namespace string) *dialerMetrics {
@@ -28,6 +29,11 @@ func newDialerMetrics(r prometheus.Registerer, namespace string) *dialerMetrics 
 	l := []string{"host"}
 
 	return &dialerMetrics{
+		retries: f.NewCounterVec(prometheus.CounterOpts{
+			Name:      "dialer_retries_total",
+			Namespace: namespace,
+			Help:      "Number of dial retries",
+		}, l),
 		errors: f.NewCounterVec(prometheus.CounterOpts{
 			Name:      "dialer_errors_total",
 			Namespace: namespace,
@@ -44,6 +50,10 @@ func newDialerMetrics(r prometheus.Registerer, namespace string) *dialerMetrics 
 			Help:      "Number of active connections",
 		}, l),
 	}
+}
+
+func (m *dialerMetrics) retry(addr string) {
+	m.retries.WithLabelValues(addr2Host(addr)).Inc()
 }
 
 func (m *dialerMetrics) error(addr string) {
