@@ -23,6 +23,7 @@ linters:
     - gomnd
     - gomoddirectives
     - inamedparam
+    - intrange
     - ireturn
     - mnd
     - nlreturn
