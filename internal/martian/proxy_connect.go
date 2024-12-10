@@ -17,6 +17,7 @@
 package martian
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"errors"
@@ -225,9 +226,24 @@ func OnProxyConnectResponse(_ context.Context, _ *url.URL, req *http.Request, co
 		return nil
 	}
 
+	var (
+		body io.Reader = http.NoBody
+		cl   int64
+	)
+	if connectRes.ContentLength > 0 {
+		b, err := io.ReadAll(connectRes.Body)
+		if err != nil {
+			log.Errorf(req.Context(), "failed to read CONNECT response body: %v", err)
+		} else {
+			body = bytes.NewReader(b)
+			cl = int64(len(b))
+		}
+	}
+
 	// Body cannot be read from the CONNECT response due to use of closed network connection.
-	res := proxyutil.NewResponse(connectRes.StatusCode, http.NoBody, req)
+	res := proxyutil.NewResponse(connectRes.StatusCode, body, req) //nolint:bodyclose // closing body has no effect
 	res.Header = connectRes.Header.Clone()
+	res.ContentLength = cl
 	return &connectError{res}
 }
 
