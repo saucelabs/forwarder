@@ -2045,3 +2045,66 @@ func TestReadHeaderConnectionReset(t *testing.T) {
 		t.Fatalf("conn.Read(): got %v, want io.EOF", err)
 	}
 }
+
+func TestCancelRequestOnDisconnect(t *testing.T) {
+	t.Parallel()
+
+	l, err := net.Listen("tcp", "localhost:0")
+	if err != nil {
+		t.Fatalf("Failed to create http listener: %v", err)
+	}
+	defer l.Close()
+
+	donec := make(chan struct{})
+
+	go func() {
+		t.Logf("Waiting for server side connection")
+		conn, err := l.Accept()
+		if err != nil {
+			t.Errorf("Got error while accepting connection on destination listener: %v", err)
+			return
+		}
+		t.Logf("Accepted server side connection")
+
+		// Read request and hang, simulating a long computation on the server side.
+		buf := make([]byte, 16384)
+		if _, err := conn.Read(buf); err != nil {
+			t.Errorf("Error reading: %v", err)
+			return
+		}
+		<-donec
+
+		conn.Close()
+	}()
+
+	h := testHelper{
+		Proxy: func(p *Proxy) {
+			p.ResponseModifier = ResponseModifierFunc(func(res *http.Response) error {
+				warning := res.Header.Get("Warning")
+				t.Logf("Warning: %v", warning)
+				if !strings.Contains(warning, "context canceled") {
+					t.Errorf("Context canceled warning not found in response")
+				}
+				close(donec)
+				return nil
+			})
+		},
+	}
+	conn, cancel := h.proxyConn(t)
+	defer cancel()
+	defer conn.Close()
+
+	request := "GET / HTTP/1.1\r\n" + fmt.Sprintf("Host: %s\r\n\r\n", l.Addr())
+	if _, err = conn.Write([]byte(request)); err != nil {
+		t.Fatalf("conn.Write(): got %v, want no error", err)
+	}
+
+	// Disconnect mid-request.
+	conn.Close()
+
+	select {
+	case <-donec:
+	case <-time.After(2 * time.Second):
+		t.Fatalf("timeout")
+	}
+}

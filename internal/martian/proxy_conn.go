@@ -28,6 +28,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/saucelabs/forwarder/internal/martian/log"
@@ -37,17 +38,24 @@ import (
 
 type proxyConn struct {
 	*Proxy
-	brw    *bufio.ReadWriter
-	conn   net.Conn
-	secure bool
-	cs     tls.ConnectionState
+	brw       *bufio.ReadWriter
+	conn      net.Conn
+	mu        sync.Mutex
+	ctx       context.Context
+	cancelctx context.CancelFunc
+	secure    bool
+	cs        tls.ConnectionState
 }
 
 func newProxyConn(p *Proxy, conn net.Conn) *proxyConn {
+	ctx, cancel := context.WithCancel(p.BaseContext)
+
 	return &proxyConn{
-		Proxy: p,
-		brw:   bufio.NewReadWriter(bufio.NewReader(conn), bufio.NewWriter(conn)),
-		conn:  conn,
+		Proxy:     p,
+		brw:       bufio.NewReadWriter(bufio.NewReader(conn), bufio.NewWriter(conn)),
+		conn:      conn,
+		ctx:       ctx,
+		cancelctx: cancel,
 	}
 }
 
@@ -82,6 +90,11 @@ func (p *proxyConn) readRequest() (*http.Request, error) {
 		log.Errorf(context.TODO(), "can't set idle deadline: %v", deadlineErr)
 	}
 
+	// Take lock only after idle timeout has been enabled
+	// as it might be blocked on p.cancelRequestOnDisconnect.
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
 	// Wait for the connection to become readable before trying to
 	// read the next request. This prevents a ReadHeaderTimeout or
 	// ReadTimeout from starting until the first bytes of the next request
@@ -114,7 +127,7 @@ func (p *proxyConn) readRequest() (*http.Request, error) {
 	if p.secure {
 		req.TLS = &p.cs
 	}
-	req = req.WithContext(withTraceID(p.BaseContext, newTraceID(req.Header.Get(p.RequestIDHeader))))
+	req = req.WithContext(withTraceID(p.ctx, newTraceID(req.Header.Get(p.RequestIDHeader))))
 
 	// Adjust the read deadline if necessary.
 	if !hdrDeadline.Equal(wholeReqDeadline) {
@@ -295,6 +308,28 @@ func (p *proxyConn) tunnel(name string, res *http.Response, crw io.ReadWriteClos
 	return nil
 }
 
+type onCloseBody struct {
+	io.ReadCloser
+	onClose func()
+}
+
+func (b *onCloseBody) Close() error {
+	err := b.ReadCloser.Close()
+	if b.onClose != nil {
+		b.onClose()
+	}
+	return err
+}
+
+func (p *proxyConn) cancelRequestOnDisconnect() {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	if _, err := p.brw.Peek(1); err != nil {
+		p.cancelctx()
+	}
+}
+
 func (p *proxyConn) handle() error {
 	req, err := p.readRequest()
 	p.traceReadRequest(req, err)
@@ -344,6 +379,14 @@ func (p *proxyConn) handle() error {
 	if reqUpType != "" {
 		req.Header.Set("Connection", "Upgrade")
 		req.Header.Set("Upgrade", reqUpType)
+	}
+
+	// Wrap body to start backgroundRead after it's been consumed.
+	// That allows to cancel request context
+	// when downstream connection disconnects mid-request.
+	req.Body = &onCloseBody{
+		ReadCloser: req.Body,
+		onClose:    func() { go p.cancelRequestOnDisconnect() },
 	}
 
 	// perform the HTTP roundtrip
