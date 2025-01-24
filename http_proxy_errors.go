@@ -8,6 +8,7 @@ package forwarder
 
 import (
 	"bytes"
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
@@ -50,6 +51,7 @@ func (hp *HTTPProxy) errorResponse(req *http.Request, err error) *http.Response 
 		handleMartianErrorStatus,
 		handleAuthenticationError,
 		handleDenyError,
+		handleContextCancelationError,
 		handleStatusText,
 	}
 
@@ -220,6 +222,16 @@ func handleDenyError(req *http.Request, err error) (code int, msg, label string)
 		code = http.StatusForbidden
 		msg = fmt.Sprintf("proxying is denied to host %q", req.Host)
 		label = skipMetricsLabel
+	}
+
+	return
+}
+
+func handleContextCancelationError(_ *http.Request, err error) (code int, msg, label string) {
+	if errors.Is(err, context.Canceled) {
+		code = http.StatusInternalServerError
+		msg = fmt.Sprintf("request context canceled")
+		label = "request_ctx_canceled"
 	}
 
 	return
