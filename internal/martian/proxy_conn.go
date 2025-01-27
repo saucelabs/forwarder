@@ -28,7 +28,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/saucelabs/forwarder/internal/martian/log"
@@ -40,7 +39,7 @@ type proxyConn struct {
 	*Proxy
 	brw       *bufio.ReadWriter
 	conn      net.Conn
-	mu        sync.Mutex
+	readSem   chan struct{}
 	ctx       context.Context
 	cancelctx context.CancelFunc
 	secure    bool
@@ -50,12 +49,43 @@ type proxyConn struct {
 func newProxyConn(p *Proxy, conn net.Conn) *proxyConn {
 	ctx, cancel := context.WithCancel(p.BaseContext)
 
-	return &proxyConn{
+	pc := &proxyConn{
 		Proxy:     p,
 		brw:       bufio.NewReadWriter(bufio.NewReader(conn), bufio.NewWriter(conn)),
 		conn:      conn,
+		readSem:   make(chan struct{}, 1),
 		ctx:       ctx,
 		cancelctx: cancel,
+	}
+	go pc.backgroundRead()
+
+	return pc
+}
+
+func (p *proxyConn) takeReadSem() bool {
+	select {
+	case p.readSem <- struct{}{}:
+		return true
+	case <-p.ctx.Done():
+		return false
+	}
+}
+
+func (p *proxyConn) releaseReadSem() {
+	<-p.readSem
+}
+
+func (p *proxyConn) backgroundRead() {
+	for {
+		if ok := p.takeReadSem(); !ok {
+			return
+		}
+		if _, err := p.brw.Peek(1); err != nil {
+			p.cancelctx()
+			p.releaseReadSem()
+			return
+		}
+		p.releaseReadSem()
 	}
 }
 
@@ -90,10 +120,12 @@ func (p *proxyConn) readRequest() (*http.Request, error) {
 		log.Errorf(context.TODO(), "can't set idle deadline: %v", deadlineErr)
 	}
 
-	// Take lock only after idle timeout has been enabled
-	// as it might be blocked on p.cancelRequestOnDisconnect.
-	p.mu.Lock()
-	defer p.mu.Unlock()
+	// Take read semaphore only after idle timeout has been enabled
+	// as it might be blocked on a background read.
+	// It'll be released on roundTrip, or never in case of a tunnel.
+	if ok := p.takeReadSem(); !ok {
+		return nil, fmt.Errorf("failed to take read semaphore")
+	}
 
 	// Wait for the connection to become readable before trying to
 	// read the next request. This prevents a ReadHeaderTimeout or
@@ -321,15 +353,6 @@ func (b *onCloseBody) Close() error {
 	return err
 }
 
-func (p *proxyConn) cancelRequestOnDisconnect() {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
-	if _, err := p.brw.Peek(1); err != nil {
-		p.cancelctx()
-	}
-}
-
 func (p *proxyConn) handle() error {
 	req, err := p.readRequest()
 	p.traceReadRequest(req, err)
@@ -386,7 +409,7 @@ func (p *proxyConn) handle() error {
 	// when downstream connection disconnects mid-request.
 	req.Body = &onCloseBody{
 		ReadCloser: req.Body,
-		onClose:    func() { go p.cancelRequestOnDisconnect() },
+		onClose:    p.releaseReadSem,
 	}
 
 	// perform the HTTP roundtrip
@@ -575,4 +598,9 @@ func writeHeaderOnlyResponse(w io.Writer, res *http.Response) error {
 	}
 
 	return nil
+}
+
+func (p *proxyConn) Close() error {
+	p.cancelctx()
+	return p.conn.Close()
 }

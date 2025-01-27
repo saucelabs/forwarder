@@ -323,6 +323,7 @@ func (p *Proxy) handleLoop(conn net.Conn) {
 	}
 
 	pc := newProxyConn(p, conn)
+	defer pc.Close()
 
 	if err := pc.maybeHandshakeTLS(); err != nil {
 		log.Errorf(context.TODO(), "failed to do TLS handshake: %v", err)
