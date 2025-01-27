@@ -80,7 +80,7 @@ func (p *proxyConn) backgroundRead() {
 		if ok := p.takeReadSem(); !ok {
 			return
 		}
-		if _, err := p.brw.Peek(1); err != nil {
+		if _, err := p.brw.Peek(1); isClosedConnError(err) {
 			p.cancelctx()
 			p.releaseReadSem()
 			return
