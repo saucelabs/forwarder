@@ -82,18 +82,16 @@ func isClosedConnError(err error) bool {
 
 // isCloseable reports whether err is an error that indicates the client connection should be closed.
 func isCloseable(err error) bool {
-	if errors.Is(err, io.EOF) ||
-		errors.Is(err, io.ErrUnexpectedEOF) ||
-		errors.Is(err, io.ErrClosedPipe) {
-		return true
+	if err == nil {
+		return false
 	}
 
 	var neterr net.Error
-	if ok := errors.As(err, &neterr); ok && neterr.Timeout() {
-		return true
-	}
-
-	return strings.Contains(err.Error(), "tls:")
+	return errors.Is(err, io.EOF) ||
+		errors.Is(err, io.ErrUnexpectedEOF) ||
+		errors.Is(err, io.ErrClosedPipe) ||
+		(errors.As(err, &neterr) && !neterr.Timeout()) ||
+		strings.Contains(err.Error(), "tls:")
 }
 
 type ErrorStatus struct { //nolint:errname // ErrorStatus is a type name not a variable.
