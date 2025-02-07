@@ -1,6 +1,6 @@
 module github.com/saucelabs/forwarder
 
-go 1.23.5
+go 1.23.6
 
 require (
 	github.com/cespare/xxhash/v2 v2.3.0
