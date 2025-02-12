@@ -2045,3 +2045,64 @@ func TestReadHeaderConnectionReset(t *testing.T) {
 		t.Fatalf("conn.Read(): got %v, want io.EOF", err)
 	}
 }
+
+func TestTunnelGracefulClose(t *testing.T) {
+	t.Parallel()
+
+	t.Skip("panic: close of closed channel, See #1013")
+
+	l, err := net.Listen("tcp", "localhost:0")
+	if err != nil {
+		t.Fatalf("net.Listen(): got %v, want no error", err)
+	}
+
+	done := make(chan struct{})
+
+	// Malicious server that hangs indefinitely.
+	go func() {
+		t.Logf("Waiting for server side connection")
+		conn, err := l.Accept()
+		if err != nil {
+			t.Errorf("Got error while accepting connection on destination listener: %v", err)
+			return
+		}
+		defer conn.Close()
+		t.Logf("Accepted server side connection")
+
+		<-done
+	}()
+
+	bicopyGracefulTimeout = 100 * time.Millisecond
+	h := testHelper{
+		Proxy: func(p *Proxy) {
+			tr := new(ProxyTrace)
+			tr.WroteResponse = func(info WroteResponseInfo) {
+				close(done)
+			}
+			p.Trace = tr
+		},
+	}
+	conn, cancel := h.proxyConn(t)
+	defer cancel()
+	defer conn.Close()
+
+	req, err := http.NewRequest(http.MethodConnect, "//"+l.Addr().String(), http.NoBody)
+	if err != nil {
+		t.Fatalf("http.NewRequest(): got %v, want no error", err)
+	}
+
+	if err := req.Write(conn); err != nil {
+		t.Fatalf("req.Write(): got %v, want no error", err)
+	}
+	res, err := http.ReadResponse(bufio.NewReader(conn), req)
+	if err != nil {
+		t.Fatalf("http.ReadResponse(): got %v, want no error", err)
+	}
+	res.Body.Close()
+	conn.Close()
+	select {
+	case <-done:
+	case <-time.After(5 * time.Second):
+		t.Fatalf("timed out waiting for tunnel to close all connections")
+	}
+}

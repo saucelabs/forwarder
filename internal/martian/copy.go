@@ -21,6 +21,7 @@ import (
 	"context"
 	"io"
 	"sync"
+	"time"
 
 	"github.com/saucelabs/forwarder/internal/martian/log"
 )
@@ -43,13 +44,35 @@ var copyBufPool = sync.Pool{
 	},
 }
 
+var bicopyGracefulTimeout = 1 * time.Minute
+
 func bicopy(ctx context.Context, cc ...copier) {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	donec := make(chan struct{}, len(cc))
 	for i := range cc {
 		go cc[i].copy(ctx, donec)
 	}
-	for range cc {
+
+	for i := range cc {
 		<-donec
+		if i == 0 {
+			// Forcibly close all tunnels 1 minute after the first tunnel finished.
+			go gracefulCloseAfter(ctx, bicopyGracefulTimeout, cc...)
+		}
+	}
+}
+
+func gracefulCloseAfter(ctx context.Context, d time.Duration, cc ...copier) {
+	select {
+	case <-ctx.Done():
+		return
+	case <-time.After(d):
+		log.Infof(ctx, "forcibly closing tunnel after %v of graceful period", d)
+	}
+	for i := range cc {
+		cc[i].close(ctx)
 	}
 }
 
@@ -67,6 +90,13 @@ func (c copier) copy(ctx context.Context, donec chan<- struct{}) {
 	if _, err := io.CopyBuffer(c.dst, c.src, buf); err != nil && !isClosedConnError(err) {
 		log.Errorf(ctx, "failed to copy %s tunnel: %v", c.name, err)
 	}
+	c.closeWriter(ctx)
+
+	log.Debugf(ctx, "%s tunnel finished copying", c.name)
+	donec <- struct{}{}
+}
+
+func (c copier) closeWriter(ctx context.Context) {
 	var closeErr error
 	if cw, ok := asCloseWriter(c.dst); ok {
 		closeErr = cw.CloseWrite()
@@ -78,7 +108,15 @@ func (c copier) copy(ctx context.Context, donec chan<- struct{}) {
 	if closeErr != nil {
 		log.Infof(ctx, "failed to close write side of %s tunnel: %v", c.name, closeErr)
 	}
+}
 
-	log.Debugf(ctx, "%s tunnel finished copying", c.name)
-	donec <- struct{}{}
+func (c copier) close(ctx context.Context) {
+	cc, ok := asCloser(c.dst)
+	if !ok {
+		log.Errorf(ctx, "cannot close %s tunnel (%T)", c.name, c.dst)
+		return
+	}
+	if err := cc.Close(); err != nil && !isClosedConnError(err) {
+		log.Infof(ctx, "failed to close %s tunnel: %v", c.name, err)
+	}
 }

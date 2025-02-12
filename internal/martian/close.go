@@ -43,3 +43,11 @@ func asCloseWriter(w io.Writer) (closeWriter, bool) {
 
 	return reflectx.LookupImpl[closeWriter](reflect.ValueOf(w))
 }
+
+func asCloser(w any) (io.Closer, bool) {
+	if c, ok := w.(io.Closer); ok {
+		return c, ok
+	}
+
+	return reflectx.LookupImpl[io.Closer](reflect.ValueOf(w))
+}
