@@ -7,7 +7,7 @@ require (
 	github.com/dop251/goja v0.0.0-20231027120936-b396bb4c349d
 	github.com/elastic/go-freelru v0.16.0
 	github.com/golang/snappy v0.0.4
-	github.com/google/go-cmp v0.6.0
+	github.com/google/go-cmp v0.7.0
 	github.com/google/go-github/v56 v56.0.0
 	github.com/gorilla/websocket v1.5.3
 	github.com/kevinburke/hostsfile v0.0.0-20220522040509-e5e984885321
