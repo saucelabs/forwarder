@@ -6,14 +6,16 @@
 
 package log
 
-type Level int32
+type Level int
 
+// Levels start from 1 to avoid zero value in help printer.
 const (
 	ErrorLevel Level = 1 + iota
+	WarnLevel
 	InfoLevel
 	DebugLevel
 )
 
 func (l Level) String() string {
-	return [3]string{"error", "info", "debug"}[l-1]
+	return [4]string{"error", "warn", "info", "debug"}[l-1]
 }

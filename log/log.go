@@ -7,6 +7,7 @@
 package log
 
 import (
+	"context"
 	"os"
 )
 
@@ -15,6 +16,21 @@ type Logger interface {
 	Errorf(format string, args ...any)
 	Infof(format string, args ...any)
 	Debugf(format string, args ...any)
+}
+
+// StructuredLogger is the preferred logging interface.
+type StructuredLogger interface {
+	Error(msg string, args ...any)
+	Warn(msg string, args ...any)
+	Info(msg string, args ...any)
+	Debug(msg string, args ...any)
+
+	ErrorContext(ctx context.Context, msg string, args ...any)
+	WarnContext(ctx context.Context, msg string, args ...any)
+	InfoContext(ctx context.Context, msg string, args ...any)
+	DebugContext(ctx context.Context, msg string, args ...any)
+
+	With(args ...any) StructuredLogger
 }
 
 // NopLogger is a logger that does nothing.
