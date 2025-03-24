@@ -55,8 +55,9 @@ func SplitNameMode(val string) (name string, mode Mode, err error) {
 var DefaultMode = Errors
 
 type Logger struct {
-	log  func(format string, args ...any)
-	mode Mode
+	log        func(format string, args ...any)
+	mode       Mode
+	structured bool
 }
 
 // NewLogger returns a logger that logs HTTP requests and responses.
@@ -65,12 +66,32 @@ func NewLogger(logFunc func(format string, args ...any), mode Mode) *Logger {
 		mode = DefaultMode
 	}
 	return &Logger{
-		log:  logFunc,
-		mode: mode,
+		log:        logFunc,
+		mode:       mode,
+		structured: false,
+	}
+}
+
+// NewStructuredLogger returns a logger that calls the same log function in a structured way.
+func NewStructuredLogger(logFunc func(msg string, args ...any), mode Mode) *Logger {
+	if mode == "" {
+		mode = DefaultMode
+	}
+	return &Logger{
+		log:        logFunc,
+		mode:       mode,
+		structured: true,
 	}
 }
 
 func (l *Logger) LogFunc() middleware.Logger {
+	if l.structured {
+		return l.structuredLogFunc()
+	}
+	return l.logFunc()
+}
+
+func (l *Logger) logFunc() middleware.Logger {
 	switch l.mode {
 	case None:
 		return func(e middleware.LogEntry) {}
@@ -110,6 +131,53 @@ func (l *Logger) LogFunc() middleware.Logger {
 			w.ShortURLLine(e)
 			w.Dump(e)
 			l.log("%s", w.String())
+		}
+	default:
+		panic(fmt.Sprintf("unknown log mode %s", l.mode))
+	}
+}
+
+func (l *Logger) structuredLogFunc() middleware.Logger {
+	switch l.mode {
+	case None:
+		return func(e middleware.LogEntry) {}
+	case ShortURL:
+		return func(e middleware.LogEntry) {
+			var b structuredLogBuilder
+			b.WithShortURL(e)
+			l.log("Log HTTP", b.Args()...)
+		}
+	case URL:
+		return func(e middleware.LogEntry) {
+			var b structuredLogBuilder
+			b.WithURL(e)
+			l.log("Log HTTP", b.Args()...)
+		}
+	case Headers:
+		return func(e middleware.LogEntry) {
+			var b structuredLogBuilder
+			b.WithShortURL(e)
+			b.WithHeaders(e)
+			l.log("Log HTTP", b.Args()...)
+		}
+	case Body:
+		return func(e middleware.LogEntry) {
+			var b structuredLogBuilder
+			b.WithShortURL(e)
+			b.WithHeaders(e)
+			b.WithBody(e)
+			l.log("Log HTTP", b.Args()...)
+		}
+	case Errors:
+		return func(e middleware.LogEntry) {
+			if e.Status < http.StatusInternalServerError {
+				return
+			}
+
+			var b structuredLogBuilder
+			b.WithShortURL(e)
+			b.WithHeaders(e)
+			l.log("Log HTTP", b.Args()...)
 		}
 	default:
 		panic(fmt.Sprintf("unknown log mode %s", l.mode))
