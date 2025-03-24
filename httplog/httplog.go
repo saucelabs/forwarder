@@ -14,6 +14,7 @@ import (
 	"github.com/saucelabs/forwarder/middleware"
 )
 
+// Mode defines the logging verbosity.
 type Mode string
 
 const (
@@ -43,18 +44,7 @@ func SplitNameMode(val string) (name string, mode Mode, err error) {
 	}
 
 	switch mode {
-	case None:
-		mode = None
-	case ShortURL:
-		mode = ShortURL
-	case URL:
-		mode = URL
-	case Headers:
-		mode = Headers
-	case Body:
-		mode = Body
-	case Errors:
-		mode = Errors
+	case None, ShortURL, URL, Headers, Body, Errors:
 	default:
 		return "", "", fmt.Errorf("invalid mode %q", mode)
 	}
