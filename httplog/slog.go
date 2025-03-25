@@ -54,6 +54,9 @@ type structuredLogBuilder struct {
 
 // WithShortURL sets the URL using a short form along with basic fields.
 func (b *structuredLogBuilder) WithShortURL(e middleware.LogEntry) {
+	if e.Request == nil {
+		return
+	}
 	shortURL := buildShortURL(e.Request.URL)
 	b.initBasicFields(e, shortURL)
 }
@@ -71,6 +74,9 @@ func buildShortURL(u *url.URL) string {
 
 // WithURL sets the URL using the redacted form along with basic fields.
 func (b *structuredLogBuilder) WithURL(e middleware.LogEntry) {
+	if e.Request == nil {
+		return
+	}
 	redactedURL := e.Request.URL.Redacted()
 	b.initBasicFields(e, redactedURL)
 }
@@ -90,6 +96,9 @@ func (b *structuredLogBuilder) initBasicFields(e middleware.LogEntry, urlStr str
 // WithHeaders copies headers, trailers, and other metadata from the request and response.
 func (b *structuredLogBuilder) WithHeaders(e middleware.LogEntry) {
 	req := e.Request
+	if req == nil {
+		return
+	}
 
 	b.req.Host = req.Host
 	b.req.Headers = req.Header.Clone()
@@ -129,7 +138,7 @@ func (b *structuredLogBuilder) WithHeaders(e middleware.LogEntry) {
 // Note: For CONNECT requests with successful responses, the body is skipped.
 func (b *structuredLogBuilder) WithBody(e middleware.LogEntry) {
 	req := e.Request
-	if req.Method == http.MethodConnect && e.Status/100 == 2 {
+	if req == nil || req.Method == http.MethodConnect && e.Status/100 == 2 {
 		return
 	}
 
