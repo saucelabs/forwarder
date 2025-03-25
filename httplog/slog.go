@@ -125,6 +125,8 @@ func (b *structuredLogBuilder) WithHeaders(e middleware.LogEntry) {
 	}
 }
 
+// WithBody reads and logs the body of the request and response.
+// Note: For CONNECT requests with successful responses, the body is skipped.
 func (b *structuredLogBuilder) WithBody(e middleware.LogEntry) {
 	req := e.Request
 	if req.Method == http.MethodConnect && e.Status/100 == 2 {
@@ -155,6 +157,7 @@ func (b *structuredLogBuilder) WithBody(e middleware.LogEntry) {
 	}
 }
 
+// Args returns a slice of key-value pairs for logging purposes.
 func (b *structuredLogBuilder) Args() []any {
 	return []any{"request", b.req, "response", b.res, "duration", b.duration, "id", b.id}
 }
