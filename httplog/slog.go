@@ -87,14 +87,12 @@ func (b *structuredLogBuilder) initBasicFields(e middleware.LogEntry, urlStr str
 	b.id = martian.ContextTraceID(req.Context())
 }
 
+// WithHeaders copies headers, trailers, and other metadata from the request and response.
 func (b *structuredLogBuilder) WithHeaders(e middleware.LogEntry) {
 	req := e.Request
 
 	b.req.Host = req.Host
-	b.req.Headers = make(map[string][]string, len(req.Header))
-	for k, vs := range req.Header {
-		b.req.Headers[k] = vs
-	}
+	b.req.Headers = req.Header.Clone()
 	if len(req.TransferEncoding) > 0 {
 		b.req.TransferEncoding = req.TransferEncoding
 	}
@@ -102,10 +100,7 @@ func (b *structuredLogBuilder) WithHeaders(e middleware.LogEntry) {
 		b.req.ContentLength = req.ContentLength
 	}
 	if len(req.Trailer) > 0 {
-		b.req.Trailers = make(map[string][]string, len(req.Trailer))
-		for k, vs := range req.Trailer {
-			b.req.Trailers[k] = vs
-		}
+		b.req.Trailers = req.Trailer.Clone()
 	}
 
 	res := e.Response
@@ -118,10 +113,7 @@ func (b *structuredLogBuilder) WithHeaders(e middleware.LogEntry) {
 	if len(parts) == 2 {
 		b.res.StatusText = parts[1]
 	}
-	b.res.Headers = make(map[string][]string, len(res.Header))
-	for k, vs := range res.Header {
-		b.res.Headers[k] = vs
-	}
+	b.res.Headers = res.Header.Clone()
 	if len(res.TransferEncoding) > 0 {
 		b.res.TransferEncoding = res.TransferEncoding
 	}
@@ -129,10 +121,7 @@ func (b *structuredLogBuilder) WithHeaders(e middleware.LogEntry) {
 		b.res.ContentLength = res.ContentLength
 	}
 	if len(res.Trailer) > 0 {
-		b.res.Trailers = make(map[string][]string, len(res.Trailer))
-		for k, vs := range res.Trailer {
-			b.res.Trailers[k] = vs
-		}
+		b.res.Trailers = res.Trailer.Clone()
 	}
 }
 
