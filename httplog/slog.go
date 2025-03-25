@@ -52,16 +52,10 @@ type structuredLogBuilder struct {
 	id       string
 }
 
+// WithShortURL sets the URL using a short form along with basic fields.
 func (b *structuredLogBuilder) WithShortURL(e middleware.LogEntry) {
-	req := e.Request
-	b.req.Protocol = fmt.Sprintf("HTTP/%d.%d", req.ProtoMajor, req.ProtoMinor)
-	b.req.Method = req.Method
-	b.req.URL = buildShortURL(req.URL)
-
-	b.res.StatusCode = e.Status
-
-	b.duration = e.Duration.String()
-	b.id = martian.ContextTraceID(req.Context())
+	shortURL := buildShortURL(e.Request.URL)
+	b.initBasicFields(e, shortURL)
 }
 
 func buildShortURL(u *url.URL) string {
@@ -75,11 +69,17 @@ func buildShortURL(u *url.URL) string {
 	return scheme + host + path
 }
 
+// WithURL sets the URL using the redacted form along with basic fields.
 func (b *structuredLogBuilder) WithURL(e middleware.LogEntry) {
+	redactedURL := e.Request.URL.Redacted()
+	b.initBasicFields(e, redactedURL)
+}
+
+func (b *structuredLogBuilder) initBasicFields(e middleware.LogEntry, urlStr string) {
 	req := e.Request
 	b.req.Protocol = fmt.Sprintf("HTTP/%d.%d", req.ProtoMajor, req.ProtoMinor)
 	b.req.Method = req.Method
-	b.req.URL = req.URL.Redacted()
+	b.req.URL = urlStr
 
 	b.res.StatusCode = e.Status
 
