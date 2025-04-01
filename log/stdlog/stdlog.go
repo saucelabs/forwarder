@@ -100,7 +100,7 @@ func (sl *Logger) Errorf(format string, args ...any) {
 	if sl.onError != nil {
 		defer sl.onError(sl.name)
 	}
-	if sl.level < flog.ErrorLevel {
+	if sl.level > flog.ErrorLevel {
 		return
 	}
 	if sl.decorate != nil {
@@ -110,7 +110,7 @@ func (sl *Logger) Errorf(format string, args ...any) {
 }
 
 func (sl *Logger) Infof(format string, args ...any) {
-	if sl.level < flog.InfoLevel {
+	if sl.level > flog.InfoLevel {
 		return
 	}
 	if sl.decorate != nil {
@@ -120,7 +120,7 @@ func (sl *Logger) Infof(format string, args ...any) {
 }
 
 func (sl *Logger) Debugf(format string, args ...any) {
-	if sl.level < flog.DebugLevel {
+	if sl.level > flog.DebugLevel {
 		return
 	}
 	if sl.decorate != nil {
