@@ -6,32 +6,44 @@ import (
 	"context"
 )
 
-type Logger interface {
-	Infof(ctx context.Context, format string, args ...any)
-	Debugf(ctx context.Context, format string, args ...any)
-	Errorf(ctx context.Context, format string, args ...any)
+type StructuredLogger interface {
+	FatalContext(ctx context.Context, msg string, args ...any)
+	ErrorContext(ctx context.Context, msg string, args ...any)
+	WarnContext(ctx context.Context, msg string, args ...any)
+	InfoContext(ctx context.Context, msg string, args ...any)
+	DebugContext(ctx context.Context, msg string, args ...any)
+	TraceContext(ctx context.Context, msg string, args ...any)
 }
 
-var log Logger = nopLogger{}
+var log StructuredLogger = nopLogger{}
 
 // SetLogger changes the default logger. This must be called very first,
 // before interacting with rest of the martian package. Changing it at
 // runtime is not supported.
-func SetLogger(l Logger) {
+func SetLogger(l StructuredLogger) {
 	log = l
 }
 
-// Infof logs an info message.
-func Infof(ctx context.Context, format string, args ...any) {
-	log.Infof(ctx, format, args...)
+func Fatal(ctx context.Context, msg string, args ...any) {
+	log.FatalContext(ctx, msg, args...)
 }
 
-// Debugf logs a debug message.
-func Debugf(ctx context.Context, format string, args ...any) {
-	log.Debugf(ctx, format, args...)
+func Error(ctx context.Context, msg string, args ...any) {
+	log.ErrorContext(ctx, msg, args...)
 }
 
-// Errorf logs an error message.
-func Errorf(ctx context.Context, format string, args ...any) {
-	log.Errorf(ctx, format, args...)
+func Warn(ctx context.Context, msg string, args ...any) {
+	log.WarnContext(ctx, msg, args...)
+}
+
+func Info(ctx context.Context, msg string, args ...any) {
+	log.InfoContext(ctx, msg, args...)
+}
+
+func Debug(ctx context.Context, msg string, args ...any) {
+	log.DebugContext(ctx, msg, args...)
+}
+
+func Trace(ctx context.Context, msg string, args ...any) {
+	log.TraceContext(ctx, msg, args...)
 }

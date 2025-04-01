@@ -39,8 +39,7 @@ func fixConnectReqContentLength(req *http.Request) {
 	}
 
 	if req.Header.Get("Content-Length") != "" {
-		log.Infof(req.Context(), "CONNECT request with Content-Length: %s, ignoring content length",
-			req.Header.Get("Content-Length"))
+		log.Info(req.Context(), "CONNECT request with Content-Length, ignoring content length", "content-length", req.Header.Get("Content-Length"))
 	}
 
 	req.ContentLength = -1
@@ -66,12 +65,12 @@ func (p *Proxy) Connect(ctx context.Context, req *http.Request, terminateTLS boo
 			crw = cconn
 
 			if terminateTLS {
-				log.Debugf(ctx, "attempting to terminate TLS on CONNECT tunnel: %s", req.URL.Host)
+				log.Debug(ctx, "attempting to terminate TLS on CONNECT tunnel", "host", req.URL.Host)
 				tconn := tls.Client(cconn, p.clientTLSConfig())
 				if err := tconn.Handshake(); err == nil {
 					crw = tconn
 				} else {
-					log.Errorf(ctx, "failed to terminate TLS on CONNECT tunnel: %v", err)
+					log.Error(ctx, "failed to terminate TLS on CONNECT tunnel", "error", err)
 					cerr = err
 				}
 			}
@@ -94,7 +93,7 @@ func (p *Proxy) connect(req *http.Request) (*http.Response, net.Conn, error) {
 	}
 
 	if proxyURL == nil {
-		log.Debugf(ctx, "CONNECT to host directly: %s", req.URL.Host)
+		log.Debug(ctx, "CONNECT to host directly", "host", req.URL.Host)
 
 		conn, err := p.DialContext(ctx, "tcp", req.URL.Host)
 		if err != nil {
@@ -117,7 +116,7 @@ func (p *Proxy) connect(req *http.Request) (*http.Response, net.Conn, error) {
 func (p *Proxy) connectHTTP(req *http.Request, proxyURL *url.URL) (res *http.Response, conn net.Conn, err error) {
 	ctx := req.Context()
 
-	log.Debugf(ctx, "CONNECT with upstream HTTP proxy: %s", proxyURL.Host)
+	log.Debug(ctx, "CONNECT with upstream HTTP proxy", "proxy", proxyURL.Host)
 
 	var d *dialvia.HTTPProxyDialer
 	if proxyURL.Scheme == "https" {
@@ -157,7 +156,7 @@ func (p *Proxy) clientTLSConfig() *tls.Config {
 func (p *Proxy) connectSOCKS5(req *http.Request, proxyURL *url.URL) (*http.Response, net.Conn, error) {
 	ctx := req.Context()
 
-	log.Debugf(ctx, "CONNECT with upstream SOCKS5 proxy: %s", proxyURL.Host)
+	log.Debug(ctx, "CONNECT with upstream SOCKS5 proxy", "proxy", proxyURL.Host)
 
 	d := dialvia.SOCKS5Proxy(p.DialContext, proxyURL)
 	d.Timeout = p.ConnectTimeout
@@ -204,7 +203,7 @@ func shouldTerminateTLS(req *http.Request) bool {
 	}
 	b, err := strconv.ParseBool(h)
 	if err != nil {
-		log.Errorf(req.Context(), "failed to parse %s header value=%q: %v", terminateTLSHeader, h, err)
+		log.Error(req.Context(), "failed to parse terminate TLS header", "value", h, "error", err)
 	}
 	return b
 }
@@ -233,7 +232,7 @@ func OnProxyConnectResponse(_ context.Context, _ *url.URL, req *http.Request, co
 	if connectRes.ContentLength > 0 {
 		b, err := io.ReadAll(connectRes.Body)
 		if err != nil {
-			log.Errorf(req.Context(), "failed to read CONNECT response body: %v", err)
+			log.Error(req.Context(), "failed to read CONNECT response body", "error", err)
 		} else {
 			body = bytes.NewReader(b)
 			cl = int64(len(b))
