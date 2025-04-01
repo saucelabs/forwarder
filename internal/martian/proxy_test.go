@@ -298,27 +298,27 @@ func TestIntegrationHTTP100Continue(t *testing.T) {
 	go func() {
 		conn, err := sl.Accept()
 		if err != nil {
-			log.Errorf(context.TODO(), "proxy_test: failed to accept connection: %v", err)
+			log.Error(context.TODO(), "proxy_test: failed to accept connection", "error", err)
 			return
 		}
 		defer conn.Close()
 
-		log.Infof(context.TODO(), "proxy_test: accepted connection: %s", conn.RemoteAddr())
+		log.Info(context.TODO(), "proxy_test: accepted connection", "address", conn.RemoteAddr())
 
 		req, err := http.ReadRequest(bufio.NewReader(conn))
 		if err != nil {
-			log.Errorf(context.TODO(), "proxy_test: failed to read request: %v", err)
+			log.Error(context.TODO(), "proxy_test: failed to read request", "error", err)
 			return
 		}
 
 		if req.Header.Get("Expect") == "100-continue" {
-			log.Infof(context.TODO(), "proxy_test: received 100-continue request")
+			log.Info(context.TODO(), "proxy_test: received 100-continue request")
 
 			conn.Write([]byte("HTTP/1.1 100 Continue\r\n\r\n"))
 
-			log.Infof(context.TODO(), "proxy_test: sent 100-continue response")
+			log.Info(context.TODO(), "proxy_test: sent 100-continue response")
 		} else {
-			log.Infof(context.TODO(), "proxy_test: received non 100-continue request")
+			log.Info(context.TODO(), "proxy_test: received non 100-continue request")
 
 			res := proxyutil.NewResponse(417, nil, req)
 			res.Header.Set("Connection", "close")
@@ -330,7 +330,7 @@ func TestIntegrationHTTP100Continue(t *testing.T) {
 		res.Header.Set("Connection", "close")
 		res.Write(conn)
 
-		log.Infof(context.TODO(), "proxy_test: sent 200 response")
+		log.Info(context.TODO(), "proxy_test: sent 200 response")
 	}()
 
 	conn, cancel := h.proxyConn(t)
@@ -401,34 +401,34 @@ func TestIntegrationHTTP101SwitchingProtocols(t *testing.T) {
 	go func() {
 		conn, err := sl.Accept()
 		if err != nil {
-			log.Errorf(context.TODO(), "proxy_test: failed to accept connection: %v", err)
+			log.Error(context.TODO(), "proxy_test: failed to accept connection", "error", err)
 			return
 		}
 		defer conn.Close()
 
-		log.Infof(context.TODO(), "proxy_test: accepted connection: %s", conn.RemoteAddr())
+		log.Info(context.TODO(), "proxy_test: accepted connection", "address", conn.RemoteAddr())
 
 		req, err := http.ReadRequest(bufio.NewReader(conn))
 		if err != nil {
-			log.Errorf(context.TODO(), "proxy_test: failed to read request: %v", err)
+			log.Error(context.TODO(), "proxy_test: failed to read request", "error", err)
 			return
 		}
 
 		if reqUpType := upgradeType(req.Header); reqUpType != "" {
-			log.Infof(context.TODO(), "proxy_test: received upgrade request")
+			log.Info(context.TODO(), "proxy_test: received upgrade request")
 
 			res := proxyutil.NewResponse(101, nil, req)
 			res.Header.Set("Connection", "upgrade")
 			res.Header.Set("Upgrade", reqUpType)
 
 			res.Write(conn)
-			log.Infof(context.TODO(), "proxy_test: sent 101 response")
+			log.Info(context.TODO(), "proxy_test: sent 101 response")
 
 			if _, err := io.Copy(conn, conn); err != nil {
-				log.Errorf(context.TODO(), "proxy_test: failed to copy connection: %v", err)
+				log.Error(context.TODO(), "proxy_test: failed to copy connection", "error", err)
 			}
 		} else {
-			log.Infof(context.TODO(), "proxy_test: received non upgrade request")
+			log.Info(context.TODO(), "proxy_test: received non upgrade request")
 
 			res := proxyutil.NewResponse(417, nil, req)
 			res.Header.Set("Connection", "close")
@@ -436,7 +436,7 @@ func TestIntegrationHTTP101SwitchingProtocols(t *testing.T) {
 			return
 		}
 
-		log.Infof(context.TODO(), "proxy_test: closed connection")
+		log.Info(context.TODO(), "proxy_test: closed connection")
 	}()
 
 	conn, cancel := h.proxyConn(t)
@@ -508,25 +508,25 @@ func TestIntegrationHTTP304NotModified(t *testing.T) {
 	go func() {
 		conn, err := sl.Accept()
 		if err != nil {
-			log.Errorf(context.TODO(), "proxy_test: failed to accept connection: %v", err)
+			log.Error(context.TODO(), "proxy_test: failed to accept connection", "error", err)
 			return
 		}
 		defer conn.Close()
 
-		log.Infof(context.TODO(), "proxy_test: accepted connection: %s", conn.RemoteAddr())
+		log.Info(context.TODO(), "proxy_test: accepted connection", "address", conn.RemoteAddr())
 
 		req, err := http.ReadRequest(bufio.NewReader(conn))
 		if err != nil {
-			log.Errorf(context.TODO(), "proxy_test: failed to read request: %v", err)
+			log.Error(context.TODO(), "proxy_test: failed to read request", "error", err)
 			return
 		}
 
 		res := proxyutil.NewResponse(304, http.NoBody, req)
 		res.Header.Set("Content-Length", "13")
 		res.Write(conn)
-		log.Infof(context.TODO(), "proxy_test: sent 304 response")
+		log.Info(context.TODO(), "proxy_test: sent 304 response")
 
-		log.Infof(context.TODO(), "proxy_test: closed connection")
+		log.Info(context.TODO(), "proxy_test: closed connection")
 	}()
 
 	conn, cancel := h.proxyConn(t)
@@ -580,16 +580,16 @@ func TestIntegrationUnexpectedUpstreamFailure(t *testing.T) {
 		time.Sleep(1 * time.Second)
 		conn, err := sl.Accept()
 		if err != nil {
-			log.Errorf(context.TODO(), "proxy_test: failed to accept connection: %v", err)
+			log.Error(context.TODO(), "proxy_test: failed to accept connection", "error", err)
 			return
 		}
 		defer conn.Close()
 
-		log.Infof(context.TODO(), "proxy_test: accepted connection: %s\n", conn.RemoteAddr())
+		log.Info(context.TODO(), "proxy_test: accepted connection", "address", conn.RemoteAddr())
 
 		req, err := http.ReadRequest(bufio.NewReader(conn))
 		if err != nil {
-			log.Errorf(context.TODO(), "proxy_test: failed to read request: %v", err)
+			log.Error(context.TODO(), "proxy_test: failed to read request", "error", err)
 			return
 		}
 
@@ -609,7 +609,7 @@ func TestIntegrationUnexpectedUpstreamFailure(t *testing.T) {
 		res.Write(conn)
 		conn.Close()
 
-		log.Infof(context.TODO(), "proxy_test: sent 200 response\n")
+		log.Info(context.TODO(), "proxy_test: sent 200 response")
 	}()
 
 	conn, cancel := h.proxyConn(t)

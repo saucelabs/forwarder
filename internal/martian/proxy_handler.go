@@ -104,12 +104,12 @@ func (p proxyHandler) handleConnectRequest(rw http.ResponseWriter, req *http.Req
 	req.Header.Del(terminateTLSHeader)
 
 	if err := p.modifyRequest(req); err != nil {
-		log.Debugf(ctx, "error modifying CONNECT request: %v", err)
+		log.Debug(ctx, "error modifying CONNECT request", "error", err)
 		p.writeErrorResponse(rw, req, err)
 		return
 	}
 
-	log.Debugf(ctx, "attempting to establish CONNECT tunnel: %s", req.URL.Host)
+	log.Debug(ctx, "attempting to establish CONNECT tunnel", "host", req.URL.Host)
 	res, crw, cerr := p.Connect(ctx, req, terminateTLS)
 	if res != nil {
 		defer res.Body.Close()
@@ -118,25 +118,25 @@ func (p proxyHandler) handleConnectRequest(rw http.ResponseWriter, req *http.Req
 		defer crw.Close()
 	}
 	if cerr != nil {
-		log.Errorf(ctx, "failed to CONNECT: %v", cerr)
+		log.Error(ctx, "failed to CONNECT", "error", cerr)
 		p.writeErrorResponse(rw, req, cerr)
 		return
 	}
 
 	if err := p.modifyResponse(res); err != nil {
-		log.Debugf(ctx, "error modifying CONNECT response: %v", err)
+		log.Debug(ctx, "error modifying CONNECT response", "error", err)
 		p.writeErrorResponse(rw, req, err)
 		return
 	}
 
 	if res.StatusCode/100 != 2 {
-		log.Infof(ctx, "CONNECT rejected with status code: %d", res.StatusCode)
+		log.Info(ctx, "CONNECT rejected", "status code", res.StatusCode)
 		p.writeResponse(rw, res)
 		return
 	}
 
 	if err := p.tunnel("CONNECT", rw, req, res, crw); err != nil {
-		log.Errorf(ctx, "CONNECT tunnel: %v", err)
+		log.Error(ctx, "CONNECT tunnel", "error", err)
 		panic(http.ErrAbortHandler)
 	}
 }
@@ -147,14 +147,14 @@ func (p proxyHandler) handleUpgradeResponse(rw http.ResponseWriter, req *http.Re
 
 	uconn, ok := res.Body.(io.ReadWriteCloser)
 	if !ok {
-		log.Errorf(ctx, "%s tunnel: internal error: switching protocols response with non-ReadWriteCloser body", resUpType)
+		log.Error(ctx, "upgrade tunnel: internal error: switching protocols response with non-ReadWriteCloser body", "type", resUpType)
 		p.traceWroteResponse(res, errors.New("switching protocols response with non-writable body"))
 		panic(http.ErrAbortHandler)
 	}
 	res.Body = panicBody
 
 	if err := p.tunnel(resUpType, rw, req, res, uconn); err != nil {
-		log.Errorf(ctx, "%s tunnel: %v", resUpType, err)
+		log.Error(ctx, "upgrade tunnel", "type", resUpType, "error", err)
 		panic(http.ErrAbortHandler)
 	}
 }
@@ -208,9 +208,9 @@ func (p proxyHandler) tunnel(name string, rw http.ResponseWriter, req *http.Requ
 
 	ctx := req.Context()
 
-	log.Debugf(ctx, "established %s tunnel, proxying traffic", name)
+	log.Debug(ctx, "established tunnel, proxying traffic", "name", name)
 	bicopy(ctx, cc...)
-	log.Debugf(ctx, "closed %s tunnel duration=%s", name, ContextDuration(ctx))
+	log.Debug(ctx, "closed tunnel", "name", name, "duration", ContextDuration(ctx))
 
 	p.traceWroteResponse(res, nil)
 
@@ -238,11 +238,11 @@ func (p proxyHandler) handleRequest(rw http.ResponseWriter, req *http.Request) {
 
 	reqUpType := upgradeType(req.Header)
 	if reqUpType != "" {
-		log.Debugf(ctx, "upgrade request: %s", reqUpType)
+		log.Debug(ctx, "upgrade request", "type", reqUpType)
 	}
 
 	if err := p.modifyRequest(req); err != nil {
-		log.Debugf(ctx, "error modifying request: %v", err)
+		log.Debug(ctx, "error modifying request", "error", err)
 		p.writeErrorResponse(rw, req, err)
 		return
 	}
@@ -258,10 +258,9 @@ func (p proxyHandler) handleRequest(rw http.ResponseWriter, req *http.Request) {
 	res, err := p.roundTrip(req)
 	if err != nil {
 		if isClosedConnError(err) {
-			log.Debugf(ctx, "connection closed prematurely: %v", err)
+			log.Debug(ctx, "connection closed prematurely", "error", err)
 		} else {
-			log.Errorf(ctx, "failed to round trip host=%s method=%s path=%s: %v",
-				req.Host, req.Method, req.URL.Path, err)
+			log.Error(ctx, "failed to round trip", "host", req.Host, "method", req.Method, "path", req.URL.Path, "error", err)
 		}
 		p.writeErrorResponse(rw, req, err)
 		return
@@ -275,11 +274,11 @@ func (p proxyHandler) handleRequest(rw http.ResponseWriter, req *http.Request) {
 
 	resUpType := upgradeType(res.Header)
 	if resUpType != "" {
-		log.Debugf(ctx, "upgrade response: %s", resUpType)
+		log.Debug(ctx, "upgrade response", "type", resUpType)
 	}
 
 	if err := p.modifyResponse(res); err != nil {
-		log.Debugf(ctx, "error modifying response: %v", err)
+		log.Debug(ctx, "error modifying response", "error", err)
 		p.writeErrorResponse(rw, req, err)
 		return
 	}
@@ -320,7 +319,7 @@ func (w h2Writer) Write(p []byte) (n int, err error) {
 
 	if n > 0 {
 		if err := w.flush(); err != nil {
-			log.Errorf(w.req.Context(), "got error while flushing response back to client: %v", err)
+			log.Error(w.req.Context(), "got error while flushing response back to client", "error", err)
 		}
 	}
 
@@ -330,7 +329,7 @@ func (w h2Writer) Write(p []byte) (n int, err error) {
 func (w h2Writer) CloseWrite() error {
 	// Send any DATA frames buffered in the transport.
 	if err := w.flush(); err != nil {
-		log.Errorf(w.req.Context(), "got error while flushing response back to client: %v", err)
+		log.Error(w.req.Context(), "got error while flushing response back to client", "error", err)
 	}
 	// Close request body to signal the end of the request.
 	// This results RST_STREAM frame with error code NO_ERROR to be sent to the other side.
@@ -343,7 +342,7 @@ func (p proxyHandler) writeErrorResponse(rw http.ResponseWriter, req *http.Reque
 		res = p.errorResponse(req, err)
 	}
 	if err := p.modifyResponse(res); err != nil {
-		log.Errorf(req.Context(), "error modifying error response: %v", err)
+		log.Error(req.Context(), "error modifying error response", "error", err)
 		if !p.WithoutWarning {
 			proxyutil.Warning(res.Header, err)
 		}
@@ -377,9 +376,9 @@ func (p proxyHandler) writeResponse(rw http.ResponseWriter, res *http.Response) 
 	if err != nil {
 		p.traceWroteResponse(res, err)
 		if isClosedConnError(err) {
-			log.Debugf(res.Request.Context(), "connection closed prematurely while writing response: %v", err)
+			log.Debug(res.Request.Context(), "connection closed prematurely while writing response", "error", err)
 		} else {
-			log.Errorf(res.Request.Context(), "got error while writing response: %v", err)
+			log.Error(res.Request.Context(), "got error while writing response", "error", err)
 		}
 		panic(http.ErrAbortHandler)
 	}

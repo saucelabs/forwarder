@@ -79,7 +79,7 @@ func (p *proxyConn) readRequest() (*http.Request, error) {
 		idleDeadline = time.Now().Add(d)
 	}
 	if deadlineErr := p.conn.SetReadDeadline(idleDeadline); deadlineErr != nil {
-		log.Errorf(context.TODO(), "can't set idle deadline: %v", deadlineErr)
+		log.Error(context.TODO(), "can't set idle deadline", "error", deadlineErr)
 	}
 
 	// Wait for the connection to become readable before trying to
@@ -103,7 +103,7 @@ func (p *proxyConn) readRequest() (*http.Request, error) {
 	}
 
 	if deadlineErr := p.conn.SetReadDeadline(hdrDeadline); deadlineErr != nil {
-		log.Errorf(context.TODO(), "can't set read header deadline: %v", deadlineErr)
+		log.Error(context.TODO(), "can't set read header deadline", "error", deadlineErr)
 	}
 
 	req, err := http.ReadRequest(p.brw.Reader)
@@ -125,7 +125,7 @@ func (p *proxyConn) readRequest() (*http.Request, error) {
 	// Adjust the read deadline if necessary.
 	if !hdrDeadline.Equal(wholeReqDeadline) {
 		if deadlineErr := p.conn.SetReadDeadline(wholeReqDeadline); deadlineErr != nil {
-			log.Errorf(context.TODO(), "can't set read deadline: %v", deadlineErr)
+			log.Error(context.TODO(), "can't set read deadline", "error", deadlineErr)
 		}
 	}
 
@@ -135,12 +135,12 @@ func (p *proxyConn) readRequest() (*http.Request, error) {
 func (p *proxyConn) handleMITM(req *http.Request) error {
 	ctx := req.Context()
 
-	log.Debugf(ctx, "mitm: attempting MITM")
+	log.Debug(ctx, "mitm: attempting MITM")
 
 	res := newConnectResponse(req)
 
 	if err := p.modifyResponse(res); err != nil {
-		log.Debugf(ctx, "error modifying CONNECT response: %v", err)
+		log.Debug(ctx, "error modifying CONNECT response", "error", err)
 		return p.writeResponse(p.errorResponse(req, err))
 	}
 
@@ -153,9 +153,9 @@ func (p *proxyConn) handleMITM(req *http.Request) error {
 	b, err := p.brw.Peek(1)
 	if err != nil {
 		if isClosedConnError(err) {
-			log.Debugf(ctx, "mitm: connection closed prematurely: %v", err)
+			log.Debug(ctx, "mitm: connection closed prematurely", "error", err)
 		} else {
-			log.Errorf(ctx, "mitm: failed to peek connection host=%s: %v", req.Host, err)
+			log.Error(ctx, "mitm: failed to peek connection", "host", req.Host, "error", err)
 		}
 		return errClose
 	}
@@ -163,7 +163,7 @@ func (p *proxyConn) handleMITM(req *http.Request) error {
 	// Drain the rest of the buffered data.
 	buf := make([]byte, p.brw.Reader.Buffered())
 	if _, err := p.brw.Read(buf); err != nil {
-		log.Errorf(ctx, "mitm: failed to drain buffer: %v", err)
+		log.Error(ctx, "mitm: failed to drain buffer", "error", err)
 		return errClose
 	}
 
@@ -187,15 +187,15 @@ func (p *proxyConn) handleMITM(req *http.Request) error {
 		if err = tlsconn.HandshakeContext(hctx); err != nil {
 			p.MITMConfig.HandshakeErrorCallback(req, err)
 			if isClosedConnError(err) {
-				log.Debugf(ctx, "mitm: connection closed prematurely: %v", err)
+				log.Debug(ctx, "mitm: connection closed prematurely", "error", err)
 			} else {
-				log.Errorf(ctx, "mitm: failed to handshake connection host=%s: %v", req.Host, err)
+				log.Error(ctx, "mitm: failed to handshake connection", "host", req.Host, "error", err)
 			}
 			return errClose
 		}
 
 		cs := tlsconn.ConnectionState()
-		log.Debugf(ctx, "mitm: negotiated protocol %s", cs.NegotiatedProtocol)
+		log.Debug(ctx, "mitm: negotiated protocol", "protocol", cs.NegotiatedProtocol)
 
 		if cs.NegotiatedProtocol == "h2" {
 			return p.MITMConfig.H2Config().Proxy(p.closeCh, tlsconn, req.URL)
@@ -218,13 +218,13 @@ func (p *proxyConn) handleMITM(req *http.Request) error {
 
 func (p *proxyConn) handleConnectRequest(req *http.Request) error {
 	ctx := req.Context()
-	log.Debugf(ctx, "read CONNECT request host=%s", req.URL.Host)
+	log.Debug(ctx, "read CONNECT request", "host", req.URL.Host)
 
 	terminateTLS := shouldTerminateTLS(req)
 	req.Header.Del(terminateTLSHeader)
 
 	if err := p.modifyRequest(req); err != nil {
-		log.Debugf(ctx, "error modifying CONNECT request: %v", err)
+		log.Debug(ctx, "error modifying CONNECT request", "error", err)
 		return p.writeErrorResponse(req, err)
 	}
 
@@ -232,7 +232,7 @@ func (p *proxyConn) handleConnectRequest(req *http.Request) error {
 		return p.handleMITM(req)
 	}
 
-	log.Debugf(ctx, "attempting to establish CONNECT tunnel: %s", req.URL.Host)
+	log.Debug(ctx, "attempting to establish CONNECT tunnel", "host", req.URL.Host)
 	res, crw, cerr := p.Connect(ctx, req, terminateTLS)
 	if res != nil {
 		defer res.Body.Close()
@@ -241,22 +241,22 @@ func (p *proxyConn) handleConnectRequest(req *http.Request) error {
 		defer crw.Close()
 	}
 	if cerr != nil {
-		log.Errorf(ctx, "failed to CONNECT: %v", cerr)
+		log.Error(ctx, "failed to CONNECT", "error", cerr)
 		return p.writeErrorResponse(req, cerr)
 	}
 
 	if err := p.modifyResponse(res); err != nil {
-		log.Debugf(ctx, "error modifying CONNECT response: %v", err)
+		log.Debug(ctx, "error modifying CONNECT response", "error", err)
 		return p.writeErrorResponse(req, err)
 	}
 
 	if res.StatusCode/100 != 2 {
-		log.Infof(ctx, "CONNECT rejected with status code: %d", res.StatusCode)
+		log.Info(ctx, "CONNECT rejected", "status code", res.StatusCode)
 		return p.writeResponse(res)
 	}
 
 	if err := p.tunnel("CONNECT", res, crw); err != nil {
-		log.Errorf(ctx, "CONNECT tunnel: %v", err)
+		log.Error(ctx, "CONNECT tunnel", "error", err)
 	}
 
 	return errClose
@@ -267,14 +267,14 @@ func (p *proxyConn) handleUpgradeResponse(res *http.Response) error {
 
 	uconn, ok := res.Body.(io.ReadWriteCloser)
 	if !ok {
-		log.Errorf(res.Request.Context(), "internal error: switching protocols response with non-writable body")
+		log.Error(res.Request.Context(), "internal error: switching protocols response with non-writable body")
 		p.traceWroteResponse(res, errors.New("switching protocols response with non-writable body"))
 		return errClose
 	}
 	res.Body = panicBody
 
 	if err := p.tunnel(resUpType, res, uconn); err != nil {
-		log.Errorf(res.Request.Context(), "%s tunnel: %v", resUpType, err)
+		log.Error(res.Request.Context(), "upgrade tunnel error", "type", resUpType, "error", err)
 	}
 
 	return errClose
@@ -292,12 +292,12 @@ func (p *proxyConn) tunnel(name string, res *http.Response, crw io.ReadWriteClos
 
 	ctx := res.Request.Context()
 
-	log.Debugf(ctx, "switched protocols, proxying %s traffic", name)
+	log.Debug(ctx, "switched protocols, proxying traffic", "name", name)
 	bicopy(ctx,
 		copier{"upstream " + name, crw, p.conn},
 		copier{"downstream " + name, p.conn, crw},
 	)
-	log.Debugf(ctx, "closed %s tunnel duration=%s", name, ContextDuration(ctx))
+	log.Debug(ctx, "closed tunnel", "name", name, "duration", ContextDuration(ctx))
 
 	p.traceWroteResponse(res, nil)
 
@@ -313,9 +313,9 @@ func (p *proxyConn) handle() error {
 		}
 
 		if isClosedConnError(err) {
-			log.Debugf(context.TODO(), "connection closed prematurely while reading request: %v", err)
+			log.Debug(context.TODO(), "connection closed prematurely while reading request", "error", err)
 		} else {
-			log.Errorf(context.TODO(), "got error while reading request: %v", err)
+			log.Error(context.TODO(), "got error while reading request", "error", err)
 		}
 		return errClose
 	}
@@ -335,11 +335,11 @@ func (p *proxyConn) handle() error {
 
 	reqUpType := upgradeType(req.Header)
 	if reqUpType != "" {
-		log.Debugf(ctx, "upgrade request: %s", reqUpType)
+		log.Debug(ctx, "upgrade request", "type", reqUpType)
 	}
 
 	if err := p.modifyRequest(req); err != nil {
-		log.Debugf(ctx, "error modifying request: %v", err)
+		log.Debug(ctx, "error modifying request", "error", err)
 		return p.writeErrorResponse(req, err)
 	}
 
@@ -354,10 +354,9 @@ func (p *proxyConn) handle() error {
 	res, err := p.roundTrip(req)
 	if err != nil {
 		if isClosedConnError(err) {
-			log.Debugf(ctx, "connection closed prematurely: %v", err)
+			log.Debug(ctx, "connection closed prematurely", "error", err)
 		} else {
-			log.Errorf(ctx, "failed to round trip host=%s method=%s path=%s: %v",
-				req.Host, req.Method, req.URL.Path, err)
+			log.Error(ctx, "failed to round trip", "host", req.Host, "method", req.Method, "path", req.URL.Path, "error", err)
 		}
 		return p.writeErrorResponse(req, err)
 	}
@@ -370,11 +369,11 @@ func (p *proxyConn) handle() error {
 
 	resUpType := upgradeType(res.Header)
 	if resUpType != "" {
-		log.Debugf(ctx, "upgrade response: %s", resUpType)
+		log.Debug(ctx, "upgrade response", "type", resUpType)
 	}
 
 	if err := p.modifyResponse(res); err != nil {
-		log.Debugf(ctx, "error modifying response: %v", err)
+		log.Debug(ctx, "error modifying response", "error", err)
 		return p.writeErrorResponse(req, err)
 	}
 
@@ -399,7 +398,7 @@ func (p *proxyConn) writeErrorResponse(req *http.Request, err error) error {
 		res = p.errorResponse(req, err)
 	}
 	if err := p.modifyResponse(res); err != nil {
-		log.Errorf(req.Context(), "error modifying error response: %v", err)
+		log.Error(req.Context(), "error modifying error response", "error", err)
 		if !p.WithoutWarning {
 			proxyutil.Warning(res.Header, err)
 		}
@@ -413,11 +412,11 @@ func (p *proxyConn) writeResponse(res *http.Response) error {
 
 	if p.WriteTimeout > 0 {
 		if deadlineErr := p.conn.SetWriteDeadline(time.Now().Add(p.WriteTimeout)); deadlineErr != nil {
-			log.Errorf(ctx, "can't set write deadline: %v", deadlineErr)
+			log.Error(ctx, "can't set write deadline", "error", deadlineErr)
 		}
 		defer func() {
 			if deadlineErr := p.conn.SetWriteDeadline(time.Time{}); deadlineErr != nil {
-				log.Errorf(ctx, "can't clear write deadline: %v", deadlineErr)
+				log.Error(ctx, "can't clear write deadline", "error", deadlineErr)
 			}
 		}()
 	}
@@ -481,15 +480,15 @@ func (p *proxyConn) writeResponse(res *http.Response) error {
 
 	if err != nil {
 		if isClosedConnError(err) {
-			log.Debugf(ctx, "connection closed prematurely while writing response: %v", err)
+			log.Debug(ctx, "connection closed prematurely while writing response", "error", err)
 		} else {
-			log.Errorf(ctx, "got error while writing response: %v", err)
+			log.Error(ctx, "got error while writing response", "error", err)
 		}
 		return errClose
 	}
 
 	if res.Close {
-		log.Debugf(ctx, "closing connection")
+		log.Debug(ctx, "closing connection")
 		return errClose
 	}
 

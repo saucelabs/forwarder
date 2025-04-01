@@ -246,7 +246,7 @@ func (c *Config) cert(ctx context.Context, hostname string) (*tls.Certificate, e
 
 	tlsc, ok := c.certs.Get(hostname)
 	if ok {
-		log.Debugf(ctx, "mitm: cache hit for %s", hostname)
+		log.Debug(ctx, "mitm: cache hit", "hostname", hostname)
 
 		// Check validity of the certificate for hostname match, expiry, etc. In
 		// particular, if the cached certificate has expired, create a new one.
@@ -257,10 +257,10 @@ func (c *Config) cert(ctx context.Context, hostname string) (*tls.Certificate, e
 			return tlsc, nil
 		}
 
-		log.Debugf(ctx, "mitm: invalid certificate in cache for %s", hostname)
+		log.Debug(ctx, "mitm: invalid certificate in cache", "hostname", hostname)
 	}
 
-	log.Debugf(ctx, "mitm: cache miss for %s", hostname)
+	log.Debug(ctx, "mitm: cache miss", "hostname", hostname)
 
 	serial, err := rand.Int(rand.Reader, MaxSerialNumber)
 	if err != nil {

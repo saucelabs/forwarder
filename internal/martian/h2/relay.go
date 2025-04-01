@@ -206,7 +206,7 @@ func (r *relay) relayFrames(closing chan bool) error {
 				return fmt.Errorf("processing frame: %w", err)
 			}
 			if *r.enableDebugLogs {
-				log.Infof(context.TODO(), "%s--%v-->%s", r.srcLabel, frame, r.destLabel)
+				log.Info(context.TODO(), fmt.Sprintf("%s--%v-->%s", r.srcLabel, frame, r.destLabel))
 			}
 		case err := <-writerErr:
 			return fmt.Errorf("sending frame: %w", err)
@@ -532,7 +532,7 @@ func (r *relay) encodeFull(headers []hpack.HeaderField) ([]byte, error) {
 		}
 	}
 	if *r.enableDebugLogs {
-		log.Infof(context.TODO(), "sending headers %s -> %s:\n%s", r.srcLabel, r.destLabel, buf.Bytes())
+		log.Info(context.TODO(), "sending headers", "src", r.srcLabel, "dst", r.destLabel, "buf", buf.Bytes())
 	}
 	return r.reencoded.Bytes(), nil
 }
