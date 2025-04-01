@@ -161,7 +161,7 @@ func withMiddleware(cfg *HTTPServerConfig, log log.StructuredLogger, h http.Hand
 
 	// Logger middleware must immediately follow the Prometheus middleware because it uses the Prometheus delegator.
 	if cfg.LogHTTPMode != httplog.None {
-		h = httplog.NewLogger(log.Info, cfg.LogHTTPMode).LogFunc().Wrap(h)
+		h = httplog.NewStructuredLogger(log.Info, cfg.LogHTTPMode).LogFunc().Wrap(h)
 	}
 
 	// Prometheus middleware must be the first one to be executed to collect metrics for all other middlewares.
