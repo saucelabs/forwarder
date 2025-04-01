@@ -41,27 +41,39 @@ func (t traceID) Duration() time.Duration {
 	return time.Since(t.createdAt)
 }
 
+var _ log.StructuredLogger = TraceIDPrependingLogger{}
+
 type TraceIDPrependingLogger struct {
-	log.Logger
+	log.StructuredLogger
 }
 
-func (l TraceIDPrependingLogger) Infof(ctx context.Context, format string, args ...any) {
-	l.Logger.Infof(ctx, l.format(ctx, format), args...)
+func (l TraceIDPrependingLogger) Fatal(ctx context.Context, msg string, args ...any) {
+	l.StructuredLogger.FatalContext(ctx, msg, l.args(ctx, args...)...)
 }
 
-func (l TraceIDPrependingLogger) Debugf(ctx context.Context, format string, args ...any) {
-	l.Logger.Debugf(ctx, l.format(ctx, format), args...)
+func (l TraceIDPrependingLogger) Error(ctx context.Context, msg string, args ...any) {
+	l.StructuredLogger.ErrorContext(ctx, msg, l.args(ctx, args...)...)
 }
 
-func (l TraceIDPrependingLogger) Errorf(ctx context.Context, format string, args ...any) {
-	l.Logger.Errorf(ctx, l.format(ctx, format), args...)
+func (l TraceIDPrependingLogger) Warn(ctx context.Context, msg string, args ...any) {
+	l.StructuredLogger.WarnContext(ctx, msg, l.args(ctx, args...)...)
 }
 
-var _ log.Logger = TraceIDPrependingLogger{}
+func (l TraceIDPrependingLogger) Info(ctx context.Context, msg string, args ...any) {
+	l.StructuredLogger.InfoContext(ctx, msg, l.args(ctx, args...)...)
+}
 
-func (l TraceIDPrependingLogger) format(ctx context.Context, format string) string {
+func (l TraceIDPrependingLogger) Debug(ctx context.Context, msg string, args ...any) {
+	l.StructuredLogger.DebugContext(ctx, msg, l.args(ctx, args...)...)
+}
+
+func (l TraceIDPrependingLogger) Trace(ctx context.Context, msg string, args ...any) {
+	l.StructuredLogger.TraceContext(ctx, msg, l.args(ctx, args...)...)
+}
+
+func (l TraceIDPrependingLogger) args(ctx context.Context, args ...any) []any {
 	if id := ContextTraceID(ctx); id != "" {
-		return fmt.Sprintf("[%s] %s", id, format)
+		return append(args, "id", id)
 	}
-	return format
+	return args
 }

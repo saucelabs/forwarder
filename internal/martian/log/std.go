@@ -18,23 +18,37 @@ package log
 
 import (
 	"context"
-	stdlog "log"
+	"log/slog"
+	"os"
 )
 
 type testLogger struct{}
 
-var _ Logger = testLogger{}
+var _ StructuredLogger = testLogger{}
 
-func (testLogger) Infof(_ context.Context, format string, args ...any) {
-	stdlog.Printf("INFO: "+format, args...)
+func (testLogger) FatalContext(ctx context.Context, msg string, args ...any) {
+	slog.ErrorContext(ctx, msg, args...)
+	os.Exit(1)
 }
 
-func (testLogger) Debugf(_ context.Context, format string, args ...any) {
-	stdlog.Printf("DEBUG: "+format, args...)
+func (testLogger) ErrorContext(ctx context.Context, msg string, args ...any) {
+	slog.ErrorContext(ctx, msg, args...)
 }
 
-func (testLogger) Errorf(_ context.Context, format string, args ...any) {
-	stdlog.Printf("ERROR: "+format, args...)
+func (testLogger) WarnContext(ctx context.Context, msg string, args ...any) {
+	slog.WarnContext(ctx, msg, args...)
+}
+
+func (testLogger) InfoContext(ctx context.Context, msg string, args ...any) {
+	slog.InfoContext(ctx, msg, args...)
+}
+
+func (testLogger) DebugContext(ctx context.Context, msg string, args ...any) {
+	slog.DebugContext(ctx, msg, args...)
+}
+
+func (testLogger) TraceContext(ctx context.Context, msg string, args ...any) {
+	slog.DebugContext(ctx, msg, args...)
 }
 
 func SetTestLogger() {
