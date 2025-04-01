@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"testing"
 
+	"github.com/saucelabs/forwarder/log"
 	"github.com/saucelabs/forwarder/log/stdlog"
 )
 
@@ -70,7 +71,7 @@ func TestUserInfoMatcherMatch(t *testing.T) {
 				}
 			}
 
-			m, err := NewCredentialsMatcher(credentials, stdlog.Default())
+			m, err := NewCredentialsMatcher(credentials, log.NewLoggerAdapter(stdlog.Default()))
 			if err != nil {
 				t.Fatal(err)
 			}

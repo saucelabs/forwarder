@@ -20,10 +20,10 @@ type CredentialsMatcher struct {
 	host     map[string]*url.Userinfo
 	port     map[string]*url.Userinfo
 	global   *url.Userinfo
-	log      log.Logger
+	log      log.StructuredLogger
 }
 
-func NewCredentialsMatcher(credentials []*HostPortUser, log log.Logger) (*CredentialsMatcher, error) {
+func NewCredentialsMatcher(credentials []*HostPortUser, log log.StructuredLogger) (*CredentialsMatcher, error) {
 	if len(credentials) == 0 {
 		return nil, nil //nolint:nilnil // nil is a valid value
 	}
@@ -91,7 +91,7 @@ func (m *CredentialsMatcher) MatchURL(u *url.URL) *url.Userinfo {
 		case "https":
 			hostport = fmt.Sprintf("%s:%d", u.Host, httpsPort)
 		default:
-			m.log.Errorf("cannot to determine port for %s", u.Redacted())
+			m.log.Error("cannot to determine port", "url", u.Redacted())
 			return nil
 		}
 	}
@@ -107,32 +107,32 @@ func (m *CredentialsMatcher) Match(hostport string) *url.Userinfo {
 	}
 
 	if u, ok := m.hostport[hostport]; ok {
-		m.log.Debugf(hostport)
+		m.log.Debug(hostport)
 		return u
 	}
 
 	host, port, err := net.SplitHostPort(hostport)
 	if err != nil {
-		m.log.Infof("invalid hostport %s", hostport)
+		m.log.Info("invalid hostport", "hostport", hostport)
 		return nil
 	}
 
 	// Host wildcard - check the port only.
 	if u, ok := m.port[port]; ok {
-		m.log.Debugf("host=* port=%s", port)
+		m.log.Debug("host=*", "port", port)
 		return u
 	}
 
 	// Port wildcard - check the host only.
 	if u, ok := m.host[host]; ok {
-		m.log.Debugf("host=%s port=*", host)
+		m.log.Debug("port=*", "host", host)
 		return u
 	}
 
 	// Log whether the global wildcard is set.
 	// This is a very esoteric use case. It's only added to support a legacy implementation.
 	if m.global != nil {
-		m.log.Debugf("global wildcard")
+		m.log.Debug("global wildcard")
 		return m.global
 	}
 

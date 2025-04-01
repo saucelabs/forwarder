@@ -17,6 +17,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/saucelabs/forwarder/log"
 	"github.com/saucelabs/forwarder/log/stdlog"
 	"golang.org/x/net/http2"
 )
@@ -26,7 +27,7 @@ func TestAbortIf(t *testing.T) {
 	cfg := DefaultHTTPProxyConfig()
 	cfg.BasicAuth = url.UserPassword("user", "pass")
 
-	p, err := NewHTTPProxy(cfg, nil, nil, nil, stdlog.Default())
+	p, err := NewHTTPProxy(cfg, nil, nil, nil, log.NewLoggerAdapter(stdlog.Default()))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -91,7 +92,7 @@ func TestNopDialer(t *testing.T) {
 		},
 	}
 
-	p, err := NewHTTPProxy(DefaultHTTPProxyConfig(), nil, nil, tr, stdlog.Default())
+	p, err := NewHTTPProxy(DefaultHTTPProxyConfig(), nil, nil, tr, log.NewLoggerAdapter(stdlog.Default()))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -114,7 +115,7 @@ func TestNopDialer(t *testing.T) {
 
 func TestIsLocalhost(t *testing.T) {
 	cfg := DefaultHTTPProxyConfig()
-	p, err := NewHTTPProxy(cfg, nil, nil, nil, stdlog.Default())
+	p, err := NewHTTPProxy(cfg, nil, nil, nil, log.NewLoggerAdapter(stdlog.Default()))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -151,7 +152,7 @@ func TestErrorResponse(t *testing.T) {
 	cfg := DefaultHTTPProxyConfig()
 	cfg.ProxyLocalhost = AllowProxyLocalhost
 
-	h, err := NewHTTPProxyHandler(cfg, nil, nil, nil, stdlog.Default())
+	h, err := NewHTTPProxyHandler(cfg, nil, nil, nil, log.NewLoggerAdapter(stdlog.Default()))
 	if err != nil {
 		t.Fatal(err)
 	}
