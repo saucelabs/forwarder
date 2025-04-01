@@ -149,7 +149,7 @@ type HTTPProxy struct {
 	pac        PACResolver
 	creds      *CredentialsMatcher
 	transport  http.RoundTripper
-	log        log.Logger
+	log        log.StructuredLogger
 	metrics    *httpProxyMetrics
 	proxy      *martian.Proxy
 	mitmCACert *x509.Certificate
@@ -162,7 +162,7 @@ type HTTPProxy struct {
 
 // NewHTTPProxy creates a new HTTP proxy.
 // It is the caller's responsibility to call Close on the returned server.
-func NewHTTPProxy(cfg *HTTPProxyConfig, pr PACResolver, cm *CredentialsMatcher, rt http.RoundTripper, log log.Logger) (*HTTPProxy, error) {
+func NewHTTPProxy(cfg *HTTPProxyConfig, pr PACResolver, cm *CredentialsMatcher, rt http.RoundTripper, log log.StructuredLogger) (*HTTPProxy, error) {
 	hp, err := newHTTPProxy(cfg, pr, cm, rt, log)
 	if err != nil {
 		return nil, err
@@ -194,14 +194,14 @@ func NewHTTPProxy(cfg *HTTPProxyConfig, pr PACResolver, cm *CredentialsMatcher, 
 	hp.listeners = ll
 
 	for _, l := range hp.listeners {
-		hp.log.Infof("PROXY server listen address=%s protocol=%s", l.Addr(), hp.config.Protocol)
+		hp.log.Info("PROXY server listen", "address", l.Addr(), "protocol", hp.config.Protocol)
 	}
 
 	return hp, nil
 }
 
 // NewHTTPProxyHandler is like NewHTTPProxy but returns http.Handler instead of *HTTPProxy.
-func NewHTTPProxyHandler(cfg *HTTPProxyConfig, pr PACResolver, cm *CredentialsMatcher, rt http.RoundTripper, log log.Logger) (http.Handler, error) {
+func NewHTTPProxyHandler(cfg *HTTPProxyConfig, pr PACResolver, cm *CredentialsMatcher, rt http.RoundTripper, log log.StructuredLogger) (http.Handler, error) {
 	hp, err := newHTTPProxy(cfg, pr, cm, rt, log)
 	if err != nil {
 		return nil, err
@@ -210,7 +210,7 @@ func NewHTTPProxyHandler(cfg *HTTPProxyConfig, pr PACResolver, cm *CredentialsMa
 	return hp.handler(), nil
 }
 
-func newHTTPProxy(cfg *HTTPProxyConfig, pr PACResolver, cm *CredentialsMatcher, rt http.RoundTripper, log log.Logger) (*HTTPProxy, error) {
+func newHTTPProxy(cfg *HTTPProxyConfig, pr PACResolver, cm *CredentialsMatcher, rt http.RoundTripper, log log.StructuredLogger) (*HTTPProxy, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, err
 	}
@@ -220,12 +220,12 @@ func newHTTPProxy(cfg *HTTPProxyConfig, pr PACResolver, cm *CredentialsMatcher, 
 
 	// If not set, use http.DefaultTransport.
 	if rt == nil {
-		log.Infof("HTTP transport not configured, using standard library default")
+		log.Info("HTTP transport not configured, using standard library default")
 		rt = http.DefaultTransport.(*http.Transport).Clone()
 	} else if tr, ok := rt.(*http.Transport); !ok {
-		log.Debugf("using custom HTTP transport %T", rt)
+		log.Debug("using custom HTTP transport", "type", fmt.Sprintf("%T", rt))
 	} else if tr.TLSClientConfig != nil && tr.TLSClientConfig.RootCAs != nil {
-		log.Infof("using custom root CA certificates")
+		log.Info("using custom root CA certificates")
 	}
 	hp := &HTTPProxy{
 		config:    *cfg,
@@ -246,9 +246,9 @@ func newHTTPProxy(cfg *HTTPProxyConfig, pr PACResolver, cm *CredentialsMatcher, 
 
 func (hp *HTTPProxy) configureHTTPS() error {
 	if hp.config.CertFile == "" && hp.config.KeyFile == "" {
-		hp.log.Infof("no TLS certificate provided, using self-signed certificate")
+		hp.log.Info("no TLS certificate provided, using self-signed certificate")
 	} else {
-		hp.log.Debugf("loading TLS certificate from %s and %s", hp.config.CertFile, hp.config.KeyFile)
+		hp.log.Debug("loading TLS certificate", "cert", hp.config.CertFile, "key", hp.config.KeyFile)
 	}
 
 	hp.tlsConfig = httpsTLSConfigTemplate()
@@ -276,9 +276,9 @@ func (hp *HTTPProxy) configureProxy() error {
 			return fmt.Errorf("mitm: %w", err)
 		}
 		if hp.config.MITM.CACertFile == "" {
-			hp.log.Infof("using MITM with self-signed CA certificate, sha256 fingerprint=%x", sha256.Sum256(mc.CACert().Raw))
+			hp.log.Info("using MITM with self-signed CA certificate", "sha256 fingerprint", sha256.Sum256(mc.CACert().Raw))
 		} else {
-			hp.log.Infof("using MITM")
+			hp.log.Info("using MITM")
 		}
 		registerMITMCacheMetrics(hp.config.PromRegistry, hp.config.PromNamespace+"_mitm_", mc.CacheMetrics)
 		hp.mitmCACert = mc.CACert()
@@ -298,24 +298,24 @@ func (hp *HTTPProxy) configureProxy() error {
 	hp.proxy.RoundTripper = hp.transport
 	switch {
 	case hp.config.UpstreamProxyFunc != nil:
-		hp.log.Infof("using external proxy function")
+		hp.log.Info("using external proxy function")
 		hp.proxyFunc = hp.config.UpstreamProxyFunc
 	case hp.config.UpstreamProxy != nil:
 		u := hp.upstreamProxyURL()
-		hp.log.Infof("using upstream proxy: %s", u.Redacted())
+		hp.log.Info("using upstream proxy", "url", u.Redacted())
 		hp.proxyFunc = http.ProxyURL(u)
 	case hp.pac != nil:
-		hp.log.Infof("using PAC proxy")
+		hp.log.Info("using PAC proxy")
 		hp.proxyFunc = hp.pacProxy
 	default:
-		hp.log.Infof("no upstream proxy specified")
+		hp.log.Info("no upstream proxy specified")
 	}
 
 	if hp.config.DirectDomains != nil {
 		hp.proxyFunc = hp.directDomains(hp.proxyFunc)
 	}
 
-	hp.log.Infof("localhost proxying mode=%s", hp.config.ProxyLocalhost)
+	hp.log.Info("proxy localhost", "mode", hp.config.ProxyLocalhost)
 	if hp.config.ProxyLocalhost == DirectProxyLocalhost {
 		hp.proxyFunc = hp.directLocalhost(hp.proxyFunc)
 	}
@@ -367,7 +367,7 @@ func (hp *HTTPProxy) middlewareStack() (martian.RequestResponseModifier, *martia
 	// Wrap stack in a group so that we can run security checks before the httpspec modifiers.
 	topg := fifo.NewGroup()
 	if hp.config.BasicAuth != nil {
-		hp.log.Infof("basic auth enabled")
+		hp.log.Info("basic auth enabled")
 		topg.AddRequestModifier(hp.basicAuth(hp.config.BasicAuth))
 	}
 	if hp.config.ProxyLocalhost == DenyProxyLocalhost {
@@ -392,7 +392,7 @@ func (hp *HTTPProxy) middlewareStack() (martian.RequestResponseModifier, *martia
 	}
 
 	if hp.config.LogHTTPMode != httplog.None {
-		lf := httplog.NewLogger(hp.log.Infof, hp.config.LogHTTPMode).LogFunc()
+		lf := httplog.NewLogger(hp.log.Info, hp.config.LogHTTPMode).LogFunc()
 		fg.AddResponseModifier(lf)
 	}
 
@@ -522,7 +522,7 @@ func (hp *HTTPProxy) handler() http.Handler {
 
 func (hp *HTTPProxy) Run(ctx context.Context) error {
 	if hp.config.TestingHTTPHandler {
-		hp.log.Infof("using http handler")
+		hp.log.Info("using http handler")
 		return hp.runHTTPHandler(ctx)
 	}
 	return hp.run(ctx)
@@ -547,9 +547,9 @@ func (hp *HTTPProxy) runHTTPHandler(ctx context.Context) error {
 		defer cancel()
 
 		if err := srv.Shutdown(ctx); err != nil {
-			hp.log.Debugf("failed to gracefully shutdown server error=%s", err)
+			hp.log.Debug("failed to gracefully shutdown server", "error", err)
 			if err := srv.Close(); err != nil {
-				hp.log.Debugf("failed to close server error=%s", err)
+				hp.log.Debug("failed to close server", "error", err)
 			}
 		}
 
@@ -576,7 +576,7 @@ func (hp *HTTPProxy) run(ctx context.Context) error {
 
 		// Close listeners first to prevent new connections.
 		if err := hp.Close(); err != nil {
-			hp.log.Debugf("failed to close listeners error=%s", err)
+			hp.log.Debug("failed to close listeners", "error", err)
 		}
 
 		var cancel context.CancelFunc
@@ -584,9 +584,9 @@ func (hp *HTTPProxy) run(ctx context.Context) error {
 		defer cancel()
 
 		if err := hp.proxy.Shutdown(ctx); err != nil {
-			hp.log.Debugf("failed to gracefully shutdown server error=%s", err)
+			hp.log.Debug("failed to gracefully shutdown server", "error", err)
 			if err := hp.proxy.Close(); err != nil {
-				hp.log.Debugf("failed to close server error=%s", err)
+				hp.log.Debug("failed to close server", "error", err)
 			}
 		}
 

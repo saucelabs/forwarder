@@ -20,15 +20,15 @@ type PACResolver interface {
 
 type LoggingPACResolver struct {
 	Resolver PACResolver
-	Logger   log.Logger
+	Logger   log.StructuredLogger
 }
 
 func (r *LoggingPACResolver) FindProxyForURL(u *url.URL, hostname string) (string, error) {
 	s, err := r.Resolver.FindProxyForURL(u, hostname)
 	if err != nil {
-		r.Logger.Errorf("FindProxyForURL(%q, %q) failed: %s", u.Redacted(), hostname, err)
+		r.Logger.Error("FindProxyForURL failed", "url", u.Redacted(), "hostname", hostname, "error", err)
 	} else {
-		r.Logger.Debugf("FindProxyForURL(%q, %q) -> %q", u.Redacted(), hostname, s)
+		r.Logger.Debug("FindProxyForURL", "url", u.Redacted(), "hostname", hostname, "result", s)
 	}
 	return s, err
 }
