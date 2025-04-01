@@ -19,6 +19,7 @@ package martian
 import (
 	"bufio"
 	"context"
+	"fmt"
 	"io"
 	"sync"
 	"time"
@@ -69,7 +70,7 @@ func gracefulCloseAfter(ctx context.Context, d time.Duration, cc ...copier) {
 	case <-ctx.Done():
 		return
 	case <-time.After(d):
-		log.Infof(ctx, "forcibly closing tunnel after %v of graceful period", d)
+		log.Info(ctx, "forcibly closing tunnel after graceful period", "period", d)
 	}
 	for i := range cc {
 		cc[i].close(ctx)
@@ -88,11 +89,11 @@ func (c copier) copy(ctx context.Context, donec chan<- struct{}) {
 	defer copyBufPool.Put(bufp)
 
 	if _, err := io.CopyBuffer(c.dst, c.src, buf); err != nil && !isClosedConnError(err) {
-		log.Errorf(ctx, "failed to copy %s tunnel: %v", c.name, err)
+		log.Error(ctx, "failed to copy tunnel", "name", c.name, "error", err)
 	}
 	c.closeWriter(ctx)
 
-	log.Debugf(ctx, "%s tunnel finished copying", c.name)
+	log.Debug(ctx, "tunnel finished copying", "name", c.name)
 	donec <- struct{}{}
 }
 
@@ -103,20 +104,20 @@ func (c copier) closeWriter(ctx context.Context) {
 	} else if pw, ok := c.dst.(*io.PipeWriter); ok {
 		closeErr = pw.Close()
 	} else {
-		log.Errorf(ctx, "cannot close write side of %s tunnel (%T)", c.name, c.dst)
+		log.Error(ctx, "cannot close write side of tunnel", "name", c.name, "type", fmt.Sprintf("%T", c.dst))
 	}
 	if closeErr != nil {
-		log.Infof(ctx, "failed to close write side of %s tunnel: %v", c.name, closeErr)
+		log.Info(ctx, "failed to close write side of tunnel", "name", c.name, "error", closeErr)
 	}
 }
 
 func (c copier) close(ctx context.Context) {
 	cc, ok := asCloser(c.dst)
 	if !ok {
-		log.Errorf(ctx, "cannot close %s tunnel (%T)", c.name, c.dst)
+		log.Error(ctx, "cannot close tunnel", "name", c.name, "type", fmt.Sprintf("%T", c.dst))
 		return
 	}
 	if err := cc.Close(); err != nil && !isClosedConnError(err) {
-		log.Infof(ctx, "failed to close %s tunnel: %v", c.name, err)
+		log.Info(ctx, "failed to close tunnel", "name", c.name, "error", err)
 	}
 }

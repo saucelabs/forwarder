@@ -8,10 +8,11 @@ import (
 
 type nopLogger struct{}
 
-var _ Logger = nopLogger{}
+var _ StructuredLogger = nopLogger{}
 
-func (nopLogger) Infof(_ context.Context, _ string, _ ...any) {}
+func (nopLogger) Error(_ context.Context, _ string, _ ...any) {}
+func (nopLogger) Warn(_ context.Context, _ string, _ ...any)  {}
+func (nopLogger) Info(_ context.Context, _ string, _ ...any)  {}
+func (nopLogger) Debug(_ context.Context, _ string, _ ...any) {}
 
-func (nopLogger) Debugf(_ context.Context, _ string, _ ...any) {}
-
-func (nopLogger) Errorf(_ context.Context, _ string, _ ...any) {}
+func (nopLogger) With(_ ...any) StructuredLogger { return nopLogger{} }
