@@ -104,14 +104,14 @@ func (c *HTTPServerConfig) Validate() error {
 
 type HTTPServer struct {
 	config   HTTPServerConfig
-	log      log.Logger
+	log      log.StructuredLogger
 	srv      *http.Server
 	listener net.Listener
 }
 
 // NewHTTPServer creates a new HTTP server.
 // It is the caller's responsibility to call Close on the returned server.
-func NewHTTPServer(cfg *HTTPServerConfig, h http.Handler, log log.Logger) (*HTTPServer, error) {
+func NewHTTPServer(cfg *HTTPServerConfig, h http.Handler, log log.StructuredLogger) (*HTTPServer, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, err
 	}
@@ -147,12 +147,12 @@ func NewHTTPServer(cfg *HTTPServerConfig, h http.Handler, log log.Logger) (*HTTP
 	}
 	hs.listener = l
 
-	hs.log.Infof("HTTP server listen address=%s protocol=%s", l.Addr(), hs.config.Protocol)
+	hs.log.Info("HTTP server listen", "address", l.Addr(), "protocol", hs.config.Protocol)
 
 	return hs, nil
 }
 
-func withMiddleware(cfg *HTTPServerConfig, log log.Logger, h http.Handler) http.Handler {
+func withMiddleware(cfg *HTTPServerConfig, log log.StructuredLogger, h http.Handler) http.Handler {
 	// Note that the order of execution is reversed.
 	if cfg.BasicAuth != nil {
 		p, _ := cfg.BasicAuth.Password()
@@ -161,7 +161,7 @@ func withMiddleware(cfg *HTTPServerConfig, log log.Logger, h http.Handler) http.
 
 	// Logger middleware must immediately follow the Prometheus middleware because it uses the Prometheus delegator.
 	if cfg.LogHTTPMode != httplog.None {
-		h = httplog.NewLogger(log.Infof, cfg.LogHTTPMode).LogFunc().Wrap(h)
+		h = httplog.NewLogger(log.Info, cfg.LogHTTPMode).LogFunc().Wrap(h)
 	}
 
 	// Prometheus middleware must be the first one to be executed to collect metrics for all other middlewares.
@@ -172,9 +172,9 @@ func withMiddleware(cfg *HTTPServerConfig, log log.Logger, h http.Handler) http.
 
 func (hs *HTTPServer) configureHTTPS() error {
 	if hs.config.CertFile == "" && hs.config.KeyFile == "" {
-		hs.log.Infof("no TLS certificate provided, using self-signed certificate")
+		hs.log.Info("no TLS certificate provided, using self-signed certificate")
 	} else {
-		hs.log.Debugf("loading TLS certificate from %s and %s", hs.config.CertFile, hs.config.KeyFile)
+		hs.log.Debug("loading TLS certificate from %s and %s", hs.config.CertFile, hs.config.KeyFile)
 	}
 
 	hs.srv.TLSConfig = httpsTLSConfigTemplate()
@@ -185,9 +185,9 @@ func (hs *HTTPServer) configureHTTPS() error {
 
 func (hs *HTTPServer) configureHTTP2() error {
 	if hs.config.CertFile == "" && hs.config.KeyFile == "" {
-		hs.log.Infof("no TLS certificate provided, using self-signed certificate")
+		hs.log.Info("no TLS certificate provided, using self-signed certificate")
 	} else {
-		hs.log.Debugf("loading TLS certificate from %s and %s", hs.config.CertFile, hs.config.KeyFile)
+		hs.log.Debug("loading TLS certificate", "cert", hs.config.CertFile, "key", hs.config.KeyFile)
 	}
 
 	hs.srv.TLSConfig = h2TLSConfigTemplate()
@@ -209,9 +209,9 @@ func (hs *HTTPServer) Run(ctx context.Context) error {
 		defer cancel()
 
 		if err := hs.srv.Shutdown(ctx); err != nil {
-			hs.log.Debugf("failed to gracefully shutdown server error=%s", err)
+			hs.log.Debug("failed to gracefully shutdown server", "error", err)
 			if err := hs.srv.Close(); err != nil {
-				hs.log.Debugf("failed to close server error=%s", err)
+				hs.log.Debug("failed to close server", "error", err)
 			}
 		}
 	}()
@@ -227,7 +227,7 @@ func (hs *HTTPServer) Run(ctx context.Context) error {
 	}
 	if srvErr != nil {
 		if errors.Is(srvErr, http.ErrServerClosed) {
-			hs.log.Debugf("server was shutdown gracefully")
+			hs.log.Debug("server was shutdown gracefully")
 			srvErr = nil
 		}
 		return srvErr
