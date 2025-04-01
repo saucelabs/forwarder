@@ -35,17 +35,19 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 	if f := c.logConfig.File; f != nil {
 		defer f.Close()
 	}
-	logger := stdlog.New(c.logConfig)
+	stdlogger := stdlog.New(c.logConfig)
 
 	defer func() {
-		if err := logger.Close(); err != nil {
+		if err := stdlogger.Close(); err != nil {
 			fmt.Fprintf(cmd.ErrOrStderr(), "close logger: %s\n", err)
 		}
 	}()
 
+	logger := log.NewLoggerAdapter(stdlogger)
+
 	defer func() {
 		if cmdErr != nil {
-			logger.Errorf("fatal error exiting: %s", cmdErr)
+			logger.Error("fatal error exiting", "error", cmdErr)
 			cmd.SilenceErrors = true
 		}
 	}()
@@ -64,7 +66,7 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 		if err != nil {
 			return err
 		}
-		logger.Infof("configuration\n%s", cfg)
+		logger.Info("configuration", "cfg", cfg)
 
 		cfg, err = cobrautil.FlagsDescriber{
 			Format:          cobrautil.Plain,
@@ -74,12 +76,12 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 		if err != nil {
 			return err
 		}
-		logger.Debugf("all configuration\n%s\n\n", cfg)
+		logger.Debug("all configuration", "cfg", cfg)
 	}
 
 	if len(c.dnsConfig.Servers) > 0 {
 		s := strings.ReplaceAll(fmt.Sprintf("%s", c.dnsConfig.Servers), " ", ", ")
-		logger.Named("dns").Infof("using DNS servers %v", s)
+		logger.With("name", "dns").Info("using DNS servers", "servers", s)
 		if err := c.dnsConfig.Apply(); err != nil {
 			return fmt.Errorf("configure DNS: %w", err)
 		}
@@ -98,7 +100,7 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 		return err
 	}
 
-	s, err := forwarder.NewHTTPServer(c.httpServerConfig, servePAC(script), logger.Named("server"))
+	s, err := forwarder.NewHTTPServer(c.httpServerConfig, servePAC(script), logger.With("name", "server"))
 	if err != nil {
 		return err
 	}

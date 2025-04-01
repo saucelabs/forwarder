@@ -33,17 +33,19 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 	if f := c.logConfig.File; f != nil {
 		defer f.Close()
 	}
-	logger := stdlog.New(c.logConfig)
+	stdlogger := stdlog.New(c.logConfig)
 
 	defer func() {
-		if err := logger.Close(); err != nil {
+		if err := stdlogger.Close(); err != nil {
 			fmt.Fprintf(cmd.ErrOrStderr(), "close logger: %s\n", err)
 		}
 	}()
 
+	logger := log.NewLoggerAdapter(stdlogger)
+
 	defer func() {
 		if cmdErr != nil {
-			logger.Errorf("fatal error exiting: %s", cmdErr)
+			logger.Error("fatal error exiting", "error", cmdErr)
 			cmd.SilenceErrors = true
 		}
 	}()
@@ -62,7 +64,7 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 		if err != nil {
 			return err
 		}
-		logger.Infof("configuration\n%s", cfg)
+		logger.Info("configuration", "cfg", cfg)
 
 		cfg, err = cobrautil.FlagsDescriber{
 			Format:          cobrautil.Plain,
@@ -72,12 +74,12 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 		if err != nil {
 			return err
 		}
-		logger.Debugf("all configuration\n%s\n\n", cfg)
+		logger.Debug("all configuration", "cfg", cfg)
 	}
 
 	g := runctx.NewGroup()
 
-	s, err := forwarder.NewHTTPServer(c.httpServerConfig, httpbin.Handler(), logger.Named("server"))
+	s, err := forwarder.NewHTTPServer(c.httpServerConfig, httpbin.Handler(), logger.With("name", "server"))
 	if err != nil {
 		return err
 	}
@@ -85,7 +87,7 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 	g.Add(s.Run)
 
 	g.Add(func(ctx context.Context) error {
-		logger.Named("api").Infof("HTTP server listen socket path=%s", forwarder.APIUnixSocket)
+		logger.With("name", "api").Info("HTTP server listen", "socket", forwarder.APIUnixSocket)
 		r := prometheus.NewRegistry()
 		h := forwarder.NewAPIHandler("HTTPBin "+version.Version, r, nil)
 		return httpx.ServeUnixSocket(ctx, h, forwarder.APIUnixSocket)
