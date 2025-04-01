@@ -33,20 +33,6 @@ type StructuredLogger interface {
 	With(args ...any) StructuredLogger
 }
 
-// NopLogger is a logger that does nothing.
-var NopLogger = nopLogger{} //nolint:gochecknoglobals // nop implementation
-
-type nopLogger struct{}
-
-func (l nopLogger) Errorf(_ string, _ ...any) {
-}
-
-func (l nopLogger) Infof(_ string, _ ...any) {
-}
-
-func (l nopLogger) Debugf(_ string, _ ...any) {
-}
-
 var (
 	DefaultFileFlags = os.O_CREATE | os.O_APPEND | os.O_WRONLY
 
