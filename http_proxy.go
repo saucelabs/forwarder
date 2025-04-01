@@ -392,7 +392,7 @@ func (hp *HTTPProxy) middlewareStack() (martian.RequestResponseModifier, *martia
 	}
 
 	if hp.config.LogHTTPMode != httplog.None {
-		lf := httplog.NewLogger(hp.log.Info, hp.config.LogHTTPMode).LogFunc()
+		lf := httplog.NewStructuredLogger(hp.log.Info, hp.config.LogHTTPMode).LogFunc()
 		fg.AddResponseModifier(lf)
 	}
 
