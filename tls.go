@@ -11,8 +11,10 @@ import (
 	"crypto/x509"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/saucelabs/forwarder/utils/certutil"
 )
 
@@ -173,4 +175,40 @@ func loadX509KeyPair(certFile, keyFile string) (tls.Certificate, error) {
 		return tls.Certificate{}, err
 	}
 	return tls.X509KeyPair(certPEMBlock, keyPEMBlock)
+}
+
+func reportTLSCertsExpiration(promConfig PromConfig, tlsConfig *tls.Config, role string) error {
+	for _, cert := range tlsConfig.Certificates {
+		x509cert, err := leaf(&cert)
+		if err != nil {
+			return err
+		}
+
+		if err := registerCertExpirationMetric(promConfig, x509cert, role); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func leaf(cert *tls.Certificate) (*x509.Certificate, error) {
+	if cert.Leaf != nil {
+		return cert.Leaf, nil
+	}
+	return x509.ParseCertificate(cert.Certificate[0])
+}
+
+func registerCertExpirationMetric(promConfig PromConfig, cert *x509.Certificate, role string) error {
+	cn := cert.Subject.CommonName
+	dnsNames := strings.Join(cert.DNSNames, ",")
+	organization := strings.Join(cert.Subject.Organization, ",")
+	return promConfig.PromRegistry.Register(prometheus.NewGaugeFunc(prometheus.GaugeOpts{
+		Namespace:   promConfig.PromNamespace,
+		Name:        "days_until_cert_expiring",
+		Help:        "Number of days until the certificate expires",
+		ConstLabels: prometheus.Labels{"cn": cn, "dns_names": dnsNames, "organization": organization, "role": role},
+	}, func() float64 {
+		return float64(time.Until(cert.NotAfter) / (24 * time.Hour))
+	}))
 }
