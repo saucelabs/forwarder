@@ -172,6 +172,10 @@ func NewHTTPProxy(cfg *HTTPProxyConfig, pr PACResolver, cm *CredentialsMatcher, 
 		if err := hp.configureHTTPS(); err != nil {
 			return nil, err
 		}
+
+		if err := reportTLSCertsExpiration(hp.config.PromConfig, hp.tlsConfig, "proxy"); err != nil {
+			return nil, err
+		}
 	}
 
 	lh, err := hostsfile.LocalhostAliases()
