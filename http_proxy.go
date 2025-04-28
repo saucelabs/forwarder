@@ -282,7 +282,9 @@ func (hp *HTTPProxy) configureProxy() error {
 		}
 		registerMITMCacheMetrics(hp.config.PromRegistry, hp.config.PromNamespace+"_mitm_", mc.CacheMetrics)
 		hp.mitmCACert = mc.CACert()
-
+		if err := registerCertExpirationMetric(hp.config.PromConfig, hp.mitmCACert, "mitm"); err != nil {
+			return fmt.Errorf("report mitm cert expiration: %w", err)
+		}
 		hp.proxy.MITMConfig = mc
 
 		if hp.config.MITMDomains != nil {
