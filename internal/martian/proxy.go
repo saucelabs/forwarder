@@ -188,7 +188,7 @@ func (p *Proxy) init() {
 func (p *Proxy) Shutdown(ctx context.Context) error {
 	p.init()
 
-	log.Infof(context.TODO(), "shutting down proxy, draining connections")
+	log.Info(context.TODO(), "shutting down proxy, draining connections")
 
 	p.connsMu.Lock()
 	defer p.connsMu.Unlock()
@@ -215,7 +215,7 @@ func (p *Proxy) Shutdown(ctx context.Context) error {
 	defer timer.Stop()
 	for {
 		if n := p.connsWg.Load(); n == 0 {
-			log.Infof(context.TODO(), "all connections closed")
+			log.Info(context.TODO(), "all connections closed")
 			return nil
 		}
 		select {
@@ -283,21 +283,21 @@ func (p *Proxy) Serve(l net.Listener) error {
 					delay = time.Second
 				}
 
-				log.Debugf(context.TODO(), "temporary error on accept: %v", err)
+				log.Debug(context.TODO(), "temporary error on accept", "error", err)
 				time.Sleep(delay)
 				continue
 			}
 
 			if errors.Is(err, net.ErrClosed) {
-				log.Debugf(context.TODO(), "listener closed, returning")
+				log.Debug(context.TODO(), "listener closed, returning")
 				return err
 			}
 
-			log.Errorf(context.TODO(), "failed to accept: %v", err)
+			log.Error(context.TODO(), "failed to accept", "error", err)
 			return err
 		}
 		delay = 0
-		log.Debugf(context.TODO(), "accepted connection from %s", conn.RemoteAddr())
+		log.Debug(context.TODO(), "accepted connection", "address", conn.RemoteAddr())
 
 		go p.handleLoop(conn)
 	}
@@ -325,7 +325,7 @@ func (p *Proxy) handleLoop(conn net.Conn) {
 	pc := newProxyConn(p, conn)
 
 	if err := pc.maybeHandshakeTLS(); err != nil {
-		log.Errorf(context.TODO(), "failed to do TLS handshake: %v", err)
+		log.Error(context.TODO(), "failed to do TLS handshake", "error", err)
 		return
 	}
 
@@ -334,14 +334,14 @@ func (p *Proxy) handleLoop(conn net.Conn) {
 	for {
 		if err := pc.handle(); err != nil {
 			if errors.Is(err, errClose) || isCloseable(err) {
-				log.Debugf(context.TODO(), "closing connection from %s duration=%s", conn.RemoteAddr(), time.Since(start))
+				log.Debug(context.TODO(), "closing connection", "address", conn.RemoteAddr(), "duration", time.Since(start))
 				return
 			}
 
 			errorsN++
 			if errorsN >= maxConsecutiveErrors {
-				log.Errorf(context.TODO(), "closing connection from %s after %d consecutive errors: %v duration=%s",
-					conn.RemoteAddr(), errorsN, err, time.Since(start))
+				log.Error(context.TODO(), "closing connection after consecutive errors", "address", conn.RemoteAddr(),
+					"errors", errorsN, "error", err, "duration", time.Since(start))
 				return
 			}
 		} else {
@@ -403,7 +403,7 @@ func (p *Proxy) fixRequestScheme(req *http.Request) {
 
 	if req.URL.Scheme == "http" {
 		if req.TLS != nil && !p.AllowHTTP {
-			log.Infof(req.Context(), "forcing HTTPS inside secure session")
+			log.Info(req.Context(), "forcing HTTPS inside secure session")
 			req.URL.Scheme = "https"
 		}
 	}
@@ -411,7 +411,7 @@ func (p *Proxy) fixRequestScheme(req *http.Request) {
 
 func (p *Proxy) roundTrip(req *http.Request) (*http.Response, error) {
 	if p.TestingSkipRoundTrip {
-		log.Debugf(req.Context(), "skipping round trip")
+		log.Debug(req.Context(), "skipping round trip")
 		return proxyutil.NewResponse(200, http.NoBody, req), nil
 	}
 
@@ -421,7 +421,7 @@ func (p *Proxy) roundTrip(req *http.Request) (*http.Response, error) {
 	}
 
 	if isHeaderOnlySpec(res) && res.StatusCode != http.StatusSwitchingProtocols && res.Body != http.NoBody {
-		log.Infof(req.Context(), "unexpected body in header-only response: %d, closing body", res.StatusCode)
+		log.Info(req.Context(), "unexpected body in header-only response, closing body", "status code", res.StatusCode)
 		res.Body.Close()
 		res.Body = http.NoBody
 	}
