@@ -29,6 +29,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -2104,5 +2105,175 @@ func TestTunnelGracefulClose(t *testing.T) {
 	case <-done:
 	case <-time.After(5 * time.Second):
 		t.Fatalf("timed out waiting for tunnel to close all connections")
+	}
+}
+
+func TestIntegrationWroteResponseCalledOnceOnConnect(t *testing.T) {
+	t.Parallel()
+
+	l, err := net.Listen("tcp", "localhost:0")
+	if err != nil {
+		t.Fatalf("tls.Listen(): got %v, want no error", err)
+	}
+
+	// Channel to signal when to tear down the server goroutine.
+	done := make(chan struct{})
+
+	go func() {
+		t.Logf("Waiting for server side connection")
+		conn, err := l.Accept()
+		if err != nil {
+			t.Errorf("Got error while accepting connection on destination listener: %v", err)
+			return
+		}
+		defer conn.Close()
+		t.Logf("Accepted server side connection")
+
+		<-done
+	}()
+
+	tm := martiantest.NewModifier()
+
+	// Force the CONNECT request to dial the local TLS server.
+	tm.RequestFunc(func(req *http.Request) {
+		req.URL.Host = l.Addr().String()
+	})
+
+	var wroteResponse atomic.Int32
+	trace := &ProxyTrace{
+		ReadRequest: nil,
+		WroteResponse: func(info WroteResponseInfo) {
+			wroteResponse.Add(1)
+		},
+	}
+
+	h := testHelper{
+		Proxy: func(p *Proxy) {
+			p.RequestModifier = tm
+			p.ResponseModifier = tm
+			p.Trace = trace
+		},
+	}
+
+	conn, cancel := h.proxyConn(t)
+	defer cancel()
+
+	res := connect(t, conn)
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("res.StatusCode = %d; want 200", res.StatusCode)
+	}
+
+	close(done)
+	conn.Close()
+	time.Sleep(300 * time.Millisecond)
+
+	if n := wroteResponse.Load(); n != 1 {
+		t.Errorf("wroteResponse was %d; want 1", n)
+	}
+}
+
+func TestIntegrationWroteResponseCalledOnceOnUpgrade(t *testing.T) {
+	t.Parallel()
+
+	// Start a dummy TCP server to act as the upgraded destination.
+	l, err := net.Listen("tcp", "localhost:0")
+	if err != nil {
+		t.Fatalf("net.Listen(): got %v, want no error", err)
+	}
+
+	// Channel to signal when to tear down the server goroutine.
+	done := make(chan struct{})
+
+	go func() {
+		t.Logf("Waiting for server‐side connection")
+		conn, err := l.Accept()
+		if err != nil {
+			t.Errorf("Got error while accepting connection on destination listener: %v", err)
+			return
+		}
+		defer conn.Close()
+		t.Logf("Accepted server‐side connection")
+
+		// Read the incoming HTTP/1.1 Upgrade request from the proxy.
+		br := bufio.NewReader(conn)
+		req, err := http.ReadRequest(br)
+		if err != nil {
+			t.Errorf("Error reading upgrade request from proxy: %v", err)
+			return
+		}
+
+		// Send back a 101 Switching Protocols response.
+		resp := &http.Response{
+			Status:     "101 Switching Protocols",
+			StatusCode: http.StatusSwitchingProtocols,
+			Proto:      "HTTP/1.1",
+			ProtoMajor: 1,
+			ProtoMinor: 1,
+			Header:     make(http.Header),
+			Request:    req,
+		}
+		resp.Header.Set("Upgrade", "websocket")
+		resp.Header.Set("Connection", "Upgrade")
+		if err := resp.Write(conn); err != nil {
+			t.Errorf("Error writing 101 response to proxy: %v", err)
+			return
+		}
+
+		<-done
+	}()
+
+	// Use martian to force any outgoing request to dial our dummy server.
+	tm := martiantest.NewModifier()
+	tm.RequestFunc(func(req *http.Request) {
+		req.URL.Host = l.Addr().String()
+	})
+
+	var wroteResponse atomic.Int32
+	trace := &ProxyTrace{
+		ReadRequest: nil,
+		WroteResponse: func(info WroteResponseInfo) {
+			wroteResponse.Add(1)
+		},
+	}
+
+	h := testHelper{
+		Proxy: func(p *Proxy) {
+			p.RequestModifier = tm
+			p.ResponseModifier = tm
+			p.Trace = trace
+			p.AllowHTTP = true
+		},
+	}
+
+	conn, cancel := h.proxyConn(t)
+	defer cancel()
+
+	// Send an HTTP/1.1 Upgrade request through the proxy.
+	requestStr := "" +
+		"GET http://example.com/ HTTP/1.1\r\n" +
+		"Host: example.com\r\n" +
+		"Connection: Upgrade\r\n" +
+		"Upgrade: websocket\r\n" +
+		"\r\n"
+	if _, err := conn.Write([]byte(requestStr)); err != nil {
+		t.Fatalf("Error writing upgrade request to proxy: %v", err)
+	}
+
+	br := bufio.NewReader(conn)
+	res, err := http.ReadResponse(br, nil)
+	if err != nil {
+		t.Fatalf("Error reading response from proxy: %v", err)
+	}
+	if res.StatusCode != http.StatusSwitchingProtocols {
+		t.Fatalf("res.StatusCode = %d; want %d", res.StatusCode, http.StatusSwitchingProtocols)
+	}
+
+	close(done)
+	conn.Close()
+	time.Sleep(300 * time.Millisecond)
+
+	// Ensure that WroteResponse was called exactly once.
+	if n := wroteResponse.Load(); n != 1 {
+		t.Errorf("wroteResponse was %d; want 1", n)
 	}
 }
