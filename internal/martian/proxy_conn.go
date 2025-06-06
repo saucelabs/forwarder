@@ -123,7 +123,7 @@ func (p *proxyConn) readRequest() (*http.Request, error) {
 		}
 	}
 
-	return req, err
+	return req, nil
 }
 
 func (p *proxyConn) handleMITM(req *http.Request) error {
