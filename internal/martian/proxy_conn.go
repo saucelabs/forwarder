@@ -200,12 +200,12 @@ func (p *proxyConn) handleMITM(req *http.Request) error {
 		p.secure = true
 		p.cs = cs
 
-		return p.handle()
+		return nil
 	}
 
 	// Prepend the previously read data to be read again by http.ReadRequest.
 	p.brw.Reader.Reset(io.MultiReader(bytes.NewReader(buf), p.conn))
-	return p.handle()
+	return nil
 }
 
 func (p *proxyConn) handleConnectRequest(req *http.Request) error {
