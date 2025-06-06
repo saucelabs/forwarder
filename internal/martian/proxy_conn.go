@@ -242,7 +242,7 @@ func (p *proxyConn) handleConnectRequest(req *http.Request) error {
 		return p.writeErrorResponse(req, err)
 	}
 
-	if res.StatusCode != http.StatusOK {
+	if res.StatusCode/100 != 2 {
 		log.Infof(ctx, "CONNECT rejected with status code: %d", res.StatusCode)
 		return p.writeResponse(res)
 	}

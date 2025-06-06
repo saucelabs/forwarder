@@ -129,7 +129,7 @@ func (p proxyHandler) handleConnectRequest(rw http.ResponseWriter, req *http.Req
 		return
 	}
 
-	if res.StatusCode != http.StatusOK {
+	if res.StatusCode/100 != 2 {
 		log.Infof(ctx, "CONNECT rejected with status code: %d", res.StatusCode)
 		p.writeResponse(rw, res)
 		return
