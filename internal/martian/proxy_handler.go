@@ -17,6 +17,7 @@
 package martian
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -147,6 +148,7 @@ func (p proxyHandler) handleUpgradeResponse(rw http.ResponseWriter, req *http.Re
 	uconn, ok := res.Body.(io.ReadWriteCloser)
 	if !ok {
 		log.Errorf(ctx, "%s tunnel: internal error: switching protocols response with non-ReadWriteCloser body", resUpType)
+		p.traceWroteResponse(res, errors.New("switching protocols response with non-writable body"))
 		panic(http.ErrAbortHandler)
 	}
 	res.Body = panicBody
@@ -394,5 +396,7 @@ func (p proxyHandler) writeResponse(rw http.ResponseWriter, res *http.Response) 
 		}
 	}
 
-	p.traceWroteResponse(res, err)
+	if !skipTraceWroteResponse(res, err) {
+		p.traceWroteResponse(res, err)
+	}
 }

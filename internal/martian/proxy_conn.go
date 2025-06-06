@@ -260,6 +260,7 @@ func (p *proxyConn) handleUpgradeResponse(res *http.Response) error {
 	uconn, ok := res.Body.(io.ReadWriteCloser)
 	if !ok {
 		log.Errorf(res.Request.Context(), "internal error: switching protocols response with non-writable body")
+		p.traceWroteResponse(res, errors.New("switching protocols response with non-writable body"))
 		return errClose
 	}
 	res.Body = panicBody
@@ -465,7 +466,15 @@ func (p *proxyConn) writeResponse(res *http.Response) error {
 		err = p.brw.Flush()
 	}
 
-	p.traceWroteResponse(res, err)
+	// traceWroteResponse must not be called for:
+	//	- a successful CONNECT request
+	//	- a successful protocol upgrade (101 Switching Protocols)
+	// In these cases, only the headers are written here; the rest of the data flows
+	// through a raw TCP tunnel. Therefore, traceWroteResponse should be invoked
+	// only after the tunnel (and thus the response body) has been fully closed.
+	if !skipTraceWroteResponse(res, err) {
+		p.traceWroteResponse(res, err)
+	}
 
 	if err != nil {
 		if isClosedConnError(err) {
@@ -482,6 +491,26 @@ func (p *proxyConn) writeResponse(res *http.Response) error {
 	}
 
 	return nil
+}
+
+func skipTraceWroteResponse(res *http.Response, err error) bool {
+	// Do not skip traceWroteResponse on error.
+	if err != nil {
+		return false
+	}
+
+	// Skip traceWroteResponse on successful CONNECT.
+	req := res.Request
+	if req.Method == http.MethodConnect && res.StatusCode/100 == 2 {
+		return true
+	}
+
+	// Skip traceeWroteResponse on successful protocol upgrade.
+	if res.StatusCode == http.StatusSwitchingProtocols {
+		return true
+	}
+
+	return false
 }
 
 // writeHeaderOnlyResponse writes the status line and header of r to w.
