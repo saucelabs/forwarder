@@ -2050,8 +2050,6 @@ func TestReadHeaderConnectionReset(t *testing.T) {
 func TestTunnelGracefulClose(t *testing.T) {
 	t.Parallel()
 
-	t.Skip("panic: close of closed channel, See #1013")
-
 	l, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
 		t.Fatalf("net.Listen(): got %v, want no error", err)
