@@ -110,10 +110,16 @@ func (p *proxyConn) readRequest() (*http.Request, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	fixConnectReqContentLength(req)
 	if p.secure {
 		req.TLS = &p.cs
 	}
+	req.RemoteAddr = p.conn.RemoteAddr().String()
+	if req.URL.Host == "" {
+		req.URL.Host = req.Host
+	}
+
 	req = req.WithContext(withTraceID(p.BaseContext, newTraceID(req.Header.Get(p.RequestIDHeader))))
 
 	// Adjust the read deadline if necessary.
@@ -317,11 +323,6 @@ func (p *proxyConn) handle() error {
 
 	if p.closing() {
 		return errClose
-	}
-
-	req.RemoteAddr = p.conn.RemoteAddr().String()
-	if req.URL.Host == "" {
-		req.URL.Host = req.Host
 	}
 
 	if req.Method == http.MethodConnect {
