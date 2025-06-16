@@ -162,10 +162,6 @@ func (p proxyHandler) handleUpgradeResponse(rw http.ResponseWriter, req *http.Re
 func (p proxyHandler) tunnel(name string, rw http.ResponseWriter, req *http.Request, res *http.Response, crw io.ReadWriteCloser) (ferr error) {
 	rc := http.NewResponseController(rw)
 
-	defer func() {
-		p.traceWroteResponse(res, ferr)
-	}()
-
 	var cc []copier
 	switch req.ProtoMajor {
 	case 1:
@@ -185,6 +181,7 @@ func (p proxyHandler) tunnel(name string, rw http.ResponseWriter, req *http.Requ
 		}
 
 		if err := drainBuffer(crw, brw.Reader); err != nil {
+			p.traceWroteResponse(res, err)
 			return fmt.Errorf("got error while draining buffer: %w", err)
 		}
 
@@ -197,6 +194,7 @@ func (p proxyHandler) tunnel(name string, rw http.ResponseWriter, req *http.Requ
 		rw.WriteHeader(res.StatusCode)
 
 		if err := rc.Flush(); err != nil {
+			p.traceWroteResponse(res, err)
 			return fmt.Errorf("got error while flushing response back to client: %w", err)
 		}
 
@@ -213,6 +211,8 @@ func (p proxyHandler) tunnel(name string, rw http.ResponseWriter, req *http.Requ
 	log.Debugf(ctx, "established %s tunnel, proxying traffic", name)
 	bicopy(ctx, cc...)
 	log.Debugf(ctx, "closed %s tunnel duration=%s", name, ContextDuration(ctx))
+
+	p.traceWroteResponse(res, nil)
 
 	return nil
 }
