@@ -141,6 +141,8 @@ func (p *proxyConn) handleMITM(req *http.Request) error {
 	if err := p.writeResponse(res); err != nil {
 		return err
 	}
+	// Successful CONNECT response does not invoke trace.
+	p.traceWroteResponse(res, nil)
 
 	b, err := p.brw.Peek(1)
 	if err != nil {
