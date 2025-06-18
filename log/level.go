@@ -10,10 +10,11 @@ type Level int32
 
 const (
 	ErrorLevel Level = 1 + iota
+	WarnLevel
 	InfoLevel
 	DebugLevel
 )
 
 func (l Level) String() string {
-	return [3]string{"error", "info", "debug"}[l-1]
+	return [4]string{"error", "warn", "info", "debug"}[l-1]
 }
