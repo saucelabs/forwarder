@@ -61,6 +61,7 @@ type Logger struct {
 	level  flog.Level
 
 	errorPfx string
+	warnPfx  string
 	infoPfx  string
 	debugPfx string
 
@@ -72,6 +73,7 @@ func (sl Logger) Named(name string, opts ...Option) *Logger { //nolint:gocritic 
 	sl.name = name
 
 	sl.errorPfx = logLinePrefix(sl.labels, name, "ERROR")
+	sl.warnPfx = logLinePrefix(sl.labels, name, "WARN")
 	sl.infoPfx = logLinePrefix(sl.labels, name, "INFO")
 	sl.debugPfx = logLinePrefix(sl.labels, name, "DEBUG")
 
@@ -107,6 +109,16 @@ func (sl *Logger) Errorf(format string, args ...any) {
 		format = sl.decorate(format)
 	}
 	sl.log.Printf(sl.errorPfx+format, args...)
+}
+
+func (sl *Logger) Warnf(format string, args ...any) {
+	if sl.level < flog.WarnLevel {
+		return
+	}
+	if sl.decorate != nil {
+		format = sl.decorate(format)
+	}
+	sl.log.Printf(sl.warnPfx+format, args...)
 }
 
 func (sl *Logger) Infof(format string, args ...any) {
