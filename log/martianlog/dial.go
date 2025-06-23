@@ -19,14 +19,14 @@ import (
 // It allows us to log the network and address of the connection being established together with the trace ID.
 func LoggingDialContext(dial func(context.Context, string, string) (net.Conn, error)) func(context.Context, string, string) (net.Conn, error) {
 	return func(ctx context.Context, network, address string) (conn net.Conn, err error) {
-		martianlog.Debugf(ctx, "opening connection to %s %s", network, address)
+		martianlog.Debug(ctx, "opening connection", "network", network, "address", address)
 
 		start := time.Now()
 		conn, err = dial(ctx, network, address)
 		if err != nil {
-			martianlog.Debugf(ctx, "failed to establish connection to %s %s duration=%s", network, address, time.Since(start))
+			martianlog.Debug(ctx, "failed to establish connection", "network", network, "address", address, "duration", time.Since(start))
 		} else {
-			martianlog.Debugf(ctx, "connection to %s %s established duration=%s", network, address, time.Since(start))
+			martianlog.Debug(ctx, "connection established", "network", network, "address", address, "duration", time.Since(start))
 		}
 
 		return
