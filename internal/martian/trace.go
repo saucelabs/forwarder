@@ -44,27 +44,31 @@ func (t traceID) Duration() time.Duration {
 var _ log.StructuredLogger = TraceIDAppendingLogger{}
 
 type TraceIDAppendingLogger struct {
-	log.StructuredLogger
+	sl log.StructuredLogger
 }
 
-func (l TraceIDAppendingLogger) Error(ctx context.Context, msg string, args ...any) {
-	l.StructuredLogger.Error(ctx, msg, l.args(ctx, args...)...)
+func NewTraceIDAppendingLogger(sl log.StructuredLogger) TraceIDAppendingLogger {
+	return TraceIDAppendingLogger{sl: sl}
 }
 
-func (l TraceIDAppendingLogger) Warn(ctx context.Context, msg string, args ...any) {
-	l.StructuredLogger.Warn(ctx, msg, l.args(ctx, args...)...)
+func (l TraceIDAppendingLogger) ErrorContext(ctx context.Context, msg string, args ...any) {
+	l.sl.ErrorContext(ctx, msg, l.args(ctx, args...)...)
 }
 
-func (l TraceIDAppendingLogger) Info(ctx context.Context, msg string, args ...any) {
-	l.StructuredLogger.Info(ctx, msg, l.args(ctx, args...)...)
+func (l TraceIDAppendingLogger) WarnContext(ctx context.Context, msg string, args ...any) {
+	l.sl.WarnContext(ctx, msg, l.args(ctx, args...)...)
 }
 
-func (l TraceIDAppendingLogger) Debug(ctx context.Context, msg string, args ...any) {
-	l.StructuredLogger.Debug(ctx, msg, l.args(ctx, args...)...)
+func (l TraceIDAppendingLogger) InfoContext(ctx context.Context, msg string, args ...any) {
+	l.sl.InfoContext(ctx, msg, l.args(ctx, args...)...)
+}
+
+func (l TraceIDAppendingLogger) DebugContext(ctx context.Context, msg string, args ...any) {
+	l.sl.DebugContext(ctx, msg, l.args(ctx, args...)...)
 }
 
 func (l TraceIDAppendingLogger) With(args ...any) log.StructuredLogger {
-	return TraceIDAppendingLogger{l.StructuredLogger.With(args...)}
+	return TraceIDAppendingLogger{l.sl.With(args...)}
 }
 
 func (l TraceIDAppendingLogger) args(ctx context.Context, args ...any) []any {

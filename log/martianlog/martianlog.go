@@ -14,5 +14,6 @@ import (
 
 func SetLogger(l log.Logger) {
 	sl := newStructuredLoggerAdapter(l)
-	martianlog.SetLogger(martian.TraceIDAppendingLogger{StructuredLogger: sl})
+	tl := martian.NewTraceIDAppendingLogger(sl)
+	martianlog.SetLogger(tl)
 }

@@ -23,19 +23,19 @@ type structuredLoggerAdapter struct {
 	args []any
 }
 
-func (l *structuredLoggerAdapter) Error(_ context.Context, msg string, args ...any) {
+func (l *structuredLoggerAdapter) ErrorContext(_ context.Context, msg string, args ...any) {
 	l.log.Errorf("%s", formatMessage(msg, append(l.args, args...)...))
 }
 
-func (l *structuredLoggerAdapter) Warn(_ context.Context, msg string, args ...any) {
+func (l *structuredLoggerAdapter) WarnContext(_ context.Context, msg string, args ...any) {
 	l.log.Infof("[WARN] %s", formatMessage(msg, append(l.args, args...)...))
 }
 
-func (l *structuredLoggerAdapter) Info(_ context.Context, msg string, args ...any) {
+func (l *structuredLoggerAdapter) InfoContext(_ context.Context, msg string, args ...any) {
 	l.log.Infof("%s", formatMessage(msg, append(l.args, args...)...))
 }
 
-func (l *structuredLoggerAdapter) Debug(_ context.Context, msg string, args ...any) {
+func (l *structuredLoggerAdapter) DebugContext(_ context.Context, msg string, args ...any) {
 	l.log.Debugf("%s", formatMessage(msg, append(l.args, args...)...))
 }
 
