@@ -12,7 +12,7 @@ import (
 	"github.com/saucelabs/forwarder/log"
 )
 
-func SetLogger(l log.Logger) {
+func SetLogger(l log.StructuredLogger) {
 	sl := newStructuredLoggerAdapter(l)
 	tl := martian.NewTraceIDAppendingLogger(sl)
 	martianlog.SetLogger(tl)
