@@ -7,10 +7,10 @@ import (
 )
 
 type StructuredLogger interface {
-	Error(ctx context.Context, msg string, args ...any)
-	Warn(ctx context.Context, msg string, args ...any)
-	Info(ctx context.Context, msg string, args ...any)
-	Debug(ctx context.Context, msg string, args ...any)
+	ErrorContext(ctx context.Context, msg string, args ...any)
+	WarnContext(ctx context.Context, msg string, args ...any)
+	InfoContext(ctx context.Context, msg string, args ...any)
+	DebugContext(ctx context.Context, msg string, args ...any)
 
 	With(args ...any) StructuredLogger
 }
@@ -25,17 +25,17 @@ func SetLogger(l StructuredLogger) {
 }
 
 func Error(ctx context.Context, msg string, args ...any) {
-	log.Error(ctx, msg, args...)
+	log.ErrorContext(ctx, msg, args...)
 }
 
 func Warn(ctx context.Context, msg string, args ...any) {
-	log.Warn(ctx, msg, args...)
+	log.WarnContext(ctx, msg, args...)
 }
 
 func Info(ctx context.Context, msg string, args ...any) {
-	log.Info(ctx, msg, args...)
+	log.InfoContext(ctx, msg, args...)
 }
 
 func Debug(ctx context.Context, msg string, args ...any) {
-	log.Debug(ctx, msg, args...)
+	log.DebugContext(ctx, msg, args...)
 }
