@@ -25,7 +25,7 @@ import (
 	"github.com/saucelabs/forwarder/internal/version"
 	"github.com/saucelabs/forwarder/log"
 	"github.com/saucelabs/forwarder/log/martianlog"
-	"github.com/saucelabs/forwarder/log/stdlog"
+	"github.com/saucelabs/forwarder/log/slog"
 	"github.com/saucelabs/forwarder/pac"
 	"github.com/saucelabs/forwarder/ruleset"
 	"github.com/saucelabs/forwarder/runctx"
@@ -70,47 +70,47 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 	if err != nil {
 		return fmt.Errorf("register errors metric: %w", err)
 	}
-	logger := stdlog.New(c.logConfig, stdlog.WithOnError(onError))
+	logger := slog.New(c.logConfig, slog.WithOnError(onError))
 
 	defer func() {
 		if err := logger.Close(); err != nil {
 			fmt.Fprintf(cmd.ErrOrStderr(), "close logger: %s\n", err)
 		}
 	}()
-
 	defer func() {
 		if cmdErr != nil {
-			logger.Errorf("fatal error exiting: %s", cmdErr)
+			logger.Error("fatal error exiting", cmdErr, "error", cmdErr)
 			cmd.SilenceErrors = true
 		}
 	}()
 
-	logger.Infof("Forwarder %s (%s)", version.Version, version.Commit)
-	logger.Debugf("resource limits: GOMAXPROCS=%d GOMEMLIMIT=%s", runtime.GOMAXPROCS(0), os.Getenv("GOMEMLIMIT"))
+	logger.Info("Forwarder", "version", version.Version, "commit", version.Commit)
+	logger.Debug("resource limits", "GOMAXPROCS", runtime.GOMAXPROCS(0), "GOMEMLIMIT", os.Getenv("GOMEMLIMIT"))
 
 	var ep []forwarder.APIEndpoint
 
 	{
-		var (
-			cfg []byte
-			err error
-		)
+		var args map[string]any
 
-		cfg, err = cobrautil.FlagsDescriber{
-			Format:          cobrautil.Plain,
+		args = cobrautil.FlagsDescriber{
+			Format:          cobrautil.JSON,
 			ShowChangedOnly: true,
 			ShowHidden:      true,
-		}.DescribeFlags(cmd.Flags())
-		if err != nil {
-			return err
-		}
-		if len(cfg) > 0 {
-			logger.Infof("configuration\n%s", cfg)
+		}.DescribeFlagsToMap(cmd.Flags())
+		if len(args) > 0 {
+			logger.Info("configuration", "args", args)
 		} else {
-			logger.Infof("using default configuration")
+			logger.Info("using default configuration")
 		}
 
-		cfg, err = cobrautil.FlagsDescriber{
+		args = cobrautil.FlagsDescriber{
+			Format:          cobrautil.JSON,
+			ShowChangedOnly: false,
+			ShowHidden:      true,
+		}.DescribeFlagsToMap(cmd.Flags())
+		logger.Debug("all configuration", "cfg", args)
+
+		cfg, err := cobrautil.FlagsDescriber{
 			Format:          cobrautil.Plain,
 			ShowChangedOnly: false,
 			ShowHidden:      true,
@@ -118,26 +118,24 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 		if err != nil {
 			return err
 		}
-		logger.Debugf("all configuration\n%s\n\n", cfg)
-
 		ep = append(ep, forwarder.APIEndpoint{
 			Path:    "/configz",
 			Handler: httphandler.SendFile("text/plain", cfg),
 		})
 	}
 
-	martianlog.SetLogger(logger.Named("proxy"))
+	martianlog.SetLogger(logger)
 
 	if len(c.dnsConfig.Servers) > 0 {
 		s := strings.ReplaceAll(fmt.Sprintf("%s", c.dnsConfig.Servers), " ", ", ")
-		logger.Named("dns").Infof("using DNS servers %v", s)
+		logger.With("name", "dns").Info("using DNS servers", "servers", s)
 		if err := c.dnsConfig.Apply(); err != nil {
 			return fmt.Errorf("configure dns: %w", err)
 		}
 	}
 
 	if c.httpTransportConfig.TLSClientConfig.KeyLogFile != "" {
-		logger.Infof("using TLS key logging, writing to %s", c.httpTransportConfig.TLSClientConfig.KeyLogFile)
+		logger.Info("using TLS key logging", "file", c.httpTransportConfig.TLSClientConfig.KeyLogFile)
 	}
 
 	if len(c.connectTo) > 0 {
@@ -167,7 +165,7 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 		}
 		pr = &forwarder.LoggingPACResolver{
 			Resolver: pr,
-			Logger:   logger.Named("pac"),
+			Logger:   logger.With("name", "pac"),
 		}
 
 		ep = append(ep, forwarder.APIEndpoint{
@@ -176,7 +174,7 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 		})
 	}
 
-	cm, err := forwarder.NewCredentialsMatcher(c.credentials, logger.Named("credentials"))
+	cm, err := forwarder.NewCredentialsMatcher(c.credentials, logger.With("name", "credentials"))
 	if err != nil {
 		return fmt.Errorf("credentials: %w", err)
 	}
@@ -224,7 +222,7 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 		rt.DialContext = martianlog.LoggingDialContext(rt.DialContext)
 		c.transportWithProxyConnectHeader(rt)
 
-		p, err := forwarder.NewHTTPProxy(c.httpProxyConfig, pr, cm, rt, logger.Named("proxy"))
+		p, err := forwarder.NewHTTPProxy(c.httpProxyConfig, pr, cm, rt, logger.With("name", "proxy"))
 		if err != nil {
 			return err
 		}
@@ -263,13 +261,13 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 
 		if os.Getenv("PLATFORM") == "container" {
 			g.Add(func(ctx context.Context) error {
-				logger.Named("api").Infof("HTTP server listen socket path=%s", forwarder.APIUnixSocket)
+				logger.With("name", "api").Info("HTTP server listen", "socket", forwarder.APIUnixSocket)
 				return httpx.ServeUnixSocket(ctx, h, forwarder.APIUnixSocket)
 			})
 		}
 
 		if c.apiServerConfig.Address != "" {
-			a, err := forwarder.NewHTTPServer(c.apiServerConfig, h, logger.Named("api"))
+			a, err := forwarder.NewHTTPServer(c.apiServerConfig, h, logger.With("name", "api"))
 			if err != nil {
 				return err
 			}

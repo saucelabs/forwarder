@@ -16,7 +16,7 @@ import (
 	"github.com/saucelabs/forwarder/bind"
 	"github.com/saucelabs/forwarder/httplog"
 	"github.com/saucelabs/forwarder/log"
-	"github.com/saucelabs/forwarder/log/stdlog"
+	"github.com/saucelabs/forwarder/log/slog"
 	"github.com/saucelabs/forwarder/pac"
 	"github.com/saucelabs/forwarder/runctx"
 	"github.com/saucelabs/forwarder/utils/cobrautil"
@@ -35,51 +35,41 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 	if f := c.logConfig.File; f != nil {
 		defer f.Close()
 	}
-	logger := stdlog.New(c.logConfig)
+	logger := slog.New(c.logConfig)
 
 	defer func() {
 		if err := logger.Close(); err != nil {
 			fmt.Fprintf(cmd.ErrOrStderr(), "close logger: %s\n", err)
 		}
 	}()
-
 	defer func() {
 		if cmdErr != nil {
-			logger.Errorf("fatal error exiting: %s", cmdErr)
+			logger.Error("fatal error exiting", "error", cmdErr)
 			cmd.SilenceErrors = true
 		}
 	}()
 
 	{
-		var (
-			cfg []byte
-			err error
-		)
+		var args map[string]any
 
-		cfg, err = cobrautil.FlagsDescriber{
-			Format:          cobrautil.Plain,
+		args = cobrautil.FlagsDescriber{
+			Format:          cobrautil.JSON,
 			ShowChangedOnly: true,
 			ShowHidden:      true,
-		}.DescribeFlags(cmd.Flags())
-		if err != nil {
-			return err
-		}
-		logger.Infof("configuration\n%s", cfg)
+		}.DescribeFlagsToMap(cmd.Flags())
+		logger.Info("configuration", "args", args)
 
-		cfg, err = cobrautil.FlagsDescriber{
-			Format:          cobrautil.Plain,
+		args = cobrautil.FlagsDescriber{
+			Format:          cobrautil.JSON,
 			ShowChangedOnly: false,
 			ShowHidden:      true,
-		}.DescribeFlags(cmd.Flags())
-		if err != nil {
-			return err
-		}
-		logger.Debugf("all configuration\n%s\n\n", cfg)
+		}.DescribeFlagsToMap(cmd.Flags())
+		logger.Debug("all configuration", "cfg", args)
 	}
 
 	if len(c.dnsConfig.Servers) > 0 {
 		s := strings.ReplaceAll(fmt.Sprintf("%s", c.dnsConfig.Servers), " ", ", ")
-		logger.Named("dns").Infof("using DNS servers %v", s)
+		logger.With("name", "dns").Info("using DNS servers", "servers", s)
 		if err := c.dnsConfig.Apply(); err != nil {
 			return fmt.Errorf("configure DNS: %w", err)
 		}
@@ -98,7 +88,7 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 		return err
 	}
 
-	s, err := forwarder.NewHTTPServer(c.httpServerConfig, servePAC(script), logger.Named("server"))
+	s, err := forwarder.NewHTTPServer(c.httpServerConfig, servePAC(script), logger.With("name", "server"))
 	if err != nil {
 		return err
 	}
