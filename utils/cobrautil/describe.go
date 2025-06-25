@@ -35,6 +35,36 @@ type FlagsDescriber struct {
 }
 
 func (d FlagsDescriber) DescribeFlags(fs *pflag.FlagSet) ([]byte, error) {
+	args := d.DescribeFlagsToMap(fs)
+
+	switch d.Format {
+	case Plain:
+		keys := maps.Keys(args)
+		sort.Strings(keys)
+		var buf bytes.Buffer
+		for _, name := range keys {
+			buf.WriteString(fmt.Sprintf("%s=%s\n", name, args[name]))
+		}
+		return buf.Bytes(), nil
+	case JSON:
+		return json.Marshal(args)
+	case YAML:
+		var buf bytes.Buffer
+		enc := yaml.NewEncoder(&buf)
+		enc.SetIndent(2)
+		if err := enc.Encode(args); err != nil {
+			return nil, err
+		}
+		if err := enc.Close(); err != nil {
+			return nil, err
+		}
+		return buf.Bytes(), nil
+	default:
+		return nil, errors.New("unknown format")
+	}
+}
+
+func (d FlagsDescriber) DescribeFlagsToMap(fs *pflag.FlagSet) map[string]any {
 	args := make(map[string]any, fs.NFlag())
 
 	fs.VisitAll(func(f *pflag.Flag) {
@@ -70,31 +100,7 @@ func (d FlagsDescriber) DescribeFlags(fs *pflag.FlagSet) ([]byte, error) {
 		}
 	})
 
-	switch d.Format {
-	case Plain:
-		keys := maps.Keys(args)
-		sort.Strings(keys)
-		var buf bytes.Buffer
-		for _, name := range keys {
-			buf.WriteString(fmt.Sprintf("%s=%s\n", name, args[name]))
-		}
-		return buf.Bytes(), nil
-	case JSON:
-		return json.Marshal(args)
-	case YAML:
-		var buf bytes.Buffer
-		enc := yaml.NewEncoder(&buf)
-		enc.SetIndent(2)
-		if err := enc.Encode(args); err != nil {
-			return nil, err
-		}
-		if err := enc.Close(); err != nil {
-			return nil, err
-		}
-		return buf.Bytes(), nil
-	default:
-		return nil, errors.New("unknown format")
-	}
+	return args
 }
 
 type sliceValue interface {
