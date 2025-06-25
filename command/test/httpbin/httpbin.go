@@ -16,7 +16,7 @@ import (
 	"github.com/saucelabs/forwarder/httplog"
 	"github.com/saucelabs/forwarder/internal/version"
 	"github.com/saucelabs/forwarder/log"
-	"github.com/saucelabs/forwarder/log/stdlog"
+	"github.com/saucelabs/forwarder/log/slog"
 	"github.com/saucelabs/forwarder/runctx"
 	"github.com/saucelabs/forwarder/utils/cobrautil"
 	"github.com/saucelabs/forwarder/utils/httpbin"
@@ -33,51 +33,41 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 	if f := c.logConfig.File; f != nil {
 		defer f.Close()
 	}
-	logger := stdlog.New(c.logConfig)
+	logger := slog.New(c.logConfig)
 
 	defer func() {
 		if err := logger.Close(); err != nil {
 			fmt.Fprintf(cmd.ErrOrStderr(), "close logger: %s\n", err)
 		}
 	}()
-
 	defer func() {
 		if cmdErr != nil {
-			logger.Errorf("fatal error exiting: %s", cmdErr)
+			logger.Error("fatal error exiting", "error", cmdErr)
 			cmd.SilenceErrors = true
 		}
 	}()
 
 	{
-		var (
-			cfg []byte
-			err error
-		)
+		var args map[string]any
 
-		cfg, err = cobrautil.FlagsDescriber{
-			Format:          cobrautil.Plain,
+		args = cobrautil.FlagsDescriber{
+			Format:          cobrautil.JSON,
 			ShowChangedOnly: true,
 			ShowHidden:      true,
-		}.DescribeFlags(cmd.Flags())
-		if err != nil {
-			return err
-		}
-		logger.Infof("configuration\n%s", cfg)
+		}.DescribeFlagsToMap(cmd.Flags())
+		logger.Info("configuration", "args", args)
 
-		cfg, err = cobrautil.FlagsDescriber{
-			Format:          cobrautil.Plain,
+		args = cobrautil.FlagsDescriber{
+			Format:          cobrautil.JSON,
 			ShowChangedOnly: false,
 			ShowHidden:      true,
-		}.DescribeFlags(cmd.Flags())
-		if err != nil {
-			return err
-		}
-		logger.Debugf("all configuration\n%s\n\n", cfg)
+		}.DescribeFlagsToMap(cmd.Flags())
+		logger.Debug("all configuration", "cfg", args)
 	}
 
 	g := runctx.NewGroup()
 
-	s, err := forwarder.NewHTTPServer(c.httpServerConfig, httpbin.Handler(), logger.Named("server"))
+	s, err := forwarder.NewHTTPServer(c.httpServerConfig, httpbin.Handler(), logger.With("name", "server"))
 	if err != nil {
 		return err
 	}
@@ -85,7 +75,7 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 	g.Add(s.Run)
 
 	g.Add(func(ctx context.Context) error {
-		logger.Named("api").Infof("HTTP server listen socket path=%s", forwarder.APIUnixSocket)
+		logger.With("name", "api").Info("HTTP server listen", "socket", forwarder.APIUnixSocket)
 		r := prometheus.NewRegistry()
 		h := forwarder.NewAPIHandler("HTTPBin "+version.Version, r, nil)
 		return httpx.ServeUnixSocket(ctx, h, forwarder.APIUnixSocket)

@@ -17,7 +17,7 @@ import (
 	ts "github.com/saucelabs/forwarder/internal/martian/h2/testing"
 	tspb "github.com/saucelabs/forwarder/internal/martian/h2/testservice"
 	"github.com/saucelabs/forwarder/log"
-	"github.com/saucelabs/forwarder/log/stdlog"
+	"github.com/saucelabs/forwarder/log/slog"
 	"github.com/saucelabs/forwarder/runctx"
 	"github.com/saucelabs/forwarder/utils/cobrautil"
 	"github.com/spf13/cobra"
@@ -37,7 +37,7 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 	if f := c.logConfig.File; f != nil {
 		defer f.Close()
 	}
-	logger := stdlog.New(c.logConfig)
+	logger := slog.New(c.logConfig)
 
 	defer func() {
 		if err := logger.Close(); err != nil {
@@ -47,36 +47,27 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 
 	defer func() {
 		if cmdErr != nil {
-			logger.Errorf("fatal error exiting: %s", cmdErr)
+			logger.Error("fatal error exiting", "error", cmdErr)
 			cmd.SilenceErrors = true
 		}
 	}()
 
 	{
-		var (
-			cfg []byte
-			err error
-		)
+		var args map[string]any
 
-		cfg, err = cobrautil.FlagsDescriber{
-			Format:          cobrautil.Plain,
+		args = cobrautil.FlagsDescriber{
+			Format:          cobrautil.JSON,
 			ShowChangedOnly: true,
 			ShowHidden:      true,
-		}.DescribeFlags(cmd.Flags())
-		if err != nil {
-			return err
-		}
-		logger.Infof("configuration\n%s", cfg)
+		}.DescribeFlagsToMap(cmd.Flags())
+		logger.Info("configuration", "args", args)
 
-		cfg, err = cobrautil.FlagsDescriber{
-			Format:          cobrautil.Plain,
+		args = cobrautil.FlagsDescriber{
+			Format:          cobrautil.JSON,
 			ShowChangedOnly: false,
 			ShowHidden:      true,
-		}.DescribeFlags(cmd.Flags())
-		if err != nil {
-			return err
-		}
-		logger.Debugf("all configuration\n%s\n\n", cfg)
+		}.DescribeFlagsToMap(cmd.Flags())
+		logger.Debug("all configuration", "cfg", args)
 	}
 
 	g := runctx.NewGroup()
@@ -105,7 +96,7 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 		defer gs.Stop()
 
 		g.Add(func(ctx context.Context) error {
-			logger.Named("grpc").Infof("server listen address=%s", l.Addr())
+			logger.Named("grpc").Info("server listen", "address", l.Addr())
 			go func() {
 				<-ctx.Done()
 				gs.GracefulStop()
