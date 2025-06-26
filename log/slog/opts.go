@@ -12,3 +12,10 @@ func WithOnError(f func(name string)) Option {
 		l.onError = f
 	}
 }
+
+// WithAttributes allows to set custom attributes on the logger creation.
+func WithAttributes(args ...any) Option {
+	return func(l *Logger) {
+		l.log = l.log.With(args...)
+	}
+}
