@@ -297,7 +297,7 @@ func (p *Proxy) Serve(l net.Listener) error {
 			return err
 		}
 		delay = 0
-		log.Debug(context.TODO(), "accepted connection", "address", conn.RemoteAddr())
+		log.Debug(context.TODO(), "accepted connection", "address", conn.RemoteAddr().String())
 
 		go p.handleLoop(conn)
 	}
@@ -334,13 +334,13 @@ func (p *Proxy) handleLoop(conn net.Conn) {
 	for {
 		if err := pc.handle(); err != nil {
 			if errors.Is(err, errClose) || isCloseable(err) {
-				log.Debug(context.TODO(), "closing connection", "address", conn.RemoteAddr(), "duration", time.Since(start))
+				log.Debug(context.TODO(), "closing connection", "address", conn.RemoteAddr().String(), "duration", time.Since(start))
 				return
 			}
 
 			errorsN++
 			if errorsN >= maxConsecutiveErrors {
-				log.Error(context.TODO(), "closing connection after consecutive errors", "address", conn.RemoteAddr(),
+				log.Error(context.TODO(), "closing connection after consecutive errors", "address", conn.RemoteAddr().String(),
 					"errors", errorsN, "error", err, "duration", time.Since(start))
 				return
 			}
