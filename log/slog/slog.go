@@ -106,7 +106,7 @@ func (l *Logger) With(args ...any) flog.StructuredLogger {
 	return &c
 }
 
-func (l *Logger) Named(name string) flog.StructuredLogger {
+func (l *Logger) Named(name string) *Logger {
 	c := *l
 	c.name = name
 	c.log = c.log.With("name", name)
