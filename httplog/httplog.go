@@ -145,20 +145,20 @@ func (l *Logger) structuredLogFunc() middleware.Logger {
 		return func(e middleware.LogEntry) {
 			var b structuredLogBuilder
 			b.WithShortURL(e)
-			l.log("Log HTTP", b.Args()...)
+			l.log("HTTP dump", b.Args()...)
 		}
 	case URL:
 		return func(e middleware.LogEntry) {
 			var b structuredLogBuilder
 			b.WithURL(e)
-			l.log("Log HTTP", b.Args()...)
+			l.log("HTTP dump", b.Args()...)
 		}
 	case Headers:
 		return func(e middleware.LogEntry) {
 			var b structuredLogBuilder
 			b.WithShortURL(e)
 			b.WithHeaders(e)
-			l.log("Log HTTP", b.Args()...)
+			l.log("HTTP dump", b.Args()...)
 		}
 	case Body:
 		return func(e middleware.LogEntry) {
@@ -166,7 +166,7 @@ func (l *Logger) structuredLogFunc() middleware.Logger {
 			b.WithShortURL(e)
 			b.WithHeaders(e)
 			b.WithBody(e)
-			l.log("Log HTTP", b.Args()...)
+			l.log("HTTP dump", b.Args()...)
 		}
 	case Errors:
 		return func(e middleware.LogEntry) {
@@ -177,7 +177,7 @@ func (l *Logger) structuredLogFunc() middleware.Logger {
 			var b structuredLogBuilder
 			b.WithShortURL(e)
 			b.WithHeaders(e)
-			l.log("Log HTTP", b.Args()...)
+			l.log("HTTP dump", b.Args()...)
 		}
 	default:
 		panic(fmt.Sprintf("unknown log mode %s", l.mode))

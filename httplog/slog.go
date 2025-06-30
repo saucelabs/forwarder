@@ -12,10 +12,13 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/saucelabs/forwarder/internal/martian"
 	"github.com/saucelabs/forwarder/middleware"
+	"github.com/saucelabs/forwarder/utils/maps"
 )
 
 // request represents an HTTP request for structured logging.
@@ -32,6 +35,37 @@ type request struct {
 	Trailers         map[string][]string `json:"trailers,omitempty"`
 }
 
+func (r request) String() string {
+	var b strings.Builder
+
+	b.WriteString(r.Method)
+	b.WriteRune(' ')
+	b.WriteString(r.URL)
+
+	add := func(k, v string) {
+		if v == "" {
+			return
+		}
+		b.WriteString(", ")
+		b.WriteString(k)
+		b.WriteByte('=')
+		b.WriteString(v)
+	}
+
+	add("protocol", r.Protocol)
+	add("host", r.Host)
+	add("headers", formatMap(r.Headers))
+	add("transfer_encoding", formatSlice(r.TransferEncoding))
+	if r.ContentLength > 0 {
+		add("content_length", strconv.FormatInt(r.ContentLength, 10))
+	}
+	add("body", r.Body)
+	add("body_error", r.BodyError)
+	add("trailers", formatMap(r.Trailers))
+
+	return b.String()
+}
+
 // response represents an HTTP response for structured logging.
 type response struct {
 	Protocol         string              `json:"protocol,omitempty"`
@@ -43,6 +77,70 @@ type response struct {
 	Body             string              `json:"body,omitempty"`
 	BodyError        string              `json:"body_error,omitempty"`
 	Trailers         map[string][]string `json:"trailers,omitempty"`
+}
+
+func (r response) String() string {
+	var b strings.Builder
+
+	b.WriteString(strconv.Itoa(r.StatusCode))
+
+	add := func(k, v string) {
+		if v == "" {
+			return
+		}
+		b.WriteString(", ")
+		b.WriteString(k)
+		b.WriteByte('=')
+		b.WriteString(v)
+	}
+
+	add("protocol", r.Protocol)
+	add("status_text", r.StatusText)
+	add("headers", formatMap(r.Headers))
+	add("transfer_encoding", formatSlice(r.TransferEncoding))
+	if r.ContentLength > 0 {
+		add("content_length", strconv.FormatInt(r.ContentLength, 10))
+	}
+	add("body", r.Body)
+	add("body_error", r.BodyError)
+	add("trailers", formatMap(r.Trailers))
+
+	return b.String()
+}
+
+func formatMap(m map[string][]string) string {
+	if len(m) == 0 {
+		return ""
+	}
+
+	var b strings.Builder
+	b.WriteByte('[')
+
+	keys := maps.Keys(m)
+	sort.Strings(keys) // Stable order.
+	for i, k := range keys {
+		if i > 0 {
+			b.WriteString(", ")
+		}
+		b.WriteString(k)
+		b.WriteByte('=')
+		b.WriteString(formatSlice(m[k]))
+	}
+
+	b.WriteByte(']')
+	return b.String()
+}
+
+func formatSlice(s []string) string {
+	if len(s) == 0 {
+		return ""
+	}
+
+	if len(s) == 1 {
+		return s[0]
+	}
+
+	return "[" + strings.Join(s, ",") + "]"
 }
 
 type structuredLogBuilder struct {
