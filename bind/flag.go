@@ -11,6 +11,7 @@ import (
 	"net/netip"
 	"net/url"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/mmatczuk/anyflag"
@@ -22,7 +23,6 @@ import (
 	"github.com/saucelabs/forwarder/ruleset"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"golang.org/x/exp/slices"
 )
 
 func ConfigFile(fs *pflag.FlagSet, configFile *string) {

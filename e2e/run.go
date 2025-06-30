@@ -19,7 +19,7 @@ import (
 	"github.com/saucelabs/forwarder/e2e/forwarder"
 	"github.com/saucelabs/forwarder/e2e/setup"
 	"github.com/saucelabs/forwarder/utils/compose"
-	"golang.org/x/exp/maps"
+	"github.com/saucelabs/forwarder/utils/maps"
 )
 
 var args = struct {

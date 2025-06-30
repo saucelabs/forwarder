@@ -12,10 +12,10 @@ import (
 	"os"
 	"path"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/google/go-github/v56/github"
-	"golang.org/x/exp/slices"
 	"gopkg.in/yaml.v3"
 )
 

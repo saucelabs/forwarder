@@ -216,15 +216,7 @@ func TestParseDNSAddress(t *testing.T) {
 }
 
 func TestParseFilePath(t *testing.T) {
-	tempDir, err := os.MkdirTemp("", "com.saucelabs.ForwarderTest-*")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer func() {
-		if err := os.RemoveAll(tempDir); err != nil {
-			t.Fatal(err)
-		}
-	}()
+	tempDir := t.TempDir()
 
 	tests := []struct {
 		name  string

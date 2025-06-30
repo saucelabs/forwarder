@@ -12,7 +12,7 @@ import (
 	"sort"
 
 	hostsfile "github.com/kevinburke/hostsfile/lib"
-	"golang.org/x/exp/maps"
+	"github.com/saucelabs/forwarder/utils/maps"
 )
 
 func LocalhostAliases() ([]string, error) {

@@ -16,11 +16,7 @@ import (
 )
 
 func TestRotatableFile(t *testing.T) {
-	dir, err := os.MkdirTemp("", "test-rotate-*")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(dir)
+	dir := t.TempDir()
 
 	f, err := os.OpenFile(path.Join(dir, "0.log"), DefaultFileFlags, DefaultFileMode)
 	if err != nil {

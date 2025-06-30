@@ -15,11 +15,10 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	_ "unsafe" // for go:linkname
-
-	"golang.org/x/exp/slices"
 )
 
 // ParseUserinfo parses a user:password string into *url.Userinfo.
@@ -182,7 +181,7 @@ func ParseDNSAddress(val string) (netip.AddrPort, error) {
 		if err != nil {
 			return empty, fmt.Errorf("port: %w", err)
 		}
-		p = uint16(u) //nolint:gosec // 16-bit port
+		p = uint16(u)
 	}
 
 	ap := netip.AddrPortFrom(a, p)

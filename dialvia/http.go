@@ -13,13 +13,12 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
+	"maps"
 	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"time"
-
-	"golang.org/x/exp/maps"
 )
 
 type HTTPProxyDialer struct {
