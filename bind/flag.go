@@ -444,6 +444,14 @@ func LogConfig(fs *pflag.FlagSet, cfg *log.Config) {
 	fs.Var(anyflag.NewValue[log.Level](cfg.Level, &cfg.Level, anyflag.EnumParser[log.Level](logLevel...)),
 		"log-level", "<error|info|debug>"+
 			"Log level. ")
+
+	logMode := []log.Format{
+		log.TextFormat,
+		log.JSONFormat,
+	}
+	fs.Var(anyflag.NewValue[log.Format](cfg.Mode, &cfg.Mode, anyflag.EnumParser[log.Format](logMode...)),
+		"log-format", "<text, json>"+
+			"Use json for production workload logs and text for more human-readable output.")
 }
 
 func MarkFlagHidden(cmd *cobra.Command, names ...string) {
