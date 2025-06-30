@@ -14,11 +14,39 @@ import (
 type Config struct {
 	File  *os.File
 	Level Level
+	Mode  Format
 }
 
 func DefaultConfig() *Config {
 	return &Config{
 		File:  nil,
 		Level: InfoLevel,
+		Mode:  TextFormat,
 	}
+}
+
+type Level int
+
+// Levels start from 1 to avoid zero value in help printer.
+const (
+	ErrorLevel Level = 1 + iota
+	WarnLevel
+	InfoLevel
+	DebugLevel
+)
+
+func (l Level) String() string {
+	return [4]string{"error", "warn", "info", "debug"}[l-1]
+}
+
+type Format int
+
+// Formats start from 1 to avoid zero value in help printer.
+const (
+	TextFormat Format = 1 + iota
+	JSONFormat
+)
+
+func (m Format) String() string {
+	return [2]string{"text", "json"}[m-1]
 }
