@@ -53,6 +53,8 @@ func New(cfg *flog.Config, opts ...Option) *Logger {
 }
 
 // Logger implements the forwarder.Logger interface using the standard log package.
+//
+//nolint:recvcheck // This is intentional.
 type Logger struct {
 	log    *log.Logger
 	file   *flog.RotatableFile

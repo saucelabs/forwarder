@@ -120,7 +120,7 @@ func TestConnHeader(t *testing.T) {
 				Version:     tc.version,
 			}
 
-			h, err := c2.(*Conn).Header()
+			h, err := c2.(*Conn).Header() //nolint:forcetypeassert // We know what it is.
 			if err != nil {
 				t.Fatal(err)
 			}

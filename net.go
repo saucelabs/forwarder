@@ -236,6 +236,8 @@ type NamedListenerConfig struct {
 
 // MultiListener is a builder for multiple listeners sharing the same prometheus configuration.
 // The listener name is added as a label to the metrics.
+//
+//nolint:recvcheck // This is intentional.
 type MultiListener struct {
 	ListenerConfigs []NamedListenerConfig
 	TLSConfig       func(NamedListenerConfig) *tls.Config

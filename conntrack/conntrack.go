@@ -73,19 +73,19 @@ type conn struct {
 
 func (c *conn) Read(p []byte) (n int, err error) {
 	n, err = c.Conn.Read(p)
-	c.o.addRx(uint64(n))
+	c.o.addRx(uint64(n)) //nolint:gosec // n is never negative.
 	return
 }
 
 func (c *conn) Write(p []byte) (n int, err error) {
 	n, err = c.Conn.Write(p)
-	c.o.addTx(uint64(n))
+	c.o.addTx(uint64(n)) //nolint:gosec // n is never negative.
 	return
 }
 
 func (c *conn) ReadFrom(r io.Reader) (n int64, err error) {
-	n, err = c.Conn.(io.ReaderFrom).ReadFrom(r)
-	c.o.addTx(uint64(n))
+	n, err = c.Conn.(io.ReaderFrom).ReadFrom(r) //nolint:forcetypeassert // It is checked before.
+	c.o.addTx(uint64(n))                        //nolint:gosec // n is never negative.
 	return
 }
 

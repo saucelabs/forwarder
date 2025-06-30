@@ -204,8 +204,7 @@ func (hs *HTTPServer) Run(ctx context.Context) error {
 
 		<-ctx.Done()
 
-		var cancel context.CancelFunc
-		ctx, cancel = shutdownContext(hs.config.shutdownConfig)
+		ctx, cancel := shutdownContext(hs.config.shutdownConfig)
 		defer cancel()
 
 		if err := hs.srv.Shutdown(ctx); err != nil {

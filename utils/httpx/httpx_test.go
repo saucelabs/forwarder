@@ -20,7 +20,7 @@ func TestServeUnixSocket(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	socketPath, err := os.CreateTemp("", "socket")
+	socketPath, err := os.CreateTemp(t.TempDir(), "socket")
 	if err != nil {
 		t.Fatalf("create temp file: %v", err)
 	}

@@ -14,8 +14,8 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/saucelabs/forwarder/utils/maps"
 	"github.com/spf13/pflag"
-	"golang.org/x/exp/maps"
 	"gopkg.in/yaml.v3"
 )
 

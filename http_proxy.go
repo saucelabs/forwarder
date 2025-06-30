@@ -32,6 +32,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+//nolint:recvcheck // That is by design.
 type ProxyLocalhostMode string
 
 const (
@@ -542,8 +543,7 @@ func (hp *HTTPProxy) runHTTPHandler(ctx context.Context) error {
 		<-ctx.Done()
 		ctxErr := ctx.Err()
 
-		var cancel context.CancelFunc
-		ctx, cancel = shutdownContext(hp.config.shutdownConfig)
+		ctx, cancel := shutdownContext(hp.config.shutdownConfig)
 		defer cancel()
 
 		if err := srv.Shutdown(ctx); err != nil {
@@ -579,8 +579,7 @@ func (hp *HTTPProxy) run(ctx context.Context) error {
 			hp.log.Debug("failed to close listeners", "error", err)
 		}
 
-		var cancel context.CancelFunc
-		ctx, cancel = shutdownContext(hp.config.shutdownConfig)
+		ctx, cancel := shutdownContext(hp.config.shutdownConfig)
 		defer cancel()
 
 		if err := hp.proxy.Shutdown(ctx); err != nil {

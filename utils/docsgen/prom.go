@@ -16,8 +16,8 @@ import (
 	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/saucelabs/forwarder/utils/maps"
 	"github.com/saucelabs/forwarder/utils/promutil"
-	"golang.org/x/exp/maps"
 )
 
 func WriteCommandProm(commandName string, p prometheus.Collector, promDir string) error {

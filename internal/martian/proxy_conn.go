@@ -32,7 +32,7 @@ import (
 
 	"github.com/saucelabs/forwarder/internal/martian/log"
 	"github.com/saucelabs/forwarder/internal/martian/proxyutil"
-	"golang.org/x/exp/maps"
+	"github.com/saucelabs/forwarder/utils/maps"
 )
 
 type proxyConn struct {
