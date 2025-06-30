@@ -195,7 +195,7 @@ func NewHTTPProxy(cfg *HTTPProxyConfig, pr PACResolver, cm *CredentialsMatcher, 
 	hp.listeners = ll
 
 	for _, l := range hp.listeners {
-		hp.log.Info("PROXY server listen", "address", l.Addr(), "protocol", hp.config.Protocol)
+		hp.log.Info("PROXY server listen", "address", l.Addr().String(), "protocol", hp.config.Protocol)
 	}
 
 	return hp, nil
