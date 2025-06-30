@@ -23,9 +23,9 @@ import (
 
 // request represents an HTTP request for structured logging.
 type request struct {
-	Protocol         string              `json:"protocol,omitempty"`
 	Method           string              `json:"method,omitempty"`
 	URL              string              `json:"url,omitempty"`
+	Protocol         string              `json:"protocol,omitempty"`
 	Host             string              `json:"host,omitempty"`
 	Headers          map[string][]string `json:"headers,omitempty"`
 	TransferEncoding []string            `json:"transfer_encoding,omitempty"`
@@ -68,9 +68,9 @@ func (r request) String() string {
 
 // response represents an HTTP response for structured logging.
 type response struct {
-	Protocol         string              `json:"protocol,omitempty"`
 	StatusCode       int                 `json:"status_code,omitempty"`
 	StatusText       string              `json:"status_text,omitempty"`
+	Protocol         string              `json:"protocol,omitempty"`
 	Headers          map[string][]string `json:"headers,omitempty"`
 	TransferEncoding []string            `json:"transfer_encoding,omitempty"`
 	ContentLength    int64               `json:"content_length,omitempty"`
@@ -94,8 +94,8 @@ func (r response) String() string {
 		b.WriteString(v)
 	}
 
-	add("protocol", r.Protocol)
 	add("status_text", r.StatusText)
+	add("protocol", r.Protocol)
 	add("headers", formatMap(r.Headers))
 	add("transfer_encoding", formatSlice(r.TransferEncoding))
 	if r.ContentLength > 0 {
@@ -181,7 +181,6 @@ func (b *structuredLogBuilder) WithURL(e middleware.LogEntry) {
 
 func (b *structuredLogBuilder) initBasicFields(e middleware.LogEntry, urlStr string) {
 	req := e.Request
-	b.req.Protocol = fmt.Sprintf("HTTP/%d.%d", req.ProtoMajor, req.ProtoMinor)
 	b.req.Method = req.Method
 	b.req.URL = urlStr
 
@@ -198,6 +197,7 @@ func (b *structuredLogBuilder) WithHeaders(e middleware.LogEntry) {
 		return
 	}
 
+	b.req.Protocol = fmt.Sprintf("HTTP/%d.%d", req.ProtoMajor, req.ProtoMinor)
 	b.req.Host = req.Host
 	b.req.Headers = req.Header.Clone()
 	if len(req.TransferEncoding) > 0 {
