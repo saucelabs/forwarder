@@ -147,7 +147,7 @@ func NewHTTPServer(cfg *HTTPServerConfig, h http.Handler, log log.StructuredLogg
 	}
 	hs.listener = l
 
-	hs.log.Info("HTTP server listen", "address", l.Addr(), "protocol", hs.config.Protocol)
+	hs.log.Info("HTTP server listen", "address", l.Addr().String(), "protocol", hs.config.Protocol)
 
 	return hs, nil
 }
