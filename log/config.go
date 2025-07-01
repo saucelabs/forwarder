@@ -12,16 +12,16 @@ import (
 
 // Config is a configuration for the loggers.
 type Config struct {
-	File  *os.File
-	Level Level
-	Mode  Format
+	File   *os.File
+	Level  Level
+	Format Format
 }
 
 func DefaultConfig() *Config {
 	return &Config{
-		File:  nil,
-		Level: InfoLevel,
-		Mode:  TextFormat,
+		File:   nil,
+		Level:  InfoLevel,
+		Format: TextFormat,
 	}
 }
 

@@ -449,7 +449,7 @@ func LogConfig(fs *pflag.FlagSet, cfg *log.Config) {
 		log.TextFormat,
 		log.JSONFormat,
 	}
-	fs.Var(anyflag.NewValue[log.Format](cfg.Mode, &cfg.Mode, anyflag.EnumParser[log.Format](logMode...)),
+	fs.Var(anyflag.NewValue[log.Format](cfg.Format, &cfg.Format, anyflag.EnumParser[log.Format](logMode...)),
 		"log-format", "<text, json>"+
 			"Use json for production workload logs and text for more human-readable output.")
 }
