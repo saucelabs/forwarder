@@ -43,7 +43,7 @@ func New(cfg *flog.Config, opts ...Option) *Logger {
 		w = f
 	}
 
-	hops := &slog.HandlerOptions{Level: flogToSlogLevel(cfg.Level), ReplaceAttr: replaceSLAttr}
+	hops := &slog.HandlerOptions{Level: flogToSlogLevel(cfg.Level)}
 	var handler slog.Handler
 	if cfg.Format == flog.JSONFormat {
 		handler = slog.NewJSONHandler(w, hops)
@@ -145,16 +145,4 @@ func flogToSlogLevel(level flog.Level) slog.Level {
 	default:
 		return slog.Level(level)
 	}
-}
-
-func replaceSLAttr(_ []string, a slog.Attr) slog.Attr {
-	switch a.Key {
-	case slog.TimeKey:
-		a.Key = "timestamp"
-	case slog.LevelKey:
-		a.Key = "severity"
-	case slog.MessageKey:
-		a.Key = "message"
-	}
-	return a
 }
