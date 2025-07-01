@@ -90,34 +90,34 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 	var ep []forwarder.APIEndpoint
 
 	{
-		var args map[string]any
+		var cfg []byte
 
-		args = cobrautil.FlagsDescriber{
-			Format:          cobrautil.JSON,
+		//nolint:errcheck // OneLine never fails.
+		cfg, _ = cobrautil.FlagsDescriber{
+			Format:          cobrautil.OneLine,
 			ShowChangedOnly: true,
 			ShowHidden:      true,
-		}.DescribeFlagsToMap(cmd.Flags())
-		if len(args) > 0 {
-			logger.Info("configuration", "args", args)
+		}.DescribeFlags(cmd.Flags())
+		if len(cfg) > 0 {
+			logger.Info("configuration: " + string(cfg))
 		} else {
 			logger.Info("using default configuration")
 		}
 
-		args = cobrautil.FlagsDescriber{
-			Format:          cobrautil.JSON,
+		//nolint:errcheck // OneLine never fails.
+		cfg, _ = cobrautil.FlagsDescriber{
+			Format:          cobrautil.OneLine,
 			ShowChangedOnly: false,
 			ShowHidden:      true,
-		}.DescribeFlagsToMap(cmd.Flags())
-		logger.Debug("all configuration", "cfg", args)
+		}.DescribeFlags(cmd.Flags())
+		logger.Debug("all configuration: " + string(cfg))
 
-		cfg, err := cobrautil.FlagsDescriber{
+		//nolint:errcheck // Plain never fails.
+		cfg, _ = cobrautil.FlagsDescriber{
 			Format:          cobrautil.Plain,
 			ShowChangedOnly: false,
 			ShowHidden:      true,
 		}.DescribeFlags(cmd.Flags())
-		if err != nil {
-			return err
-		}
 		ep = append(ep, forwarder.APIEndpoint{
 			Path:    "/configz",
 			Handler: httphandler.SendFile("text/plain", cfg),

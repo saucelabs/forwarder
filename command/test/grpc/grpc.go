@@ -53,21 +53,23 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 	}()
 
 	{
-		var args map[string]any
+		var cfg []byte
 
-		args = cobrautil.FlagsDescriber{
-			Format:          cobrautil.JSON,
+		//nolint:errcheck // OneLine never fails.
+		cfg, _ = cobrautil.FlagsDescriber{
+			Format:          cobrautil.OneLine,
 			ShowChangedOnly: true,
 			ShowHidden:      true,
-		}.DescribeFlagsToMap(cmd.Flags())
-		logger.Info("configuration", "args", args)
+		}.DescribeFlags(cmd.Flags())
+		logger.Info("configuration: " + string(cfg))
 
-		args = cobrautil.FlagsDescriber{
-			Format:          cobrautil.JSON,
+		//nolint:errcheck // OneLine never fails.
+		cfg, _ = cobrautil.FlagsDescriber{
+			Format:          cobrautil.OneLine,
 			ShowChangedOnly: false,
 			ShowHidden:      true,
-		}.DescribeFlagsToMap(cmd.Flags())
-		logger.Debug("all configuration", "cfg", args)
+		}.DescribeFlags(cmd.Flags())
+		logger.Debug("all configuration: " + string(cfg))
 	}
 
 	g := runctx.NewGroup()
