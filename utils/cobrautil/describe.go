@@ -25,6 +25,7 @@ const (
 	Plain DescribeFormat = iota
 	JSON
 	YAML
+	OneLine
 )
 
 type FlagsDescriber struct {
@@ -57,6 +58,17 @@ func (d FlagsDescriber) DescribeFlags(fs *pflag.FlagSet) ([]byte, error) {
 		}
 		if err := enc.Close(); err != nil {
 			return nil, err
+		}
+		return buf.Bytes(), nil
+	case OneLine:
+		keys := maps.Keys(args)
+		sort.Strings(keys)
+		var buf bytes.Buffer
+		for i, name := range keys {
+			if i > 0 {
+				buf.WriteString(", ")
+			}
+			buf.WriteString(fmt.Sprintf("%s=%s", name, args[name]))
 		}
 		return buf.Bytes(), nil
 	default:
