@@ -69,7 +69,7 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 
 	g := runctx.NewGroup()
 
-	s, err := forwarder.NewHTTPServer(c.httpServerConfig, httpbin.Handler(), logger.With("name", "server"))
+	s, err := forwarder.NewHTTPServer(c.httpServerConfig, httpbin.Handler(), logger.Named("server"))
 	if err != nil {
 		return err
 	}
@@ -77,7 +77,7 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 	g.Add(s.Run)
 
 	g.Add(func(ctx context.Context) error {
-		logger.With("name", "api").Info("HTTP server listen", "socket", forwarder.APIUnixSocket)
+		logger.Named("api").Info("HTTP server listen", "socket", forwarder.APIUnixSocket)
 		r := prometheus.NewRegistry()
 		h := forwarder.NewAPIHandler("HTTPBin "+version.Version, r, nil)
 		return httpx.ServeUnixSocket(ctx, h, forwarder.APIUnixSocket)

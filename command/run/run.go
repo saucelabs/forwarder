@@ -128,7 +128,7 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 
 	if len(c.dnsConfig.Servers) > 0 {
 		s := strings.ReplaceAll(fmt.Sprintf("%s", c.dnsConfig.Servers), " ", ", ")
-		logger.With("name", "dns").Info("using DNS servers", "servers", s)
+		logger.Named("dns").Info("using DNS servers", "servers", s)
 		if err := c.dnsConfig.Apply(); err != nil {
 			return fmt.Errorf("configure dns: %w", err)
 		}
@@ -165,7 +165,7 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 		}
 		pr = &forwarder.LoggingPACResolver{
 			Resolver: pr,
-			Logger:   logger.With("name", "pac"),
+			Logger:   logger.Named("pac"),
 		}
 
 		ep = append(ep, forwarder.APIEndpoint{
@@ -174,7 +174,7 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 		})
 	}
 
-	cm, err := forwarder.NewCredentialsMatcher(c.credentials, logger.With("name", "credentials"))
+	cm, err := forwarder.NewCredentialsMatcher(c.credentials, logger.Named("credentials"))
 	if err != nil {
 		return fmt.Errorf("credentials: %w", err)
 	}
@@ -222,7 +222,7 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 		rt.DialContext = martianlog.LoggingDialContext(rt.DialContext)
 		c.transportWithProxyConnectHeader(rt)
 
-		p, err := forwarder.NewHTTPProxy(c.httpProxyConfig, pr, cm, rt, logger.With("name", "proxy"))
+		p, err := forwarder.NewHTTPProxy(c.httpProxyConfig, pr, cm, rt, logger.Named("proxy"))
 		if err != nil {
 			return err
 		}
@@ -261,13 +261,13 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 
 		if os.Getenv("PLATFORM") == "container" {
 			g.Add(func(ctx context.Context) error {
-				logger.With("name", "api").Info("HTTP server listen", "socket", forwarder.APIUnixSocket)
+				logger.Named("api").Info("HTTP server listen", "socket", forwarder.APIUnixSocket)
 				return httpx.ServeUnixSocket(ctx, h, forwarder.APIUnixSocket)
 			})
 		}
 
 		if c.apiServerConfig.Address != "" {
-			a, err := forwarder.NewHTTPServer(c.apiServerConfig, h, logger.With("name", "api"))
+			a, err := forwarder.NewHTTPServer(c.apiServerConfig, h, logger.Named("api"))
 			if err != nil {
 				return err
 			}
