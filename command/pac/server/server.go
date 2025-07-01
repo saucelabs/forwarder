@@ -71,7 +71,7 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 
 	if len(c.dnsConfig.Servers) > 0 {
 		s := strings.ReplaceAll(fmt.Sprintf("%s", c.dnsConfig.Servers), " ", ", ")
-		logger.With("name", "dns").Info("using DNS servers", "servers", s)
+		logger.Named("dns").Info("using DNS servers", "servers", s)
 		if err := c.dnsConfig.Apply(); err != nil {
 			return fmt.Errorf("configure DNS: %w", err)
 		}
@@ -90,7 +90,7 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 		return err
 	}
 
-	s, err := forwarder.NewHTTPServer(c.httpServerConfig, servePAC(script), logger.With("name", "server"))
+	s, err := forwarder.NewHTTPServer(c.httpServerConfig, servePAC(script), logger.Named("server"))
 	if err != nil {
 		return err
 	}
