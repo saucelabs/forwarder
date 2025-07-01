@@ -45,7 +45,7 @@ func New(cfg *flog.Config, opts ...Option) *Logger {
 
 	hops := &slog.HandlerOptions{Level: flogToSlogLevel(cfg.Level), ReplaceAttr: replaceSLAttr}
 	var handler slog.Handler
-	if cfg.Mode == flog.JSONFormat {
+	if cfg.Format == flog.JSONFormat {
 		handler = slog.NewJSONHandler(w, hops)
 	} else {
 		handler = slog.NewTextHandler(w, hops)
