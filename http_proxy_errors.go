@@ -66,7 +66,7 @@ func (hp *HTTPProxy) errorResponse(req *http.Request, err error) *http.Response 
 		}
 	}
 	if code == 0 {
-		hp.log.Debug("error response: unexpected error", "type", fmt.Sprintf("%T", err))
+		hp.log.Info("unexpected error response", "type", fmt.Sprintf("%T", err), "error", err)
 		code = http.StatusInternalServerError
 		msg = "encountered an unexpected error"
 		label = "unexpected_error"
