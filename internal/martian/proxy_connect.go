@@ -39,7 +39,7 @@ func fixConnectReqContentLength(req *http.Request) {
 	}
 
 	if req.Header.Get("Content-Length") != "" {
-		log.Info(req.Context(), "CONNECT request with Content-Length, ignoring content length", "content-length", req.Header.Get("Content-Length"))
+		log.Warn(req.Context(), "CONNECT request with Content-Length, ignoring content length", "content-length", req.Header.Get("Content-Length"))
 	}
 
 	req.ContentLength = -1
