@@ -9,7 +9,7 @@ package ratelimit
 import (
 	"net"
 
-	"github.com/mmatczuk/connfu"
+	"github.com/saucelabs/connfu"
 	"golang.org/x/time/rate"
 )
 

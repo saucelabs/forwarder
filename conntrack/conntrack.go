@@ -13,7 +13,7 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/mmatczuk/connfu"
+	"github.com/saucelabs/connfu"
 	"github.com/saucelabs/forwarder/utils/reflectx"
 )
 
