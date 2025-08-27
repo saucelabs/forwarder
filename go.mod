@@ -13,10 +13,10 @@ require (
 	github.com/kevinburke/hostsfile v0.0.0-20220522040509-e5e984885321
 	github.com/mitchellh/go-wordwrap v1.0.1
 	github.com/mmatczuk/anyflag v0.0.0-20240709090339-eb9e24cd1b44
-	github.com/mmatczuk/connfu v0.0.0-20241015064402-db8989f89d8c
 	github.com/prometheus/client_golang v1.23.0
 	github.com/prometheus/client_model v0.6.2
 	github.com/prometheus/common v0.65.0
+	github.com/saucelabs/connfu v0.0.0-20250827100016-6235a7abda4a
 	github.com/spf13/cast v1.9.2
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/pflag v1.0.7
