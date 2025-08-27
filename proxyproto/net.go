@@ -15,7 +15,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/mmatczuk/connfu"
+	"github.com/saucelabs/connfu"
 )
 
 // Conn wraps a net.Conn and provides access to the proxy protocol header.
