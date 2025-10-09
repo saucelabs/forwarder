@@ -187,15 +187,23 @@ func (p *proxyConn) handleMITM(req *http.Request) error {
 		if err = tlsconn.HandshakeContext(hctx); err != nil {
 			p.MITMConfig.HandshakeErrorCallback(req, err)
 			if isClosedConnError(err) {
-				log.Debug(ctx, "mitm: connection closed prematurely", "error", err)
+				log.Debug(ctx, "mitm: incoming connection closed prematurely during TLS handshake", "error", err)
 			} else {
-				log.Error(ctx, "mitm: failed to handshake connection", "host", req.Host, "error", err)
+
+				remote_addr := p.conn.RemoteAddr().String()
+				host, _, split_err := net.SplitHostPort(remote_addr)
+
+				if split_err == nil {
+					remote_addr = host
+				}
+
+				log.Error(ctx, "mitm: failed to handshake incoming TLS connection", "target-host", req.Host, "client", remote_addr, "error", err)
 			}
 			return errClose
 		}
 
 		cs := tlsconn.ConnectionState()
-		log.Debug(ctx, "mitm: negotiated protocol", "protocol", cs.NegotiatedProtocol)
+		log.Debug(ctx, "mitm: negotiated incoming TLS protocol", "protocol", cs.NegotiatedProtocol)
 
 		if cs.NegotiatedProtocol == "h2" {
 			return p.MITMConfig.H2Config().Proxy(p.closeCh, tlsconn, req.URL)
