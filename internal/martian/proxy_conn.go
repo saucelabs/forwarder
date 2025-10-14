@@ -197,7 +197,7 @@ func (p *proxyConn) handleMITM(req *http.Request) error {
 					remote_addr = host
 				}
 
-				log.Error(ctx, "mitm: failed to handshake incoming TLS connection", "target-host", req.Host, "client", remote_addr, "error", err)
+				log.Error(ctx, "mitm: failed to handshake incoming TLS connection", "host", req.Host, "client", remote_addr, "error", err)
 			}
 			return errClose
 		}
