@@ -189,15 +189,14 @@ func (p *proxyConn) handleMITM(req *http.Request) error {
 			if isClosedConnError(err) {
 				log.Debug(ctx, "mitm: incoming connection closed prematurely during TLS handshake", "error", err)
 			} else {
+				remoteAddr := p.conn.RemoteAddr().String()
+				host, _, splitErr := net.SplitHostPort(remoteAddr)
 
-				remote_addr := p.conn.RemoteAddr().String()
-				host, _, split_err := net.SplitHostPort(remote_addr)
-
-				if split_err == nil {
-					remote_addr = host
+				if splitErr == nil {
+					remoteAddr = host
 				}
 
-				log.Error(ctx, "mitm: failed to handshake incoming TLS connection", "host", req.Host, "client", remote_addr, "error", err)
+				log.Error(ctx, "mitm: failed to handshake incoming TLS connection", "host", req.Host, "client", remoteAddr, "error", err)
 			}
 			return errClose
 		}
