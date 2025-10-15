@@ -146,16 +146,17 @@ func (c *HTTPProxyConfig) Validate() error {
 }
 
 type HTTPProxy struct {
-	config     HTTPProxyConfig
-	pac        PACResolver
-	creds      *CredentialsMatcher
-	transport  http.RoundTripper
-	log        log.StructuredLogger
-	metrics    *httpProxyMetrics
-	proxy      *martian.Proxy
-	mitmCACert *x509.Certificate
-	proxyFunc  ProxyFunc
-	localhost  []string
+	config          HTTPProxyConfig
+	pac             PACResolver
+	creds           *CredentialsMatcher
+	transport       http.RoundTripper
+	log             log.StructuredLogger
+	metrics         *httpProxyMetrics
+	proxy           *martian.Proxy
+	mitmCACert      *x509.Certificate
+	proxyFunc       ProxyFunc
+	kerberosAdapter *KerberosAdapter
+	localhost       []string
 
 	tlsConfig *tls.Config
 	listeners []net.Listener
@@ -163,7 +164,9 @@ type HTTPProxy struct {
 
 // NewHTTPProxy creates a new HTTP proxy.
 // It is the caller's responsibility to call Close on the returned server.
-func NewHTTPProxy(cfg *HTTPProxyConfig, pr PACResolver, cm *CredentialsMatcher, rt http.RoundTripper, log log.StructuredLogger) (*HTTPProxy, error) {
+func NewHTTPProxy(cfg *HTTPProxyConfig, pr PACResolver, cm *CredentialsMatcher, rt http.RoundTripper, log log.StructuredLogger,
+	kerberosAdapter *KerberosAdapter,
+) (*HTTPProxy, error) {
 	hp, err := newHTTPProxy(cfg, pr, cm, rt, log)
 	if err != nil {
 		return nil, err
@@ -196,6 +199,17 @@ func NewHTTPProxy(cfg *HTTPProxyConfig, pr PACResolver, cm *CredentialsMatcher, 
 
 	for _, l := range hp.listeners {
 		hp.log.Info("PROXY server listen", "address", l.Addr().String(), "protocol", hp.config.Protocol)
+	}
+
+	hp.kerberosAdapter = kerberosAdapter
+
+	// connect to Kerberos KDC server and authenticate
+
+	if hp.kerberosAdapter != nil {
+		err := hp.kerberosAdapter.connectToKDC()
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return hp, nil

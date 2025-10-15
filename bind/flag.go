@@ -52,6 +52,20 @@ func DNSConfig(fs *pflag.FlagSet, cfg *forwarder.DNSConfig) {
 			"passing this flag will enable round-robin selection. ")
 }
 
+func KerberosConfig(fs *pflag.FlagSet, cfg *forwarder.KerberosConfig) {
+	fs.StringVar(&cfg.CfgFilePath, "kerberos-cfg-file", cfg.CfgFilePath, "<string>"+
+		"Path to krb5.conf file with kerberos configuration")
+
+	fs.StringVar(&cfg.KeyTabFilePath, "kerberos-keytab-file", cfg.KeyTabFilePath, "<string>"+
+		"Path to kerberos keytab file")
+
+	fs.StringVar(&cfg.UserName, "kerberos-user-name", cfg.UserName, "<string>"+
+		"Path to kerberos user name (principal name)")
+
+	fs.StringVar(&cfg.UserRealm, "kerberos-user-realm", cfg.UserRealm, "<string>"+
+		"Path to kerberos user realm (principal realm)")
+}
+
 func PAC(fs *pflag.FlagSet, pac **url.URL) {
 	fs.VarP(anyflag.NewValue[*url.URL](*pac, pac, fileurl.ParseFilePathOrURL),
 		"pac", "p", "`<path or URL>`"+

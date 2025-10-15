@@ -601,3 +601,29 @@ If the header is present in the request, the proxy will associate the value with
 
 Log level.
 
+
+
+## Kerberos options
+
+To use Kerberos authentication mechanism you need to have `krb5.conf` file which points to proper realms and servers and keytab files accessible to forwarder.
+Below are links to sample files configured for `example.com` domain:
+
+* [krb5.conf](../config/kerberos/krb5.conf)
+* [keytab](../config/kerberos/keytab) 
+
+Keytab is a binary file storing saved usernames (principals) and passwords used to authenticate against Kerberos KDC server so there is no need for a password to be passed as command line arguments in forwarder. Sample file contains two entries (user1 and user2) with password `password`.
+
+To create a custom keytab/keytab entry run:
+
+```
+root@rogal:/etc/krb5kdc# ktutil
+ktutil:  add_entry -password -p user3@example.com -k 1 -e aes256-cts-hmac-sha1-96
+Password for user3@example.com: 
+ktutil: write_kt keytab
+ktutil: exit
+```
+
+(file will be saved as `keytab` in current directory)
+
+(ktutil is often part of `krb5-user` linux package)
+

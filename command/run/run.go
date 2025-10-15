@@ -41,6 +41,7 @@ type command struct {
 	promReg             *prometheus.Registry
 	dnsConfig           *forwarder.DNSConfig
 	httpTransportConfig *forwarder.HTTPTransportConfig
+	kerberosConfig      *forwarder.KerberosConfig
 	connectTo           []forwarder.HostPortPair
 	pac                 *url.URL
 	credentials         []*forwarder.HostPortUser
@@ -79,7 +80,7 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 	}()
 	defer func() {
 		if cmdErr != nil {
-			logger.Error("fatal error exiting", cmdErr, "error", cmdErr)
+			logger.Error("fatal error exiting", "error", cmdErr)
 			cmd.SilenceErrors = true
 		}
 	}()
@@ -213,6 +214,24 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 		c.httpProxyConfig.ProxyProtocolConfig = c.proxyProtocolConfig
 	}
 
+	var kerberosAdapter *forwarder.KerberosAdapter = nil
+
+	// use separate flag for determining if Kerberos is enabled
+	// than presence of config file, this may change in the future
+	if c.kerberosConfig.CfgFilePath != "" {
+		c.kerberosConfig.Enabled = true
+	}
+
+	if c.kerberosConfig.Enabled {
+		logger.Info("Kerberos authentication is enabled")
+
+		kerberosAdapter, err = forwarder.NewKerberosAdapter(*c.kerberosConfig, logger.Named("kerberos"))
+		if err != nil {
+			return fmt.Errorf("kerberos: %w", err)
+		}
+
+	}
+
 	g := runctx.NewGroup()
 	{
 		rt, err := forwarder.NewHTTPTransport(c.httpTransportConfig)
@@ -222,7 +241,7 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 		rt.DialContext = martianlog.LoggingDialContext(rt.DialContext)
 		c.transportWithProxyConnectHeader(rt)
 
-		p, err := forwarder.NewHTTPProxy(c.httpProxyConfig, pr, cm, rt, logger.Named("proxy"))
+		p, err := forwarder.NewHTTPProxy(c.httpProxyConfig, pr, cm, rt, logger.Named("proxy"), kerberosAdapter)
 		if err != nil {
 			return err
 		}
@@ -417,6 +436,7 @@ func Command() *cobra.Command {
 
 	fs := cmd.Flags()
 	bind.DNSConfig(fs, c.dnsConfig)
+	bind.KerberosConfig(fs, c.kerberosConfig)
 	bind.HTTPTransportConfig(fs, c.httpTransportConfig)
 	bind.ConnectTo(fs, &c.connectTo)
 	bind.PAC(fs, &c.pac)
@@ -479,6 +499,7 @@ func makeCommand() command {
 	c := command{
 		promReg:             prometheus.NewRegistry(),
 		dnsConfig:           forwarder.DefaultDNSConfig(),
+		kerberosConfig:      forwarder.DefaultKerberosConfig(),
 		httpTransportConfig: forwarder.DefaultHTTPTransportConfig(),
 		httpProxyConfig:     forwarder.DefaultHTTPProxyConfig(),
 		mitmConfig:          forwarder.DefaultMITMConfig(),
