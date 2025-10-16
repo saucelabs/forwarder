@@ -7,6 +7,7 @@
 package forwarder
 
 import (
+	"bytes"
 	"fmt"
 
 	"github.com/jcmturner/gokrb5/v8/client"
@@ -17,6 +18,7 @@ import (
 
 type KerberosConfig struct {
 	Enabled        bool
+	RunDiagnostics bool
 	CfgFilePath    string
 	KeyTabFilePath string
 	UserName       string
@@ -72,12 +74,34 @@ func NewKerberosAdapter(cnf KerberosConfig, log log.StructuredLogger) (*Kerberos
 
 func (a *KerberosAdapter) connectToKDC() error {
 	a.log.Debug("Logging to KDC server")
-	err := a.krb5client.Login()
-	if err != nil {
-		return fmt.Errorf("kerberos KDC login: %w", err)
+	loginErr := a.krb5client.Login()
+	if loginErr != nil && !a.configuration.RunDiagnostics {
+		return fmt.Errorf("kerberos KDC login: %w", loginErr)
+	}
+
+	if loginErr != nil && a.configuration.RunDiagnostics {
+		a.log.Error("kerberos KDC login failed but running diagnostics anyway", "error", loginErr)
 	}
 
 	a.log.Debug("KDC login successful")
+
+	// run diagnostics even if login failed
+	if a.configuration.RunDiagnostics {
+		a.log.Warn("Kerberos diagnostics mode - diagnostic info will be printed to stdout and forwarder process will exit.")
+		buf := new(bytes.Buffer)
+		err := a.krb5client.Diagnostics(buf)
+
+		// We need to print directly to stdout as it contains a nested structured text.
+		// Does not really matter as diagnostics mode should be used on local console only.
+		fmt.Printf("%s", buf.String())
+
+		if err != nil {
+			return fmt.Errorf("kerberos configuration potential problems: %w", err)
+		}
+
+		return fmt.Errorf("no kerberos configuration problems found. Exiting process")
+
+	}
 
 	return nil
 }

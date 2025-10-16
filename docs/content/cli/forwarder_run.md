@@ -623,7 +623,46 @@ ktutil: write_kt keytab
 ktutil: exit
 ```
 
-(file will be saved as `keytab` in current directory)
-
+file will be saved as `keytab` in current directory.
 (ktutil is often part of `krb5-user` linux package)
 
+### Important! 
+
+Keytab file needs separate user entry for each supported client encryption type, otherwise if encryption type entry negotiated between client
+and KDC server is not found in keytab for particular user - forwarder will fail with following error:
+
+```
+msg="fatal error exiting" error="kerberos KDC login: [Root cause: Encrypting_Error] KRBMessage_Handling_Error: AS Exchange Error: failed setting AS_REQ PAData for pre-authentication required < Encrypting_Error: error getting key from credentials: matching key not found in keytab. Looking for \"user3\" realm: example.com kvno: 0 etype: 18"
+```
+
+Running forwarder with `--kerberos-run-diagnostics` switch will print an error when there are discrepancies between supported encryption types and keytab entry:
+
+```
+ msg="fatal error exiting" error="kerberos configuration potential problems: default_tkt_enctypes specifies 17 but this enctype is not available in the client's keytab\ndefault_tkt_enctypes specifies 23 but this enctype is not available in the client's keytab\npreferred_preauth_types specifies 17 but this enctype is not available in the client's keytab\npreferred_preauth_types specifies 15 but this enctype is not available in the client's keytab\npreferred_preauth_types specifies 14 but this enctype is not available in the client's keytab"
+```
+
+Diagnostics printout will allow you to match enctype number to string:
+
+```
+"DefaultTGSEnctypes": [
+      "aes256-cts-hmac-sha1-96",
+      "aes128-cts-hmac-sha1-96",
+      "des3-cbc-sha1",
+      "arcfour-hmac-md5",
+      "camellia256-cts-cmac",
+      "camellia128-cts-cmac",
+      "des-cbc-crc",
+      "des-cbc-md5",
+      "des-cbc-md4"
+    ],
+    "DefaultTGSEnctypeIDs": [
+      18,
+      17,
+      23
+    ],
+
+```
+
+(17 is aes128-cts-hmac-sha1-96, etc)
+
+Often having only one enctype in user configuration will work but can break at any time if hosts decide to negotiate something different than usual. For simplification you can restrict supported encryption types to 1-2 entries in krb5.conf file. Enctypes listed in diagnostics mode are sorted from most secure to least secure so in most cases first 2-3 positions are good enough to choose from and check if KDC server supports them. When in doubt - contact your ActiveDirectory/Kerberos administrator.

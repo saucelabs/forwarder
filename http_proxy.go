@@ -167,7 +167,7 @@ type HTTPProxy struct {
 func NewHTTPProxy(cfg *HTTPProxyConfig, pr PACResolver, cm *CredentialsMatcher, rt http.RoundTripper, log log.StructuredLogger,
 	kerberosAdapter *KerberosAdapter,
 ) (*HTTPProxy, error) {
-	hp, err := newHTTPProxy(cfg, pr, cm, rt, log)
+	hp, err := newHTTPProxy(cfg, pr, cm, rt, log, kerberosAdapter)
 	if err != nil {
 		return nil, err
 	}
@@ -201,23 +201,12 @@ func NewHTTPProxy(cfg *HTTPProxyConfig, pr PACResolver, cm *CredentialsMatcher, 
 		hp.log.Info("PROXY server listen", "address", l.Addr().String(), "protocol", hp.config.Protocol)
 	}
 
-	hp.kerberosAdapter = kerberosAdapter
-
-	// connect to Kerberos KDC server and authenticate
-
-	if hp.kerberosAdapter != nil {
-		err := hp.kerberosAdapter.connectToKDC()
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	return hp, nil
 }
 
 // NewHTTPProxyHandler is like NewHTTPProxy but returns http.Handler instead of *HTTPProxy.
-func NewHTTPProxyHandler(cfg *HTTPProxyConfig, pr PACResolver, cm *CredentialsMatcher, rt http.RoundTripper, log log.StructuredLogger) (http.Handler, error) {
-	hp, err := newHTTPProxy(cfg, pr, cm, rt, log)
+func NewHTTPProxyHandler(cfg *HTTPProxyConfig, pr PACResolver, cm *CredentialsMatcher, rt http.RoundTripper, log log.StructuredLogger, kerberosAdapter *KerberosAdapter) (http.Handler, error) {
+	hp, err := newHTTPProxy(cfg, pr, cm, rt, log, kerberosAdapter)
 	if err != nil {
 		return nil, err
 	}
@@ -225,7 +214,7 @@ func NewHTTPProxyHandler(cfg *HTTPProxyConfig, pr PACResolver, cm *CredentialsMa
 	return hp.handler(), nil
 }
 
-func newHTTPProxy(cfg *HTTPProxyConfig, pr PACResolver, cm *CredentialsMatcher, rt http.RoundTripper, log log.StructuredLogger) (*HTTPProxy, error) {
+func newHTTPProxy(cfg *HTTPProxyConfig, pr PACResolver, cm *CredentialsMatcher, rt http.RoundTripper, log log.StructuredLogger, kerberosAdapter *KerberosAdapter) (*HTTPProxy, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, err
 	}
@@ -243,17 +232,26 @@ func newHTTPProxy(cfg *HTTPProxyConfig, pr PACResolver, cm *CredentialsMatcher, 
 		log.Info("using custom root CA certificates")
 	}
 	hp := &HTTPProxy{
-		config:    *cfg,
-		pac:       pr,
-		creds:     cm,
-		transport: rt,
-		log:       log,
-		metrics:   newHTTPProxyMetrics(cfg.PromRegistry, cfg.PromNamespace),
-		localhost: []string{"localhost", "0.0.0.0", "::"},
+		config:          *cfg,
+		pac:             pr,
+		creds:           cm,
+		transport:       rt,
+		log:             log,
+		metrics:         newHTTPProxyMetrics(cfg.PromRegistry, cfg.PromNamespace),
+		localhost:       []string{"localhost", "0.0.0.0", "::"},
+		kerberosAdapter: kerberosAdapter,
 	}
 
 	if err := hp.configureProxy(); err != nil {
 		return nil, err
+	}
+
+	// connect to Kerberos KDC server and authenticate
+	if hp.kerberosAdapter != nil {
+		err := hp.kerberosAdapter.connectToKDC()
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return hp, nil
@@ -392,6 +390,13 @@ func (hp *HTTPProxy) middlewareStack() (martian.RequestResponseModifier, *martia
 		topg.AddRequestModifier(hp.denyDomains(hp.config.DenyDomains))
 	}
 
+	// inject Kerberos SPNEGO authentication header to selected domains
+	// when Kerberos is enabled
+
+	if hp.kerberosAdapter != nil {
+		topg.AddRequestModifier(hp.injectKerberosSPNEGOAuthentication())
+	}
+
 	// stack contains the request/response modifiers in the order they are applied.
 	// fg is the inner stack that is executed after the core request modifiers and before the core response modifiers.
 	stack, fg := httpspec.NewStack(hp.config.Name)
@@ -442,6 +447,17 @@ func (hp *HTTPProxy) basicAuth(u *url.Userinfo) martian.RequestModifier {
 		if !ba.AuthenticatedRequest(req, user, pass) {
 			return ErrProxyAuthentication
 		}
+		return nil
+	})
+}
+
+func (hp *HTTPProxy) injectKerberosSPNEGOAuthentication() martian.RequestModifier {
+	return martian.RequestModifierFunc(func(req *http.Request) error {
+		// TODO: move to using map/hash table to avoid performance problems
+		if slices.Contains(hp.kerberosAdapter.configuration.KerberosEnabledHosts, strings.ToLower(req.URL.Hostname())) {
+			req.Header.Add("Authentication", "KRB5-SERVICE-TICKET-LVL9000")
+		}
+
 		return nil
 	})
 }

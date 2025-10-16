@@ -26,7 +26,7 @@ func TestAbortIf(t *testing.T) {
 	cfg := DefaultHTTPProxyConfig()
 	cfg.BasicAuth = url.UserPassword("user", "pass")
 
-	p, err := NewHTTPProxy(cfg, nil, nil, nil, slog.Default())
+	p, err := NewHTTPProxy(cfg, nil, nil, nil, slog.Default(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -91,7 +91,7 @@ func TestNopDialer(t *testing.T) {
 		},
 	}
 
-	p, err := NewHTTPProxy(DefaultHTTPProxyConfig(), nil, nil, tr, slog.Default())
+	p, err := NewHTTPProxy(DefaultHTTPProxyConfig(), nil, nil, tr, slog.Default(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -114,7 +114,7 @@ func TestNopDialer(t *testing.T) {
 
 func TestIsLocalhost(t *testing.T) {
 	cfg := DefaultHTTPProxyConfig()
-	p, err := NewHTTPProxy(cfg, nil, nil, nil, slog.Default())
+	p, err := NewHTTPProxy(cfg, nil, nil, nil, slog.Default(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -151,7 +151,7 @@ func TestErrorResponse(t *testing.T) {
 	cfg := DefaultHTTPProxyConfig()
 	cfg.ProxyLocalhost = AllowProxyLocalhost
 
-	h, err := NewHTTPProxyHandler(cfg, nil, nil, nil, slog.Default())
+	h, err := NewHTTPProxyHandler(cfg, nil, nil, nil, slog.Default(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
