@@ -248,7 +248,7 @@ func newHTTPProxy(cfg *HTTPProxyConfig, pr PACResolver, cm *CredentialsMatcher, 
 
 	// connect to Kerberos KDC server and authenticate
 	if hp.kerberosAdapter != nil {
-		err := hp.kerberosAdapter.connectToKDC()
+		err := hp.kerberosAdapter.ConnectToKDC()
 		if err != nil {
 			return nil, err
 		}

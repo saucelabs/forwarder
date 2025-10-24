@@ -72,7 +72,7 @@ func NewKerberosAdapter(cnf KerberosConfig, log log.StructuredLogger) (*Kerberos
 	return &KerberosAdapter{configuration: cnf, krb5client: *krb5Client, log: log}, nil
 }
 
-func (a *KerberosAdapter) connectToKDC() error {
+func (a *KerberosAdapter) ConnectToKDC() error {
 	a.log.Debug("Logging to KDC server")
 	loginErr := a.krb5client.Login()
 	if loginErr != nil && !a.configuration.RunDiagnostics {
