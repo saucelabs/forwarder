@@ -83,7 +83,7 @@ func (a *KerberosAdapter) connectToKDC() error {
 		a.log.Error("kerberos KDC login failed but running diagnostics anyway", "error", loginErr)
 	}
 
-	a.log.Debug("KDC login successful")
+	a.log.Info("Kerberos KDC login successful")
 
 	// run diagnostics even if login failed
 	if a.configuration.RunDiagnostics {

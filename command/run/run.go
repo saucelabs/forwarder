@@ -127,6 +127,27 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 
 	martianlog.SetLogger(logger)
 
+	// Configure Kerberos as first because HTTP Transport
+	// for various forwarder elements may require reaching hosts behind
+	// Kerberos authenticated upstream proxy
+	var kerberosAdapter *forwarder.KerberosAdapter = nil
+
+	// use separate flag for determining if Kerberos is enabled
+	// than presence of config file, this may change in the future
+	if c.kerberosConfig.CfgFilePath != "" {
+		c.kerberosConfig.Enabled = true
+	}
+
+	if c.kerberosConfig.Enabled {
+		logger.Info("Kerberos authentication is enabled")
+
+		kerberosAdapter, err = forwarder.NewKerberosAdapter(*c.kerberosConfig, logger.Named("kerberos"))
+		if err != nil {
+			return fmt.Errorf("kerberos: %w", err)
+		}
+
+	}
+
 	if len(c.dnsConfig.Servers) > 0 {
 		s := strings.ReplaceAll(fmt.Sprintf("%s", c.dnsConfig.Servers), " ", ", ")
 		logger.Named("dns").Info("using DNS servers", "servers", s)
@@ -212,24 +233,6 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 
 	if c.proxyProtocol {
 		c.httpProxyConfig.ProxyProtocolConfig = c.proxyProtocolConfig
-	}
-
-	var kerberosAdapter *forwarder.KerberosAdapter = nil
-
-	// use separate flag for determining if Kerberos is enabled
-	// than presence of config file, this may change in the future
-	if c.kerberosConfig.CfgFilePath != "" {
-		c.kerberosConfig.Enabled = true
-	}
-
-	if c.kerberosConfig.Enabled {
-		logger.Info("Kerberos authentication is enabled")
-
-		kerberosAdapter, err = forwarder.NewKerberosAdapter(*c.kerberosConfig, logger.Named("kerberos"))
-		if err != nil {
-			return fmt.Errorf("kerberos: %w", err)
-		}
-
 	}
 
 	g := runctx.NewGroup()

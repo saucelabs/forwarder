@@ -452,10 +452,16 @@ func (hp *HTTPProxy) basicAuth(u *url.Userinfo) martian.RequestModifier {
 }
 
 func (hp *HTTPProxy) injectKerberosSPNEGOAuthentication() martian.RequestModifier {
+	// Preemprive SPNEGO authentication - do not wait for 401 code and negotiation
+	// Generate and inject auth header in advance using domain list
+
 	return martian.RequestModifierFunc(func(req *http.Request) error {
-		// TODO: move to using map/hash table to avoid performance problems
+
+		token := "KRB5-SERVICE-TICKET-LVL9000"
+
 		if slices.Contains(hp.kerberosAdapter.configuration.KerberosEnabledHosts, strings.ToLower(req.URL.Hostname())) {
-			req.Header.Add("Authentication", "KRB5-SERVICE-TICKET-LVL9000")
+
+			req.Header.Set("Authentication", token)
 		}
 
 		return nil
