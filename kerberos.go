@@ -8,11 +8,14 @@ package forwarder
 
 import (
 	"bytes"
+	"encoding/base64"
 	"fmt"
 
 	"github.com/jcmturner/gokrb5/v8/client"
 	"github.com/jcmturner/gokrb5/v8/config"
 	"github.com/jcmturner/gokrb5/v8/keytab"
+	"github.com/jcmturner/gokrb5/v8/krberror"
+	"github.com/jcmturner/gokrb5/v8/spnego"
 	"github.com/saucelabs/forwarder/log"
 )
 
@@ -104,4 +107,28 @@ func (a *KerberosAdapter) ConnectToKDC() error {
 	}
 
 	return nil
+}
+
+// GetSPNEGOHeaderValue accepts SPN service name and returns header value that should
+// be put inside Authorization or Proxy-Authorization header.
+func (a *KerberosAdapter) GetSPNEGOHeaderValue(spn string) (string, error) {
+	a.log.Debug("Generating SPNEGO header value for SPN: %s", spn)
+
+	cli := spnego.SPNEGOClient(&a.krb5client, spn)
+
+	err := cli.AcquireCred()
+	if err != nil {
+		return "", fmt.Errorf("could not acquire SPNEGO client credential: %w", err)
+	}
+
+	secContext, err := cli.InitSecContext()
+	if err != nil {
+		return "", fmt.Errorf("could not initialize SPNEGO context for SPN %s: %w", spn, err)
+	}
+	nb, err := secContext.Marshal()
+	if err != nil {
+		return "", krberror.Errorf(err, krberror.EncodingError, "could not marshal SPNEGO")
+	}
+	return "Negotiate " + base64.StdEncoding.EncodeToString(nb), nil
+
 }
