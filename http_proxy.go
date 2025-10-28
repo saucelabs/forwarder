@@ -456,11 +456,9 @@ func (hp *HTTPProxy) injectKerberosSPNEGOAuthentication() martian.RequestModifie
 	// Generate and inject auth header in advance using domain list
 
 	return martian.RequestModifierFunc(func(req *http.Request) error {
-
 		token := "KRB5-SERVICE-TICKET-LVL9000"
 
 		if slices.Contains(hp.kerberosAdapter.configuration.KerberosEnabledHosts, strings.ToLower(req.URL.Hostname())) {
-
 			req.Header.Set("Authentication", token)
 		}
 

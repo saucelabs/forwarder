@@ -8,8 +8,11 @@ package forwarder
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"fmt"
+	"net/http"
+	"net/url"
 
 	"github.com/jcmturner/gokrb5/v8/client"
 	"github.com/jcmturner/gokrb5/v8/config"
@@ -130,5 +133,17 @@ func (a *KerberosAdapter) GetSPNEGOHeaderValue(spn string) (string, error) {
 		return "", krberror.Errorf(err, krberror.EncodingError, "could not marshal SPNEGO")
 	}
 	return "Negotiate " + base64.StdEncoding.EncodeToString(nb), nil
+}
 
+func (a *KerberosAdapter) GetProxyConnectHeader(_ context.Context, proxyURL *url.URL, _ string) (http.Header, error) {
+	spn := "HTTP/" + proxyURL.Hostname()
+
+	SPNEGOHeaderValue, err := a.GetSPNEGOHeaderValue(spn)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get Kerberos SPNEGO authentication header for sauce proxy SPN: %s: %w", spn, err)
+	}
+
+	authHeader := make(http.Header, 1)
+	authHeader.Set("Proxy-Authorization", SPNEGOHeaderValue)
+	return authHeader, nil
 }

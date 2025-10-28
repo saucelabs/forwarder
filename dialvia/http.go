@@ -141,7 +141,6 @@ func (d *HTTPProxyDialer) DialContextR(ctx context.Context, network, addr string
 
 	if d.GetProxyConnectHeader != nil {
 		headers, err := d.GetProxyConnectHeader(ctx, d.proxyURL, addr)
-
 		if err != nil {
 			conn.Close()
 			return nil, nil, err
