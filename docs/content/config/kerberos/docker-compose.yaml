@@ -1,0 +1,14 @@
+# start this service to run squid proxy forcing kerberos authentication
+# keytab credential in squid-keytab is HTTP/proxy.example.com@example.com with password "password"
+# you need to create proxy service account in Kerberos KDC using same SPN and password as above
+
+version: '3'
+services:
+  squid:
+    image: ubuntu/squid
+    ports:
+      - "3128:3128"
+    volumes:
+      - ./krb5.conf:/etc/krb5.conf
+      - ./squid-keytab:/etc/squid/keytab
+      - ./squid-kerberos.conf:/etc/squid/squid.conf

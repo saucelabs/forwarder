@@ -605,6 +605,12 @@ Log level.
 
 ## Kerberos options
 
+Forwarder supports Kerberos authentication - SPNEGO tokens passed in `Authorization` or `Proxy-Authorization` HTTP headers. Implemented method is called "opportunistic authentication", it means forwarder does not try to detect `401` or `407` HTTP error codes and negotiate Kerberos authentication - it uses predefined host names needing Kerberos authentication and it's up to the user to know those hosts in advance.
+
+Forwarder can authenticate using Kerberos both to the configured upstream proxy (using `Proxy-Authorization` header) and inject `Authorization` header to the proxied requests - by fetching relevant Kerberos token for particular SPN (Service Principal Name) and converting it to SPNEGO token.
+
+Current implementation uses HTTP request host (or configured proxy hostname) as SPN. For example `app.example.com` is converted to SPN `HTTP/app.example.com` and such SPN is expected to be present in Kerberos KDC server as service name.
+
 To use Kerberos authentication mechanism you need to have `krb5.conf` file which points to proper realms and servers and keytab files accessible to forwarder.
 Below are links to sample files configured for `example.com` domain:
 
@@ -635,7 +641,70 @@ and KDC server is not found in keytab for particular user - forwarder will fail 
 msg="fatal error exiting" error="kerberos KDC login: [Root cause: Encrypting_Error] KRBMessage_Handling_Error: AS Exchange Error: failed setting AS_REQ PAData for pre-authentication required < Encrypting_Error: error getting key from credentials: matching key not found in keytab. Looking for \"user3\" realm: example.com kvno: 0 etype: 18"
 ```
 
-Running forwarder with `--kerberos-run-diagnostics` switch will print an error when there are discrepancies between supported encryption types and keytab entry:
+### --kerberos-cfg-file {#kerberos-cfg-file}
+
+* Environment variable: `FORWARDER_KERBEROS_CFG_FILE`
+* Value Format: `<path>`
+
+Path to krb5.conf configuration file with kerberos connection settings. 
+File format reference:
+
+https://web.mit.edu/kerberos/krb5-1.12/doc/admin/conf_files/krb5_conf.html
+
+See this file for example: [krb5.conf](../config/kerberos/krb5.conf)
+
+
+### --kerberos-keytab-file {#kerberos-cfg-file}
+
+* Environment variable: `FORWARDER_KERBEROS_KEYTAB_FILE`
+* Value Format: `<path>`
+
+Path to keytab file holding credentials to a user which authenticates to a Kerberos KDC server.
+
+Keytab files are in binary format and can be created and managed for example using `ktutil` tool distributed with MIT Kerberos software:
+https://web.mit.edu/kerberos/krb5-latest/doc/admin/admin_commands/ktutil.html#ktutil-1
+
+
+### --kerberos-user-name {#kerberos-user-name}
+
+* Environment variable: `FORWARDER_KERBEROS_USER_NAME`
+* Value Format: `<username>`
+
+Name of the user (principal name using Kerberos nomenclature) as which forwarder will authenticate to a Kerberos KDC server. User and its password (hashed) must be present in keytab file specified in `--kerberos-keytab-file`
+
+### --kerberos-user-realm {#kerberos-user-realm}
+
+* Environment variable: `FORWARDER_KERBEROS_USER_REALM`
+* Value Format: `<domain name>`
+
+Kerberos realm of the user specified in `--kerberos-user-name`. It depends on Kerberos settings in organisation but in most cases it's the company domain name.
+
+
+### --kerberos-enabled-hosts {#kerberos-enabled-hosts}
+
+* Environment variable: `FORWARDER_KERBEROS_ENABLED_HOSTS`
+* Value Format: `host1,host2,host3....`
+
+List of hosts for which Kerberos (SPNEGO) authorization tokens will be injected as `Authorization` header. If HTTP request already has such header (or header is added by Forwarder by means of other settings, like custom headers or basic auth) - this header value will be overwritten by SPNEGO token.
+
+
+### --kerberos-auth-upstream-proxy {#kerberos-auth-upstream-proxy}
+
+* Environment variable: `FORWARDER_KERBEROS_AUTH_UPSTREAM_PROXY`
+* Value Format: `<value>` (you can use empty command line switch to enable)
+* Default Value: `false`
+
+Authenticate to a configured upstream proxy with Kerberos (using `Proxy-Authorization` HTTP header in CONNECT requests). Please note that if forwarder configuration results in multiple proxies available (like PAC for example), forwarder will try to authenticate to each one of them.
+
+
+### --kerberos-run-diagnostics {#kerberos-run-diagnostics}
+
+* Environment variable: `FORWARDER_KERBEROS_RUN_DIAGNOSTICS`
+* Value Format: `<value>` (you can use empty commant switch to enable)
+* Default Value: `false`
+
+
+Running forwarder with `--kerberos-run-diagnostics` switch will print debugging information about Kerberos connection and an error when there are discrepancies between supported encryption types and keytab entry:
 
 ```
  msg="fatal error exiting" error="kerberos configuration potential problems: default_tkt_enctypes specifies 17 but this enctype is not available in the client's keytab\ndefault_tkt_enctypes specifies 23 but this enctype is not available in the client's keytab\npreferred_preauth_types specifies 17 but this enctype is not available in the client's keytab\npreferred_preauth_types specifies 15 but this enctype is not available in the client's keytab\npreferred_preauth_types specifies 14 but this enctype is not available in the client's keytab"
@@ -665,4 +734,9 @@ Diagnostics printout will allow you to match enctype number to string:
 
 (17 is aes128-cts-hmac-sha1-96, etc)
 
-Often having only one enctype in user configuration will work but can break at any time if hosts decide to negotiate something different than usual. For simplification you can restrict supported encryption types to 1-2 entries in krb5.conf file. Enctypes listed in diagnostics mode are sorted from most secure to least secure so in most cases first 2-3 positions are good enough to choose from and check if KDC server supports them. When in doubt - contact your ActiveDirectory/Kerberos administrator.
+Often having only one enctype in user configuration will work but can break at any time if hosts decide to negotiate something different than usual. For simplification you can restrict supported encryption types to 1-2 entries in krb5.conf file. Enctypes listed in diagnostics mode are sorted from most secure to least secure so in most cases first 1-2 positions are good enough to choose from and check if KDC server supports them. When in doubt - contact your ActiveDirectory/Kerberos administrator.
+
+
+### Testing
+
+There is a docker-compose file in /docs/content/config/kerberos path with predefined Squid configuration files that allows you to run Squid proxy requiring Kerberos authentication (assuming you have Kerberos KDC installed and configured with proper service SPN). It will allow you to test Kerberos authentication for upstream proxy.

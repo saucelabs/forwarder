@@ -66,10 +66,13 @@ func KerberosConfig(fs *pflag.FlagSet, cfg *forwarder.KerberosConfig) {
 		"Path to kerberos user realm (principal realm)")
 
 	fs.Var(anyflag.NewSliceValue[string](cfg.KerberosEnabledHosts, &cfg.KerberosEnabledHosts, func(val string) (string, error) { return val, nil }),
-		"kerberos-domains", "[-]<string>,... List of domains for which send Kerberos auth headers (SPNEGO)")
+		"kerberos-enabled-hosts", "<string>,... List of hosts for which send Kerberos auth headers (SPNEGO)")
 
 	fs.BoolVar(&cfg.RunDiagnostics, "kerberos-run-diagnostics", cfg.RunDiagnostics,
 		"Run basic Kerberos config/connection diagnostics and exit forwarder process.")
+
+	fs.BoolVar(&cfg.AuthUpstreamProxy, "kerberos-auth-upstream-proxy", cfg.AuthUpstreamProxy,
+		"Authenticate to upstream proxy using Kerberos (with Proxy-Authorization header)")
 }
 
 func PAC(fs *pflag.FlagSet, pac **url.URL) {

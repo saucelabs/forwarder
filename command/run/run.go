@@ -10,6 +10,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"maps"
 	"net/http"
 	"net/url"
 	"os"
@@ -242,7 +243,7 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 			return err
 		}
 		rt.DialContext = martianlog.LoggingDialContext(rt.DialContext)
-		c.transportWithProxyConnectHeader(rt)
+		c.configureTransportProxy(rt, kerberosAdapter)
 
 		p, err := forwarder.NewHTTPProxy(c.httpProxyConfig, pr, cm, rt, logger.Named("proxy"), kerberosAdapter)
 		if err != nil {
@@ -338,15 +339,35 @@ func (c *command) configureHeadersModifiers() {
 	}
 }
 
-func (c *command) transportWithProxyConnectHeader(tr *http.Transport) {
-	if len(c.connectHeaders) > 0 {
-		tr.GetProxyConnectHeader = func(_ context.Context, _ *url.URL, _ string) (http.Header, error) {
-			h := make(http.Header, len(c.connectHeaders))
+// configure upstream proxy transport - connect headers and/or Kerberos auth
+func (c *command) configureTransportProxy(tr *http.Transport, kerberosAdapter *forwarder.KerberosAdapter) {
+
+	headersToAllocate := len(c.connectHeaders)
+
+	if c.kerberosConfig.AuthUpstreamProxy {
+		headersToAllocate += 1
+	}
+
+	tr.GetProxyConnectHeader = func(ctx context.Context, proxyURL *url.URL, target string) (http.Header, error) {
+		h := make(http.Header, headersToAllocate)
+
+		if len(c.connectHeaders) > 0 {
 			for _, ch := range c.connectHeaders {
 				ch.Apply(h)
 			}
-			return h, nil
 		}
+
+		if kerberosAdapter != nil && c.kerberosConfig.AuthUpstreamProxy {
+			kerberosHeaders, err := kerberosAdapter.GetProxyAuthHeader(ctx, proxyURL, target)
+			if err != nil {
+				return nil, err
+			}
+
+			maps.Copy(h, kerberosHeaders)
+
+		}
+
+		return h, nil
 	}
 }
 

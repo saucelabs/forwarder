@@ -23,12 +23,13 @@ import (
 )
 
 type KerberosConfig struct {
-	Enabled        bool
-	RunDiagnostics bool
-	CfgFilePath    string
-	KeyTabFilePath string
-	UserName       string
-	UserRealm      string
+	Enabled           bool
+	RunDiagnostics    bool
+	AuthUpstreamProxy bool
+	CfgFilePath       string
+	KeyTabFilePath    string
+	UserName          string
+	UserRealm         string
 	// no matching and wildcards like in MITMHosts
 	KerberosEnabledHosts []string
 }
@@ -115,7 +116,7 @@ func (a *KerberosAdapter) ConnectToKDC() error {
 // GetSPNEGOHeaderValue accepts SPN service name and returns header value that should
 // be put inside Authorization or Proxy-Authorization header.
 func (a *KerberosAdapter) GetSPNEGOHeaderValue(spn string) (string, error) {
-	a.log.Debug("Generating SPNEGO header value for SPN: %s", spn)
+	a.log.Debug("Generating SPNEGO header value for SPN: ", spn)
 
 	cli := spnego.SPNEGOClient(&a.krb5client, spn)
 
@@ -135,7 +136,7 @@ func (a *KerberosAdapter) GetSPNEGOHeaderValue(spn string) (string, error) {
 	return "Negotiate " + base64.StdEncoding.EncodeToString(nb), nil
 }
 
-func (a *KerberosAdapter) GetProxyConnectHeader(_ context.Context, proxyURL *url.URL, _ string) (http.Header, error) {
+func (a *KerberosAdapter) GetProxyAuthHeader(_ context.Context, proxyURL *url.URL, _ string) (http.Header, error) {
 	spn := "HTTP/" + proxyURL.Hostname()
 
 	SPNEGOHeaderValue, err := a.GetSPNEGOHeaderValue(spn)
