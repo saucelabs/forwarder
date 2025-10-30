@@ -341,7 +341,6 @@ func (c *command) configureHeadersModifiers() {
 
 // configure upstream proxy transport - connect headers and/or Kerberos auth
 func (c *command) configureTransportProxy(tr *http.Transport, kerberosAdapter *forwarder.KerberosAdapter) {
-
 	headersToAllocate := len(c.connectHeaders)
 
 	if c.kerberosConfig.AuthUpstreamProxy {
@@ -486,6 +485,8 @@ func Command() *cobra.Command {
 
 	bind.AutoMarkFlagFilename(cmd)
 	cmd.MarkFlagsMutuallyExclusive("proxy", "pac")
+
+	cmd.MarkFlagsRequiredTogether("kerberos-cfg-file", "kerberos-keytab-file", "kerberos-user-name", "kerberos-user-realm")
 
 	fs.BoolVar(&c.goleak, "goleak", false, "enable goleak")
 

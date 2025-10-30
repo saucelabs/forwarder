@@ -324,6 +324,9 @@ func (hp *HTTPProxy) configureProxy() error {
 		hp.log.Info("no upstream proxy specified")
 	}
 
+	hp.log.Info("Kerberos upstream proxy authentication is enabled. " +
+		"Existing proxy credentials for basic authentication will be ignored.")
+
 	if hp.config.DirectDomains != nil {
 		hp.proxyFunc = hp.directDomains(hp.proxyFunc)
 	}
@@ -346,6 +349,16 @@ func (hp *HTTPProxy) upstreamProxyURL() *url.URL {
 	proxyURL := new(url.URL)
 	*proxyURL = *hp.config.UpstreamProxy
 
+	// do not attach proxy credentials if we are using Kerberos
+	// to auth upstream proxy and clear existing auth data
+	// so http.RoundTripper would not try to add custom Authorization header
+
+	if hp.kerberosAdapter != nil && hp.kerberosAdapter.configuration.AuthUpstreamProxy {
+
+		proxyURL.User = nil
+		return proxyURL
+	}
+
 	if proxyURL.User == nil {
 		if u := hp.creds.MatchURL(proxyURL); u != nil {
 			proxyURL.User = u
@@ -367,6 +380,17 @@ func (hp *HTTPProxy) pacProxy(r *http.Request) (*url.URL, error) {
 	}
 
 	proxyURL := p.URL()
+
+	// do not attach proxy credentials if we are using Kerberos
+	// to auth upstream proxy and clear existing auth data
+	// so http.RoundTripper would not try to add custom Authorization header
+
+	if hp.kerberosAdapter != nil && hp.kerberosAdapter.configuration.AuthUpstreamProxy {
+
+		proxyURL.User = nil
+		return proxyURL, nil
+	}
+
 	if u := hp.creds.MatchURL(proxyURL); u != nil {
 		proxyURL.User = u
 	}
@@ -390,16 +414,22 @@ func (hp *HTTPProxy) middlewareStack() (martian.RequestResponseModifier, *martia
 		topg.AddRequestModifier(hp.denyDomains(hp.config.DenyDomains))
 	}
 
-	// inject Kerberos SPNEGO authentication header to selected domains
-	// when Kerberos is enabled
-
-	if hp.kerberosAdapter != nil {
-		topg.AddRequestModifier(hp.injectKerberosSPNEGOAuthentication())
-	}
-
 	// stack contains the request/response modifiers in the order they are applied.
 	// fg is the inner stack that is executed after the core request modifiers and before the core response modifiers.
 	stack, fg := httpspec.NewStack(hp.config.Name)
+
+	// inject Kerberos SPNEGO authentication header to selected domains
+	// when Kerberos is enabled
+	// it needs to be in new stack to avoid Martian HopByHopModifier
+	// messing with Proxy-Authorization header
+	if hp.kerberosAdapter != nil {
+		stack.AddRequestModifier(hp.injectKerberosSPNEGOAuthentication())
+	}
+
+	if hp.kerberosAdapter != nil && hp.kerberosAdapter.configuration.AuthUpstreamProxy && hp.proxyFunc != nil {
+		stack.AddRequestModifier(hp.injectKerberosUpstreamProxyAuthorizationHeader())
+	}
+
 	topg.AddRequestModifier(stack)
 	topg.AddResponseModifier(stack)
 
@@ -453,13 +483,61 @@ func (hp *HTTPProxy) basicAuth(u *url.Userinfo) martian.RequestModifier {
 
 func (hp *HTTPProxy) injectKerberosSPNEGOAuthentication() martian.RequestModifier {
 	// Preemprive SPNEGO authentication - do not wait for 401 code and negotiation
-	// Generate and inject auth header in advance using domain list
+	// Generate and inject auth header in advance using configured host list
 
 	return martian.RequestModifierFunc(func(req *http.Request) error {
-		token := "KRB5-SERVICE-TICKET-LVL9000"
-
+		// TODO: use a map or something faster than array lookup
 		if slices.Contains(hp.kerberosAdapter.configuration.KerberosEnabledHosts, strings.ToLower(req.URL.Hostname())) {
-			req.Header.Set("Authentication", token)
+			spn, err := hp.kerberosAdapter.GetSPNForHost(req.URL.Hostname())
+			if err != nil {
+				return err
+			}
+
+			authHeaderValue, err := hp.kerberosAdapter.GetSPNEGOHeaderValue(spn)
+			if err != nil {
+				return fmt.Errorf("error getting upstream proxy Kerberos authentication header for host %s: %w", req.URL.Hostname(), err)
+			}
+
+			req.Header.Set("Authorization", authHeaderValue)
+		}
+
+		return nil
+	})
+}
+
+func (hp *HTTPProxy) injectKerberosUpstreamProxyAuthorizationHeader() martian.RequestModifier {
+	// Kerberos upstream proxy authentication case for non-TLS requests
+	// When using TLS, we use proxy CONNECT method and different code flow to handle
+	// CONNECT headers and Kerberos authentication
+	// when using plain HTTP over proxy, there is no CONNECT method and we need to
+	// detect such case and inject Proxy-Authentication
+
+	return martian.RequestModifierFunc(func(req *http.Request) error {
+		if req.URL.Scheme != "http" || req.Method == http.MethodConnect {
+			return nil
+		}
+
+		if hp.proxyFunc == nil {
+			return nil
+		}
+
+		proxyURL, err := hp.proxyFunc(req)
+		if err != nil {
+			return err
+		}
+
+		if proxyURL != nil {
+			spn, err := hp.kerberosAdapter.GetSPNForHost(proxyURL.Hostname())
+			if err != nil {
+				return err
+			}
+
+			authHeaderValue, err := hp.kerberosAdapter.GetSPNEGOHeaderValue(spn)
+			if err != nil {
+				return fmt.Errorf("error getting upstream proxy Kerberos authentication header for proxy %s: %w", proxyURL.Hostname(), err)
+			}
+
+			req.Header.Set("Proxy-Authorization", authHeaderValue)
 		}
 
 		return nil

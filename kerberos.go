@@ -113,6 +113,11 @@ func (a *KerberosAdapter) ConnectToKDC() error {
 	return nil
 }
 
+func (a *KerberosAdapter) GetSPNForHost(hostname string) (string, error) {
+	// static for now but in the future we may want to do DNS queries for CNAME
+	return "HTTP/" + hostname, nil
+}
+
 // GetSPNEGOHeaderValue accepts SPN service name and returns header value that should
 // be put inside Authorization or Proxy-Authorization header.
 func (a *KerberosAdapter) GetSPNEGOHeaderValue(spn string) (string, error) {
