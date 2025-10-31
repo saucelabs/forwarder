@@ -10,14 +10,32 @@ import (
 	"testing"
 
 	"github.com/saucelabs/forwarder/log/slog"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestKerberosAdapterFailsWithoutConfig(t *testing.T) {
 	cnf := KerberosConfig{}
 
 	_, err := NewKerberosAdapter(cnf, slog.Default())
-	// TODO: match expected error message
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NotNil(t, err)
+	assert.ErrorContains(t, err, "kerberos config file (krb5.conf) not specified")
+
+	cnf.CfgFilePath = "/tmp/test.cfg"
+
+	_, err = NewKerberosAdapter(cnf, slog.Default())
+	assert.NotNil(t, err)
+	assert.ErrorContains(t, err, "kerberos keytab file not specified")
+
+	cnf.KeyTabFilePath = "/tmp/keytab"
+
+	_, err = NewKerberosAdapter(cnf, slog.Default())
+	assert.NotNil(t, err)
+	assert.ErrorContains(t, err, "kerberos username not specified")
+
+	cnf.UserName = "user1"
+
+	_, err = NewKerberosAdapter(cnf, slog.Default())
+	assert.NotNil(t, err)
+	assert.ErrorContains(t, err, "kerberos user realm not specified")
+
 }

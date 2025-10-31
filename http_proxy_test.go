@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/saucelabs/forwarder/log/slog"
+	"github.com/stretchr/testify/assert"
 	"golang.org/x/net/http2"
 )
 
@@ -197,5 +198,45 @@ func TestErrorResponse(t *testing.T) {
 		if !strings.Contains(string(b), "unverified certificates:") {
 			t.Fatalf("expected unverified certificates chain, body=%q", b)
 		}
+	})
+}
+
+type KerberosAdapterMock struct {
+	KDCConnected bool
+}
+
+func (a *KerberosAdapterMock) ConnectToKDC() error {
+	a.KDCConnected = true
+	return nil
+}
+
+func (a *KerberosAdapterMock) GetConfig() *KerberosConfig {
+	return DefaultKerberosConfig()
+}
+
+func (a *KerberosAdapterMock) GetSPNForHost(hostname string) (string, error) {
+	return hostname, nil
+}
+func (a *KerberosAdapterMock) GetSPNEGOHeaderValue(spn string) (string, error) {
+	return "TEST-TOKEN", nil
+}
+
+func (a *KerberosAdapterMock) GetProxyAuthHeader(_ context.Context, proxyURL *url.URL, _ string) (http.Header, error) {
+	return nil, nil
+}
+
+func TestKerberosAuth(t *testing.T) {
+	cfg := DefaultHTTPProxyConfig()
+	cfg.ProxyLocalhost = AllowProxyLocalhost
+
+	kerberosAdapter := KerberosAdapterMock{}
+
+	_, err := NewHTTPProxyHandler(cfg, nil, nil, nil, slog.Default(), &kerberosAdapter)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Run("KDC connected", func(t *testing.T) {
+		assert.True(t, kerberosAdapter.KDCConnected)
 	})
 }

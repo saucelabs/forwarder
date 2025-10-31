@@ -131,7 +131,7 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 	// Configure Kerberos as first because HTTP Transport
 	// for various forwarder elements may require reaching hosts behind
 	// Kerberos authenticated upstream proxy
-	var kerberosAdapter *forwarder.KerberosAdapter = nil
+	var kerberosAdapter forwarder.KerberosAdapter = nil
 
 	// use separate flag for determining if Kerberos is enabled
 	// than presence of config file, this may change in the future
@@ -340,7 +340,7 @@ func (c *command) configureHeadersModifiers() {
 }
 
 // configure upstream proxy transport - connect headers and/or Kerberos auth
-func (c *command) configureTransportProxy(tr *http.Transport, kerberosAdapter *forwarder.KerberosAdapter) {
+func (c *command) configureTransportProxy(tr *http.Transport, kerberosAdapter forwarder.KerberosAdapter) {
 	headersToAllocate := len(c.connectHeaders)
 
 	if c.kerberosConfig.AuthUpstreamProxy {

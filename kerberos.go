@@ -34,19 +34,27 @@ type KerberosConfig struct {
 	KerberosEnabledHosts []string
 }
 
+type KerberosAdapter interface {
+	ConnectToKDC() error
+	GetSPNForHost(hostname string) (string, error)
+	GetSPNEGOHeaderValue(spn string) (string, error)
+	GetConfig() *KerberosConfig
+	GetProxyAuthHeader(_ context.Context, proxyURL *url.URL, _ string) (http.Header, error)
+}
+
 func DefaultKerberosConfig() *KerberosConfig {
 	return &KerberosConfig{
 		// default zero values are fine
 	}
 }
 
-type KerberosAdapter struct {
+type KerberosClient struct {
 	configuration KerberosConfig
 	krb5client    client.Client
 	log           log.StructuredLogger
 }
 
-func NewKerberosAdapter(cnf KerberosConfig, log log.StructuredLogger) (*KerberosAdapter, error) {
+func NewKerberosAdapter(cnf KerberosConfig, log log.StructuredLogger) (*KerberosClient, error) {
 	// technically this should not happen as adapter should not be initialized without
 	// proper config present, but better safe than sorry
 	if cnf.CfgFilePath == "" {
@@ -55,6 +63,13 @@ func NewKerberosAdapter(cnf KerberosConfig, log log.StructuredLogger) (*Kerberos
 
 	if cnf.KeyTabFilePath == "" {
 		return nil, fmt.Errorf("kerberos keytab file not specified")
+	}
+
+	if cnf.UserName == "" {
+		return nil, fmt.Errorf("kerberos username not specified")
+	}
+	if cnf.UserRealm == "" {
+		return nil, fmt.Errorf("kerberos user realm not specified")
 	}
 
 	krb5Config, err := config.Load(cnf.CfgFilePath)
@@ -67,19 +82,16 @@ func NewKerberosAdapter(cnf KerberosConfig, log log.StructuredLogger) (*Kerberos
 		return nil, fmt.Errorf("error loading kerberos keytab file %s: %w", cnf.KeyTabFilePath, err)
 	}
 
-	if cnf.UserName == "" {
-		return nil, fmt.Errorf("kerberos username not specified")
-	}
-	if cnf.UserRealm == "" {
-		return nil, fmt.Errorf("kerberos user realm not specified")
-	}
-
 	krb5Client := client.NewWithKeytab(cnf.UserName, cnf.UserRealm, krb5Keytab, krb5Config)
 
-	return &KerberosAdapter{configuration: cnf, krb5client: *krb5Client, log: log}, nil
+	return &KerberosClient{configuration: cnf, krb5client: *krb5Client, log: log}, nil
 }
 
-func (a *KerberosAdapter) ConnectToKDC() error {
+func (a *KerberosClient) GetConfig() *KerberosConfig {
+	return &a.configuration
+}
+
+func (a *KerberosClient) ConnectToKDC() error {
 	a.log.Debug("Logging to KDC server")
 	loginErr := a.krb5client.Login()
 	if loginErr != nil && !a.configuration.RunDiagnostics {
@@ -113,14 +125,14 @@ func (a *KerberosAdapter) ConnectToKDC() error {
 	return nil
 }
 
-func (a *KerberosAdapter) GetSPNForHost(hostname string) (string, error) {
+func (a *KerberosClient) GetSPNForHost(hostname string) (string, error) {
 	// static for now but in the future we may want to do DNS queries for CNAME
 	return "HTTP/" + hostname, nil
 }
 
 // GetSPNEGOHeaderValue accepts SPN service name and returns header value that should
 // be put inside Authorization or Proxy-Authorization header.
-func (a *KerberosAdapter) GetSPNEGOHeaderValue(spn string) (string, error) {
+func (a *KerberosClient) GetSPNEGOHeaderValue(spn string) (string, error) {
 	a.log.Debug("Generating SPNEGO header value for SPN: ", spn)
 
 	cli := spnego.SPNEGOClient(&a.krb5client, spn)
@@ -141,7 +153,7 @@ func (a *KerberosAdapter) GetSPNEGOHeaderValue(spn string) (string, error) {
 	return "Negotiate " + base64.StdEncoding.EncodeToString(nb), nil
 }
 
-func (a *KerberosAdapter) GetProxyAuthHeader(_ context.Context, proxyURL *url.URL, _ string) (http.Header, error) {
+func (a *KerberosClient) GetProxyAuthHeader(_ context.Context, proxyURL *url.URL, _ string) (http.Header, error) {
 	spn := "HTTP/" + proxyURL.Hostname()
 
 	SPNEGOHeaderValue, err := a.GetSPNEGOHeaderValue(spn)

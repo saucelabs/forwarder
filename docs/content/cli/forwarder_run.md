@@ -694,7 +694,7 @@ List of hosts for which Kerberos (SPNEGO) authorization tokens will be injected 
 * Value Format: `<value>` (you can use empty command line switch to enable)
 * Default Value: `false`
 
-Authenticate to a configured upstream proxy with Kerberos (using `Proxy-Authorization` HTTP header in CONNECT requests). Please note that if forwarder configuration results in multiple proxies available (like PAC for example), forwarder will try to authenticate to each one of them.
+Authenticate to a configured upstream proxy with Kerberos (using `Proxy-Authorization` HTTP header). Please note that if forwarder configuration results in multiple proxies available (like PAC for example), forwarder will try to authenticate to each one of them.
 
 
 ### --kerberos-run-diagnostics {#kerberos-run-diagnostics}
@@ -704,7 +704,7 @@ Authenticate to a configured upstream proxy with Kerberos (using `Proxy-Authoriz
 * Default Value: `false`
 
 
-Running forwarder with `--kerberos-run-diagnostics` switch will print debugging information about Kerberos connection and an error when there are discrepancies between supported encryption types and keytab entry:
+Running forwarder with `--kerberos-run-diagnostics` switch will print debugging information about Kerberos connection or known configuration erros - for example an error when there are discrepancies between supported encryption types and keytab entry:
 
 ```
  msg="fatal error exiting" error="kerberos configuration potential problems: default_tkt_enctypes specifies 17 but this enctype is not available in the client's keytab\ndefault_tkt_enctypes specifies 23 but this enctype is not available in the client's keytab\npreferred_preauth_types specifies 17 but this enctype is not available in the client's keytab\npreferred_preauth_types specifies 15 but this enctype is not available in the client's keytab\npreferred_preauth_types specifies 14 but this enctype is not available in the client's keytab"

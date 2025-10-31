@@ -155,7 +155,7 @@ type HTTPProxy struct {
 	proxy           *martian.Proxy
 	mitmCACert      *x509.Certificate
 	proxyFunc       ProxyFunc
-	kerberosAdapter *KerberosAdapter
+	kerberosAdapter KerberosAdapter
 	localhost       []string
 
 	tlsConfig *tls.Config
@@ -165,7 +165,7 @@ type HTTPProxy struct {
 // NewHTTPProxy creates a new HTTP proxy.
 // It is the caller's responsibility to call Close on the returned server.
 func NewHTTPProxy(cfg *HTTPProxyConfig, pr PACResolver, cm *CredentialsMatcher, rt http.RoundTripper, log log.StructuredLogger,
-	kerberosAdapter *KerberosAdapter,
+	kerberosAdapter KerberosAdapter,
 ) (*HTTPProxy, error) {
 	hp, err := newHTTPProxy(cfg, pr, cm, rt, log, kerberosAdapter)
 	if err != nil {
@@ -205,7 +205,7 @@ func NewHTTPProxy(cfg *HTTPProxyConfig, pr PACResolver, cm *CredentialsMatcher, 
 }
 
 // NewHTTPProxyHandler is like NewHTTPProxy but returns http.Handler instead of *HTTPProxy.
-func NewHTTPProxyHandler(cfg *HTTPProxyConfig, pr PACResolver, cm *CredentialsMatcher, rt http.RoundTripper, log log.StructuredLogger, kerberosAdapter *KerberosAdapter) (http.Handler, error) {
+func NewHTTPProxyHandler(cfg *HTTPProxyConfig, pr PACResolver, cm *CredentialsMatcher, rt http.RoundTripper, log log.StructuredLogger, kerberosAdapter KerberosAdapter) (http.Handler, error) {
 	hp, err := newHTTPProxy(cfg, pr, cm, rt, log, kerberosAdapter)
 	if err != nil {
 		return nil, err
@@ -214,7 +214,7 @@ func NewHTTPProxyHandler(cfg *HTTPProxyConfig, pr PACResolver, cm *CredentialsMa
 	return hp.handler(), nil
 }
 
-func newHTTPProxy(cfg *HTTPProxyConfig, pr PACResolver, cm *CredentialsMatcher, rt http.RoundTripper, log log.StructuredLogger, kerberosAdapter *KerberosAdapter) (*HTTPProxy, error) {
+func newHTTPProxy(cfg *HTTPProxyConfig, pr PACResolver, cm *CredentialsMatcher, rt http.RoundTripper, log log.StructuredLogger, kerberosAdapter KerberosAdapter) (*HTTPProxy, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, err
 	}
@@ -353,7 +353,7 @@ func (hp *HTTPProxy) upstreamProxyURL() *url.URL {
 	// to auth upstream proxy and clear existing auth data
 	// so http.RoundTripper would not try to add custom Authorization header
 
-	if hp.kerberosAdapter != nil && hp.kerberosAdapter.configuration.AuthUpstreamProxy {
+	if hp.kerberosAdapter != nil && hp.kerberosAdapter.GetConfig().AuthUpstreamProxy {
 
 		proxyURL.User = nil
 		return proxyURL
@@ -385,7 +385,7 @@ func (hp *HTTPProxy) pacProxy(r *http.Request) (*url.URL, error) {
 	// to auth upstream proxy and clear existing auth data
 	// so http.RoundTripper would not try to add custom Authorization header
 
-	if hp.kerberosAdapter != nil && hp.kerberosAdapter.configuration.AuthUpstreamProxy {
+	if hp.kerberosAdapter != nil && hp.kerberosAdapter.GetConfig().AuthUpstreamProxy {
 
 		proxyURL.User = nil
 		return proxyURL, nil
@@ -426,7 +426,7 @@ func (hp *HTTPProxy) middlewareStack() (martian.RequestResponseModifier, *martia
 		stack.AddRequestModifier(hp.injectKerberosSPNEGOAuthentication())
 	}
 
-	if hp.kerberosAdapter != nil && hp.kerberosAdapter.configuration.AuthUpstreamProxy && hp.proxyFunc != nil {
+	if hp.kerberosAdapter != nil && hp.kerberosAdapter.GetConfig().AuthUpstreamProxy && hp.proxyFunc != nil {
 		stack.AddRequestModifier(hp.injectKerberosUpstreamProxyAuthorizationHeader())
 	}
 
@@ -487,7 +487,7 @@ func (hp *HTTPProxy) injectKerberosSPNEGOAuthentication() martian.RequestModifie
 
 	return martian.RequestModifierFunc(func(req *http.Request) error {
 		// TODO: use a map or something faster than array lookup
-		if slices.Contains(hp.kerberosAdapter.configuration.KerberosEnabledHosts, strings.ToLower(req.URL.Hostname())) {
+		if slices.Contains(hp.kerberosAdapter.GetConfig().KerberosEnabledHosts, strings.ToLower(req.URL.Hostname())) {
 			spn, err := hp.kerberosAdapter.GetSPNForHost(req.URL.Hostname())
 			if err != nil {
 				return err
