@@ -1,6 +1,6 @@
 module github.com/saucelabs/forwarder
 
-go 1.23.12
+go 1.24.0
 
 require (
 	github.com/cespare/xxhash/v2 v2.3.0
@@ -27,8 +27,8 @@ require (
 	go.uber.org/multierr v1.11.0
 	golang.org/x/exp v0.0.0-20231110203233-9a3e6036ecaa
 	golang.org/x/net v0.42.0
-	golang.org/x/sync v0.16.0
-	golang.org/x/text v0.27.0
+	golang.org/x/sync v0.17.0
+	golang.org/x/text v0.30.0
 	golang.org/x/time v0.12.0
 	google.golang.org/grpc v1.74.2
 	google.golang.org/protobuf v1.36.6
