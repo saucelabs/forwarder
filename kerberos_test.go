@@ -37,5 +37,4 @@ func TestKerberosAdapterFailsWithoutConfig(t *testing.T) {
 	_, err = NewKerberosAdapter(cnf, slog.Default())
 	assert.NotNil(t, err)
 	assert.ErrorContains(t, err, "kerberos user realm not specified")
-
 }

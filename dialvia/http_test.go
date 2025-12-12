@@ -89,12 +89,10 @@ func TestHTTPProxyDialerDialContext(t *testing.T) {
 	})
 
 	t.Run("CONNECT headers from GetProxyConnectHeaders", func(t *testing.T) {
-
 		d.GetProxyConnectHeader = func(_ context.Context, proxyURL *url.URL, _ string) (http.Header, error) {
 			authHeader := make(http.Header, 1)
 			authHeader.Set("Proxy-Authorization", "TEST-PROXY-AUTHORIZATION")
 			return authHeader, nil
-
 		}
 
 		errCh := make(chan error, 1)

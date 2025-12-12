@@ -217,6 +217,7 @@ func (a *KerberosAdapterMock) GetConfig() *KerberosConfig {
 func (a *KerberosAdapterMock) GetSPNForHost(hostname string) (string, error) {
 	return hostname, nil
 }
+
 func (a *KerberosAdapterMock) GetSPNEGOHeaderValue(spn string) (string, error) {
 	return "TEST-TOKEN", nil
 }
