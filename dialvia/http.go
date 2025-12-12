@@ -147,7 +147,6 @@ func (d *HTTPProxyDialer) DialContextR(ctx context.Context, network, addr string
 		}
 
 		maps.Copy(req.Header, headers)
-
 	}
 
 	if err := req.Write(pbw); err != nil {

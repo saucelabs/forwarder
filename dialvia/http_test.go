@@ -9,6 +9,7 @@ package dialvia
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -105,11 +106,11 @@ func TestHTTPProxyDialerDialContext(t *testing.T) {
 				}
 
 				if req.Method != http.MethodConnect {
-					return fmt.Errorf("HTTP CONNECT method expected")
+					return errors.New("HTTP CONNECT method expected")
 				}
 
 				if req.Header.Get("Proxy-Authorization") != "TEST-PROXY-AUTHORIZATION" {
-					return fmt.Errorf("Proxy-Authorization header expected but not present")
+					return errors.New("Proxy-Authorization header expected but not present")
 				}
 
 				return proxyutil.NewResponse(404, nil, req).Write(conn)

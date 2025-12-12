@@ -205,7 +205,9 @@ func NewHTTPProxy(cfg *HTTPProxyConfig, pr PACResolver, cm *CredentialsMatcher, 
 }
 
 // NewHTTPProxyHandler is like NewHTTPProxy but returns http.Handler instead of *HTTPProxy.
-func NewHTTPProxyHandler(cfg *HTTPProxyConfig, pr PACResolver, cm *CredentialsMatcher, rt http.RoundTripper, log log.StructuredLogger, kerberosAdapter KerberosAdapter) (http.Handler, error) {
+func NewHTTPProxyHandler(cfg *HTTPProxyConfig, pr PACResolver, cm *CredentialsMatcher,
+	rt http.RoundTripper, log log.StructuredLogger, kerberosAdapter KerberosAdapter,
+) (http.Handler, error) {
 	hp, err := newHTTPProxy(cfg, pr, cm, rt, log, kerberosAdapter)
 	if err != nil {
 		return nil, err
@@ -354,7 +356,6 @@ func (hp *HTTPProxy) upstreamProxyURL() *url.URL {
 	// so http.RoundTripper would not try to add custom Authorization header
 
 	if hp.kerberosAdapter != nil && hp.kerberosAdapter.GetConfig().AuthUpstreamProxy {
-
 		proxyURL.User = nil
 		return proxyURL
 	}
@@ -386,7 +387,6 @@ func (hp *HTTPProxy) pacProxy(r *http.Request) (*url.URL, error) {
 	// so http.RoundTripper would not try to add custom Authorization header
 
 	if hp.kerberosAdapter != nil && hp.kerberosAdapter.GetConfig().AuthUpstreamProxy {
-
 		proxyURL.User = nil
 		return proxyURL, nil
 	}

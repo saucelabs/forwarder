@@ -146,7 +146,6 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 		if err != nil {
 			return fmt.Errorf("kerberos: %w", err)
 		}
-
 	}
 
 	if len(c.dnsConfig.Servers) > 0 {
@@ -339,7 +338,7 @@ func (c *command) configureHeadersModifiers() {
 	}
 }
 
-// configure upstream proxy transport - connect headers and/or Kerberos auth
+// Configure upstream proxy transport - connect headers and/or Kerberos auth.
 func (c *command) configureTransportProxy(tr *http.Transport, kerberosAdapter forwarder.KerberosAdapter) {
 	headersToAllocate := len(c.connectHeaders)
 
@@ -363,7 +362,6 @@ func (c *command) configureTransportProxy(tr *http.Transport, kerberosAdapter fo
 			}
 
 			maps.Copy(h, kerberosHeaders)
-
 		}
 
 		return h, nil

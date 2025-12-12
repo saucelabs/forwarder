@@ -10,6 +10,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -58,18 +59,18 @@ func NewKerberosAdapter(cnf KerberosConfig, log log.StructuredLogger) (*Kerberos
 	// technically this should not happen as adapter should not be initialized without
 	// proper config present, but better safe than sorry
 	if cnf.CfgFilePath == "" {
-		return nil, fmt.Errorf("kerberos config file (krb5.conf) not specified")
+		return nil, errors.New("kerberos config file (krb5.conf) not specified")
 	}
 
 	if cnf.KeyTabFilePath == "" {
-		return nil, fmt.Errorf("kerberos keytab file not specified")
+		return nil, errors.New("kerberos keytab file not specified")
 	}
 
 	if cnf.UserName == "" {
-		return nil, fmt.Errorf("kerberos username not specified")
+		return nil, errors.New("kerberos username not specified")
 	}
 	if cnf.UserRealm == "" {
-		return nil, fmt.Errorf("kerberos user realm not specified")
+		return nil, errors.New("kerberos user realm not specified")
 	}
 
 	krb5Config, err := config.Load(cnf.CfgFilePath)
@@ -112,14 +113,13 @@ func (a *KerberosClient) ConnectToKDC() error {
 
 		// We need to print directly to stdout as it contains a nested structured text.
 		// Does not really matter as diagnostics mode should be used on local console only.
-		fmt.Printf("%s", buf.String())
+		fmt.Printf("%s", buf.String()) //nolint
 
 		if err != nil {
 			return fmt.Errorf("kerberos configuration potential problems: %w", err)
 		}
 
-		return fmt.Errorf("no kerberos configuration problems found. Exiting process")
-
+		return errors.New("no kerberos configuration problems found. Exiting process")
 	}
 
 	return nil

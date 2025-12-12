@@ -125,13 +125,11 @@ func (p *Proxy) connectHTTP(req *http.Request, proxyURL *url.URL) (res *http.Res
 		if tr, ok := p.rt.(*http.Transport); ok && tr.GetProxyConnectHeader != nil {
 			d.GetProxyConnectHeader = tr.GetProxyConnectHeader
 		}
-
 	} else {
 		d = dialvia.HTTPProxy(p.DialContext, proxyURL)
 		if tr, ok := p.rt.(*http.Transport); ok && tr.GetProxyConnectHeader != nil {
 			d.GetProxyConnectHeader = tr.GetProxyConnectHeader
 		}
-
 	}
 
 	d.Timeout = p.ConnectTimeout
