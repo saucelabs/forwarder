@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/saucelabs/forwarder/log/slog"
+	"github.com/stretchr/testify/assert"
 	"golang.org/x/net/http2"
 )
 
@@ -26,7 +27,7 @@ func TestAbortIf(t *testing.T) {
 	cfg := DefaultHTTPProxyConfig()
 	cfg.BasicAuth = url.UserPassword("user", "pass")
 
-	p, err := NewHTTPProxy(cfg, nil, nil, nil, slog.Default())
+	p, err := NewHTTPProxy(cfg, nil, nil, nil, slog.Default(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -91,7 +92,7 @@ func TestNopDialer(t *testing.T) {
 		},
 	}
 
-	p, err := NewHTTPProxy(DefaultHTTPProxyConfig(), nil, nil, tr, slog.Default())
+	p, err := NewHTTPProxy(DefaultHTTPProxyConfig(), nil, nil, tr, slog.Default(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -114,7 +115,7 @@ func TestNopDialer(t *testing.T) {
 
 func TestIsLocalhost(t *testing.T) {
 	cfg := DefaultHTTPProxyConfig()
-	p, err := NewHTTPProxy(cfg, nil, nil, nil, slog.Default())
+	p, err := NewHTTPProxy(cfg, nil, nil, nil, slog.Default(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -151,7 +152,7 @@ func TestErrorResponse(t *testing.T) {
 	cfg := DefaultHTTPProxyConfig()
 	cfg.ProxyLocalhost = AllowProxyLocalhost
 
-	h, err := NewHTTPProxyHandler(cfg, nil, nil, nil, slog.Default())
+	h, err := NewHTTPProxyHandler(cfg, nil, nil, nil, slog.Default(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -197,5 +198,46 @@ func TestErrorResponse(t *testing.T) {
 		if !strings.Contains(string(b), "unverified certificates:") {
 			t.Fatalf("expected unverified certificates chain, body=%q", b)
 		}
+	})
+}
+
+type KerberosAdapterMock struct {
+	KDCConnected bool
+}
+
+func (a *KerberosAdapterMock) ConnectToKDC() error {
+	a.KDCConnected = true
+	return nil
+}
+
+func (a *KerberosAdapterMock) GetConfig() *KerberosConfig {
+	return DefaultKerberosConfig()
+}
+
+func (a *KerberosAdapterMock) GetSPNForHost(hostname string) (string, error) {
+	return hostname, nil
+}
+
+func (a *KerberosAdapterMock) GetSPNEGOHeaderValue(spn string) (string, error) {
+	return "TEST-TOKEN", nil
+}
+
+func (a *KerberosAdapterMock) GetProxyAuthHeader(_ context.Context, proxyURL *url.URL, _ string) (http.Header, error) {
+	return nil, nil
+}
+
+func TestKerberosAuth(t *testing.T) {
+	cfg := DefaultHTTPProxyConfig()
+	cfg.ProxyLocalhost = AllowProxyLocalhost
+
+	kerberosAdapter := KerberosAdapterMock{}
+
+	_, err := NewHTTPProxyHandler(cfg, nil, nil, nil, slog.Default(), &kerberosAdapter)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Run("KDC connected", func(t *testing.T) {
+		assert.True(t, kerberosAdapter.KDCConnected)
 	})
 }

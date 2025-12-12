@@ -28,6 +28,10 @@ type HTTPProxyDialer struct {
 
 	Timeout            time.Duration
 	ProxyConnectHeader http.Header
+	// Function to dynamically generate headers. Function signature is same as method used in http.Transport
+	// but behaviour is slightly different:
+	// - Headers are added to ones defined in ProxyConnectHeader or replaced
+	GetProxyConnectHeader func(ctx context.Context, proxyURL *url.URL, target string) (http.Header, error)
 }
 
 func HTTPProxy(dial ContextDialerFunc, proxyURL *url.URL) *HTTPProxyDialer {
@@ -134,6 +138,16 @@ func (d *HTTPProxyDialer) DialContextR(ctx context.Context, network, addr string
 		req.Header.Add("Proxy-Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(auth)))
 	}
 	maps.Copy(req.Header, d.ProxyConnectHeader)
+
+	if d.GetProxyConnectHeader != nil {
+		headers, err := d.GetProxyConnectHeader(ctx, d.proxyURL, addr)
+		if err != nil {
+			conn.Close()
+			return nil, nil, err
+		}
+
+		maps.Copy(req.Header, headers)
+	}
 
 	if err := req.Write(pbw); err != nil {
 		conn.Close()

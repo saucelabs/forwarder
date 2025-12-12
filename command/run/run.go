@@ -10,6 +10,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"maps"
 	"net/http"
 	"net/url"
 	"os"
@@ -41,6 +42,7 @@ type command struct {
 	promReg             *prometheus.Registry
 	dnsConfig           *forwarder.DNSConfig
 	httpTransportConfig *forwarder.HTTPTransportConfig
+	kerberosConfig      *forwarder.KerberosConfig
 	connectTo           []forwarder.HostPortPair
 	pac                 *url.URL
 	credentials         []*forwarder.HostPortUser
@@ -79,7 +81,7 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 	}()
 	defer func() {
 		if cmdErr != nil {
-			logger.Error("fatal error exiting", cmdErr, "error", cmdErr)
+			logger.Error("fatal error exiting", "error", cmdErr)
 			cmd.SilenceErrors = true
 		}
 	}()
@@ -125,6 +127,26 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 	}
 
 	martianlog.SetLogger(logger)
+
+	// Configure Kerberos as first because HTTP Transport
+	// for various forwarder elements may require reaching hosts behind
+	// Kerberos authenticated upstream proxy
+	var kerberosAdapter forwarder.KerberosAdapter = nil
+
+	// use separate flag for determining if Kerberos is enabled
+	// than presence of config file, this may change in the future
+	if c.kerberosConfig.CfgFilePath != "" {
+		c.kerberosConfig.Enabled = true
+	}
+
+	if c.kerberosConfig.Enabled {
+		logger.Info("Kerberos authentication is enabled")
+
+		kerberosAdapter, err = forwarder.NewKerberosAdapter(*c.kerberosConfig, logger.Named("kerberos"))
+		if err != nil {
+			return fmt.Errorf("kerberos: %w", err)
+		}
+	}
 
 	if len(c.dnsConfig.Servers) > 0 {
 		s := strings.ReplaceAll(fmt.Sprintf("%s", c.dnsConfig.Servers), " ", ", ")
@@ -220,9 +242,9 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 			return err
 		}
 		rt.DialContext = martianlog.LoggingDialContext(rt.DialContext)
-		c.transportWithProxyConnectHeader(rt)
+		c.configureTransportProxy(rt, kerberosAdapter)
 
-		p, err := forwarder.NewHTTPProxy(c.httpProxyConfig, pr, cm, rt, logger.Named("proxy"))
+		p, err := forwarder.NewHTTPProxy(c.httpProxyConfig, pr, cm, rt, logger.Named("proxy"), kerberosAdapter)
 		if err != nil {
 			return err
 		}
@@ -316,15 +338,33 @@ func (c *command) configureHeadersModifiers() {
 	}
 }
 
-func (c *command) transportWithProxyConnectHeader(tr *http.Transport) {
-	if len(c.connectHeaders) > 0 {
-		tr.GetProxyConnectHeader = func(_ context.Context, _ *url.URL, _ string) (http.Header, error) {
-			h := make(http.Header, len(c.connectHeaders))
+// Configure upstream proxy transport - connect headers and/or Kerberos auth.
+func (c *command) configureTransportProxy(tr *http.Transport, kerberosAdapter forwarder.KerberosAdapter) {
+	headersToAllocate := len(c.connectHeaders)
+
+	if c.kerberosConfig.AuthUpstreamProxy {
+		headersToAllocate += 1
+	}
+
+	tr.GetProxyConnectHeader = func(ctx context.Context, proxyURL *url.URL, target string) (http.Header, error) {
+		h := make(http.Header, headersToAllocate)
+
+		if len(c.connectHeaders) > 0 {
 			for _, ch := range c.connectHeaders {
 				ch.Apply(h)
 			}
-			return h, nil
 		}
+
+		if kerberosAdapter != nil && c.kerberosConfig.AuthUpstreamProxy {
+			kerberosHeaders, err := kerberosAdapter.GetProxyAuthHeader(ctx, proxyURL, target)
+			if err != nil {
+				return nil, err
+			}
+
+			maps.Copy(h, kerberosHeaders)
+		}
+
+		return h, nil
 	}
 }
 
@@ -417,6 +457,7 @@ func Command() *cobra.Command {
 
 	fs := cmd.Flags()
 	bind.DNSConfig(fs, c.dnsConfig)
+	bind.KerberosConfig(fs, c.kerberosConfig)
 	bind.HTTPTransportConfig(fs, c.httpTransportConfig)
 	bind.ConnectTo(fs, &c.connectTo)
 	bind.PAC(fs, &c.pac)
@@ -442,6 +483,8 @@ func Command() *cobra.Command {
 
 	bind.AutoMarkFlagFilename(cmd)
 	cmd.MarkFlagsMutuallyExclusive("proxy", "pac")
+
+	cmd.MarkFlagsRequiredTogether("kerberos-cfg-file", "kerberos-keytab-file", "kerberos-user-name", "kerberos-user-realm")
 
 	fs.BoolVar(&c.goleak, "goleak", false, "enable goleak")
 
@@ -479,6 +522,7 @@ func makeCommand() command {
 	c := command{
 		promReg:             prometheus.NewRegistry(),
 		dnsConfig:           forwarder.DefaultDNSConfig(),
+		kerberosConfig:      forwarder.DefaultKerberosConfig(),
 		httpTransportConfig: forwarder.DefaultHTTPTransportConfig(),
 		httpProxyConfig:     forwarder.DefaultHTTPProxyConfig(),
 		mitmConfig:          forwarder.DefaultMITMConfig(),

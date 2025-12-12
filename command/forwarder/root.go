@@ -70,6 +70,10 @@ func FlagGroups() templates.FlagGroups {
 			Prefix: []string{"dns"},
 		},
 		{
+			Name:   "Kerberos options",
+			Prefix: []string{"kerberos"},
+		},
+		{
 			Name: "HTTP client options",
 			Prefix: []string{
 				"http",

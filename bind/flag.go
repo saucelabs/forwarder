@@ -52,6 +52,29 @@ func DNSConfig(fs *pflag.FlagSet, cfg *forwarder.DNSConfig) {
 			"passing this flag will enable round-robin selection. ")
 }
 
+func KerberosConfig(fs *pflag.FlagSet, cfg *forwarder.KerberosConfig) {
+	fs.StringVar(&cfg.CfgFilePath, "kerberos-cfg-file", cfg.CfgFilePath, "<string>"+
+		"Path to krb5.conf file with kerberos configuration")
+
+	fs.StringVar(&cfg.KeyTabFilePath, "kerberos-keytab-file", cfg.KeyTabFilePath, "<string>"+
+		"Path to kerberos keytab file")
+
+	fs.StringVar(&cfg.UserName, "kerberos-user-name", cfg.UserName, "<string>"+
+		"Path to kerberos user name (principal name)")
+
+	fs.StringVar(&cfg.UserRealm, "kerberos-user-realm", cfg.UserRealm, "<string>"+
+		"Path to kerberos user realm (principal realm)")
+
+	fs.Var(anyflag.NewSliceValue[string](cfg.KerberosEnabledHosts, &cfg.KerberosEnabledHosts, func(val string) (string, error) { return val, nil }),
+		"kerberos-enabled-hosts", "<string>,... List of hosts for which send Kerberos auth headers (SPNEGO)")
+
+	fs.BoolVar(&cfg.RunDiagnostics, "kerberos-run-diagnostics", cfg.RunDiagnostics,
+		"Run basic Kerberos config/connection diagnostics and exit forwarder process.")
+
+	fs.BoolVar(&cfg.AuthUpstreamProxy, "kerberos-auth-upstream-proxy", cfg.AuthUpstreamProxy,
+		"Authenticate to upstream proxy using Kerberos (with Proxy-Authorization header)")
+}
+
 func PAC(fs *pflag.FlagSet, pac **url.URL) {
 	fs.VarP(anyflag.NewValue[*url.URL](*pac, pac, fileurl.ParseFilePathOrURL),
 		"pac", "p", "`<path or URL>`"+

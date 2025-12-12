@@ -9,6 +9,7 @@ package dialvia
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -70,6 +71,48 @@ func TestHTTPProxyDialerDialContext(t *testing.T) {
 				if err != nil {
 					return err
 				}
+				return proxyutil.NewResponse(404, nil, req).Write(conn)
+			})
+		}()
+
+		conn, err := d.DialContext(ctx, "tcp", "foobar.com:80")
+		if err == nil {
+			t.Fatal("err is nil")
+		}
+		t.Log(err)
+		if conn != nil {
+			t.Fatal("conn is not nil")
+		}
+
+		if err := <-errCh; err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	t.Run("CONNECT headers from GetProxyConnectHeaders", func(t *testing.T) {
+		d.GetProxyConnectHeader = func(_ context.Context, proxyURL *url.URL, _ string) (http.Header, error) {
+			authHeader := make(http.Header, 1)
+			authHeader.Set("Proxy-Authorization", "TEST-PROXY-AUTHORIZATION")
+			return authHeader, nil
+		}
+
+		errCh := make(chan error, 1)
+		go func() {
+			errCh <- serveOne(l, func(conn net.Conn) error {
+				pbr := bufio.NewReader(conn)
+				req, err := http.ReadRequest(pbr)
+				if err != nil {
+					return err
+				}
+
+				if req.Method != http.MethodConnect {
+					return errors.New("HTTP CONNECT method expected")
+				}
+
+				if req.Header.Get("Proxy-Authorization") != "TEST-PROXY-AUTHORIZATION" {
+					return errors.New("Proxy-Authorization header expected but not present")
+				}
+
 				return proxyutil.NewResponse(404, nil, req).Write(conn)
 			})
 		}()
