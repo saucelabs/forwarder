@@ -326,9 +326,6 @@ func (hp *HTTPProxy) configureProxy() error {
 		hp.log.Info("no upstream proxy specified")
 	}
 
-	hp.log.Info("Kerberos upstream proxy authentication is enabled. " +
-		"Existing proxy credentials for basic authentication will be ignored.")
-
 	if hp.config.DirectDomains != nil {
 		hp.proxyFunc = hp.directDomains(hp.proxyFunc)
 	}
@@ -356,6 +353,10 @@ func (hp *HTTPProxy) upstreamProxyURL() *url.URL {
 	// so http.RoundTripper would not try to add custom Authorization header
 
 	if hp.kerberosAdapter != nil && hp.kerberosAdapter.GetConfig().AuthUpstreamProxy {
+
+		hp.log.Info("Kerberos upstream proxy authentication is enabled. " +
+			"Existing proxy credentials for basic authentication will be ignored.")
+
 		proxyURL.User = nil
 		return proxyURL
 	}
