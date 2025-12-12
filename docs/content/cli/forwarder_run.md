@@ -622,7 +622,7 @@ Keytab is a binary file storing saved usernames (principals) and passwords used 
 To create a custom keytab/keytab entry run:
 
 ```
-root@rogal:/etc/krb5kdc# ktutil
+root@host:/etc/krb5kdc# ktutil
 ktutil:  add_entry -password -p user3@example.com -k 1 -e aes256-cts-hmac-sha1-96
 Password for user3@example.com: 
 ktutil: write_kt keytab
