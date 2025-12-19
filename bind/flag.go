@@ -176,6 +176,12 @@ func DirectDomains(fs *pflag.FlagSet, cfg *[]ruleset.RegexpListItem) {
 			"This flag takes precedence over the PAC script.")
 }
 
+func AllowTimeFrame(fs *pflag.FlagSet, cfg *[]ruleset.TimeFrameEntry) {
+	fs.Var(anyflag.NewSliceValue[ruleset.TimeFrameEntry](*cfg, cfg, ruleset.ParseTimeFrameEntry),
+		"allow-time-frame", "<timeframe-spec>,..."+
+			"Allow tunnel traffic only within particular time frames.")
+}
+
 const pathOrBase64Syntax = "<p/>" +
 	"Syntax:" +
 	"<ul>" +
