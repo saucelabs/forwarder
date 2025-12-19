@@ -28,6 +28,7 @@ import (
 	"github.com/saucelabs/forwarder/log"
 	"github.com/saucelabs/forwarder/middleware"
 	"github.com/saucelabs/forwarder/pac"
+	"github.com/saucelabs/forwarder/ruleset"
 	"go.uber.org/multierr"
 	"golang.org/x/sync/errgroup"
 )
@@ -98,7 +99,7 @@ type HTTPProxyConfig struct {
 	ConnectFunc       ConnectFunc
 	ConnectTimeout    time.Duration
 	PromHTTPOpts      []middleware.PrometheusOpt
-
+	AllowTimeFrame    []ruleset.TimeFrameEntry
 	// TestingHTTPHandler uses Martian's [http.Handler] implementation
 	// over [http.Server] instead of the default TCP server.
 	TestingHTTPHandler bool
@@ -404,6 +405,20 @@ func (hp *HTTPProxy) middlewareStack() (martian.RequestResponseModifier, *martia
 
 	// Wrap stack in a group so that we can run security checks before the httpspec modifiers.
 	topg := fifo.NewGroup()
+
+	if len(hp.config.AllowTimeFrame) > 0 {
+		for _, entry := range hp.config.AllowTimeFrame {
+			hp.log.Info("Adding AllowTimeFrame entry", "weekday", entry.Weekday.String(), "hourStart", entry.HourStart, "hourEnd", entry.HourEnd)
+		}
+
+		currentTime := time.Now()
+		hp.log.Info("Current local time", "time", currentTime.String())
+		hp.log.Info("Current time in UTC", "time_utc", currentTime.UTC().String())
+
+		topg.AddRequestModifier(hp.allowWithinTimeFrame())
+
+	}
+
 	if hp.config.BasicAuth != nil {
 		hp.log.Info("basic auth enabled")
 		topg.AddRequestModifier(hp.basicAuth(hp.config.BasicAuth))
@@ -477,6 +492,16 @@ func (hp *HTTPProxy) basicAuth(u *url.Userinfo) martian.RequestModifier {
 	return martian.RequestModifierFunc(func(req *http.Request) error {
 		if !ba.AuthenticatedRequest(req, user, pass) {
 			return ErrProxyAuthentication
+		}
+		return nil
+	})
+}
+
+func (hp *HTTPProxy) allowWithinTimeFrame() martian.RequestModifier {
+
+	return martian.RequestModifierFunc(func(req *http.Request) error {
+		if !middleware.TimeFrameAllows(hp.config.AllowTimeFrame) {
+			return ErrProxyOutsideAllowedTimeframe
 		}
 		return nil
 	})
