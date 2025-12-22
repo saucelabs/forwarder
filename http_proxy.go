@@ -410,6 +410,13 @@ func (hp *HTTPProxy) middlewareStack() (martian.RequestResponseModifier, *martia
 		for _, entry := range hp.config.AllowTimeFrame {
 			hp.log.Info("Adding AllowTimeFrame entry", "weekday", entry.Weekday.String(), "hourStart", entry.HourStart, "hourEnd", entry.HourEnd)
 		}
+
+		currentTime := time.Now()
+		hp.log.Info("Current local time", "time", currentTime.String())
+		hp.log.Info("Current time in UTC", "time_utc", currentTime.UTC().String())
+
+		topg.AddRequestModifier(hp.allowWithinTimeFrame())
+
 	}
 
 	if hp.config.BasicAuth != nil {
@@ -485,6 +492,16 @@ func (hp *HTTPProxy) basicAuth(u *url.Userinfo) martian.RequestModifier {
 	return martian.RequestModifierFunc(func(req *http.Request) error {
 		if !ba.AuthenticatedRequest(req, user, pass) {
 			return ErrProxyAuthentication
+		}
+		return nil
+	})
+}
+
+func (hp *HTTPProxy) allowWithinTimeFrame() martian.RequestModifier {
+
+	return martian.RequestModifierFunc(func(req *http.Request) error {
+		if !middleware.TimeFrameAllows(hp.config.AllowTimeFrame) {
+			return ErrProxyOutsideAllowedTimeframe
 		}
 		return nil
 	})

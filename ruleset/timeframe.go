@@ -48,7 +48,8 @@ func (t *TimeFrameEntry) Validate() error {
 
 func (t *TimeFrameEntry) Match(time time.Time) bool {
 
-	localTime := time.Local()
+	// we expect time to already be in local time
+	localTime := time
 
 	if localTime.Weekday() != t.Weekday {
 		return false
