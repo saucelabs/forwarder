@@ -8,9 +8,11 @@ package slog
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"log/slog"
 	"os"
+	"runtime"
 
 	flog "github.com/saucelabs/forwarder/log"
 )
@@ -43,7 +45,34 @@ func New(cfg *flog.Config, opts ...Option) *Logger {
 		w = f
 	}
 
-	hops := &slog.HandlerOptions{Level: flogToSlogLevel(cfg.Level)}
+	hops := &slog.HandlerOptions{
+		Level: flogToSlogLevel(cfg.Level), AddSource: cfg.AddSource,
+		ReplaceAttr: func(groups []string, attr slog.Attr) slog.Attr {
+			if attr.Key == "source" {
+				// 8 is a magic number to escape slog + forwarder internal call stack
+				// this may change in the future depending on slog internals
+				const callerDepth = 8
+				pc := make([]uintptr, 1)
+				retrievedCallers := runtime.Callers(callerDepth, pc)
+
+				if retrievedCallers == 0 {
+					// something wrong - most likely magic number changed and it's larger
+					// than call stack depth. In this case log will probably show as source
+					// logging call function somewhere in slog
+					return attr
+				}
+
+				fs := runtime.CallersFrames([]uintptr{pc[0]})
+				f, _ := fs.Next()
+
+				return slog.Attr{
+					Key:   attr.Key,
+					Value: slog.StringValue(fmt.Sprintf("%s:%d", f.File, f.Line)),
+				}
+			}
+			return attr
+		},
+	}
 	var handler slog.Handler
 	if cfg.Format == flog.JSONFormat {
 		handler = slog.NewJSONHandler(w, hops)
