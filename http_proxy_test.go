@@ -9,7 +9,6 @@ package forwarder
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -276,7 +275,8 @@ func TestAllowTimeFrame(t *testing.T) {
 		h.ServeHTTP(rw, req)
 
 		res := rw.Result()
-		fmt.Printf("AAAA: %s", res.Status)
+
+		assert.Equal(t, res.StatusCode, http.StatusUnavailableForLegalReasons)
 	})
 
 }
