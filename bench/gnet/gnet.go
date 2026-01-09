@@ -118,9 +118,7 @@ response:
 	return gnet.None
 }
 
-var (
-	port = flag.Int("port", 8080, "server port")
-)
+var port = flag.Int("port", 8080, "server port")
 
 func main() {
 	multicore := false

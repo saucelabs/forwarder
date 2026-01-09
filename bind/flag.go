@@ -1,4 +1,4 @@
-// Copyright 2022-2024 Sauce Labs Inc., all rights reserved.
+// Copyright 2022-2026 Sauce Labs Inc., all rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -174,6 +174,12 @@ func DirectDomains(fs *pflag.FlagSet, cfg *[]ruleset.RegexpListItem) {
 			"Connect directly to the specified domains without using the upstream proxy. "+
 			"Prefix domains with '-' to exclude requests to certain domains from being directed. "+
 			"This flag takes precedence over the PAC script.")
+}
+
+func AllowTimeFrame(fs *pflag.FlagSet, cfg *[]ruleset.TimeFrameEntry) {
+	fs.Var(anyflag.NewSliceValue[ruleset.TimeFrameEntry](*cfg, cfg, ruleset.ParseTimeFrameEntry),
+		"allow-time-frame", "<timeframe-spec>,..."+
+			"Allow tunnel traffic only within particular time frames.")
 }
 
 const pathOrBase64Syntax = "<p/>" +

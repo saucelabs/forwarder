@@ -1,4 +1,4 @@
-// Copyright 2022-2024 Sauce Labs Inc., all rights reserved.
+// Copyright 2022-2026 Sauce Labs Inc., all rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -48,6 +48,7 @@ type command struct {
 	credentials         []*forwarder.HostPortUser
 	denyDomains         []ruleset.RegexpListItem
 	directDomains       []ruleset.RegexpListItem
+	allowTimeFrame      []ruleset.TimeFrameEntry
 	connectHeaders      []header.Header
 	requestHeaders      []header.Header
 	responseHeaders     []header.Header
@@ -230,6 +231,8 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 			c.httpProxyConfig.MITMDomains = dd
 		}
 	}
+
+	c.httpProxyConfig.AllowTimeFrame = c.allowTimeFrame
 
 	if c.proxyProtocol {
 		c.httpProxyConfig.ProxyProtocolConfig = c.proxyProtocolConfig
@@ -464,6 +467,7 @@ func Command() *cobra.Command {
 	bind.Credentials(fs, &c.credentials)
 	bind.DenyDomains(fs, &c.denyDomains)
 	bind.DirectDomains(fs, &c.directDomains)
+	bind.AllowTimeFrame(fs, &c.allowTimeFrame)
 	bind.ConnectHeaders(fs, &c.connectHeaders)
 	bind.RequestHeaders(fs, &c.requestHeaders)
 	bind.ResponseHeaders(fs, &c.responseHeaders)

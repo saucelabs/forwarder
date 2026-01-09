@@ -602,6 +602,27 @@ If the header is present in the request, the proxy will associate the value with
 Log level.
 
 
+## Time-based access control
+
+Forwarder allows to impose time restrictions on its operations. User can configure day of week + hour ranges when traffic forwarding is allowed.
+Outside specified time ranges, all outgoing HTTP/HTTPS requests will be denied using HTTP 451 error code.
+
+All hour ranges are specified in local time zone specific for the machine running forwarder. Hours are specified using 24h format.
+
+If there is no time frame specified - no time-based access control will be enforced.
+
+Limitations: Access control is enforced only on newly opened connections. Long lasting sessions opened during allowed time-frame will not be forcibly closed if allowed time frame ends.
+
+### `--allow-time-frame` {#allow-time-frame}
+
+* Environment variable: `FORWARDER_ALLOW_TIME_FRAME`
+* Value Format: `{day-of-week}/{hour_start}-{hour_end},...`
+
+Examples of value format:
+
+* allow forwarding on Mondays between 11:00 and 13:00: `mon/11-13`
+* allow forwarding on Tuesdays and Fridays between 18:00 and 23:59:59: `tue/18-24,fri/18-24`
+* allow forwarding on Mondays between 00:00 and 23:59:59: `mon/00-24`
 
 ## Kerberos options
 

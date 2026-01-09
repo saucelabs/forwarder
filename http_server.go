@@ -1,4 +1,4 @@
-// Copyright 2022-2024 Sauce Labs Inc., all rights reserved.
+// Copyright 2022-2026 Sauce Labs Inc., all rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -73,16 +73,17 @@ func h2TLSConfigTemplate() *tls.Config {
 
 type HTTPServerConfig struct {
 	ListenerConfig
-	Protocol Scheme
 	TLSServerConfig
+	shutdownConfig
+	PromConfig
+
+	Protocol          Scheme
 	IdleTimeout       time.Duration
 	ReadTimeout       time.Duration
 	ReadHeaderTimeout time.Duration
 	WriteTimeout      time.Duration
-	shutdownConfig
-	LogHTTPMode httplog.Mode
-	BasicAuth   *url.Userinfo
-	PromConfig
+	LogHTTPMode       httplog.Mode
+	BasicAuth         *url.Userinfo
 }
 
 func DefaultHTTPServerConfig() *HTTPServerConfig {

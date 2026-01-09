@@ -1,4 +1,4 @@
-// Copyright 2022-2024 Sauce Labs Inc., all rights reserved.
+// Copyright 2022-2026 Sauce Labs Inc., all rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,8 +16,10 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/saucelabs/forwarder/log/slog"
+	"github.com/saucelabs/forwarder/ruleset"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/net/http2"
 )
@@ -223,7 +225,7 @@ func (a *KerberosAdapterMock) GetSPNEGOHeaderValue(spn string) (string, error) {
 }
 
 func (a *KerberosAdapterMock) GetProxyAuthHeader(_ context.Context, proxyURL *url.URL, _ string) (http.Header, error) {
-	return nil, nil
+	return nil, nil // nolint:all
 }
 
 func TestKerberosAuth(t *testing.T) {
@@ -239,5 +241,41 @@ func TestKerberosAuth(t *testing.T) {
 
 	t.Run("KDC connected", func(t *testing.T) {
 		assert.True(t, kerberosAdapter.KDCConnected)
+	})
+}
+
+func TestAllowTimeFrame(t *testing.T) {
+	cfg := DefaultHTTPProxyConfig()
+	cfg.ProxyLocalhost = AllowProxyLocalhost
+
+	currentTime := time.Now()
+
+	// in order to make sure TimeFrameEntry does not match current time
+	// we add one day to current day of week and wrap around (weekdays are 0-6)
+
+	cfg.AllowTimeFrame = []ruleset.TimeFrameEntry{{Weekday: (currentTime.Weekday() + 1) % 6, HourStart: 12, HourEnd: 13}}
+
+	h, err := NewHTTPProxyHandler(cfg, nil, nil, nil, slog.Default(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Run("handleHTTPRequest", func(t *testing.T) {
+		s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		}))
+		defer s.Close()
+
+		req, err := http.NewRequest(http.MethodGet, "http://"+s.Listener.Addr().String(), http.NoBody)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		rw := httptest.NewRecorder()
+		h.ServeHTTP(rw, req)
+
+		res := rw.Result()
+
+		assert.Equal(t, http.StatusUnavailableForLegalReasons, res.StatusCode)
 	})
 }

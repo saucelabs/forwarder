@@ -1,4 +1,4 @@
-// Copyright 2022-2024 Sauce Labs Inc., all rights reserved.
+// Copyright 2022-2026 Sauce Labs Inc., all rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -28,14 +28,19 @@ type denyError struct {
 	error
 }
 
+type prohibitedError struct {
+	error
+}
+
 // ErrorHeader is the header that is set on error responses with the error message.
 const ErrorHeader = "X-Forwarder-Error"
 
 var (
 	ErrProxyAuthentication = errors.New("proxy authentication required")
 
-	ErrProxyLocalhost = denyError{errors.New("localhost proxying is disabled")}
-	ErrProxyDenied    = denyError{errors.New("proxying denied")}
+	ErrProxyLocalhost               = denyError{errors.New("localhost proxying is disabled")}
+	ErrProxyDenied                  = denyError{errors.New("proxying denied")}
+	ErrProxyOutsideAllowedTimeframe = prohibitedError{errors.New("proxying denied outside allowed time frame")}
 )
 
 const skipMetricsLabel = "-"
@@ -51,6 +56,7 @@ func (hp *HTTPProxy) errorResponse(req *http.Request, err error) *http.Response 
 		handleMartianErrorStatus,
 		handleAuthenticationError,
 		handleDenyError,
+		handleProhibitedError,
 		handleContextCancelationError,
 		handleStatusText,
 	}
@@ -221,6 +227,17 @@ func handleDenyError(req *http.Request, err error) (code int, msg, label string)
 	if errors.As(err, &denyErr) {
 		code = http.StatusForbidden
 		msg = fmt.Sprintf("proxying is denied to host %q", req.Host)
+		label = skipMetricsLabel
+	}
+
+	return
+}
+
+func handleProhibitedError(req *http.Request, err error) (code int, msg, label string) {
+	var currentErr prohibitedError
+	if errors.As(err, &currentErr) {
+		code = http.StatusUnavailableForLegalReasons
+		msg = fmt.Sprintf("proxying is denied to host %q for administrative reasons", req.Host)
 		label = skipMetricsLabel
 	}
 
