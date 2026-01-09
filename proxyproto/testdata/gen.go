@@ -1,4 +1,5 @@
 //go:build ignore
+
 package main
 
 import (
@@ -13,11 +14,11 @@ func main() {
 		Version:           2,
 		Command:           proxyproto.PROXY,
 		TransportProtocol: proxyproto.TCPv4,
-		SourceAddr:        &net.TCPAddr{
+		SourceAddr: &net.TCPAddr{
 			IP:   net.ParseIP("1.1.1.1"),
 			Port: 1000,
 		},
-		DestinationAddr:   &net.TCPAddr{
+		DestinationAddr: &net.TCPAddr{
 			IP:   net.ParseIP("2.2.2.2"),
 			Port: 2000,
 		},
