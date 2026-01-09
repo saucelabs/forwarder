@@ -95,7 +95,6 @@ func ParseTimeFrameEntry(repr string) (TimeFrameEntry, error) {
 
 	default:
 		return TimeFrameEntry{}, errors.New("invalid weekday name")
-
 	}
 
 	hourStartHourEnd := strings.Split(split[1], "-")
