@@ -1,4 +1,4 @@
-// Copyright 2022-2025 Sauce Labs Inc., all rights reserved.
+// Copyright 2022-2026 Sauce Labs Inc., all rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -46,10 +46,9 @@ func (t *TimeFrameEntry) Validate() error {
 // returns true if provided time matches TimeFrameEntry
 // time is always converted to local time
 
-func (t *TimeFrameEntry) Match(time time.Time) bool {
-
+func (t *TimeFrameEntry) Match(timeToMatch time.Time) bool {
 	// we expect time to already be in local time
-	localTime := time
+	localTime := timeToMatch
 
 	if localTime.Weekday() != t.Weekday {
 		return false
@@ -96,7 +95,6 @@ func ParseTimeFrameEntry(repr string) (TimeFrameEntry, error) {
 
 	default:
 		return TimeFrameEntry{}, errors.New("invalid weekday name")
-
 	}
 
 	hourStartHourEnd := strings.Split(split[1], "-")
@@ -106,17 +104,15 @@ func ParseTimeFrameEntry(repr string) (TimeFrameEntry, error) {
 	}
 
 	hourStart, err := strconv.Atoi(hourStartHourEnd[0])
-
 	if err != nil {
-		return TimeFrameEntry{}, fmt.Errorf("invalid format of start hour: %v", err)
+		return TimeFrameEntry{}, fmt.Errorf("invalid format of start hour: %w", err)
 	}
 
 	newEntry.HourStart = hourStart
 
 	hourEnd, err := strconv.Atoi(hourStartHourEnd[1])
-
 	if err != nil {
-		return TimeFrameEntry{}, fmt.Errorf("invalid format of end hour: %v", err)
+		return TimeFrameEntry{}, fmt.Errorf("invalid format of end hour: %w", err)
 	}
 
 	newEntry.HourEnd = hourEnd
@@ -124,9 +120,8 @@ func ParseTimeFrameEntry(repr string) (TimeFrameEntry, error) {
 	// validate data at the end
 
 	err = newEntry.Validate()
-
 	if err != nil {
-		return TimeFrameEntry{}, fmt.Errorf("time range entry value: %v", err)
+		return TimeFrameEntry{}, fmt.Errorf("time range entry value: %w", err)
 	}
 
 	return newEntry, nil

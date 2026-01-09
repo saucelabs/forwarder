@@ -1,26 +1,21 @@
----
+version: "2"
 run:
-  timeout: 5m
   build-tags:
     - e2e
-
 linters:
-  enable-all: true
+  default: all
   disable:
     - contextcheck
     - cyclop
     - depguard
-    - execinquery
+    - err113
     - exhaustive
     - exhaustruct
-    - exportloopref
     - funlen
     - gochecknoglobals
     - gochecknoinits
     - goconst
     - godox
-    - err113
-    - gomnd
     - gomoddirectives
     - inamedparam
     - intrange
@@ -32,145 +27,166 @@ linters:
     - varnamelen
     - wrapcheck
     - wsl
-  fast: false
-
-linters-settings:
-  errcheck:
-    check-blank: true
-  gocognit:
-    min-complexity: 50
-  gocyclo:
-    min-complexity: 40
-  gocritic:
-    enabled-tags:
-      - diagnostic
-      - performance
-      - style
-  lll:
-    line-length: 180
-  nestif:
-    min-complexity: 11
-  goheader:
-    values:
-      regexp:
-        year: "2024"
-    template-path: .go-header-template.yml
-  revive:
+    - wsl_v5
+    - funcorder
+    - noinlineerr
+  settings:
+    errcheck:
+      check-blank: true
+    gocognit:
+      min-complexity: 50
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - performance
+        - style
+    gocyclo:
+      min-complexity: 40
+    goheader:
+      values:
+        regexp:
+          year: "2026"
+      template-path: .go-header-template.yml
+    lll:
+      line-length: 180
+    nestif:
+      min-complexity: 11
+    revive:
+      rules:
+        - name: unused-parameter
+          disabled: true
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
     rules:
-      - name: unused-parameter
-        disabled: true
-
-issues:
-  exclude:
-    - "Error return value of `cmd.MarkFlag.+` is not checked"
-    - "Error return value of `net.SplitHostPort` is not checked"
-    - "Error return value of `w.Write` is not checked"
-    - "Limiter.WaitN` is not checked"
-    - "Temporary has been deprecated since Go 1.18 because it shouldn't be used"
-    - "`nop.+` is unused"
-    - "can be `expvar.Var`"
-    - "can be `fmt.Stringer`"
-    - "missing cases in switch of type Scheme: TunnelScheme"
-    - "shadow of imported from 'github.com/saucelabs/forwarder/log' package 'log'"
-    - "string `https?` has \\d+ occurrences"
-    - "importShadow: shadow of imported package 'url'"
-    - "commentedOutCode: may want to remove commented-out code"
-    - "grpc.Dial is deprecated: use NewClient instead"
-  exclude-files:
-    - middleware/delegator.go
-    - utils/cobrautil/templates
-    - utils/cobrautil/term
-    - sizesuffix
-  exclude-rules:
-    - path: _test\.go
-      linters:
-        - bodyclose
-        - errcheck
-        - funlen
-        - gocognit
-        - gomnd
-        - gosec
-        - noctx
-        - paralleltest
-        - testpackage
-
-    - path: e2e/
-      linters:
-        - prealloc
-        - nakedret
-        - nosprintfhostport
-
-    - path: e2e/run.go
-      linters:
-        - forbidigo
-      text: use of `fmt.Print
-
-    - path: internal/martian
-      linters:
-        - goheader
-
-    - path: internal/martian
-      linters:
-        - gosec
-      source: "uint32\\(len\\(|\\.Len\\(\\)"
-
-    - path: internal/martian
-      linters:
-        - bodyclose
-      source: "newConnectResponse\\(|[eE]rrorResponse\\(|http\\.NewResponseController|http\\.NoBody"
-
-    - path: internal/martian/context.go
-      linters:
-        - forcetypeassert
-
-    - path: internal/martian/h2/
-      linters:
-        - errcheck
-      source: "buf"
-
-    - path: internal/martian/h2/testing
-      linters:
-        - forbidigo
-      text: use of `fmt.Print
-
-    - path: internal/martian/messageview
-      linters:
-        - errcheck
-
-    - linters:
-        - thelper
-      source: "configure: func\\(t \\*testing.T"
-
-    - linters:
-        - gocognit
-        - gocyclo
-        - maintidx
-      source: "func \\(c \\*command\\) runE\\(cmd \\*cobra\\.Command"
-
-    - linters:
-        - gocritic
-      source: "// output:"
-
-    - linters:
-        - golint
-      source: 'import _ "embed"'
-
-    - linters:
-        - forcetypeassert
-      source: "http.DefaultTransport"
-
-    - linters:
-        - lll
-      source: "//nolint:"
-
-    - linters:
-        - lll
-      source: "json:"
-
-    - linters:
-        - nosnakecase
-      source: "func Example"
-
-    - path: utils/dnshack/
-      linters:
-        - goheader
+      - linters:
+          - bodyclose
+          - errcheck
+          - funlen
+          - gocognit
+          - gosec
+          - mnd
+          - noctx
+          - paralleltest
+          - testpackage
+          - godoc
+        path: _test\.go
+      - linters:
+          - nakedret
+          - nosprintfhostport
+          - prealloc
+        path: e2e/
+      - linters:
+          - forbidigo
+        path: e2e/run.go
+        text: use of `fmt.Print
+      - linters:
+          - goheader
+        path: internal/martian
+      - linters:
+          - gosec
+        path: internal/martian
+        source: uint32\(len\(|\.Len\(\)
+      - linters:
+          - bodyclose
+        path: internal/martian
+        source: newConnectResponse\(|[eE]rrorResponse\(|http\.NewResponseController|http\.NoBody
+      - linters:
+          - forcetypeassert
+        path: internal/martian/context.go
+      - linters:
+          - errcheck
+        path: internal/martian/h2/
+        source: buf
+      - linters:
+          - forbidigo
+        path: internal/martian/h2/testing
+        text: use of `fmt.Print
+      - linters:
+          - errcheck
+        path: internal/martian/messageview
+      - linters:
+          - thelper
+        source: 'configure: func\(t \*testing.T'
+      - linters:
+          - gocognit
+          - gocyclo
+          - maintidx
+        source: func \(c \*command\) runE\(cmd \*cobra\.Command
+      - linters:
+          - gocritic
+        source: '// output:'
+      - linters:
+          - golint
+        source: import _ "embed"
+      - linters:
+          - forcetypeassert
+        source: http.DefaultTransport
+      - linters:
+          - lll
+        source: '//nolint:'
+      - linters:
+          - lll
+        source: 'json:'
+      - linters:
+          - nosnakecase
+        source: func Example
+      - linters:
+          - goheader
+        path: utils/dnshack/
+      - path: (.+)\.go$
+        text: Error return value of `cmd.MarkFlag.+` is not checked
+      - path: (.+)\.go$
+        text: Error return value of `net.SplitHostPort` is not checked
+      - path: (.+)\.go$
+        text: Error return value of `w.Write` is not checked
+      - path: (.+)\.go$
+        text: Limiter.WaitN` is not checked
+      - path: (.+)\.go$
+        text: Temporary has been deprecated since Go 1.18 because it shouldn't be used
+      - path: (.+)\.go$
+        text: '`nop.+` is unused'
+      - path: (.+)\.go$
+        text: can be `expvar.Var`
+      - path: (.+)\.go$
+        text: can be `fmt.Stringer`
+      - path: (.+)\.go$
+        text: 'missing cases in switch of type Scheme: TunnelScheme'
+      - path: (.+)\.go$
+        text: shadow of imported from 'github.com/saucelabs/forwarder/log' package 'log'
+      - path: (.+)\.go$
+        text: string `https?` has \d+ occurrences
+      - path: (.+)\.go$
+        text: 'importShadow: shadow of imported package ''url'''
+      - path: (.+)\.go$
+        text: 'commentedOutCode: may want to remove commented-out code'
+      - path: (.+)\.go$
+        text: 'grpc.Dial is deprecated: use NewClient instead'
+    paths:
+      - middleware/delegator.go
+      - utils/cobrautil/templates
+      - utils/cobrautil/term
+      - sizesuffix
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  enable:
+    - gci
+    - gofmt
+    - gofumpt
+    - goimports
+  exclusions:
+    generated: lax
+    paths:
+      - middleware/delegator.go
+      - utils/cobrautil/templates
+      - utils/cobrautil/term
+      - sizesuffix
+      - third_party$
+      - builtin$
+      - examples$

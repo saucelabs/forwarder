@@ -1,4 +1,4 @@
-// Copyright 2022-2024 Sauce Labs Inc., all rights reserved.
+// Copyright 2022-2026 Sauce Labs Inc., all rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -84,6 +84,7 @@ var ErrConnectFallback = martian.ErrConnectFallback
 
 type HTTPProxyConfig struct {
 	HTTPServerConfig
+
 	ExtraListeners    []NamedListenerConfig
 	Name              string
 	MITM              *MITMConfig
@@ -147,7 +148,8 @@ func (c *HTTPProxyConfig) Validate() error {
 }
 
 type HTTPProxy struct {
-	config          HTTPProxyConfig
+	config HTTPProxyConfig
+
 	pac             PACResolver
 	creds           *CredentialsMatcher
 	transport       http.RoundTripper
@@ -354,7 +356,6 @@ func (hp *HTTPProxy) upstreamProxyURL() *url.URL {
 	// so http.RoundTripper would not try to add custom Authorization header
 
 	if hp.kerberosAdapter != nil && hp.kerberosAdapter.GetConfig().AuthUpstreamProxy {
-
 		hp.log.Info("Kerberos upstream proxy authentication is enabled. " +
 			"Existing proxy credentials for basic authentication will be ignored.")
 
@@ -416,7 +417,6 @@ func (hp *HTTPProxy) middlewareStack() (martian.RequestResponseModifier, *martia
 		hp.log.Info("Current time in UTC", "time_utc", currentTime.UTC().String())
 
 		topg.AddRequestModifier(hp.allowWithinTimeFrame())
-
 	}
 
 	if hp.config.BasicAuth != nil {
@@ -498,7 +498,6 @@ func (hp *HTTPProxy) basicAuth(u *url.Userinfo) martian.RequestModifier {
 }
 
 func (hp *HTTPProxy) allowWithinTimeFrame() martian.RequestModifier {
-
 	return martian.RequestModifierFunc(func(req *http.Request) error {
 		if !middleware.TimeFrameAllows(hp.config.AllowTimeFrame) {
 			return ErrProxyOutsideAllowedTimeframe

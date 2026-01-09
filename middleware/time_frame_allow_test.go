@@ -1,4 +1,4 @@
-// Copyright 2022-2025 Sauce Labs Inc., all rights reserved.
+// Copyright 2022-2026 Sauce Labs Inc., all rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -12,15 +12,15 @@ import (
 
 	"github.com/saucelabs/forwarder/ruleset"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestTimeFrameAllow(t *testing.T) {
-
-	//comprehensive testing is done in TimeFrameEntry implementation
+	// comprehensive testing is done in TimeFrameEntry implementation
 	// here we just check sanity of TimeFrameAllow
 
 	var allowTimeFrame []ruleset.TimeFrameEntry
-	var strEntries []string = []string{"mon/10-13", "wed/22-23"}
+	strEntries := []string{"mon/10-13", "wed/22-23"}
 
 	// January 1st 2025 was Wednesday - this will be important later
 
@@ -34,20 +34,19 @@ func TestTimeFrameAllow(t *testing.T) {
 
 	for _, strEntry := range strEntries {
 		parsedEntry, err := ruleset.ParseTimeFrameEntry(strEntry)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		allowTimeFrame = append(allowTimeFrame, parsedEntry)
 	}
 
-	assert.Equal(t, TimeFrameAllows(allowTimeFrame), true)
+	assert.True(t, TimeFrameAllows(allowTimeFrame))
 
 	// time within first rule - Jan 6 is Monday
 	mockedTime = time.Date(2025, time.January, 6, 10, 15, 10, 0, time.UTC)
-	assert.Equal(t, TimeFrameAllows(allowTimeFrame), true)
+	assert.True(t, TimeFrameAllows(allowTimeFrame))
 
 	// time outside allowed time frame
 	mockedTime = time.Date(2025, time.January, 1, 19, 10, 0, 0, time.UTC)
-	assert.Equal(t, TimeFrameAllows(allowTimeFrame), false)
+	assert.False(t, TimeFrameAllows(allowTimeFrame))
 
 	getCurrentTime = time.Now
-
 }

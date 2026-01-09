@@ -1,4 +1,4 @@
-// Copyright 2022-2024 Sauce Labs Inc., all rights reserved.
+// Copyright 2022-2026 Sauce Labs Inc., all rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -11,10 +11,10 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestTimeFrameInvalidFormat(t *testing.T) {
-
 	tests := []struct {
 		input         string
 		expectedError string
@@ -52,18 +52,14 @@ func TestTimeFrameInvalidFormat(t *testing.T) {
 	for i := range tests {
 		tc := tests[i]
 		t.Run(tc.input, func(t *testing.T) {
-
 			_, err := ParseTimeFrameEntry(tc.input)
-			assert.NotNil(t, err)
-			assert.Equal(t, err.Error(), tc.expectedError)
-
+			require.Error(t, err)
+			assert.Equal(t, tc.expectedError, err.Error())
 		})
 	}
-
 }
 
 func TestTimeParseWeekday(t *testing.T) {
-
 	tests := []struct {
 		input           string
 		expectedWeekDay time.Weekday
@@ -129,18 +125,14 @@ func TestTimeParseWeekday(t *testing.T) {
 	for i := range tests {
 		tc := tests[i]
 		t.Run(tc.input, func(t *testing.T) {
-
 			timeframe, err := ParseTimeFrameEntry(tc.input)
-			assert.Nil(t, err)
-			assert.Equal(t, timeframe.Weekday, tc.expectedWeekDay)
-
+			require.NoError(t, err)
+			assert.Equal(t, tc.expectedWeekDay, timeframe.Weekday)
 		})
 	}
-
 }
 
 func TestTimeParseHours(t *testing.T) {
-
 	tests := []struct {
 		input             string
 		expectedHourStart int
@@ -161,19 +153,15 @@ func TestTimeParseHours(t *testing.T) {
 	for i := range tests {
 		tc := tests[i]
 		t.Run(tc.input, func(t *testing.T) {
-
 			timeframe, err := ParseTimeFrameEntry(tc.input)
-			assert.Nil(t, err)
-			assert.Equal(t, timeframe.HourStart, tc.expectedHourStart)
-			assert.Equal(t, timeframe.HourEnd, tc.expectedHourEnd)
-
+			require.NoError(t, err)
+			assert.Equal(t, tc.expectedHourStart, timeframe.HourStart)
+			assert.Equal(t, tc.expectedHourEnd, timeframe.HourEnd)
 		})
 	}
-
 }
 
 func TestTimeFrameMatch(t *testing.T) {
-
 	// January 1st 2025 was Wednesday - this will be important later
 
 	tests := []struct {
@@ -232,12 +220,9 @@ func TestTimeFrameMatch(t *testing.T) {
 	for i := range tests {
 		tc := tests[i]
 		t.Run(tc.input, func(t *testing.T) {
-
 			timeframe, err := ParseTimeFrameEntry(tc.input)
-			assert.Nil(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, timeframe.Match(tc.currentTime), tc.shouldMatch)
-
 		})
 	}
-
 }

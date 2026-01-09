@@ -1,4 +1,4 @@
-// Copyright 2022-2024 Sauce Labs Inc., all rights reserved.
+// Copyright 2022-2026 Sauce Labs Inc., all rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -45,6 +45,7 @@ func (o *Observer) addTx(n uint64) {
 
 type closeConn struct {
 	net.Conn
+
 	l closeListener // this is a field to avoid ambiguous selector error on Close method
 }
 
@@ -68,6 +69,7 @@ func (c *closeListener) Close() error {
 // It needs to be configured before first use by setting TrackTraffic and onClose if needed.
 type conn struct {
 	net.Conn
+
 	o Observer
 }
 

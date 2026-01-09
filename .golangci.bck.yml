@@ -1,0 +1,176 @@
+---
+run:
+  timeout: 5m
+  build-tags:
+    - e2e
+
+linters:
+  enable-all: true
+  disable:
+    - contextcheck
+    - cyclop
+    - depguard
+    - execinquery
+    - exhaustive
+    - exhaustruct
+    - exportloopref
+    - funlen
+    - gochecknoglobals
+    - gochecknoinits
+    - goconst
+    - godox
+    - err113
+    - gomnd
+    - gomoddirectives
+    - inamedparam
+    - intrange
+    - ireturn
+    - mnd
+    - nlreturn
+    - nonamedreturns
+    - tagliatelle
+    - varnamelen
+    - wrapcheck
+    - wsl
+  fast: false
+
+linters-settings:
+  errcheck:
+    check-blank: true
+  gocognit:
+    min-complexity: 50
+  gocyclo:
+    min-complexity: 40
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - performance
+      - style
+  lll:
+    line-length: 180
+  nestif:
+    min-complexity: 11
+  goheader:
+    values:
+      regexp:
+        year: "2026"
+    template-path: .go-header-template.yml
+  revive:
+    rules:
+      - name: unused-parameter
+        disabled: true
+
+issues:
+  exclude:
+    - "Error return value of `cmd.MarkFlag.+` is not checked"
+    - "Error return value of `net.SplitHostPort` is not checked"
+    - "Error return value of `w.Write` is not checked"
+    - "Limiter.WaitN` is not checked"
+    - "Temporary has been deprecated since Go 1.18 because it shouldn't be used"
+    - "`nop.+` is unused"
+    - "can be `expvar.Var`"
+    - "can be `fmt.Stringer`"
+    - "missing cases in switch of type Scheme: TunnelScheme"
+    - "shadow of imported from 'github.com/saucelabs/forwarder/log' package 'log'"
+    - "string `https?` has \\d+ occurrences"
+    - "importShadow: shadow of imported package 'url'"
+    - "commentedOutCode: may want to remove commented-out code"
+    - "grpc.Dial is deprecated: use NewClient instead"
+  exclude-files:
+    - middleware/delegator.go
+    - utils/cobrautil/templates
+    - utils/cobrautil/term
+    - sizesuffix
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - bodyclose
+        - errcheck
+        - funlen
+        - gocognit
+        - gomnd
+        - gosec
+        - noctx
+        - paralleltest
+        - testpackage
+
+    - path: e2e/
+      linters:
+        - prealloc
+        - nakedret
+        - nosprintfhostport
+
+    - path: e2e/run.go
+      linters:
+        - forbidigo
+      text: use of `fmt.Print
+
+    - path: internal/martian
+      linters:
+        - goheader
+
+    - path: internal/martian
+      linters:
+        - gosec
+      source: "uint32\\(len\\(|\\.Len\\(\\)"
+
+    - path: internal/martian
+      linters:
+        - bodyclose
+      source: "newConnectResponse\\(|[eE]rrorResponse\\(|http\\.NewResponseController|http\\.NoBody"
+
+    - path: internal/martian/context.go
+      linters:
+        - forcetypeassert
+
+    - path: internal/martian/h2/
+      linters:
+        - errcheck
+      source: "buf"
+
+    - path: internal/martian/h2/testing
+      linters:
+        - forbidigo
+      text: use of `fmt.Print
+
+    - path: internal/martian/messageview
+      linters:
+        - errcheck
+
+    - linters:
+        - thelper
+      source: "configure: func\\(t \\*testing.T"
+
+    - linters:
+        - gocognit
+        - gocyclo
+        - maintidx
+      source: "func \\(c \\*command\\) runE\\(cmd \\*cobra\\.Command"
+
+    - linters:
+        - gocritic
+      source: "// output:"
+
+    - linters:
+        - golint
+      source: 'import _ "embed"'
+
+    - linters:
+        - forcetypeassert
+      source: "http.DefaultTransport"
+
+    - linters:
+        - lll
+      source: "//nolint:"
+
+    - linters:
+        - lll
+      source: "json:"
+
+    - linters:
+        - nosnakecase
+      source: "func Example"
+
+    - path: utils/dnshack/
+      linters:
+        - goheader

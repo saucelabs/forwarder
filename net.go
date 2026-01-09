@@ -1,4 +1,4 @@
-// Copyright 2022-2024 Sauce Labs Inc., all rights reserved.
+// Copyright 2022-2026 Sauce Labs Inc., all rights reserved.
 //
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -53,6 +53,8 @@ type DialRetryConfig struct {
 }
 
 type DialConfig struct {
+	PromConfig
+
 	// DialTimeout is the maximum amount of time a dial will wait for
 	// connect to complete.
 	//
@@ -69,8 +71,6 @@ type DialConfig struct {
 
 	// Retry specifies the number of attempts and backoff duration between them.
 	Retry DialRetryConfig
-
-	PromConfig
 }
 
 func DefaultDialConfig() *DialConfig {
