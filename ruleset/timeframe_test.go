@@ -126,7 +126,7 @@ func TestTimeParseWeekday(t *testing.T) {
 		tc := tests[i]
 		t.Run(tc.input, func(t *testing.T) {
 			timeframe, err := ParseTimeFrameEntry(tc.input)
-			require.Error(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tc.expectedWeekDay, timeframe.Weekday)
 		})
 	}
@@ -154,7 +154,7 @@ func TestTimeParseHours(t *testing.T) {
 		tc := tests[i]
 		t.Run(tc.input, func(t *testing.T) {
 			timeframe, err := ParseTimeFrameEntry(tc.input)
-			require.Error(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tc.expectedHourStart, timeframe.HourStart)
 			assert.Equal(t, tc.expectedHourEnd, timeframe.HourEnd)
 		})
@@ -221,7 +221,7 @@ func TestTimeFrameMatch(t *testing.T) {
 		tc := tests[i]
 		t.Run(tc.input, func(t *testing.T) {
 			timeframe, err := ParseTimeFrameEntry(tc.input)
-			require.Error(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, timeframe.Match(tc.currentTime), tc.shouldMatch)
 		})
 	}
