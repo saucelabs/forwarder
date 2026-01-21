@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net"
 	"sync"
 	"time"
 
@@ -103,6 +104,8 @@ func (c copier) closeWriter(ctx context.Context) {
 		closeErr = cw.CloseWrite()
 	} else if pw, ok := c.dst.(*io.PipeWriter); ok {
 		closeErr = pw.Close()
+	} else if uc, ok := c.dst.(*net.UDPConn); ok {
+		closeErr = uc.Close()
 	} else {
 		log.Error(ctx, "cannot close write side of tunnel", "name", c.name, "type", fmt.Sprintf("%T", c.dst))
 	}
