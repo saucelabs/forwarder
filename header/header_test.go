@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/stretchr/testify/require"
 )
 
 func TestParseHeader(t *testing.T) {
@@ -18,6 +19,13 @@ func TestParseHeader(t *testing.T) {
 		input    string
 		expected Header
 	}{
+		{
+			input: "%rename-me",
+			expected: Header{
+				Name:   "rename-me",
+				Action: RenameCase,
+			},
+		},
 		{
 			input: "-RemoveMe",
 			expected: Header{
@@ -159,4 +167,23 @@ func TestRemoveHeadersByPrefix(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestReplaceCaseHeaderApply(t *testing.T) {
+	// force header to be in non-canonicalised form according to pattern
+	header := Header{
+		Name:   "rename-mE",
+		Action: RenameCase,
+	}
+
+	httpHeader := make(http.Header)
+
+	httpHeader.Add("Rename-Me", "true")
+	header.Apply(httpHeader)
+
+	_, ok := httpHeader["rename-mE"] //nolint
+	require.True(t, ok)
+
+	_, ok = httpHeader["Rename-Me"]
+	require.False(t, ok)
 }

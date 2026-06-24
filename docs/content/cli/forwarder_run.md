@@ -217,6 +217,7 @@ Use the format:
 - name; to set the header to empty value
 - -name to remove the header
 - -name* to remove headers by prefix
+- %name to disable header name canonicalization for particular header name
 
 The header name will be normalized to canonical form.
 The header value should not contain any newlines or carriage returns.
@@ -226,6 +227,25 @@ The following example removes the User-Agent header and all headers starting wit
 ```
 -H "-User-Agent" -H "-X-*"
 ```
+
+#### Disabling header canonicalization
+
+By default all headers received from a request are being canonicalized and this can not be disabled. In some rare cases
+destination HTTP servers or load balancers break HTTP standards
+and treat header names as case sensitive. 
+
+So if browser sends `header-a`, forwarder canonicalizes the name to `Header-A` and the target application breaks, because it expects different name. The "%" option allows to change particular header case if needed.
+
+For example
+
+```
+ -H "%header-a"
+```
+
+If any case form of provided header name exists in request it will be renamed to the exact form provided. In that case browser can send
+`header-a`, forwarder will canonicalize it
+to `Header-A` but this option will rename it back to `header-a`.
+
 
 ### `-p, --pac` {#pac}
 

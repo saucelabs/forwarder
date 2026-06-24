@@ -20,6 +20,7 @@ const (
 	RemoveByPrefix
 	Empty
 	Add
+	RenameCase
 )
 
 type Header struct {
@@ -35,13 +36,14 @@ var (
 
 // ParseHeader supports the following syntax:
 // - "<name>: <value>" to add a header,
+// - "%<name>" to replace canonical header name to custom case
 // - "<name>;" to set a header to empty,
 // - "-<name>" to remove a header,
 // - "-<name>*" to remove a header by prefix.
 func ParseHeader(val string) (Header, error) {
 	var h Header
 
-	if strings.HasPrefix(val, "-") {
+	if strings.HasPrefix(val, "-") { //nolint
 		if strings.HasSuffix(val, "*") {
 			h.Name = val[1 : len(val)-1]
 			h.Action = RemoveByPrefix
@@ -49,18 +51,19 @@ func ParseHeader(val string) (Header, error) {
 			h.Name = val[1:]
 			h.Action = Remove
 		}
+	} else if strings.HasPrefix(val, "%") {
+		h.Name = val[1:]
+		h.Action = RenameCase
+	} else if strings.HasSuffix(val, ";") {
+		h.Name = val[0 : len(val)-1]
+		h.Action = Empty
 	} else {
-		if strings.HasSuffix(val, ";") {
-			h.Name = val[0 : len(val)-1]
-			h.Action = Empty
+		if m := headerLineRegex.FindStringSubmatch(val); m != nil {
+			h.Name = m[1]
+			h.Value = &m[2]
+			h.Action = Add
 		} else {
-			if m := headerLineRegex.FindStringSubmatch(val); m != nil {
-				h.Name = m[1]
-				h.Value = &m[2]
-				h.Action = Add
-			} else {
-				return Header{}, errors.New("invalid header value")
-			}
+			return Header{}, errors.New("invalid header value")
 		}
 	}
 
@@ -81,6 +84,24 @@ func (h *Header) Apply(hh http.Header) {
 		hh.Set(h.Name, "")
 	case Add:
 		hh.Add(h.Name, *h.Value)
+	case RenameCase:
+		// RenameCase action is a workaround for some braindead HTTP software stacks
+		// which treat header names as case sensitive and which break when receiving
+		// HTTP(S) requests with headers having canonicalized names
+		// eg: browser sends "timestamp" header, forwarder changes it to "Timestamp"
+		// and server crashes.
+
+		// To achieve this funcionality we utilize http.Header type being a map
+		//  and replace canonicalized key with raw name
+
+		canonicalizedName := http.CanonicalHeaderKey(h.Name)
+
+		_, ok := hh[canonicalizedName]
+
+		if ok { // key exists, replace it
+			hh[h.Name] = hh[canonicalizedName]
+			delete(hh, canonicalizedName)
+		}
 	}
 }
 
@@ -105,6 +126,8 @@ func (h *Header) String() string {
 		return h.Name + ";"
 	case Add:
 		return h.Name + ":" + *h.Value
+	case RenameCase:
+		return "%" + h.Name
 	default:
 		return ""
 	}
