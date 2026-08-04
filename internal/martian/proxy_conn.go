@@ -106,6 +106,12 @@ func (p *proxyConn) readRequest() (*http.Request, error) {
 		log.Error(context.TODO(), "can't set read header deadline", "error", deadlineErr)
 	}
 
+	br, err := sanitizeRequestLine(p.brw.Reader, p.conn)
+	if err != nil {
+		return nil, err
+	}
+	p.brw.Reader = br
+
 	req, err := http.ReadRequest(p.brw.Reader)
 	if err != nil {
 		return nil, err
