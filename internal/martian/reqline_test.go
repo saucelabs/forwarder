@@ -84,6 +84,12 @@ func TestEscapeInvalidPercent(t *testing.T) {
 			want:    "GET\r\n",
 			changed: false,
 		},
+		{
+			name:    "multiple spaces around URL",
+			in:      "GET     /foo/%PUBLIC_URL%/bar                  HTTP/1.1\r\n",
+			want:    "GET     /foo/%25PUBLIC_URL%25/bar                  HTTP/1.1\r\n",
+			changed: true,
+		},
 	}
 
 	for _, tc := range tests {

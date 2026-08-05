@@ -68,31 +68,17 @@ func peekRequestLine(br *bufio.Reader) ([]byte, bool) {
 // replacing any `%` not followed by two hex digits with `%25`. Returns the
 // (possibly reallocated) line and whether any substitution was made.
 func escapeInvalidPercent(line []byte) ([]byte, bool) {
-	sp1 := bytes.IndexByte(line, ' ')
-	if sp1 < 0 {
+	if !hasBarePercent(line) {
 		return line, false
 	}
-	sp2 := bytes.IndexByte(line[sp1+1:], ' ')
-	if sp2 < 0 {
-		return line, false
-	}
-	sp2 += sp1 + 1
-
-	urlPart := line[sp1+1 : sp2]
-	if !hasBarePercent(urlPart) {
-		return line, false
-	}
-
 	out := make([]byte, 0, len(line)+8)
-	out = append(out, line[:sp1+1]...)
-	for i := range len(urlPart) {
-		if urlPart[i] == '%' && !validEscape(urlPart, i) {
+	for i := range len(line) {
+		if line[i] == '%' && !validEscape(line, i) {
 			out = append(out, '%', '2', '5')
 			continue
 		}
-		out = append(out, urlPart[i])
+		out = append(out, line[i])
 	}
-	out = append(out, line[sp2:]...)
 	return out, true
 }
 
