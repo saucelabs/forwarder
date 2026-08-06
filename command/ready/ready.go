@@ -38,6 +38,7 @@ func DefaultConfig() Config {
 
 type command struct {
 	Config
+
 	apiAddr string
 }
 

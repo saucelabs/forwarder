@@ -230,8 +230,9 @@ func DefaultListenerConfig(addr string) *ListenerConfig {
 }
 
 type NamedListenerConfig struct {
-	Name string
 	ListenerConfig
+
+	Name string
 }
 
 // MultiListener is a builder for multiple listeners sharing the same prometheus configuration.
@@ -239,9 +240,10 @@ type NamedListenerConfig struct {
 //
 //nolint:recvcheck // This is intentional.
 type MultiListener struct {
+	PromConfig
+
 	ListenerConfigs []NamedListenerConfig
 	TLSConfig       func(NamedListenerConfig) *tls.Config
-	PromConfig
 }
 
 func (ml MultiListener) Listen() (_ []net.Listener, ferr error) {
@@ -274,11 +276,11 @@ func (ml MultiListener) Listen() (_ []net.Listener, ferr error) {
 
 type Listener struct {
 	ListenerConfig
-	TLSConfig *tls.Config
 	PromConfig
 
-	listener net.Listener
-	metrics  *listenerMetrics
+	TLSConfig *tls.Config
+	listener  net.Listener
+	metrics   *listenerMetrics
 }
 
 func (l *Listener) Listen() error {
