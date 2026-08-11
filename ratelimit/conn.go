@@ -15,6 +15,7 @@ import (
 
 type Conn struct {
 	net.Conn
+
 	rxLimiter *rate.Limiter
 	txLimiter *rate.Limiter
 }
