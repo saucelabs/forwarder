@@ -258,6 +258,10 @@ func HTTPTransportConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPTransportConfig) 
 		"The maximum amount of time an idle (keep-alive) connection will remain idle before closing itself. "+
 			"Zero means no limit. ")
 
+	fs.IntVar(&cfg.MaxConnsPerHost,
+		"http-max-conns-per-host", cfg.MaxConnsPerHost,
+		"The maximum number of connections active for givern host:port pair. ")
+
 	fs.DurationVar(&cfg.ResponseHeaderTimeout,
 		"http-response-header-timeout", cfg.ResponseHeaderTimeout,
 		"The amount of time to wait for a server's response headers after fully writing the request (including its body, if any)."+
