@@ -244,6 +244,11 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 		if err != nil {
 			return err
 		}
+
+		if rt.MaxConnsPerHost != 0 {
+			logger.Info("using MaxConnsPerHost limit value", "MaxConnsPerHost", rt.MaxConnsPerHost)
+		}
+
 		rt.DialContext = martianlog.LoggingDialContext(rt.DialContext)
 		c.configureTransportProxy(rt, kerberosAdapter)
 

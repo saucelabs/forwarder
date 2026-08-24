@@ -470,6 +470,22 @@ For instance, TCP timeouts are often around 3 minutes.
 The maximum amount of time an idle (keep-alive) connection will remain idle before closing itself.
 Zero means no limit.
 
+### `--http-max-conns-per-host` {#http-max-conns-per-host}
+
+* Environment variable: `FORWARDER_HTTP_MAX_CONS_PER_HOST`
+* Value Format: `<int>`
+* Default value: `0`
+
+MaxConnsPerHost optionally limits the total number of onnections per host, including connections in the dialing,
+active, and idle states. On limit violation, dials will block.
+
+If you are using NTLM web authorization protocol and you observe hard to explain 401 errors - set this value to 1.
+
+NTLM authorization breaks in forwarder because in NTLM challenge and token must be transmitter over same socket connection. If
+forwarder load-balances requests to a host over a pool - some requests with authorization token may end up on a different
+socket connection and server will respond with 401 error.
+
+
 ### `--http-response-header-timeout` {#http-response-header-timeout}
 
 * Environment variable: `FORWARDER_HTTP_RESPONSE_HEADER_TIMEOUT`

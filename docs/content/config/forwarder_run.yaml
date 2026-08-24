@@ -6,6 +6,11 @@
 # on all available interfaces.
 #address: :3128
 
+# allow-time-frame <timeframe-spec>,...
+#
+# Allow tunnel traffic only within particular time frames.
+#allow-time-frame: 
+
 # basic-auth <username[:password]>
 #
 # Basic authentication credentials to protect the server.
@@ -253,6 +258,44 @@
 # Timeout for dialing DNS servers. Only used if DNS servers are specified.
 #dns-timeout: 5s
 
+# --- Kerberos options ---
+
+# kerberos-auth-upstream-proxy <value>
+#
+# Authenticate to upstream proxy using Kerberos (with Proxy-Authorization
+# header)
+#kerberos-auth-upstream-proxy: false
+
+# kerberos-cfg-file <string>
+#
+# Path to krb5.conf file with kerberos configuration
+#kerberos-cfg-file: 
+
+# kerberos-enabled-hosts <string>,... 
+#
+# List of hosts for which send Kerberos auth headers (SPNEGO)
+#kerberos-enabled-hosts: 
+
+# kerberos-keytab-file <string>
+#
+# Path to kerberos keytab file
+#kerberos-keytab-file: 
+
+# kerberos-run-diagnostics <value>
+#
+# Run basic Kerberos config/connection diagnostics and exit forwarder process.
+#kerberos-run-diagnostics: false
+
+# kerberos-user-name <string>
+#
+# Path to kerberos user name (principal name)
+#kerberos-user-name: 
+
+# kerberos-user-realm <string>
+#
+# Path to kerberos user realm (principal realm)
+#kerberos-user-realm: 
+
 # --- HTTP client options ---
 
 # cacert-file <path or base64>
@@ -301,6 +344,12 @@
 # The maximum amount of time an idle (keep-alive) connection will remain idle
 # before closing itself. Zero means no limit.
 #http-idle-conn-timeout: 1m30s
+
+# http-max-conns-per-host <int>
+#
+# The maximum amount of time an idle (keep-alive) connection will remain idle
+# before closing itself. Zero means no limit.
+#http-max-conns-per-host: 0
 
 # http-response-header-timeout <duration>
 #
@@ -377,6 +426,11 @@
 # Path to the log file, if empty, logs to stdout. The file is reopened on SIGHUP
 # to allow log rotation using external tools.
 #log-file: 
+
+# log-format <text, json>
+#
+# Use json for production workload logs and text for more human-readable output.
+#log-format: text
 
 # log-http [api|proxy:]<none|short-url|url|headers|body|errors>,... 
 #
