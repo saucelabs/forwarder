@@ -5,7 +5,7 @@ import (
 	"slices"
 )
 
-func BehaviorUseNTLMInsteadOfNegotiateModifier(resp *http.Response) error {
+func BehaviorForceNTLMInsteadOfNegotiateModifier(resp *http.Response) error {
 	// if response header contain WWW-Authenticate Negotiate and WWW-Authenticate NTLM,
 	// remove Negotiate to force NTLM
 

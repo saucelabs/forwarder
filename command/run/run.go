@@ -349,7 +349,7 @@ func (c *command) configureHeadersModifiers() {
 }
 
 func (c *command) configureBehaviorModifiers() {
-	if c.httpProxyConfig.BehaviorModification.UseNTLMInsteadOfNegotiate {
+	if c.httpProxyConfig.BehaviorModification.ForceNTLMInsteadOfNegotiate {
 		// if response header contain WWW-Authenticate Negotiate and WWW-Authenticate NTLM,
 		// remove Negotiate to force NTLM
 
@@ -378,7 +378,7 @@ func (c *command) configureBehaviorModifiers() {
 		})
 
 		c.httpProxyConfig.ResponseModifiers = append(c.httpProxyConfig.ResponseModifiers, m)
-	} // if UseNTLM...
+	}
 }
 
 // Configure upstream proxy transport - connect headers and/or Kerberos auth.

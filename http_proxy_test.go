@@ -286,7 +286,7 @@ func TestBehaviorForceNTLMInsteadNegotiate(t *testing.T) {
 		cfg := DefaultHTTPProxyConfig()
 		cfg.ProxyLocalhost = AllowProxyLocalhost
 
-		cfg.BehaviorModification.UseNTLMInsteadOfNegotiate = false
+		cfg.BehaviorModification.ForceNTLMInsteadOfNegotiate = false
 
 		h, err := NewHTTPProxyHandler(cfg, nil, nil, nil, slog.Default(), nil)
 		if err != nil {
@@ -319,7 +319,7 @@ func TestBehaviorForceNTLMInsteadNegotiate(t *testing.T) {
 	t.Run("handleHTTPRequestWhenEnabled", func(t *testing.T) {
 		cfg := DefaultHTTPProxyConfig()
 		cfg.ProxyLocalhost = AllowProxyLocalhost
-		cfg.BehaviorModification.UseNTLMInsteadOfNegotiate = true
+		cfg.BehaviorModification.ForceNTLMInsteadOfNegotiate = true
 
 		h, err := NewHTTPProxyHandler(cfg, nil, nil, nil, slog.Default(), nil)
 		if err != nil {

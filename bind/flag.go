@@ -128,7 +128,7 @@ func ResponseHeaders(fs *pflag.FlagSet, headers *[]header.Header) {
 }
 
 func BehaviorModificationConfig(fs *pflag.FlagSet, cfg *forwarder.BehaviorModificationConfig) {
-	fs.BoolVar(&cfg.UseNTLMInsteadOfNegotiate, "behavior-force-ntlm-instead-negotiate", cfg.UseNTLMInsteadOfNegotiate,
+	fs.BoolVar(&cfg.ForceNTLMInsteadOfNegotiate, "behavior-force-ntlm-instead-negotiate", cfg.ForceNTLMInsteadOfNegotiate,
 		"If server presents both WWW-Authenticate options: Negotiate and NTLM, remove Negotiate value. This forces browser to use plain NTLM auth. ")
 }
 

@@ -14,31 +14,31 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestUseNTLMInsteadNegotiate(t *testing.T) {
+func TestForceNTLMInsteadNegotiate(t *testing.T) {
 	resp := http.Response{Header: http.Header{}}
 	resp.Header.Add("WWW-Authenticate", "Negotiate")
 	resp.Header.Add("WWW-Authenticate", "NTLM")
 
-	err := BehaviorUseNTLMInsteadOfNegotiateModifier(&resp)
+	err := BehaviorForceNTLMInsteadOfNegotiateModifier(&resp)
 	require.NoError(t, err)
 
 	require.Len(t, resp.Header.Values("WWW-Authenticate"), 1)
 	require.Equal(t, "NTLM", resp.Header.Get("WWW-Authenticate"))
 }
 
-func TestUseNTLMInsteadNegotiateReversedOrder(t *testing.T) {
+func TestForceNTLMInsteadNegotiateReversedOrder(t *testing.T) {
 	resp := http.Response{Header: http.Header{}}
 	resp.Header.Add("WWW-Authenticate", "NTLM")
 	resp.Header.Add("WWW-Authenticate", "Negotiate")
 
-	err := BehaviorUseNTLMInsteadOfNegotiateModifier(&resp)
+	err := BehaviorForceNTLMInsteadOfNegotiateModifier(&resp)
 	require.NoError(t, err)
 
 	require.Len(t, resp.Header.Values("WWW-Authenticate"), 1)
 	require.Equal(t, "NTLM", resp.Header.Get("WWW-Authenticate"))
 }
 
-func TestUseNTLMInsteadNegotiateMultipleHeaders(t *testing.T) {
+func TestForceNTLMInsteadNegotiateMultipleHeaders(t *testing.T) {
 	resp := http.Response{Header: http.Header{}}
 	resp.Header.Add("WWW-Authenticate", "Fake1")
 	resp.Header.Add("WWW-Authenticate", "NTLM")
@@ -46,7 +46,7 @@ func TestUseNTLMInsteadNegotiateMultipleHeaders(t *testing.T) {
 	resp.Header.Add("WWW-Authenticate", "Negotiate")
 	resp.Header.Add("WWW-Authenticate", "Fake3")
 
-	err := BehaviorUseNTLMInsteadOfNegotiateModifier(&resp)
+	err := BehaviorForceNTLMInsteadOfNegotiateModifier(&resp)
 	require.NoError(t, err)
 
 	require.Len(t, resp.Header.Values("WWW-Authenticate"), 4)

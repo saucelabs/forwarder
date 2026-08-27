@@ -83,7 +83,7 @@ type (
 var ErrConnectFallback = martian.ErrConnectFallback
 
 type BehaviorModificationConfig struct {
-	UseNTLMInsteadOfNegotiate bool
+	ForceNTLMInsteadOfNegotiate bool
 }
 
 type HTTPProxyConfig struct {
@@ -132,7 +132,7 @@ func DefaultHTTPProxyConfig() *HTTPProxyConfig {
 }
 
 func DefaultBehaviorModificationConfig() *BehaviorModificationConfig {
-	return &BehaviorModificationConfig{UseNTLMInsteadOfNegotiate: false}
+	return &BehaviorModificationConfig{ForceNTLMInsteadOfNegotiate: false}
 }
 
 func (c *HTTPProxyConfig) Validate() error {
@@ -467,8 +467,8 @@ func (hp *HTTPProxy) middlewareStack() (martian.RequestResponseModifier, *martia
 		fg.AddResponseModifier(m)
 	}
 
-	if hp.config.BehaviorModification.UseNTLMInsteadOfNegotiate {
-		fg.AddResponseModifier(martian.ResponseModifierFunc(middleware.BehaviorUseNTLMInsteadOfNegotiateModifier))
+	if hp.config.BehaviorModification.ForceNTLMInsteadOfNegotiate {
+		fg.AddResponseModifier(martian.ResponseModifierFunc(middleware.BehaviorForceNTLMInsteadOfNegotiateModifier))
 	}
 
 	if hp.config.LogHTTPMode != httplog.None {
