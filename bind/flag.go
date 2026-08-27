@@ -127,6 +127,11 @@ func ResponseHeaders(fs *pflag.FlagSet, headers *[]header.Header) {
 			"See the documentation for the -H, --header flag for more details on the format. ")
 }
 
+func BehaviorModificationConfig(fs *pflag.FlagSet, cfg *forwarder.BehaviorModificationConfig) {
+	fs.BoolVar(&cfg.ForceNTLMInsteadOfNegotiate, "behavior-force-ntlm-instead-negotiate", cfg.ForceNTLMInsteadOfNegotiate,
+		"If server presents both WWW-Authenticate options: Negotiate and NTLM, remove Negotiate value. This forces browser to use plain NTLM auth. ")
+}
+
 func HTTPProxyConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPProxyConfig, lcfg *log.Config) {
 	HTTPServerConfig(fs, &cfg.HTTPServerConfig, "", forwarder.HTTPScheme, forwarder.HTTPSScheme)
 	LogConfig(fs, lcfg)
@@ -260,7 +265,7 @@ func HTTPTransportConfig(fs *pflag.FlagSet, cfg *forwarder.HTTPTransportConfig) 
 
 	fs.IntVar(&cfg.MaxConnsPerHost,
 		"http-max-conns-per-host", cfg.MaxConnsPerHost,
-		"The maximum number of connections active for givern host:port pair. ")
+		"The maximum number of connections active for given host:port pair. ")
 
 	fs.DurationVar(&cfg.ResponseHeaderTimeout,
 		"http-response-header-timeout", cfg.ResponseHeaderTimeout,

@@ -72,7 +72,7 @@ func NewProxyResolver(cfg *ProxyResolverConfig, r *net.Resolver, opts ...Option)
 
 	// Set additional options before evaluating the PAC script.
 	for _, opt := range opts {
-		(opt)(pr.vm)
+		opt(pr.vm)
 	}
 
 	// Evaluate the PAC script.

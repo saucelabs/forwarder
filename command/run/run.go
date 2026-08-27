@@ -15,6 +15,7 @@ import (
 	"net/url"
 	"os"
 	"runtime"
+	"slices"
 	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -219,6 +220,7 @@ func (c *command) runE(cmd *cobra.Command, _ []string) (cmdErr error) {
 	}
 
 	c.configureHeadersModifiers()
+	c.configureBehaviorModifiers()
 
 	if c.mitm || c.mitmConfig.CACertFile != "" || len(c.mitmDomains) > 0 {
 		c.httpProxyConfig.MITM = c.mitmConfig
@@ -342,6 +344,39 @@ func (c *command) configureHeadersModifiers() {
 			}
 			return headers.ModifyResponse(resp)
 		})
+		c.httpProxyConfig.ResponseModifiers = append(c.httpProxyConfig.ResponseModifiers, m)
+	}
+}
+
+func (c *command) configureBehaviorModifiers() {
+	if c.httpProxyConfig.BehaviorModification.ForceNTLMInsteadOfNegotiate {
+		// if response header contain WWW-Authenticate Negotiate and WWW-Authenticate NTLM,
+		// remove Negotiate to force NTLM
+
+		m := forwarder.ResponseModifierFunc(func(resp *http.Response) error {
+			wwwAuthenticateValues := resp.Header.Values("WWW-Authenticate")
+
+			if len(wwwAuthenticateValues) < 2 {
+				return nil
+			}
+
+			if slices.Contains(wwwAuthenticateValues, "Negotiate") && slices.Contains(wwwAuthenticateValues, "NTLM") {
+				negotiatePosition := slices.Index(wwwAuthenticateValues, "Negotiate")
+
+				if negotiatePosition == -1 { // should not happen ever at this point
+					return nil
+				}
+
+				updatedHeaderValues := slices.Delete(wwwAuthenticateValues, negotiatePosition, negotiatePosition)
+				resp.Header.Del("WWW-Authenticate")
+
+				for _, value := range updatedHeaderValues {
+					resp.Header.Add("WWW-Authenticate", value)
+				}
+			} // if slices.Contains
+			return nil
+		})
+
 		c.httpProxyConfig.ResponseModifiers = append(c.httpProxyConfig.ResponseModifiers, m)
 	}
 }
@@ -477,6 +512,7 @@ func Command() *cobra.Command {
 	bind.RequestHeaders(fs, &c.requestHeaders)
 	bind.ResponseHeaders(fs, &c.responseHeaders)
 	bind.HTTPProxyConfig(fs, c.httpProxyConfig, c.logConfig)
+	bind.BehaviorModificationConfig(fs, &c.httpProxyConfig.BehaviorModification)
 	bind.MITMConfig(fs, &c.mitm, c.mitmConfig)
 	bind.MITMDomains(fs, &c.mitmDomains)
 	bind.ProxyProtocol(fs, &c.proxyProtocol, c.proxyProtocolConfig)

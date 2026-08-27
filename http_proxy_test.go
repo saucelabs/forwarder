@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -277,5 +278,74 @@ func TestAllowTimeFrame(t *testing.T) {
 		res := rw.Result()
 
 		assert.Equal(t, http.StatusUnavailableForLegalReasons, res.StatusCode)
+	})
+}
+
+func TestBehaviorForceNTLMInsteadNegotiate(t *testing.T) {
+	t.Run("handleHTTPRequestWhenDisabled", func(t *testing.T) {
+		cfg := DefaultHTTPProxyConfig()
+		cfg.ProxyLocalhost = AllowProxyLocalhost
+
+		cfg.BehaviorModification.ForceNTLMInsteadOfNegotiate = false
+
+		h, err := NewHTTPProxyHandler(cfg, nil, nil, nil, slog.Default(), nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.Header().Add("WWW-Authenticate", "Negotiate")
+			w.Header().Add("WWW-Authenticate", "NTLM")
+			w.WriteHeader(http.StatusOK)
+		}))
+		defer s.Close()
+
+		req, err := http.NewRequest(http.MethodGet, "http://"+s.Listener.Addr().String(), http.NoBody)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		rw := httptest.NewRecorder()
+		h.ServeHTTP(rw, req)
+
+		res := rw.Result()
+
+		assert.Equal(t, http.StatusOK, res.StatusCode)
+		authenticateValues := res.Header.Values("WWW-Authenticate")
+		assert.True(t, slices.Contains(authenticateValues, "Negotiate"))
+		assert.True(t, slices.Contains(authenticateValues, "NTLM"))
+	})
+
+	t.Run("handleHTTPRequestWhenEnabled", func(t *testing.T) {
+		cfg := DefaultHTTPProxyConfig()
+		cfg.ProxyLocalhost = AllowProxyLocalhost
+		cfg.BehaviorModification.ForceNTLMInsteadOfNegotiate = true
+
+		h, err := NewHTTPProxyHandler(cfg, nil, nil, nil, slog.Default(), nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.Header().Add("WWW-Authenticate", "Negotiate")
+			w.Header().Add("WWW-Authenticate", "NTLM")
+			w.WriteHeader(http.StatusOK)
+		}))
+		defer s.Close()
+
+		req, err := http.NewRequest(http.MethodGet, "http://"+s.Listener.Addr().String(), http.NoBody)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		rw := httptest.NewRecorder()
+		h.ServeHTTP(rw, req)
+
+		res := rw.Result()
+
+		assert.Equal(t, http.StatusOK, res.StatusCode)
+		authenticateValues := res.Header.Values("WWW-Authenticate")
+		assert.Len(t, res.Header.Values("WWW-Authenticate"), 1)
+		assert.True(t, slices.Contains(authenticateValues, "NTLM"))
 	})
 }
