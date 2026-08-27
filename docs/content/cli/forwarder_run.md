@@ -383,11 +383,7 @@ Validity period of the generated MITM certificates.
 * Value Format: `<value>`
 * Default value: `false`
 
-If a server presents WWW-Authenticate headers for both `Negotiate` and `NTLM` - remove `Negotiate` header on the fly before passing response to the client to force the client to use "basic" NTLM.
-
-This is a workaround to an issue with Negotiate authentication with Windows servers resulting in 401 errors. Errors are caused by NTLM 3-step negotiation and token (not to be confused with "basic" NTLM) being bound by design to a particular TCP socket.
-
-As forwarder multiplexes multiple connections from clients into one or more TCP connections to a server, those sessions conflict with each other and invalidate themselves (a race condition).
+If a server presents WWW-Authenticate headers for both `Negotiate` and `NTLM` - remove `Negotiate` header on the fly before passing response to the client to force the client to use NTLM (for example instead of Kerberos).
 
 
 ## DNS options
