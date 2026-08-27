@@ -82,25 +82,30 @@ type (
 // that the CONNECT request should be handled by martian.
 var ErrConnectFallback = martian.ErrConnectFallback
 
+type BehaviorModificationConfig struct {
+	UseNTLMInsteadOfNegotiate bool
+}
+
 type HTTPProxyConfig struct {
 	HTTPServerConfig
 
-	ExtraListeners    []NamedListenerConfig
-	Name              string
-	MITM              *MITMConfig
-	MITMDomains       Matcher
-	ProxyLocalhost    ProxyLocalhostMode
-	UpstreamProxy     *url.URL
-	UpstreamProxyFunc ProxyFunc
-	DenyDomains       Matcher
-	DirectDomains     Matcher
-	RequestIDHeader   string
-	RequestModifiers  []RequestModifier
-	ResponseModifiers []ResponseModifier
-	ConnectFunc       ConnectFunc
-	ConnectTimeout    time.Duration
-	PromHTTPOpts      []middleware.PrometheusOpt
-	AllowTimeFrame    []ruleset.TimeFrameEntry
+	ExtraListeners       []NamedListenerConfig
+	Name                 string
+	MITM                 *MITMConfig
+	MITMDomains          Matcher
+	ProxyLocalhost       ProxyLocalhostMode
+	UpstreamProxy        *url.URL
+	UpstreamProxyFunc    ProxyFunc
+	DenyDomains          Matcher
+	DirectDomains        Matcher
+	RequestIDHeader      string
+	RequestModifiers     []RequestModifier
+	ResponseModifiers    []ResponseModifier
+	ConnectFunc          ConnectFunc
+	ConnectTimeout       time.Duration
+	PromHTTPOpts         []middleware.PrometheusOpt
+	AllowTimeFrame       []ruleset.TimeFrameEntry
+	BehaviorModification BehaviorModificationConfig
 	// TestingHTTPHandler uses Martian's [http.Handler] implementation
 	// over [http.Server] instead of the default TCP server.
 	TestingHTTPHandler bool
@@ -118,11 +123,16 @@ func DefaultHTTPProxyConfig() *HTTPProxyConfig {
 				HandshakeTimeout: 10 * time.Second,
 			},
 		},
-		Name:            "forwarder",
-		ProxyLocalhost:  DenyProxyLocalhost,
-		RequestIDHeader: "X-Request-Id",
-		ConnectTimeout:  60 * time.Second, // http.Transport sets a constant 1m timeout for CONNECT requests.
+		Name:                 "forwarder",
+		ProxyLocalhost:       DenyProxyLocalhost,
+		RequestIDHeader:      "X-Request-Id",
+		ConnectTimeout:       60 * time.Second, // http.Transport sets a constant 1m timeout for CONNECT requests.
+		BehaviorModification: *DefaultBehaviorModificationConfig(),
 	}
+}
+
+func DefaultBehaviorModificationConfig() *BehaviorModificationConfig {
+	return &BehaviorModificationConfig{UseNTLMInsteadOfNegotiate: false}
 }
 
 func (c *HTTPProxyConfig) Validate() error {
@@ -455,6 +465,10 @@ func (hp *HTTPProxy) middlewareStack() (martian.RequestResponseModifier, *martia
 
 	for _, m := range hp.config.ResponseModifiers {
 		fg.AddResponseModifier(m)
+	}
+
+	if hp.config.BehaviorModification.UseNTLMInsteadOfNegotiate {
+		fg.AddResponseModifier(martian.ResponseModifierFunc(middleware.BehaviorUseNTLMInsteadOfNegotiateModifier))
 	}
 
 	if hp.config.LogHTTPMode != httplog.None {

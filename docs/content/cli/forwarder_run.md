@@ -375,6 +375,21 @@ Organization name to use in the generated MITM certificates.
 
 Validity period of the generated MITM certificates.
 
+## Behavior modification options
+
+### `--behavior-force-ntlm-instead-negotiate` {#behavior-force-ntlm}
+
+* Environment variable: `FORWARDER_BEHAVIOR_FORCE_NTLM_INSTEAD_NEGOTIATE`
+* Value Format: `<value>`
+* Default value: `false`
+
+If a server presents WWW-Authenticate headers for both `Negotiate` and `NTLM` - remove `Negotiate` header on the fly before passing response to the client to force the client to use "basic" NTLM.
+
+This is a workaround to an issue with Negotiate authentication with Windows servers resulting in 401 errors. Errors are caused by NTLM 3-step negotiation and token (not to be confused with "basic" NTLM) being bound by design to a particular TCP socket.
+
+As forwarder multiplexes multiple connections from clients into one or more TCP connections to a server, those sessions conflict with each other and invalidate themselves (a race condition).
+
+
 ## DNS options
 
 ### `--dns-round-robin` {#dns-round-robin}
@@ -479,12 +494,7 @@ Zero means no limit.
 MaxConnsPerHost optionally limits the total number of onnections per host, including connections in the dialing,
 active, and idle states. On limit violation, dials will block.
 
-If you are using NTLM web authorization protocol and you observe hard to explain 401 errors - set this value to 1.
-
-NTLM authorization breaks in forwarder because in NTLM challenge and token must be transmitter over same socket connection. If
-forwarder load-balances requests to a host over a pool - some requests with authorization token may end up on a different
-socket connection and server will respond with 401 error.
-
+This may greatly limit forwarder performance and response times - use with caution.
 
 ### `--http-response-header-timeout` {#http-response-header-timeout}
 
