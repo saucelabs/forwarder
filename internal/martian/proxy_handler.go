@@ -23,7 +23,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/docker/docker/daemon/logger"
 	"github.com/saucelabs/forwarder/internal/martian/log"
 	"github.com/saucelabs/forwarder/internal/martian/proxyutil"
 )
@@ -277,7 +276,7 @@ func (p proxyHandler) handleRequest(rw http.ResponseWriter, req *http.Request) {
 	var err error
 
 	if p.IndividualTransport != nil {
-		logger.Info(ctx, "Using individual transport")
+		log.Info(ctx, "Using individual transport")
 		res, err = p.IndividualTransport.RoundTrip(req)
 	} else {
 		res, err = p.roundTrip(req)
