@@ -381,10 +381,10 @@ func (p *proxyConn) handle() error {
 	var res *http.Response
 
 	if p.connectionSpecificRoundTripper != nil {
-		log.Info(ctx, "Using connection specific RoundTripper")
+		log.Error(ctx, "Using connection specific RoundTripper")
 		res, err = p.connectionSpecificRoundTripper.RoundTrip(req)
 	} else {
-		log.Info(ctx, "Using default RoundTripper")
+		log.Error(ctx, "Using default RoundTripper")
 		res, err = p.roundTrip(req)
 	}
 
