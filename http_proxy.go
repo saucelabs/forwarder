@@ -672,6 +672,14 @@ func (hp *HTTPProxy) handler() http.Handler {
 	return hp.proxy.Handler()
 }
 
+func (hp *HTTPProxy) Handler() http.Handler {
+	return hp.proxy.Handler()
+}
+
+func (hp *HTTPProxy) HandlerWithIndividualTransport() http.Handler {
+	return hp.proxy.HandlerWithIndividualTransport()
+}
+
 func (hp *HTTPProxy) Run(ctx context.Context) error {
 	if hp.config.TestingHTTPHandler {
 		hp.log.Info("using http handler")
