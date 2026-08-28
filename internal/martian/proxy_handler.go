@@ -76,11 +76,24 @@ func copyBody(w io.Writer, body io.ReadCloser) error {
 
 type proxyHandler struct {
 	*Proxy
-	individualTransport *http.Transport
+	IndividualTransport *http.Transport
 }
 
 // Handler returns proxy as http.Handler, see [proxyHandler] for details.
 func (p *Proxy) Handler() http.Handler {
+	p.init()
+
+	var individualTransport *http.Transport = nil
+
+	tr, ok := p.rt.(*http.Transport)
+	if ok {
+		individualTransport = tr.Clone()
+	}
+	return proxyHandler{p, individualTransport}
+}
+
+// Handler returns proxy as http.Handler, see [proxyHandler] for details.
+func (p *Proxy) HandlerWithIndividualTransport() http.Handler {
 	p.init()
 
 	var individualTransport *http.Transport = nil
@@ -269,9 +282,9 @@ func (p proxyHandler) handleRequest(rw http.ResponseWriter, req *http.Request) {
 	var res *http.Response
 	var err error
 
-	if p.individualTransport != nil {
+	if p.IndividualTransport != nil {
 		logger.Info(ctx, "Using individual transport")
-		res, err = p.individualTransport.RoundTrip(req)
+		res, err = p.IndividualTransport.RoundTrip(req)
 	} else {
 		res, err = p.roundTrip(req)
 	}
