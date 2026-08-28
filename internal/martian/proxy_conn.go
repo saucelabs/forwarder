@@ -384,6 +384,7 @@ func (p *proxyConn) handle() error {
 		log.Info(ctx, "Using connection specific RoundTripper")
 		res, err = p.connectionSpecificRoundTripper.RoundTrip(req)
 	} else {
+		log.Info(ctx, "Using default RoundTripper")
 		res, err = p.roundTrip(req)
 	}
 
