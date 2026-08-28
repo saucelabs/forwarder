@@ -83,13 +83,7 @@ type proxyHandler struct {
 func (p *Proxy) Handler() http.Handler {
 	p.init()
 
-	var individualTransport *http.Transport = nil
-
-	tr, ok := p.rt.(*http.Transport)
-	if ok {
-		individualTransport = tr.Clone()
-	}
-	return proxyHandler{p, individualTransport}
+	return proxyHandler{p, nil}
 }
 
 // Handler returns proxy as http.Handler, see [proxyHandler] for details.
