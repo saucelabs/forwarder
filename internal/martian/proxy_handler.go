@@ -276,9 +276,10 @@ func (p proxyHandler) handleRequest(rw http.ResponseWriter, req *http.Request) {
 	var err error
 
 	if p.IndividualTransport != nil {
-		log.Info(ctx, "Using individual transport")
+		log.Error(ctx, "Using individual transport")
 		res, err = p.IndividualTransport.RoundTrip(req)
 	} else {
+		log.Error(ctx, "Using shared transport")
 		res, err = p.roundTrip(req)
 	}
 
