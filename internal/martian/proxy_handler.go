@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/docker/docker/daemon/logger"
 	"github.com/saucelabs/forwarder/internal/martian/log"
 	"github.com/saucelabs/forwarder/internal/martian/proxyutil"
 )
@@ -72,14 +73,23 @@ func copyBody(w io.Writer, body io.ReadCloser) error {
 //   - HTTP status code 100 is not supported, see [issue 2184]
 //
 // [issue 2184]: https://github.com/golang/go/issues/2184
+
 type proxyHandler struct {
 	*Proxy
+	individualTransport *http.Transport
 }
 
 // Handler returns proxy as http.Handler, see [proxyHandler] for details.
 func (p *Proxy) Handler() http.Handler {
 	p.init()
-	return proxyHandler{p}
+
+	var individualTransport *http.Transport = nil
+
+	tr, ok := p.rt.(*http.Transport)
+	if ok {
+		individualTransport = tr.Clone()
+	}
+	return proxyHandler{p, individualTransport}
 }
 
 func (p proxyHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
@@ -255,7 +265,17 @@ func (p proxyHandler) handleRequest(rw http.ResponseWriter, req *http.Request) {
 	}
 
 	// perform the HTTP roundtrip
-	res, err := p.roundTrip(req)
+
+	var res *http.Response
+	var err error
+
+	if p.individualTransport != nil {
+		logger.Info(ctx, "Using individual transport")
+		res, err = p.individualTransport.RoundTrip(req)
+	} else {
+		res, err = p.roundTrip(req)
+	}
+
 	if err != nil {
 		if isClosedConnError(err) {
 			log.Debug(ctx, "connection closed prematurely", "error", err)
