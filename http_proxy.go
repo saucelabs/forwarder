@@ -89,23 +89,24 @@ type BehaviorModificationConfig struct {
 type HTTPProxyConfig struct {
 	HTTPServerConfig
 
-	ExtraListeners       []NamedListenerConfig
-	Name                 string
-	MITM                 *MITMConfig
-	MITMDomains          Matcher
-	ProxyLocalhost       ProxyLocalhostMode
-	UpstreamProxy        *url.URL
-	UpstreamProxyFunc    ProxyFunc
-	DenyDomains          Matcher
-	DirectDomains        Matcher
-	RequestIDHeader      string
-	RequestModifiers     []RequestModifier
-	ResponseModifiers    []ResponseModifier
-	ConnectFunc          ConnectFunc
-	ConnectTimeout       time.Duration
-	PromHTTPOpts         []middleware.PrometheusOpt
-	AllowTimeFrame       []ruleset.TimeFrameEntry
-	BehaviorModification BehaviorModificationConfig
+	ExtraListeners        []NamedListenerConfig
+	Name                  string
+	MITM                  *MITMConfig
+	MITMDomains           Matcher
+	ProxyLocalhost        ProxyLocalhostMode
+	UpstreamProxy         *url.URL
+	UpstreamProxyFunc     ProxyFunc
+	DenyDomains           Matcher
+	DirectDomains         Matcher
+	RequestIDHeader       string
+	LogHTTPRequestHeaders []httplog.HeaderField
+	RequestModifiers      []RequestModifier
+	ResponseModifiers     []ResponseModifier
+	ConnectFunc           ConnectFunc
+	ConnectTimeout        time.Duration
+	PromHTTPOpts          []middleware.PrometheusOpt
+	AllowTimeFrame        []ruleset.TimeFrameEntry
+	BehaviorModification  BehaviorModificationConfig
 	// TestingHTTPHandler uses Martian's [http.Handler] implementation
 	// over [http.Server] instead of the default TCP server.
 	TestingHTTPHandler bool
@@ -472,7 +473,9 @@ func (hp *HTTPProxy) middlewareStack() (martian.RequestResponseModifier, *martia
 	}
 
 	if hp.config.LogHTTPMode != httplog.None {
-		lf := httplog.NewStructuredLogger(hp.log.Info, hp.config.LogHTTPMode).LogFunc()
+		lf := httplog.NewStructuredLogger(hp.log.Info, hp.config.LogHTTPMode).
+			WithRequestHeaders(hp.config.LogHTTPRequestHeaders).
+			LogFunc()
 		fg.AddResponseModifier(lf)
 	}
 

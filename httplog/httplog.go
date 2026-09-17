@@ -54,10 +54,16 @@ func SplitNameMode(val string) (name string, mode Mode, err error) {
 
 var DefaultMode = Errors
 
+type HeaderField struct {
+	Header string // request header name (canonical form)
+	Field  string // log field name
+}
+
 type Logger struct {
-	log        func(format string, args ...any)
-	mode       Mode
-	structured bool
+	log            func(format string, args ...any)
+	mode           Mode
+	structured     bool
+	requestHeaders []HeaderField
 }
 
 // NewLogger returns a logger that logs HTTP requests and responses.
@@ -82,6 +88,11 @@ func NewStructuredLogger(logFunc func(msg string, args ...any), mode Mode) *Logg
 		mode:       mode,
 		structured: true,
 	}
+}
+
+func (l *Logger) WithRequestHeaders(h []HeaderField) *Logger {
+	l.requestHeaders = h
+	return l
 }
 
 func (l *Logger) LogFunc() middleware.Logger {
@@ -145,12 +156,14 @@ func (l *Logger) structuredLogFunc() middleware.Logger {
 		return func(e middleware.LogEntry) {
 			var b structuredLogBuilder
 			b.WithShortURL(e)
+			b.WithRequestHeaders(e, l.requestHeaders)
 			l.log("HTTP dump", b.Args()...)
 		}
 	case URL:
 		return func(e middleware.LogEntry) {
 			var b structuredLogBuilder
 			b.WithURL(e)
+			b.WithRequestHeaders(e, l.requestHeaders)
 			l.log("HTTP dump", b.Args()...)
 		}
 	case Headers:
@@ -158,6 +171,7 @@ func (l *Logger) structuredLogFunc() middleware.Logger {
 			var b structuredLogBuilder
 			b.WithShortURL(e)
 			b.WithHeaders(e)
+			b.WithRequestHeaders(e, l.requestHeaders)
 			l.log("HTTP dump", b.Args()...)
 		}
 	case Body:
@@ -166,6 +180,7 @@ func (l *Logger) structuredLogFunc() middleware.Logger {
 			b.WithShortURL(e)
 			b.WithHeaders(e)
 			b.WithBody(e)
+			b.WithRequestHeaders(e, l.requestHeaders)
 			l.log("HTTP dump", b.Args()...)
 		}
 	case Errors:
@@ -177,6 +192,7 @@ func (l *Logger) structuredLogFunc() middleware.Logger {
 			var b structuredLogBuilder
 			b.WithShortURL(e)
 			b.WithHeaders(e)
+			b.WithRequestHeaders(e, l.requestHeaders)
 			l.log("HTTP dump", b.Args()...)
 		}
 	default:

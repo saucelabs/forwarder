@@ -144,10 +144,11 @@ func formatSlice(s []string) string {
 }
 
 type structuredLogBuilder struct {
-	req      request
-	res      response
-	duration string
-	id       string
+	req       request
+	res       response
+	duration  string
+	id        string
+	extraArgs []any
 }
 
 // WithShortURL sets the URL using a short form along with basic fields.
@@ -264,7 +265,21 @@ func (b *structuredLogBuilder) WithBody(e middleware.LogEntry) {
 	}
 }
 
+// WithRequestHeaders emits the configured request headers as extra log fields.
+// Empty values are skipped so unknown values don't clutter the log line.
+func (b *structuredLogBuilder) WithRequestHeaders(e middleware.LogEntry, headers []HeaderField) {
+	if e.Request == nil || len(headers) == 0 {
+		return
+	}
+	for _, h := range headers {
+		if v := e.Request.Header.Get(h.Header); v != "" {
+			b.extraArgs = append(b.extraArgs, h.Field, v)
+		}
+	}
+}
+
 // Args returns a slice of key-value pairs for logging purposes.
 func (b *structuredLogBuilder) Args() []any {
-	return []any{"request", b.req, "response", b.res, "duration", b.duration, "id", b.id}
+	args := []any{"request", b.req, "response", b.res, "duration", b.duration, "id", b.id}
+	return append(args, b.extraArgs...)
 }
