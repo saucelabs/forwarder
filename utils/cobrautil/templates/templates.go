@@ -54,9 +54,11 @@ const (
 {{end}}`
 
 	// SectionPersistentFlags is the help template section that displays the command's persistent flags.
-	SectionPersistentFlags = `{{ if .HasAvailablePersistentFlags}}The following options can be passed to any subcommand:
+	// It uses HelpOptions.PersistentFlagsHeading when set.
+	SectionPersistentFlags = `{{ if .HasAvailablePersistentFlags}}{{with persistentFlagsHeading}}{{.}}
+{{trimRight (flagsUsagesNoGroups (globalFlags $))}}{{else}}The following options can be passed to any subcommand:
 
-{{trimRight (flagsUsages .PersistentFlags)}}
+{{trimRight (flagsUsages .PersistentFlags)}}{{end}}
 
 {{end}}`
 
@@ -66,8 +68,20 @@ const (
 
 {{end}}`
 
+	// SectionRootUsage is the help template section that displays the usage of a root command that only has subcommands.
+	// It is shown only when HelpOptions.RootUsage is set.
+	SectionRootUsage = `{{if and (showRootUsage .) (not .Runnable) .HasAvailableSubCommands}}Usage:
+  {{.CommandPath}} <command> [options]
+
+{{end}}`
+
 	// SectionTipsHelp is the help template section that displays the '--help' hint.
-	SectionTipsHelp = `{{if .HasSubCommands}}Use "{{$rootCmd}} <command> --help" for more information about a given command.
+	// It uses HelpOptions.TipsHelp for the root command when set, subcommands keep the default hint.
+	SectionTipsHelp = `{{if .HasSubCommands}}{{if and $isRootCmd tipsHelp}}{{tipsHelp}}{{else}}Use "{{$rootCmd}} <command> --help" for more information about a given command.{{end}}
+{{end}}`
+
+	// SectionFooter is the help template section that displays HelpOptions.Footer at the end of the root command help.
+	SectionFooter = `{{if and $isRootCmd footer}}{{footer}}
 {{end}}`
 
 	// SectionTipsGlobalOptions is the help template section that displays the 'options' hint for displaying global flags.
@@ -82,9 +96,8 @@ func MainHelpTemplate() string {
 
 // MainUsageTemplate if the template for 'usage' used by most commands.
 func MainUsageTemplate() string {
-	sections := []string{
-		"\n\n",
-		SectionVars,
+	return UsageTemplate(
+		SectionRootUsage,
 		SectionAliases,
 		SectionExamples,
 		SectionSubcommands,
@@ -92,9 +105,16 @@ func MainUsageTemplate() string {
 		SectionPersistentFlags,
 		SectionUsage,
 		SectionTipsHelp,
+		SectionFooter,
 		// SectionTipsGlobalOptions,
-	}
-	return strings.TrimRightFunc(strings.Join(sections, ""), unicode.IsSpace)
+	)
+}
+
+// UsageTemplate builds a template for 'usage' from the given sections, in the given order.
+// SectionVars is always added first.
+func UsageTemplate(sections ...string) string {
+	all := append([]string{"\n\n", SectionVars}, sections...)
+	return strings.TrimRightFunc(strings.Join(all, ""), unicode.IsSpace)
 }
 
 // OptionsHelpTemplate if the template for 'help' used by the 'options' command.
