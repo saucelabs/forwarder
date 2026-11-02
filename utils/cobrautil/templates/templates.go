@@ -94,6 +94,11 @@ func MainHelpTemplate() string {
 	return `{{with or .Long .Short }}{{. | trim}}{{end}}{{if or .Runnable .HasSubCommands}}{{.UsageString}}{{end}}`
 }
 
+// KeepLineBreaksHelpTemplate is MainHelpTemplate that keeps the line breaks in the command description.
+func KeepLineBreaksHelpTemplate() string {
+	return `{{with or .Long .Short }}{{. | trimLeft | trimRight}}{{end}}{{if or .Runnable .HasSubCommands}}{{.UsageString}}{{end}}`
+}
+
 // MainUsageTemplate if the template for 'usage' used by most commands.
 func MainUsageTemplate() string {
 	return UsageTemplate(

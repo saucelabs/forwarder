@@ -56,6 +56,8 @@ type HelpOptions struct {
 	// CommandShort overrides, by command name, the description shown in the root command list,
 	// e.g. for the completion command that cobra adds on execute.
 	CommandShort map[string]string
+	// KeepLineBreaks shows command descriptions with their line breaks, instead of joining them into one line.
+	KeepLineBreaks bool
 }
 
 func ActsAsRootCommand(cmd *cobra.Command, filters []string, cg CommandGroups, fg FlagGroups, envPrefix string) FlagExposer {
@@ -74,10 +76,15 @@ func ActsAsRootCommandWithOptions(cmd *cobra.Command, filters []string, cg Comma
 		usageTemplate = UsageTemplate(opts.UsageSections...)
 	}
 
+	helpTemplate := MainHelpTemplate()
+	if opts.KeepLineBreaks {
+		helpTemplate = KeepLineBreaksHelpTemplate()
+	}
+
 	templater := &templater{
 		RootCmd:       cmd,
 		UsageTemplate: usageTemplate,
-		HelpTemplate:  MainHelpTemplate(),
+		HelpTemplate:  helpTemplate,
 		CommandGroups: cg,
 		FlagGroups:    fg,
 		Filtered:      filters,
