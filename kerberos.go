@@ -27,6 +27,7 @@ type KerberosConfig struct {
 	Enabled           bool
 	RunDiagnostics    bool
 	AuthUpstreamProxy bool
+	DisablePAFXFAST   bool
 	CfgFilePath       string
 	KeyTabFilePath    string
 	UserName          string
@@ -83,7 +84,8 @@ func NewKerberosAdapter(cnf KerberosConfig, log log.StructuredLogger) (*Kerberos
 		return nil, fmt.Errorf("error loading kerberos keytab file %s: %w", cnf.KeyTabFilePath, err)
 	}
 
-	krb5Client := client.NewWithKeytab(cnf.UserName, cnf.UserRealm, krb5Keytab, krb5Config)
+	krb5Client := client.NewWithKeytab(cnf.UserName, cnf.UserRealm, krb5Keytab, krb5Config,
+		client.DisablePAFXFAST(cnf.DisablePAFXFAST))
 
 	return &KerberosClient{configuration: cnf, krb5client: *krb5Client, log: log}, nil
 }
