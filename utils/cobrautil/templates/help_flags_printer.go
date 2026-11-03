@@ -110,6 +110,11 @@ func writeFlag(out io.Writer, f *flag.Flag, envPrefix string) {
 
 	env := fmt.Sprintf(" (env %s)", envName(envPrefix, f.Name))
 
+	// The help flag is a plain switch, show it without value, default and env.
+	if f.Name == "help" {
+		name, def, env = "", "", ""
+	}
+
 	fmt.Fprintf(out, getFlagFormat(f), f.Shorthand, f.Name, name, def, env, usage, deprecated)
 }
 

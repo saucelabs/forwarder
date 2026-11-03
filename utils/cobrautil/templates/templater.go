@@ -35,19 +35,61 @@ type FlagExposer interface {
 	ExposeFlags(cmd *cobra.Command, flags ...string) FlagExposer
 }
 
+// HelpOptions enables optional parts of the root command help.
+// The zero value keeps the default help output.
+type HelpOptions struct {
+	// RootUsage shows "Usage: <root> <command> [options]" for a root command that only has subcommands.
+	RootUsage bool
+	// PersistentFlagsHeading replaces the default persistent flags heading, e.g. "Global options:".
+	// When set, the persistent flags and the help flag are listed without flag group names.
+	PersistentFlagsHeading string
+	// UsageSections sets the usage sections and their order, e.g. to show SectionExamples last.
+	// When empty, the MainUsageTemplate order is used.
+	UsageSections []string
+	// TipsHelp replaces the default `Use "<root> <command> --help" ...` tip.
+	TipsHelp string
+	// Footer is shown at the end of the root command help, e.g. a docs link.
+	Footer string
+	// SingleCommandList lists all root subcommands under the first command group heading,
+	// instead of adding the commands that are not in any group under "Other Commands:".
+	SingleCommandList bool
+	// CommandShort overrides, by command name, the description shown in the root command list,
+	// e.g. for the completion command that cobra adds on execute.
+	CommandShort map[string]string
+	// KeepLineBreaks shows command descriptions with their line breaks, instead of joining them into one line.
+	KeepLineBreaks bool
+}
+
 func ActsAsRootCommand(cmd *cobra.Command, filters []string, cg CommandGroups, fg FlagGroups, envPrefix string) FlagExposer {
+	return ActsAsRootCommandWithOptions(cmd, filters, cg, fg, envPrefix, HelpOptions{})
+}
+
+// ActsAsRootCommandWithOptions works like ActsAsRootCommand and applies opts to the help output.
+// Passing a zero HelpOptions gives the same output as ActsAsRootCommand.
+func ActsAsRootCommandWithOptions(cmd *cobra.Command, filters []string, cg CommandGroups, fg FlagGroups, envPrefix string, opts HelpOptions) FlagExposer {
 	if cmd == nil {
 		panic("nil root command")
 	}
 
+	usageTemplate := MainUsageTemplate()
+	if len(opts.UsageSections) > 0 {
+		usageTemplate = UsageTemplate(opts.UsageSections...)
+	}
+
+	helpTemplate := MainHelpTemplate()
+	if opts.KeepLineBreaks {
+		helpTemplate = KeepLineBreaksHelpTemplate()
+	}
+
 	templater := &templater{
 		RootCmd:       cmd,
-		UsageTemplate: MainUsageTemplate(),
-		HelpTemplate:  MainHelpTemplate(),
+		UsageTemplate: usageTemplate,
+		HelpTemplate:  helpTemplate,
 		CommandGroups: cg,
 		FlagGroups:    fg,
 		Filtered:      filters,
 		EnvPrefix:     envPrefix,
+		Options:       opts,
 	}
 	cmd.SetFlagErrorFunc(templater.FlagErrorFunc())
 	cmd.SilenceUsage = true
@@ -73,6 +115,7 @@ type templater struct {
 	FlagGroups
 	Filtered  []string
 	EnvPrefix string
+	Options   HelpOptions
 }
 
 func (templater *templater) FlagErrorFunc(exposedFlags ...string) func(*cobra.Command, error) error {
@@ -137,6 +180,14 @@ func (templater *templater) templateFuncs(exposedFlags ...string) template.FuncM
 		"isRootCmd":           templater.isRootCmd,
 		"optionsCmdFor":       templater.optionsCmdFor,
 		"usageLine":           templater.usageLine,
+		"showRootUsage": func(c *cobra.Command) bool {
+			return templater.Options.RootUsage && templater.isRootCmd(c)
+		},
+		"persistentFlagsHeading": func() string { return templater.Options.PersistentFlagsHeading },
+		"flagsUsagesNoGroups":    templater.flagsUsagesNoGroups,
+		"globalFlags":            globalFlags,
+		"tipsHelp":               func() string { return templater.Options.TipsHelp },
+		"footer":                 func() string { return templater.Options.Footer },
 		"exposed": func(c *cobra.Command) *flag.FlagSet {
 			exposed := flag.NewFlagSet("exposed", flag.ContinueOnError)
 			if len(exposedFlags) > 0 {
@@ -154,7 +205,15 @@ func (templater *templater) templateFuncs(exposedFlags ...string) template.FuncM
 func (templater *templater) cmdGroups(c *cobra.Command, all []*cobra.Command) []CommandGroup {
 	if len(templater.CommandGroups) > 0 && c == templater.RootCmd {
 		all = filter(all, templater.Filtered...)
-		return AddAdditionalCommands(templater.CommandGroups, "Other Commands:", all)
+		groups := AddAdditionalCommands(templater.CommandGroups, "Other Commands:", all)
+		if templater.Options.SingleCommandList && len(groups) > 1 {
+			var cmds []*cobra.Command
+			for _, g := range groups {
+				cmds = append(cmds, g.Commands...)
+			}
+			groups = CommandGroups{{Message: groups[0].Message, Commands: cmds}}
+		}
+		return groups
 	}
 	all = filter(all, "options")
 	return []CommandGroup{
@@ -171,7 +230,11 @@ func (t *templater) cmdGroupsString(c *cobra.Command) string {
 		cmds := []string{cmdGroup.Message}
 		for _, cmd := range cmdGroup.Commands {
 			if cmd.IsAvailableCommand() {
-				cmds = append(cmds, "  "+rpad(cmd.Name(), cmd.NamePadding())+"   "+cmd.Short)
+				short := cmd.Short
+				if s, ok := t.Options.CommandShort[cmd.Name()]; ok && t.isRootCmd(c) {
+					short = s
+				}
+				cmds = append(cmds, "  "+rpad(cmd.Name(), cmd.NamePadding())+"   "+short)
 			}
 		}
 		groups = append(groups, strings.Join(cmds, "\n"))
@@ -268,6 +331,29 @@ func (t *templater) flagsUsages(f *flag.FlagSet) (string, error) {
 	}
 
 	return flagBuf.String(), nil
+}
+
+// flagsUsagesNoGroups prints the flags without flag group names.
+func (t *templater) flagsUsagesNoGroups(f *flag.FlagSet) string {
+	flagBuf := new(bytes.Buffer)
+	printer := NewHelpFlagPrinter(flagBuf, t.EnvPrefix, DefaultWrapLimit)
+	f.VisitAll(func(flag *flag.Flag) {
+		if flag.Hidden {
+			return
+		}
+		printer.PrintHelpFlag(flag)
+	})
+	return flagBuf.String()
+}
+
+// globalFlags builds a new list from the persistent flags plus the local help flag
+func globalFlags(c *cobra.Command) *flag.FlagSet {
+	f := flag.NewFlagSet("global", flag.ContinueOnError)
+	f.AddFlagSet(c.PersistentFlags())
+	if h := c.Flags().Lookup("help"); h != nil {
+		f.AddFlag(h)
+	}
+	return f
 }
 
 // getFlagFormat will output the flag format
