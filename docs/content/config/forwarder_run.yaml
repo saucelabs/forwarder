@@ -269,9 +269,16 @@
 # kerberos-cfg-file <string>
 #
 # Path to krb5.conf file with kerberos configuration
-#kerberos-cfg-file: 
+#kerberos-cfg-file:
 
-# kerberos-enabled-hosts <string>,... 
+# kerberos-disable-pa-fx-fast <value>
+#
+# Disable PA-FX-FAST pre-authentication in the AS Exchange. Needed when the
+# KDC does not support FAST negotiation and
+# responds with "KDC did not respond appropriately to FAST negotiation".
+#kerberos-disable-pa-fx-fast: false
+
+# kerberos-enabled-hosts <string>,...
 #
 # List of hosts for which send Kerberos auth headers (SPNEGO)
 #kerberos-enabled-hosts: 
