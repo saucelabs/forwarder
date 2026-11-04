@@ -13,15 +13,18 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"os"
 	"reflect"
 	"runtime"
 	"strings"
+	"syscall"
 
 	"github.com/saucelabs/forwarder/internal/martian"
 	"github.com/saucelabs/forwarder/internal/martian/proxyutil"
+	"golang.org/x/net/http2"
 )
 
 type denyError struct {
@@ -48,6 +51,11 @@ const skipMetricsLabel = "-"
 func (hp *HTTPProxy) errorResponse(req *http.Request, err error) *http.Response {
 	handlers := []errorHandler{
 		handleWindowsNetError,
+		handleContextCancelationError,
+		handleContextDeadlineExceededError,
+		handleUpstreamEOFError,
+		handleConnectionClosedError,
+		handleHTTP2Error,
 		handleNetError,
 		handleTLSRecordHeader,
 		handleTLSCertificateError,
@@ -57,7 +65,6 @@ func (hp *HTTPProxy) errorResponse(req *http.Request, err error) *http.Response 
 		handleAuthenticationError,
 		handleDenyError,
 		handleProhibitedError,
-		handleContextCancelationError,
 		handleStatusText,
 	}
 
@@ -249,6 +256,68 @@ func handleContextCancelationError(_ *http.Request, err error) (code int, msg, l
 		code = http.StatusInternalServerError
 		msg = "request context canceled"
 		label = "request_ctx_canceled"
+	}
+
+	return
+}
+
+func handleContextDeadlineExceededError(req *http.Request, err error) (code int, msg, label string) {
+	if errors.Is(err, context.DeadlineExceeded) {
+		code = http.StatusGatewayTimeout
+		msg = fmt.Sprintf("request context deadline exceeded for host %q", req.Host)
+		label = "request_ctx_deadline"
+	}
+
+	return
+}
+
+func handleUpstreamEOFError(req *http.Request, err error) (code int, msg, label string) {
+	if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
+		code = http.StatusBadGateway
+		msg = fmt.Sprintf("upstream closed connection unexpectedly for host %q", req.Host)
+		label = "upstream_eof"
+	}
+
+	return
+}
+
+func handleConnectionClosedError(req *http.Request, err error) (code int, msg, label string) {
+	switch {
+	case errors.Is(err, syscall.ECONNRESET):
+		label = "conn_reset"
+	case errors.Is(err, syscall.ECONNABORTED):
+		label = "conn_aborted"
+	case errors.Is(err, net.ErrClosed):
+		label = "conn_closed"
+	default:
+		return
+	}
+	code = http.StatusBadGateway
+	msg = fmt.Sprintf("connection to host %q was closed", req.Host)
+
+	return
+}
+
+func handleHTTP2Error(req *http.Request, err error) (code int, msg, label string) {
+	var streamErr http2.StreamError
+	if errors.As(err, &streamErr) {
+		code = http.StatusBadGateway
+		msg = fmt.Sprintf("http2 stream error for host %q: %s", req.Host, streamErr.Code)
+		label = "http2_stream"
+		return
+	}
+	var connErr http2.ConnectionError
+	if errors.As(err, &connErr) {
+		code = http.StatusBadGateway
+		msg = fmt.Sprintf("http2 connection error for host %q: %s", req.Host, http2.ErrCode(connErr))
+		label = "http2_connection"
+		return
+	}
+	var goAwayErr *http2.GoAwayError
+	if errors.As(err, &goAwayErr) {
+		code = http.StatusBadGateway
+		msg = fmt.Sprintf("http2 goaway from host %q: %s", req.Host, goAwayErr.ErrCode)
+		label = "http2_goaway"
 	}
 
 	return
