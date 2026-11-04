@@ -37,17 +37,30 @@ import (
 
 type proxyConn struct {
 	*Proxy
-	brw    *bufio.ReadWriter
-	conn   net.Conn
-	secure bool
-	cs     tls.ConnectionState
+	brw                            *bufio.ReadWriter
+	conn                           net.Conn
+	secure                         bool
+	cs                             tls.ConnectionState
+	connectionSpecificRoundTripper http.RoundTripper
+	// rt     *http.Transport // individual Transport per client connection for special cases
 }
 
 func newProxyConn(p *Proxy, conn net.Conn) *proxyConn {
+
+	var individualTransport *http.Transport
+
+	tr, ok := p.rt.(*http.Transport)
+
+	if ok {
+		individualTransport = tr.Clone()
+		individualTransport.MaxConnsPerHost = 1
+	}
+
 	return &proxyConn{
-		Proxy: p,
-		brw:   bufio.NewReadWriter(bufio.NewReader(conn), bufio.NewWriter(conn)),
-		conn:  conn,
+		Proxy:                          p,
+		brw:                            bufio.NewReadWriter(bufio.NewReader(conn), bufio.NewWriter(conn)),
+		conn:                           conn,
+		connectionSpecificRoundTripper: individualTransport,
 	}
 }
 
@@ -364,7 +377,17 @@ func (p *proxyConn) handle() error {
 	}
 
 	// perform the HTTP roundtrip
-	res, err := p.roundTrip(req)
+
+	var res *http.Response
+
+	if p.connectionSpecificRoundTripper != nil {
+		log.Error(ctx, "Using connection specific RoundTripper")
+		res, err = p.connectionSpecificRoundTripper.RoundTrip(req)
+	} else {
+		log.Error(ctx, "Using default RoundTripper")
+		res, err = p.roundTrip(req)
+	}
+
 	if err != nil {
 		if isClosedConnError(err) {
 			log.Debug(ctx, "connection closed prematurely", "error", err)
