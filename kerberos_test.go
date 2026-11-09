@@ -10,7 +10,6 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 
@@ -100,8 +99,8 @@ func TestKerberosAdapterDisablePAFXFAST(t *testing.T) {
 
 			var buf bytes.Buffer
 			adapter.krb5client.Print(&buf)
-			require.True(t, strings.Contains(buf.String(), tc.want),
-				"expected gokrb5 Settings dump to contain %q, got:\n%s", tc.want, buf.String())
+			require.Contains(t, buf.String(), tc.want,
+				"expected gokrb5 Settings dump to contain %q", tc.want)
 		})
 	}
 }
