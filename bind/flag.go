@@ -73,6 +73,11 @@ func KerberosConfig(fs *pflag.FlagSet, cfg *forwarder.KerberosConfig) {
 
 	fs.BoolVar(&cfg.AuthUpstreamProxy, "kerberos-auth-upstream-proxy", cfg.AuthUpstreamProxy,
 		"Authenticate to upstream proxy using Kerberos (with Proxy-Authorization header)")
+
+	fs.BoolVar(&cfg.DisablePAFXFAST, "kerberos-disable-pa-fx-fast", cfg.DisablePAFXFAST,
+		"Disable PA-FX-FAST pre-authentication in the AS Exchange. "+
+			"Needed when the KDC does not support FAST negotiation and "+
+			"responds with \"KDC did not respond appropriately to FAST negotiation\".")
 }
 
 func PAC(fs *pflag.FlagSet, pac **url.URL) {

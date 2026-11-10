@@ -764,6 +764,15 @@ List of hosts for which Kerberos (SPNEGO) authorization tokens will be injected 
 Authenticate to a configured upstream proxy with Kerberos (using `Proxy-Authorization` HTTP header). Please note that if forwarder configuration results in multiple proxies available (like PAC for example), forwarder will try to authenticate to each one of them.
 
 
+### --kerberos-disable-pa-fx-fast {#kerberos-disable-pa-fx-fast}
+
+* Environment variable: `FORWARDER_KERBEROS_DISABLE_PA_FX_FAST`
+* Value Format: `<value>` (you can use empty command line switch to enable)
+* Default Value: `false`
+
+Disable PA-FX-FAST pre-authentication in the AS Exchange. Needed when the KDC does not support FAST negotiation and responds with `KDC did not respond appropriately to FAST negotiation`.
+
+
 ### --kerberos-run-diagnostics {#kerberos-run-diagnostics}
 
 * Environment variable: `FORWARDER_KERBEROS_RUN_DIAGNOSTICS`
